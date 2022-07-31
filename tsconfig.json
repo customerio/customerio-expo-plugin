@@ -4,7 +4,8 @@
       "rootDir": "./",
       "outDir": "./build",
       "declaration": false,
-      "resolveJsonModule": true
+      "resolveJsonModule": true,
+      "noImplicitAny": false,
   },
   "include": [
     "./src"

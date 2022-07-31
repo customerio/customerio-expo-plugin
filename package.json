@@ -2,17 +2,22 @@
   "name": "cio-expo-plugin",
   "version": "0.0.1",
   "description": "Expo config plugin for the Customer IO React Native SDK",
-  "main": "app.plugin.js",
+  "main": "build/src/index.js",
+  "types": "build/index.d.ts",
+  "license": "MIT",
+  "files": [
+    "dist/**/*"
+  ],
   "scripts": {
-    "copy-nse": "cp -r src/ios/BrazeNotificationServiceExtension build/BrazeNotificationServiceExtension",
-    "build": "tsc && yarn copy-nse",
-    "build:watch": "yarn build && tsc --watch",
+    "copy-nse": "cp -r src/ios/files build/files",
+    "build": "tsc && npm run copy-nse",
+    "build:watch": "npm run build && tsc --watch",
     "clean": "rm -rf build",
     "expo-module": "expo-module",
     "lint": "eslint .",
     "tc": "tsc --noEmit",
-    "prepare": "yarn clean && yarn build",
-    "prepublishOnly": "yarn tc && yarn lint"
+    "prepare": "npm run clean && npm run build",
+    "prepublishOnly": "npm run tc && npm run lint"
   },
   "devDependencies": {
     "@expo/config-plugins": "^4.1.4",
@@ -23,11 +28,9 @@
     "eslint-config-prettier": "^8.5.0",
     "eslint-plugin-prettier": "^4.0.0",
     "expo-module-scripts": "^2.0.0",
+    "expo-build-properties": "^0.2.0",
     "prettier": "^2.6.2",
     "typescript": "^4.6.4",
     "xcode": "^3.0.1"
-  },
-  "dependencies": {
-    "expo-build-properties": "^0.2.0"
   }
 }

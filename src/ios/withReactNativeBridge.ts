@@ -6,12 +6,11 @@ const { getAppDelegateFilePath } = IOSConfig.Paths;
 
 // Copy over AppDelegate.swift and cioconfigplugin-Bridging-Header.h files
 export function withCustomerIOReactBridge(config, props) {
-  return withXcodeProject(config, (cfg) => {
+  return withXcodeProject(config, async (cfg) => {
     const xcodeProject = cfg.modResults;
-    const { projectName, projectRoot } = cfg.modRequest;
+    const { projectName, platformProjectRoot } = cfg.modRequest;
 
     // Get the Xcode project "key" that the new file entries will be added to
-
     const group = xcodeProject.pbxGroupByName(projectName);
     const key = xcodeProject.findPBXGroupKey({
       name: group.name,
@@ -19,11 +18,11 @@ export function withCustomerIOReactBridge(config, props) {
     });
 
     // The directory where new source files should be copied to
-    const sourceDir = dirname(getAppDelegateFilePath(projectRoot));
+    const sourceDir = dirname(getAppDelegateFilePath(platformProjectRoot));
 
     // A helper function to copy files into the project
     const addSourceFile = (name) => {
-      const src = resolve(__dirname, 'ios', name);
+      const src = resolve(__dirname, '../../files', name);
       const dst = resolve(sourceDir, name);
       writeFileSync(dst, readFileSync(src, 'utf-8'));
       // Update the Xcode project data stored in the cfg object
