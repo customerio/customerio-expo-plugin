@@ -2,8 +2,10 @@ import { withDangerousMod } from '@expo/config-plugins';
 import { readFileSync, writeFileSync } from 'fs';
 import { resolve } from 'path';
 
+import { CustomerIOPluginOptions } from '../types/cio-types';
+
 // Modify Podfile in ios folder
-export function withCustomerIOPod(config, props: CIOConfigProps) {
+export function withCustomerIOPod(config, props: CustomerIOPluginOptions) {
   return withDangerousMod(config, [
     'ios',
     (cfg) => {

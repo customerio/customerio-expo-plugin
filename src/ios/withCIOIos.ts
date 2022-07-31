@@ -1,12 +1,14 @@
 import { ConfigPlugin } from '@expo/config-plugins';
 
-import { withCustomerIOBuildProperties } from './withBuildProperties';
+import { CustomerIOPluginOptions } from '../types/cio-types';
 import { withCustomerIOPod } from './withPodfileModification';
-import { withCustomerIOReactBridge } from './withReactNativeBridge';
+import { withCioXcodeProject } from './withXcodeProject';
 
-export function withCIOIos(config, props): ConfigPlugin<CIOConfigProps> {
+export function withCIOIos(
+  config,
+  props: CustomerIOPluginOptions,
+): ConfigPlugin<CustomerIOPluginOptions> {
   withCustomerIOPod(config, props);
-  withCustomerIOBuildProperties(config, props);
-  withCustomerIOReactBridge(config, props);
+  withCioXcodeProject(config, props);
   return config;
 }

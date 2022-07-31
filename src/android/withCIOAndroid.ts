@@ -1,5 +1,10 @@
 import { ConfigPlugin } from '@expo/config-plugins';
 
-export function withCIOAndroid(config, props): ConfigPlugin<CIOConfigProps> {
+import { CustomerIOPluginOptions } from '../types/cio-types';
+
+export function withCIOAndroid(
+  config,
+  props: CustomerIOPluginOptions,
+): ConfigPlugin<CustomerIOPluginOptions> {
   return config;
 }

@@ -9,8 +9,8 @@
     "dist/**/*"
   ],
   "scripts": {
-    "copy-nse": "cp -r src/ios/files build/files",
-    "build": "tsc && npm run copy-nse",
+    "copy-native-files": "cp -r src/helpers/native-files build/helpers/",
+    "build": "rm -rf build && tsc && npm run copy-native-files",
     "build:watch": "npm run build && tsc --watch",
     "clean": "rm -rf build",
     "expo-module": "expo-module",
