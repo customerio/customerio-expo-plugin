@@ -5,27 +5,25 @@ import xcode from 'xcode';
 import {
   BUNDLE_SHORT_VERSION_TEMPLATE_REGEX,
   BUNDLE_VERSION_TEMPLATE_REGEX,
-  CIO_TARGET_NAME,
+  CIO_NOTIFICATION_TARGET_NAME,
   DEFAULT_BUNDLE_SHORT_VERSION,
   DEFAULT_BUNDLE_VERSION,
   GROUP_IDENTIFIER_TEMPLATE_REGEX,
   IOS_DEPLOYMENT_TARGET,
 } from '../helpers/constants/ios';
 import { FileManagement } from '../helpers/utils/fileManagement';
-import { injectCIOPodfileCode } from '../helpers/utils/injectCIOPodfileCode';
 import { CustomerIOPluginOptions } from '../types/cio-types';
 
-const entitlementsFileName = `${CIO_TARGET_NAME}.entitlements`;
-const plistFileName = `${CIO_TARGET_NAME}-Info.plist`;
+const entitlementsFileName = `${CIO_NOTIFICATION_TARGET_NAME}.entitlements`;
+const plistFileName = `${CIO_NOTIFICATION_TARGET_NAME}-Info.plist`;
 
-export const withCioXcodeProject: ConfigPlugin<CustomerIOPluginOptions> = (
-  config,
-  cioProps,
-) => {
+export const withCioNotificationsXcodeProject: ConfigPlugin<
+  CustomerIOPluginOptions
+> = (config, cioProps) => {
   return withXcodeProject(config, async (props) => {
     const options: CustomerIOPluginOptions = {
       iosPath: props.modRequest.platformProjectRoot,
-      bundleIdentifier: props.ios?.bundleIdentifier,
+      bundleIdentifier: `${props.ios?.bundleIdentifier}.notification`,
       devTeam: cioProps?.devTeam,
       bundleVersion: props.ios?.buildNumber,
       bundleShortVersion: props?.version,
@@ -43,16 +41,11 @@ export const withCioXcodeProject: ConfigPlugin<CustomerIOPluginOptions> = (
       bundleShortVersion,
     } = options;
 
-    await injectCIOPodfileCode(iosPath);
-
     const projPath = `${iosPath}/${appName}.xcodeproj/project.pbxproj`;
 
     const xcodeProject = xcode.project(projPath);
     const extFiles = [
-      'CustomerioReactnative.m',
-      'CustomerioReactnative-Bridging-Header.h',
-      'CustomerioReactnative.swift',
-      'CustomerioUtils.swift',
+      'CIONotificationService.swift',
       entitlementsFileName,
       plistFileName,
     ];
@@ -74,17 +67,17 @@ export const withCioXcodeProject: ConfigPlugin<CustomerIOPluginOptions> = (
       // Create new PBXGroup for the new extension
       setupPBXGroup(xcodeProject, extFiles);
 
-      if (xcodeProject.pbxTargetByName(CIO_TARGET_NAME)) {
+      if (xcodeProject.pbxTargetByName(CIO_NOTIFICATION_TARGET_NAME)) {
         return;
       }
 
       // Add the IO target
       // This adds PBXTargetDependency and PBXContainerItemProxy for you
       const target = xcodeProject.addTarget(
-        CIO_TARGET_NAME,
+        CIO_NOTIFICATION_TARGET_NAME,
         'app_extension',
-        CIO_TARGET_NAME,
-        `${bundleIdentifier}.${CIO_TARGET_NAME}`,
+        CIO_NOTIFICATION_TARGET_NAME,
+        `${bundleIdentifier}.${CIO_NOTIFICATION_TARGET_NAME}`,
       );
 
       // Add build phases to the new target
@@ -105,7 +98,7 @@ export const withCioXcodeProject: ConfigPlugin<CustomerIOPluginOptions> = (
 
 function addBuildPhases(xcodeProject: any, target: any) {
   xcodeProject.addBuildPhase(
-    ['CustomerioReactnative.m'],
+    [],
     'PBXSourcesBuildPhase',
     'Sources',
     target.uuid,
@@ -128,8 +121,8 @@ function addBuildPhases(xcodeProject: any, target: any) {
 function setupPBXGroup(xcodeProject: any, extFiles: string[]) {
   const extGroup = xcodeProject.addPbxGroup(
     extFiles,
-    CIO_TARGET_NAME,
-    CIO_TARGET_NAME,
+    CIO_NOTIFICATION_TARGET_NAME,
+    CIO_NOTIFICATION_TARGET_NAME,
   );
 
   // Add the new PBXGroup to the top level group. This makes the
@@ -159,15 +152,15 @@ async function modifyCopiedFiles(
 ) {
   await updateEntitlements(
     `group.${bundleIdentifier}.customerio`,
-    `${iosPath}/${CIO_TARGET_NAME}`,
+    `${iosPath}/${CIO_NOTIFICATION_TARGET_NAME}`,
   );
   await updateBundleVersion(
     bundleVersion ?? DEFAULT_BUNDLE_VERSION,
-    `${iosPath}/${CIO_TARGET_NAME}`,
+    `${iosPath}/${CIO_NOTIFICATION_TARGET_NAME}`,
   );
   await updateBundleShortVersion(
     bundleShortVersion ?? DEFAULT_BUNDLE_SHORT_VERSION,
-    `${iosPath}/${CIO_TARGET_NAME}`,
+    `${iosPath}/${CIO_NOTIFICATION_TARGET_NAME}`,
   );
 }
 
@@ -176,11 +169,11 @@ function copyNativeFiles(
   iosPath: string,
   sourceDir: string,
 ) {
-  mkdirSync(`${iosPath}/${CIO_TARGET_NAME}`, { recursive: true });
+  mkdirSync(`${iosPath}/${CIO_NOTIFICATION_TARGET_NAME}`, { recursive: true });
 
   for (let i = 0; i < extFiles.length; i++) {
     const extFile = extFiles[i];
-    const targetFile = `${iosPath}/${CIO_TARGET_NAME}/${extFile}`;
+    const targetFile = `${iosPath}/${CIO_NOTIFICATION_TARGET_NAME}/${extFile}`;
     copyFileSync(`${sourceDir}${extFile}`, targetFile);
   }
 }
@@ -190,7 +183,8 @@ function editDeploymentInfo(xcodeProject: any, iosDeploymentTarget: string) {
   for (const key in configurations) {
     if (
       typeof configurations[key].buildSettings !== 'undefined' &&
-      configurations[key].buildSettings.PRODUCT_NAME === `"${CIO_TARGET_NAME}"`
+      configurations[key].buildSettings.PRODUCT_NAME ===
+        `"${CIO_NOTIFICATION_TARGET_NAME}"`
     ) {
       const buildSettingsObj = configurations[key].buildSettings;
       buildSettingsObj.IPHONEOS_DEPLOYMENT_TARGET =
