@@ -11,8 +11,8 @@ export function withCIOAndroid(
   props: CustomerIOPluginOptions,
 ): ConfigPlugin<CustomerIOPluginOptions> {
   config = withGistMavenRepository(config, props);
-  config = withAppGoogleServices(config, props);
   config = withProjectGoogleServices(config, props);
+  config = withAppGoogleServices(config, props);
   config = withGoogleServicesJSON(config, props);
 
   return config;

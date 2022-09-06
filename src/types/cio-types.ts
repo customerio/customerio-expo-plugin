@@ -15,6 +15,7 @@ export type CustomerIOPluginOptions = {
   bundleShortVersion?: string;
   bundleIdentifier?: string;
   iosDeploymentTarget?: string;
+  googleServicesFilePath?: string;
 };
 
 export enum Mode {
