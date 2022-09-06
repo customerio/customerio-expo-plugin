@@ -13,7 +13,4 @@ target '${CIO_TARGET_NAME}' do
   pod 'boost', :podspec => '../node_modules/react-native/third-party-podspecs/boost.podspec'
   pod 'CustomerIO/MessagingPushAPN', '~> 1.2.0-alpha.3'
 end
-target '${CIO_NOTIFICATION_TARGET_NAME}' do
-  pod 'CustomerIO/MessagingPushAPN', '~> 1.2.0-alpha.3'
-end
 `;

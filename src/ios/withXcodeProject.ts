@@ -34,7 +34,7 @@ export const withCioXcodeProject: ConfigPlugin<CustomerIOPluginOptions> = (
     };
 
     const appName = props.modRequest.projectName || '';
-    const sourceDir = 'node_modules/cio-expo-plugin/build/helpers/ios/';
+    const sourceDir = 'plugin/helpers/ios/';
     const {
       iosPath,
       iosDeploymentTarget,
