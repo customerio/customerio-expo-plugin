@@ -8,22 +8,21 @@ import {
   CIO_NOTIFICATION_TARGET_NAME,
   DEFAULT_BUNDLE_SHORT_VERSION,
   DEFAULT_BUNDLE_VERSION,
-  GROUP_IDENTIFIER_TEMPLATE_REGEX,
   IOS_DEPLOYMENT_TARGET,
 } from '../helpers/constants/ios';
 import { FileManagement } from '../helpers/utils/fileManagement';
-import { CustomerIOPluginOptions } from '../types/cio-types';
+import { injectCIONotificationPodfileCode } from '../helpers/utils/injectCIOPodfileCode';
+import { CustomerIOPluginOptionsIOS } from '../types/cio-types';
 
-const entitlementsFileName = `${CIO_NOTIFICATION_TARGET_NAME}.entitlements`;
 const plistFileName = `${CIO_NOTIFICATION_TARGET_NAME}-Info.plist`;
 
 export const withCioNotificationsXcodeProject: ConfigPlugin<
-  CustomerIOPluginOptions
+  CustomerIOPluginOptionsIOS
 > = (config, cioProps) => {
   return withXcodeProject(config, async (props) => {
-    const options: CustomerIOPluginOptions = {
+    const options: CustomerIOPluginOptionsIOS = {
       iosPath: props.modRequest.platformProjectRoot,
-      bundleIdentifier: `${props.ios?.bundleIdentifier}.notification`,
+      bundleIdentifier: `${props.ios?.bundleIdentifier}`,
       devTeam: cioProps?.devTeam,
       bundleVersion: props.ios?.buildNumber,
       bundleShortVersion: props?.version,
@@ -32,7 +31,7 @@ export const withCioNotificationsXcodeProject: ConfigPlugin<
     };
 
     const appName = props.modRequest.projectName || '';
-    const sourceDir = 'node_modules/cio-expo-plugin/build/helpers/ios/';
+    const sourceDir = 'plugin/helpers/ios/';
     const {
       iosPath,
       iosDeploymentTarget,
@@ -44,11 +43,9 @@ export const withCioNotificationsXcodeProject: ConfigPlugin<
     const projPath = `${iosPath}/${appName}.xcodeproj/project.pbxproj`;
 
     const xcodeProject = xcode.project(projPath);
-    const extFiles = [
-      'CIONotificationService.swift',
-      entitlementsFileName,
-      plistFileName,
-    ];
+    const extFiles = ['CIONotificationService.swift', plistFileName];
+
+    await injectCIONotificationPodfileCode(iosPath);
 
     xcodeProject.parse(async function (err: Error) {
       if (err) {
@@ -58,7 +55,6 @@ export const withCioNotificationsXcodeProject: ConfigPlugin<
       copyNativeFiles(extFiles, iosPath, sourceDir);
 
       await modifyCopiedFiles(
-        bundleIdentifier as string,
         iosPath,
         bundleVersion as string,
         bundleShortVersion as string,
@@ -145,15 +141,10 @@ function setupPBXGroup(xcodeProject: any, extFiles: string[]) {
 }
 
 async function modifyCopiedFiles(
-  bundleIdentifier: string,
   iosPath: string,
   bundleVersion: string,
   bundleShortVersion: string,
 ) {
-  await updateEntitlements(
-    `group.${bundleIdentifier}.customerio`,
-    `${iosPath}/${CIO_NOTIFICATION_TARGET_NAME}`,
-  );
   await updateBundleVersion(
     bundleVersion ?? DEFAULT_BUNDLE_VERSION,
     `${iosPath}/${CIO_NOTIFICATION_TARGET_NAME}`,
@@ -191,20 +182,6 @@ function editDeploymentInfo(xcodeProject: any, iosDeploymentTarget: string) {
         iosDeploymentTarget ?? IOS_DEPLOYMENT_TARGET;
     }
   }
-}
-
-async function updateEntitlements(
-  groupIdentifier: string,
-  path: string,
-): Promise<void> {
-  const entitlementsFilePath = `${path}/${entitlementsFileName}`;
-  let entitlementsFile = await FileManagement.read(entitlementsFilePath);
-
-  entitlementsFile = entitlementsFile.replace(
-    GROUP_IDENTIFIER_TEMPLATE_REGEX,
-    groupIdentifier,
-  );
-  await FileManagement.write(entitlementsFilePath, entitlementsFile);
 }
 
 async function updateBundleVersion(
