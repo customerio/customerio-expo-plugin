@@ -1,205 +1,225 @@
 import { ConfigPlugin, withXcodeProject } from '@expo/config-plugins';
-import { mkdirSync, copyFileSync, writeFileSync } from 'fs';
+import fs from 'fs';
 import xcode from 'xcode';
 
+// import { name as thisPackageName } from '../../package.json';
 import {
-  BUNDLE_SHORT_VERSION_TEMPLATE_REGEX,
-  BUNDLE_VERSION_TEMPLATE_REGEX,
   CIO_NOTIFICATION_TARGET_NAME,
-  DEFAULT_BUNDLE_SHORT_VERSION,
   DEFAULT_BUNDLE_VERSION,
-  IOS_DEPLOYMENT_TARGET,
 } from '../helpers/constants/ios';
-import { FileManagement } from '../helpers/utils/fileManagement';
 import { injectCIONotificationPodfileCode } from '../helpers/utils/injectCIOPodfileCode';
 import { CustomerIOPluginOptionsIOS } from '../types/cio-types';
 
-const plistFileName = `${CIO_NOTIFICATION_TARGET_NAME}-Info.plist`;
+const PLIST_FILENAME = `${CIO_NOTIFICATION_TARGET_NAME}-Info.plist`;
 
-export const withCioNotificationsXcodeProject: ConfigPlugin<
-  CustomerIOPluginOptionsIOS
-> = (config, cioProps) => {
-  return withXcodeProject(config, async (props) => {
-    const options: CustomerIOPluginOptionsIOS = {
-      iosPath: props.modRequest.platformProjectRoot,
-      bundleIdentifier: `${props.ios?.bundleIdentifier}`,
-      devTeam: cioProps?.devTeam,
-      bundleVersion: props.ios?.buildNumber,
-      bundleShortVersion: props?.version,
-      mode: cioProps?.mode,
-      iosDeploymentTarget: cioProps?.iosDeploymentTarget,
-    };
+// const LOCAL_PATH_TO_NSE_FILES = `node_modules/${thisPackageName}/build/${CIO_NOTIFICATION_TARGET_NAME}`;
 
-    const appName = props.modRequest.projectName || '';
-    const sourceDir = 'plugin/helpers/ios/';
-    const {
-      iosPath,
-      iosDeploymentTarget,
-      bundleIdentifier,
-      bundleVersion,
-      bundleShortVersion,
-    } = options;
+const TARGETED_DEVICE_FAMILY = `"1,2"`;
 
-    const projPath = `${iosPath}/${appName}.xcodeproj/project.pbxproj`;
+const addNotificationServiceExtension = async (
+  options: CustomerIOPluginOptionsIOS,
+) => {
+  const {
+    appleTeamId,
+    bundleIdentifier,
+    bundleShortVersion,
+    bundleVersion,
+    iosPath,
+    appName,
+    iosDeploymentTarget,
+  } = options;
 
-    const xcodeProject = xcode.project(projPath);
-    const extFiles = ['CIONotificationService.swift', plistFileName];
+  const projPath = `${iosPath}/${appName}.xcodeproj/project.pbxproj`;
+
+  const xcodeProject = xcode.project(projPath);
+
+  xcodeProject.parse(async function (err: Error) {
+    if (err) {
+      throw new Error(`Error parsing iOS project: ${JSON.stringify(err)}`);
+    }
 
     await injectCIONotificationPodfileCode(iosPath);
 
-    xcodeProject.parse(async function (err: Error) {
-      if (err) {
-        throw new Error(`Error parsing iOS project: ${JSON.stringify(err)}`);
-      }
-
-      copyNativeFiles(extFiles, iosPath, sourceDir);
-
-      await modifyCopiedFiles(
-        iosPath,
-        bundleVersion as string,
-        bundleShortVersion as string,
-      );
-
-      // Create new PBXGroup for the new extension
-      setupPBXGroup(xcodeProject, extFiles);
-
-      if (xcodeProject.pbxTargetByName(CIO_NOTIFICATION_TARGET_NAME)) {
-        return;
-      }
-
-      // Add the IO target
-      // This adds PBXTargetDependency and PBXContainerItemProxy for you
-      const target = xcodeProject.addTarget(
-        CIO_NOTIFICATION_TARGET_NAME,
-        'app_extension',
-        CIO_NOTIFICATION_TARGET_NAME,
-        `${bundleIdentifier}.${CIO_NOTIFICATION_TARGET_NAME}`,
-      );
-
-      // Add build phases to the new target
-      addBuildPhases(xcodeProject, target);
-
-      // Edit the Deployment info for CIO SDK
-      editDeploymentInfo(
-        xcodeProject,
-        iosDeploymentTarget ?? IOS_DEPLOYMENT_TARGET,
-      );
-
-      writeFileSync(projPath, xcodeProject.writeSync());
+    fs.mkdirSync(`${iosPath}/${CIO_NOTIFICATION_TARGET_NAME}`, {
+      recursive: true,
     });
 
-    return props;
+    const files = [
+      PLIST_FILENAME,
+      'CIONotificationService.h',
+      'CIONotificationService.swift',
+      'CIONotificationService.m',
+    ];
+
+    const getTargetFile = (filename: string) =>
+      `${iosPath}/${CIO_NOTIFICATION_TARGET_NAME}/${filename}`;
+    const sourceDir = 'plugin/helpers/ios';
+    files.forEach((filename) => {
+      const targetFile = getTargetFile(filename);
+      fs.copyFileSync(`${sourceDir}/${filename}`, targetFile);
+    });
+
+    /* MODIFY COPIED EXTENSION FILES */
+    const infoPlistTargetFile = getTargetFile(PLIST_FILENAME);
+    updateNseInfoPlist({
+      bundleVersion,
+      bundleShortVersion,
+      infoPlistTargetFile,
+    });
+
+    // Create new PBXGroup for the extension
+    const extGroup = xcodeProject.addPbxGroup(
+      files,
+      CIO_NOTIFICATION_TARGET_NAME,
+      CIO_NOTIFICATION_TARGET_NAME,
+    );
+
+    // Add the new PBXGroup to the top level group. This makes the
+    // files / folder appear in the file explorer in Xcode.
+    const groups = xcodeProject.hash.project.objects['PBXGroup'];
+    Object.keys(groups).forEach((key) => {
+      if (groups[key].name === undefined) {
+        xcodeProject.addToPbxGroup(extGroup.uuid, key);
+      }
+    });
+
+    // WORK AROUND for codeProject.addTarget BUG
+    // Xcode projects don't contain these if there is only one target
+    // An upstream fix should be made to the code referenced in this link:
+    //   - https://github.com/apache/cordova-node-xcode/blob/8b98cabc5978359db88dc9ff2d4c015cba40f150/lib/pbxProject.js#L860
+    const projObjects = xcodeProject.hash.project.objects;
+    projObjects['PBXTargetDependency'] =
+      projObjects['PBXTargetDependency'] || {};
+    projObjects['PBXContainerItemProxy'] =
+      projObjects['PBXTargetDependency'] || {};
+
+    if (xcodeProject.pbxTargetByName(CIO_NOTIFICATION_TARGET_NAME)) {
+      console.warn(
+        `${CIO_NOTIFICATION_TARGET_NAME} already exists in project. Skipping...`,
+      );
+      return;
+    }
+
+    // Add the NSE target
+    // This also adds PBXTargetDependency and PBXContainerItemProxy
+    const nseTarget = xcodeProject.addTarget(
+      CIO_NOTIFICATION_TARGET_NAME,
+      'app_extension',
+      CIO_NOTIFICATION_TARGET_NAME,
+      `${bundleIdentifier}.richpush`,
+    );
+
+    // Add build phases to the new target
+    xcodeProject.addBuildPhase(
+      ['CIONotificationService.m', 'CIONotificationService.swift'],
+      'PBXSourcesBuildPhase',
+      'Sources',
+      nseTarget.uuid,
+    );
+    xcodeProject.addBuildPhase(
+      [],
+      'PBXResourcesBuildPhase',
+      'Resources',
+      nseTarget.uuid,
+    );
+
+    xcodeProject.addBuildPhase(
+      [],
+      'PBXFrameworksBuildPhase',
+      'Frameworks',
+      nseTarget.uuid,
+    );
+
+    // Edit the Deployment info of the target
+    const configurations = xcodeProject.pbxXCBuildConfigurationSection();
+    for (const key in configurations) {
+      if (
+        typeof configurations[key].buildSettings !== 'undefined' &&
+        configurations[key].buildSettings.PRODUCT_NAME ===
+          `"${CIO_NOTIFICATION_TARGET_NAME}"`
+      ) {
+        const buildSettingsObj = configurations[key].buildSettings;
+        buildSettingsObj.DEVELOPMENT_TEAM = appleTeamId;
+        buildSettingsObj.IPHONEOS_DEPLOYMENT_TARGET =
+          iosDeploymentTarget ?? '13.0';
+        buildSettingsObj.TARGETED_DEVICE_FAMILY = TARGETED_DEVICE_FAMILY;
+        buildSettingsObj.CODE_SIGN_STYLE = 'Automatic';
+        buildSettingsObj.SWIFT_VERSION = 4.2;
+      }
+    }
+
+    // Add development team to the target & the main
+    xcodeProject.addTargetAttribute('DevelopmentTeam', appleTeamId, nseTarget);
+    xcodeProject.addTargetAttribute('DevelopmentTeam', appleTeamId);
+
+    fs.writeFileSync(projPath, xcodeProject.writeSync());
   });
 };
 
-function addBuildPhases(xcodeProject: any, target: any) {
-  xcodeProject.addBuildPhase(
-    [],
-    'PBXSourcesBuildPhase',
-    'Sources',
-    target.uuid,
-  );
-  xcodeProject.addBuildPhase(
-    [],
-    'PBXResourcesBuildPhase',
-    'Resources',
-    target.uuid,
-  );
+export const withCioNotificationsXcodeProject: ConfigPlugin<
+  CustomerIOPluginOptionsIOS
+> = (configOuter, props) => {
+  return withXcodeProject(configOuter, async (config) => {
+    const { modRequest, ios, version: bundleShortVersion } = config;
+    const { appleTeamId, iosDeploymentTarget } = props;
 
-  xcodeProject.addBuildPhase(
-    [],
-    'PBXFrameworksBuildPhase',
-    'Frameworks',
-    target.uuid,
-  );
-}
+    if (ios === undefined)
+      throw new Error(
+        'Adding NotificationServiceExtension failed: ios config missing from app.config.js.',
+      );
 
-function setupPBXGroup(xcodeProject: any, extFiles: string[]) {
-  const extGroup = xcodeProject.addPbxGroup(
-    extFiles,
-    CIO_NOTIFICATION_TARGET_NAME,
-    CIO_NOTIFICATION_TARGET_NAME,
-  );
+    const { projectName, platformProjectRoot } = modRequest;
+    const { bundleIdentifier, buildNumber } = ios;
 
-  // Add the new PBXGroup to the top level group. This makes the
-  // files / folder appear in the file explorer in Xcode.
-  const groups = xcodeProject.hash.project.objects['PBXGroup'];
-  Object.keys(groups).forEach(function (key) {
-    if (groups[key].name === undefined) {
-      xcodeProject.addToPbxGroup(extGroup.uuid, key);
+    if (bundleShortVersion === undefined) {
+      throw new Error(
+        'Adding NotificationServiceExtension failed: version missing from app.config.js',
+      );
     }
+
+    if (bundleIdentifier === undefined) {
+      throw new Error(
+        'Adding NotificationServiceExtension failed: ios.bundleIdentifier missing from app.config.js',
+      );
+    }
+
+    if (projectName === undefined) {
+      throw new Error(
+        'Adding NotificationServiceExtension failed: name missing from app.config.js',
+      );
+    }
+
+    const options = {
+      appleTeamId,
+      bundleIdentifier,
+      bundleShortVersion,
+      bundleVersion: buildNumber ?? DEFAULT_BUNDLE_VERSION,
+      iosPath: platformProjectRoot,
+      appName: projectName,
+      iosDeploymentTarget,
+    };
+
+    await addNotificationServiceExtension(options);
+
+    return config;
   });
+};
 
-  // WORK AROUND for codeProject.addTarget BUG
-  // Xcode projects don't contain these if there is only one target
-  // An upstream fix should be made to the code referenced in this link:
-  //   - https://github.com/apache/cordova-node-xcode/blob/8b98cabc5978359db88dc9ff2d4c015cba40f150/lib/pbxProject.js#L860
-  const projObjects = xcodeProject.hash.project.objects;
-  projObjects['PBXTargetDependency'] = projObjects['PBXTargetDependency'] || {};
-  projObjects['PBXContainerItemProxy'] =
-    projObjects['PBXTargetDependency'] || {};
-}
+const updateNseInfoPlist = ({
+  bundleVersion,
+  bundleShortVersion,
+  infoPlistTargetFile,
+}) => {
+  const BUNDLE_SHORT_VERSION_RE = /\{\{BUNDLE_SHORT_VERSION\}\}/;
+  const BUNDLE_VERSION_RE = /\{\{BUNDLE_VERSION\}\}/;
 
-async function modifyCopiedFiles(
-  iosPath: string,
-  bundleVersion: string,
-  bundleShortVersion: string,
-) {
-  await updateBundleVersion(
-    bundleVersion ?? DEFAULT_BUNDLE_VERSION,
-    `${iosPath}/${CIO_NOTIFICATION_TARGET_NAME}`,
+  let plistFileString = fs.readFileSync(infoPlistTargetFile, 'utf-8');
+
+  plistFileString = plistFileString.replace(BUNDLE_VERSION_RE, bundleVersion);
+  plistFileString = plistFileString.replace(
+    BUNDLE_SHORT_VERSION_RE,
+    bundleShortVersion,
   );
-  await updateBundleShortVersion(
-    bundleShortVersion ?? DEFAULT_BUNDLE_SHORT_VERSION,
-    `${iosPath}/${CIO_NOTIFICATION_TARGET_NAME}`,
-  );
-}
 
-function copyNativeFiles(
-  extFiles: string[],
-  iosPath: string,
-  sourceDir: string,
-) {
-  mkdirSync(`${iosPath}/${CIO_NOTIFICATION_TARGET_NAME}`, { recursive: true });
-
-  for (let i = 0; i < extFiles.length; i++) {
-    const extFile = extFiles[i];
-    const targetFile = `${iosPath}/${CIO_NOTIFICATION_TARGET_NAME}/${extFile}`;
-    copyFileSync(`${sourceDir}${extFile}`, targetFile);
-  }
-}
-
-function editDeploymentInfo(xcodeProject: any, iosDeploymentTarget: string) {
-  const configurations = xcodeProject.pbxXCBuildConfigurationSection();
-  for (const key in configurations) {
-    if (
-      typeof configurations[key].buildSettings !== 'undefined' &&
-      configurations[key].buildSettings.PRODUCT_NAME ===
-        `"${CIO_NOTIFICATION_TARGET_NAME}"`
-    ) {
-      const buildSettingsObj = configurations[key].buildSettings;
-      buildSettingsObj.IPHONEOS_DEPLOYMENT_TARGET =
-        iosDeploymentTarget ?? IOS_DEPLOYMENT_TARGET;
-    }
-  }
-}
-
-async function updateBundleVersion(
-  version: string,
-  path: string,
-): Promise<void> {
-  const plistFilePath = `${path}/${plistFileName}`;
-  let plistFile = await FileManagement.read(plistFilePath);
-  plistFile = plistFile.replace(BUNDLE_VERSION_TEMPLATE_REGEX, version);
-  await FileManagement.write(plistFilePath, plistFile);
-}
-
-async function updateBundleShortVersion(
-  version: string,
-  path: string,
-): Promise<void> {
-  const plistFilePath = `${path}/${plistFileName}`;
-  let plistFile = await FileManagement.read(plistFilePath);
-  plistFile = plistFile.replace(BUNDLE_SHORT_VERSION_TEMPLATE_REGEX, version);
-  await FileManagement.write(plistFilePath, plistFile);
-}
+  fs.writeFileSync(infoPlistTargetFile, plistFileString);
+};
