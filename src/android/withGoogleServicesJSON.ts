@@ -13,10 +13,16 @@ export const withGoogleServicesJSON: ConfigPlugin<
     };
     const { androidPath, googleServicesFilePath } = options;
     if (googleServicesFilePath) {
-      copyFileSync(
-        `${googleServicesFilePath}google-services.json`,
-        `${androidPath}/app/google-services.json`,
-      );
+      try {
+        copyFileSync(
+          `${googleServicesFilePath}google-services.json`,
+          `${androidPath}/app/google-services.json`,
+        );
+      } catch (e) {
+        console.log(
+          'There was an error copying your google-services.json file.',
+        );
+      }
     }
 
     return props;
