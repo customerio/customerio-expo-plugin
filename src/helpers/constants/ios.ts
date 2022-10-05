@@ -34,7 +34,7 @@ export const CIO_APPDELEGATEHEADER_SNIPPET = `
 `;
 
 export const CIO_PUSHNOTIFICATIONHANDLERDECLARATION_SNIPPET = `
-AmiAppPushNotificationsHandler* pnHandlerObj = [[AmiAppPushNotificationsHandler alloc] init];
+CIOAppPushNotificationsHandler* pnHandlerObj = [[CIOAppPushNotificationsHandler alloc] init];
 `;
 
 export const CIO_DIDFAILTOREGISTERFORREMOTENOTIFICATIONSWITHERROR_SNIPPET = `

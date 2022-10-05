@@ -12,7 +12,7 @@ import UserNotifications
 import UIKit
 
 @objc
-public class AmiAppPushNotificationsHandler : NSObject {
+public class CIOAppPushNotificationsHandler : NSObject {
 
   public override init() {}
 
