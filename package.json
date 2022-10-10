@@ -13,12 +13,12 @@
     "lib/**/*"
   ],
   "scripts": {
+    "build": "npm run clean && tsc",
     "clean": "rm -rf lib",
     "expo-module": "expo-module",
     "lint": "eslint . --fix",
     "tc": "tsc --noEmit",
     "prepare": "npm run clean && bob build",
-    "prepublishOnly": "npm run tc && npm run lint"
   },
   "keywords": [
     "react-native",
