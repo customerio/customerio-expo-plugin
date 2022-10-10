@@ -1,10 +1,10 @@
-import { CustomerIOPluginOptionsAndroid } from './../types/cio-types';
 import { withProjectBuildGradle, ConfigPlugin } from '@expo/config-plugins';
 
 import {
   CIO_PROJECT_ALLPROJECTS_REGEX,
   CIO_PROJECT_GIST_MAVEN_SNIPPET,
 } from '../helpers/constants/android';
+import { CustomerIOPluginOptionsAndroid } from './../types/cio-types';
 
 export const withGistMavenRepository: ConfigPlugin<
   CustomerIOPluginOptionsAndroid

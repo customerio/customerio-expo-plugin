@@ -1,3 +1,6 @@
+import { name as thisPackageName } from '../../../package.json';
+
+export const LOCAL_PATH_TO_CIO_NSE_FILES = `node_modules/${thisPackageName}/build/helpers/ios`;
 export const IOS_DEPLOYMENT_TARGET = '13.0';
 export const CIO_PODFILE_REGEX = /pod 'RCT-Folly'/;
 export const CIO_PODFILE_NOTIFICATION_REGEX =

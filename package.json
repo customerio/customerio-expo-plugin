@@ -1,12 +1,12 @@
 {
-  "name": "cio-expo-plugin",
-  "version": "0.0.1",
+  "name": "customerio-expo-plugin",
+  "version": "0.0.5",
   "description": "Expo config plugin for the Customer IO React Native SDK",
   "main": "build/src/index.js",
   "types": "build/index.d.ts",
   "license": "MIT",
   "files": [
-    "dist/**/*"
+    "build/**/*"
   ],
   "scripts": {
     "copy-native-files": "cp -r src/helpers/native-files build/helpers/",

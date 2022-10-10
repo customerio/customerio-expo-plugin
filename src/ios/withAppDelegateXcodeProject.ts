@@ -2,12 +2,11 @@ import { ConfigPlugin, withXcodeProject } from '@expo/config-plugins';
 import fs from 'fs';
 import xcode from 'xcode';
 
-// import { name as thisPackageName } from '../../package.json';
-import { DEFAULT_BUNDLE_VERSION } from '../helpers/constants/ios';
-import { injectCIONotificationPodfileCode } from '../helpers/utils/injectCIOPodfileCode';
+import {
+  DEFAULT_BUNDLE_VERSION,
+  LOCAL_PATH_TO_CIO_NSE_FILES,
+} from '../helpers/constants/ios';
 import { CustomerIOPluginOptionsIOS } from '../types/cio-types';
-
-// const LOCAL_PATH_TO_NSE_FILES = `node_modules/${thisPackageName}/build/${appName}`;
 
 const addNotificationServiceExtensionFile = async (
   options: CustomerIOPluginOptionsIOS,
@@ -31,10 +30,9 @@ const addNotificationServiceExtensionFile = async (
 
     const getTargetFile = (filename: string) =>
       `${iosPath}/${appName}/${filename}`;
-    const sourceDir = 'plugin/helpers/ios';
 
     const targetFile = getTargetFile(file);
-    fs.copyFileSync(`${sourceDir}/${file}`, targetFile);
+    fs.copyFileSync(`${LOCAL_PATH_TO_CIO_NSE_FILES}/${file}`, targetFile);
 
     // Create new PBXGroup for the extension
     const extGroup = xcodeProject.addPbxGroup([file], appName, appName);
