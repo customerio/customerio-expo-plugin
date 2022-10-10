@@ -1,15 +1,15 @@
-import { ConfigPlugin } from '@expo/config-plugins';
+import type { ExpoConfig } from '@expo/config-types';
 
-import { CustomerIOPluginOptionsAndroid } from '../types/cio-types';
+import type { CustomerIOPluginOptionsAndroid } from '../types/cio-types';
 import { withAppGoogleServices } from './withAppGoogleServices';
 import { withGistMavenRepository } from './withGistMavenRepository';
 import { withGoogleServicesJSON } from './withGoogleServicesJSON';
 import { withProjectGoogleServices } from './withProjectGoogleServices';
 
 export function withCIOAndroid(
-  config,
-  props: CustomerIOPluginOptionsAndroid,
-): ConfigPlugin<CustomerIOPluginOptionsAndroid> {
+  config: ExpoConfig,
+  props: CustomerIOPluginOptionsAndroid
+): ExpoConfig {
   config = withGistMavenRepository(config, props);
   config = withProjectGoogleServices(config, props);
   config = withAppGoogleServices(config, props);

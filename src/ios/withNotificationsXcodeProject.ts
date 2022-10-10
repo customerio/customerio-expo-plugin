@@ -8,14 +8,14 @@ import {
   LOCAL_PATH_TO_CIO_NSE_FILES,
 } from '../helpers/constants/ios';
 import { injectCIONotificationPodfileCode } from '../helpers/utils/injectCIOPodfileCode';
-import { CustomerIOPluginOptionsIOS } from '../types/cio-types';
+import type { CustomerIOPluginOptionsIOS } from '../types/cio-types';
 
 const PLIST_FILENAME = `${CIO_NOTIFICATION_TARGET_NAME}-Info.plist`;
 
 const TARGETED_DEVICE_FAMILY = `"1,2"`;
 
 const addNotificationServiceExtension = async (
-  options: CustomerIOPluginOptionsIOS,
+  options: CustomerIOPluginOptionsIOS
 ) => {
   const {
     appleTeamId,
@@ -69,7 +69,7 @@ const addNotificationServiceExtension = async (
     const extGroup = xcodeProject.addPbxGroup(
       files,
       CIO_NOTIFICATION_TARGET_NAME,
-      CIO_NOTIFICATION_TARGET_NAME,
+      CIO_NOTIFICATION_TARGET_NAME
     );
 
     // Add the new PBXGroup to the top level group. This makes the
@@ -93,7 +93,7 @@ const addNotificationServiceExtension = async (
 
     if (xcodeProject.pbxTargetByName(CIO_NOTIFICATION_TARGET_NAME)) {
       console.warn(
-        `${CIO_NOTIFICATION_TARGET_NAME} already exists in project. Skipping...`,
+        `${CIO_NOTIFICATION_TARGET_NAME} already exists in project. Skipping...`
       );
       return;
     }
@@ -104,7 +104,7 @@ const addNotificationServiceExtension = async (
       CIO_NOTIFICATION_TARGET_NAME,
       'app_extension',
       CIO_NOTIFICATION_TARGET_NAME,
-      `${bundleIdentifier}.richpush`,
+      `${bundleIdentifier}.richpush`
     );
 
     // Add build phases to the new target
@@ -112,20 +112,20 @@ const addNotificationServiceExtension = async (
       ['CIONotificationService.m', 'CIONotificationService.swift'],
       'PBXSourcesBuildPhase',
       'Sources',
-      nseTarget.uuid,
+      nseTarget.uuid
     );
     xcodeProject.addBuildPhase(
       [],
       'PBXResourcesBuildPhase',
       'Resources',
-      nseTarget.uuid,
+      nseTarget.uuid
     );
 
     xcodeProject.addBuildPhase(
       [],
       'PBXFrameworksBuildPhase',
       'Frameworks',
-      nseTarget.uuid,
+      nseTarget.uuid
     );
 
     // Edit the Deployment info of the target
@@ -163,7 +163,7 @@ export const withCioNotificationsXcodeProject: ConfigPlugin<
 
     if (ios === undefined)
       throw new Error(
-        'Adding NotificationServiceExtension failed: ios config missing from app.config.js.',
+        'Adding NotificationServiceExtension failed: ios config missing from app.config.js.'
       );
 
     const { projectName, platformProjectRoot } = modRequest;
@@ -171,19 +171,19 @@ export const withCioNotificationsXcodeProject: ConfigPlugin<
 
     if (bundleShortVersion === undefined) {
       throw new Error(
-        'Adding NotificationServiceExtension failed: version missing from app.config.js',
+        'Adding NotificationServiceExtension failed: version missing from app.config.js'
       );
     }
 
     if (bundleIdentifier === undefined) {
       throw new Error(
-        'Adding NotificationServiceExtension failed: ios.bundleIdentifier missing from app.config.js',
+        'Adding NotificationServiceExtension failed: ios.bundleIdentifier missing from app.config.js'
       );
     }
 
     if (projectName === undefined) {
       throw new Error(
-        'Adding NotificationServiceExtension failed: name missing from app.config.js',
+        'Adding NotificationServiceExtension failed: name missing from app.config.js'
       );
     }
 
@@ -203,21 +203,29 @@ export const withCioNotificationsXcodeProject: ConfigPlugin<
   });
 };
 
-const updateNseInfoPlist = ({
-  bundleVersion,
-  bundleShortVersion,
-  infoPlistTargetFile,
+const updateNseInfoPlist = (payload: {
+  bundleVersion?: string;
+  bundleShortVersion?: string;
+  infoPlistTargetFile: string;
 }) => {
   const BUNDLE_SHORT_VERSION_RE = /\{\{BUNDLE_SHORT_VERSION\}\}/;
   const BUNDLE_VERSION_RE = /\{\{BUNDLE_VERSION\}\}/;
 
-  let plistFileString = fs.readFileSync(infoPlistTargetFile, 'utf-8');
+  let plistFileString = fs.readFileSync(payload.infoPlistTargetFile, 'utf-8');
 
-  plistFileString = plistFileString.replace(BUNDLE_VERSION_RE, bundleVersion);
-  plistFileString = plistFileString.replace(
-    BUNDLE_SHORT_VERSION_RE,
-    bundleShortVersion,
-  );
+  if (payload.bundleVersion) {
+    plistFileString = plistFileString.replace(
+      BUNDLE_VERSION_RE,
+      payload.bundleVersion
+    );
+  }
 
-  fs.writeFileSync(infoPlistTargetFile, plistFileString);
+  if (payload.bundleShortVersion) {
+    plistFileString = plistFileString.replace(
+      BUNDLE_SHORT_VERSION_RE,
+      payload.bundleShortVersion
+    );
+  }
+
+  fs.writeFileSync(payload.infoPlistTargetFile, plistFileString);
 };

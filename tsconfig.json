@@ -1,14 +1,27 @@
 {
   "extends": "expo-module-scripts/tsconfig.plugin",
   "compilerOptions": {
-      "rootDir": "./",
-      "outDir": "./build",
-      "declaration": false,
-      "resolveJsonModule": true,
-      "noImplicitAny": false,
-  },
-  "include": [
-    "./src"
-  ],
-  "exclude": []
+    "baseUrl": "./",
+    "paths": {
+      "customerio-expo-plugin": ["./src/index"]
+    },
+    "allowUnreachableCode": false,
+    "allowUnusedLabels": false,
+    "esModuleInterop": true,
+    "importsNotUsedAsValues": "error",
+    "forceConsistentCasingInFileNames": true,
+    "lib": ["esnext"],
+    "module": "esnext",
+    "moduleResolution": "node",
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitReturns": true,
+    "noImplicitUseStrict": false,
+    "noStrictGenericChecks": false,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "target": "esnext"
+  }
 }

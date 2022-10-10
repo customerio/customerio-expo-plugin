@@ -4,7 +4,7 @@ import {
   CIO_PROJECT_BUILDSCRIPTS_REGEX,
   CIO_PROJECT_GOOGLE_SNIPPET,
 } from './../helpers/constants/android';
-import { CustomerIOPluginOptionsAndroid } from './../types/cio-types';
+import type { CustomerIOPluginOptionsAndroid } from './../types/cio-types';
 
 export const withProjectGoogleServices: ConfigPlugin<
   CustomerIOPluginOptionsAndroid
@@ -12,7 +12,7 @@ export const withProjectGoogleServices: ConfigPlugin<
   return withProjectBuildGradle(configOuter, (props) => {
     props.modResults.contents = props.modResults.contents.replace(
       CIO_PROJECT_BUILDSCRIPTS_REGEX,
-      `$1\n${CIO_PROJECT_GOOGLE_SNIPPET}`,
+      `$1\n${CIO_PROJECT_GOOGLE_SNIPPET}`
     );
     return props;
   });

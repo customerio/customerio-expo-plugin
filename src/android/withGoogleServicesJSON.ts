@@ -1,7 +1,7 @@
 import { withProjectBuildGradle, ConfigPlugin } from '@expo/config-plugins';
 import { copyFileSync } from 'fs';
 
-import { CustomerIOPluginOptionsAndroid } from './../types/cio-types';
+import type { CustomerIOPluginOptionsAndroid } from './../types/cio-types';
 
 export const withGoogleServicesJSON: ConfigPlugin<
   CustomerIOPluginOptionsAndroid
@@ -16,11 +16,11 @@ export const withGoogleServicesJSON: ConfigPlugin<
       try {
         copyFileSync(
           `${googleServicesFilePath}google-services.json`,
-          `${androidPath}/app/google-services.json`,
+          `${androidPath}/app/google-services.json`
         );
       } catch (e) {
         console.log(
-          'There was an error copying your google-services.json file.',
+          'There was an error copying your google-services.json file.'
         );
       }
     }

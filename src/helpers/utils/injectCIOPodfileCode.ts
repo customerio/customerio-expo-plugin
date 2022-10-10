@@ -17,7 +17,7 @@ export async function injectCIOPodfileCode(iosPath: string) {
 
   const lines = podfile.split('\n');
   const index = lines.findIndex((line) =>
-    CIO_PODFILE_POST_INSTALL_REGEX.test(line),
+    CIO_PODFILE_POST_INSTALL_REGEX.test(line)
   );
   let content: string[] = lines;
   if (index > -1) {

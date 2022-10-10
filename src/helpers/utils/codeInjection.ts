@@ -1,7 +1,7 @@
 export function injectCodeByRegex(
   fileContent: string,
   lineRegex: RegExp,
-  snippet: string,
+  snippet: string
 ) {
   const lines = fileContent.split('\n');
   const index = lines.findIndex((line) => lineRegex.test(line));
@@ -17,7 +17,7 @@ export function injectCodeByRegex(
 export function injectCodeByMultiLineRegex(
   fileContent: string,
   lineRegex: RegExp,
-  snippet: string,
+  snippet: string
 ) {
   return fileContent.replace(lineRegex, `$&\n${snippet}`);
 }
@@ -25,7 +25,7 @@ export function injectCodeByMultiLineRegex(
 export function injectCodeByMultiLineRegexAndReplaceLine(
   fileContent: string,
   lineRegex: RegExp,
-  snippet: string,
+  snippet: string
 ) {
   return fileContent.replace(lineRegex, `${snippet}`);
 }
@@ -33,7 +33,7 @@ export function injectCodeByMultiLineRegexAndReplaceLine(
 export function injectCodeByLineNumber(
   fileContent: string,
   index: number,
-  snippet: string,
+  snippet: string
 ) {
   const lines = fileContent.split('\n');
   let content: string[] = lines;

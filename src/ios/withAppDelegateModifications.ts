@@ -29,7 +29,7 @@ const pushCodeSnippets = [
 ];
 
 const additionalMethodsForPushNotifications = `${pushCodeSnippets.join(
-  '\n',
+  '\n'
 )}\n`; // Join w/ newlines and ensure a newline at the end.
 
 const addImport = (stringContents: string) => {
@@ -53,7 +53,7 @@ const addImport = (stringContents: string) => {
   stringContents = injectCodeByLineNumber(
     stringContents,
     endOfMatchIndex,
-    addedImport,
+    addedImport
   ).join('\n');
 
   return stringContents;
@@ -63,7 +63,7 @@ const addNotificationHandlerDeclaration = (stringContents: string) => {
   stringContents = injectCodeByMultiLineRegex(
     stringContents,
     CIO_APPDELEGATEDECLARATION_REGEX,
-    CIO_PUSHNOTIFICATIONHANDLERDECLARATION_SNIPPET,
+    CIO_PUSHNOTIFICATIONHANDLERDECLARATION_SNIPPET
   );
 
   return stringContents;
@@ -73,31 +73,31 @@ const addNotificationConfiguration = (stringContents: string) => {
   stringContents = injectCodeByMultiLineRegex(
     stringContents,
     CIO_DIDFINISHLAUNCHINGMETHOD_REGEX,
-    CIO_CONFIGURECIOSDKPUSHNOTIFICATION_SNIPPET,
+    CIO_CONFIGURECIOSDKPUSHNOTIFICATION_SNIPPET
   );
 
   return stringContents;
 };
 
 const addDidFailToRegisterForRemoteNotificationsWithError = (
-  stringContents: string,
+  stringContents: string
 ) => {
   stringContents = injectCodeByMultiLineRegexAndReplaceLine(
     stringContents,
     CIO_DIDFAILTOREGISTERFORREMOTENOTIFICATIONSWITHERROR_REGEX,
-    CIO_DIDFAILTOREGISTERFORREMOTENOTIFICATIONSWITHERROR_SNIPPET,
+    CIO_DIDFAILTOREGISTERFORREMOTENOTIFICATIONSWITHERROR_SNIPPET
   );
 
   return stringContents;
 };
 
 const AddDidRegisterForRemoteNotificationsWithDeviceToken = (
-  stringContents: string,
+  stringContents: string
 ) => {
   stringContents = injectCodeByMultiLineRegexAndReplaceLine(
     stringContents,
     CIO_DIDREGISTERFORREMOTENOTIFICATIONSWITHDEVICETOKEN_REGEX,
-    CIO_DIDREGISTERFORREMOTENOTIFICATIONSWITHDEVICETOKEN_SNIPPET,
+    CIO_DIDREGISTERFORREMOTENOTIFICATIONSWITHDEVICETOKEN_SNIPPET
   );
 
   return stringContents;
@@ -107,7 +107,7 @@ const addAdditionalMethodsForPushNotifications = (stringContents: string) => {
   stringContents = injectCodeByMultiLineRegex(
     stringContents,
     CIO_DIDFAILTOREGISTERFORREMOTENOTIFICATIONSWITHERRORFULL_REGEX,
-    additionalMethodsForPushNotifications,
+    additionalMethodsForPushNotifications
   );
 
   return stringContents;
@@ -117,19 +117,19 @@ const addAppdelegateHeaderModification = (stringContents: string) => {
   stringContents = injectCodeByMultiLineRegexAndReplaceLine(
     stringContents,
     CIO_APPDELEGATEHEADER_REGEX,
-    CIO_APPDELEGATEHEADER_SNIPPET,
+    CIO_APPDELEGATEHEADER_SNIPPET
   );
 
   return stringContents;
 };
 
 export const withAppDelegateModifications: ConfigPlugin<any> = (
-  configOuter,
+  configOuter
 ) => {
   return withAppDelegate(configOuter, async (config) => {
     let stringContents = config.modResults.contents;
     const headerPath = getAppDelegateHeaderFilePath(
-      config.modRequest.projectRoot,
+      config.modRequest.projectRoot
     );
     let headerContent = await FileManagement.read(headerPath);
     headerContent = addAppdelegateHeaderModification(headerContent);

@@ -1,11 +1,11 @@
 import { ConfigPlugin, withXcodeProject } from '@expo/config-plugins';
 
 import { injectCIOPodfileCode } from '../helpers/utils/injectCIOPodfileCode';
-import { CustomerIOPluginOptionsIOS } from '../types/cio-types';
+import type { CustomerIOPluginOptionsIOS } from '../types/cio-types';
 
 export const withCioXcodeProject: ConfigPlugin<CustomerIOPluginOptionsIOS> = (
   config,
-  cioProps,
+  cioProps
 ) => {
   return withXcodeProject(config, async (props) => {
     const options: CustomerIOPluginOptionsIOS = {

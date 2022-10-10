@@ -4,7 +4,7 @@ import {
   CIO_APP_APPLY_REGEX,
   CIO_APP_GOOGLE_SNIPPET,
 } from '../helpers/constants/android';
-import { CustomerIOPluginOptionsAndroid } from '../types/cio-types';
+import type { CustomerIOPluginOptionsAndroid } from '../types/cio-types';
 
 export const withAppGoogleServices: ConfigPlugin<
   CustomerIOPluginOptionsAndroid
@@ -12,7 +12,7 @@ export const withAppGoogleServices: ConfigPlugin<
   return withAppBuildGradle(configOuter, (props) => {
     props.modResults.contents = props.modResults.contents.replace(
       CIO_APP_APPLY_REGEX,
-      `$1\n${CIO_APP_GOOGLE_SNIPPET}`,
+      `$1\n${CIO_APP_GOOGLE_SNIPPET}`
     );
     return props;
   });

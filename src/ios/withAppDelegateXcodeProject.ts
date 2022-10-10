@@ -6,10 +6,10 @@ import {
   DEFAULT_BUNDLE_VERSION,
   LOCAL_PATH_TO_CIO_NSE_FILES,
 } from '../helpers/constants/ios';
-import { CustomerIOPluginOptionsIOS } from '../types/cio-types';
+import type { CustomerIOPluginOptionsIOS } from '../types/cio-types';
 
 const addNotificationServiceExtensionFile = async (
-  options: CustomerIOPluginOptionsIOS,
+  options: CustomerIOPluginOptionsIOS
 ) => {
   const { iosPath, appName } = options;
 
@@ -69,7 +69,7 @@ export const withCioAppdelegateXcodeProject: ConfigPlugin<
 
     if (ios === undefined)
       throw new Error(
-        'Adding NotificationServiceExtension failed: ios config missing from app.config.js.',
+        'Adding NotificationServiceExtension failed: ios config missing from app.config.js.'
       );
 
     const { projectName, platformProjectRoot } = modRequest;
@@ -77,19 +77,19 @@ export const withCioAppdelegateXcodeProject: ConfigPlugin<
 
     if (bundleShortVersion === undefined) {
       throw new Error(
-        'Adding NotificationServiceExtension failed: version missing from app.config.js',
+        'Adding NotificationServiceExtension failed: version missing from app.config.js'
       );
     }
 
     if (bundleIdentifier === undefined) {
       throw new Error(
-        'Adding NotificationServiceExtension failed: ios.bundleIdentifier missing from app.config.js',
+        'Adding NotificationServiceExtension failed: ios.bundleIdentifier missing from app.config.js'
       );
     }
 
     if (projectName === undefined) {
       throw new Error(
-        'Adding NotificationServiceExtension failed: name missing from app.config.js',
+        'Adding NotificationServiceExtension failed: name missing from app.config.js'
       );
     }
 

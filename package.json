@@ -1,23 +1,41 @@
 {
   "name": "customerio-expo-plugin",
-  "version": "0.0.5",
+  "version": "0.0.15",
   "description": "Expo config plugin for the Customer IO React Native SDK",
-  "main": "build/src/index.js",
-  "types": "build/index.d.ts",
+  "main": "lib/commonjs/index",
+  "module": "lib/module/index",
+  "types": "lib/typescript/index.d.ts",
+  "source": "src/index",
+  "react-native": "src/index",
   "license": "MIT",
   "files": [
-    "build/**/*"
+    "src",
+    "lib/**/*"
   ],
   "scripts": {
-    "copy-native-files": "cp -r src/helpers/native-files build/helpers/",
-    "build": "rm -rf build && tsc && npm run copy-native-files",
-    "build:watch": "npm run build && tsc --watch",
-    "clean": "rm -rf build",
+    "clean": "rm -rf lib",
     "expo-module": "expo-module",
-    "lint": "eslint .",
+    "lint": "eslint . --fix",
     "tc": "tsc --noEmit",
-    "prepare": "npm run clean && npm run build",
+    "prepare": "npm run clean && bob build",
     "prepublishOnly": "npm run tc && npm run lint"
+  },
+  "keywords": [
+    "react-native",
+    "ios",
+    "android"
+  ],
+  "repository": "https://github.com/customerio/customerio-expo-plugin",
+  "author": "ami-segun <segun@customer.io> (https://customer.io/)",
+  "bugs": {
+    "url": "https://github.com/customerio/customerio-expo-plugin/issues"
+  },
+  "homepage": "https://github.com/customerio/customerio-expo-plugin#readme",
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/"
+  },
+  "peerDependencies": {
+    "customerio-reactnative": "*"
   },
   "devDependencies": {
     "@expo/config-plugins": "^4.1.4",
@@ -27,10 +45,66 @@
     "eslint": "^8.14.0",
     "eslint-config-prettier": "^8.5.0",
     "eslint-plugin-prettier": "^4.0.0",
-    "expo-module-scripts": "^2.0.0",
     "expo-build-properties": "^0.2.0",
+    "expo-module-scripts": "^2.0.0",
     "prettier": "^2.6.2",
+    "react-native-builder-bob": "^0.18.3",
     "typescript": "^4.6.4",
     "xcode": "^3.0.1"
+  },
+  "jest": {
+    "preset": "react-native",
+    "modulePathIgnorePatterns": [
+      "<rootDir>/lib/"
+    ]
+  },
+  "commitlint": {
+    "extends": [
+      "@commitlint/config-conventional"
+    ]
+  },
+  "eslintConfig": {
+    "root": true,
+    "extends": [
+      "@react-native-community",
+      "prettier"
+    ],
+    "rules": {
+      "prettier/prettier": [
+        "error",
+        {
+          "quoteProps": "consistent",
+          "singleQuote": true,
+          "tabWidth": 2,
+          "trailingComma": "es5",
+          "useTabs": false
+        }
+      ]
+    }
+  },
+  "eslintIgnore": [
+    "node_modules/",
+    "lib/"
+  ],
+  "prettier": {
+    "quoteProps": "consistent",
+    "singleQuote": true,
+    "tabWidth": 2,
+    "trailingComma": "es5",
+    "useTabs": false
+  },
+  "react-native-builder-bob": {
+    "source": "src",
+    "output": "lib",
+    "targets": [
+      "commonjs",
+      "module",
+      [
+        "typescript",
+        {
+          "project": "tsconfig.build.json"
+        }
+      ]
+    ]
   }
 }
