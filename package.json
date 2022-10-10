@@ -18,7 +18,7 @@
     "expo-module": "expo-module",
     "lint": "eslint . --fix",
     "tc": "tsc --noEmit",
-    "prepare": "npm run clean && bob build",
+    "prepare": "npm run clean && bob build"
   },
   "keywords": [
     "react-native",
