@@ -1,4 +1,4 @@
-name: Deploy SDK npm
+name: Deploy plugin npm
 
 # If deployment tries to push to npm and then push git tags
 # when git tag deployment fails, you cannot push to npm again
@@ -37,7 +37,7 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "*ReactNative* SDK deployed to npm! (deployment step 2 of 2)"
+                    "text": "*Expo* plugin deployed to npm! (deployment step 2 of 2)"
                   }
                 },
                 {
@@ -69,7 +69,7 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "*ReactNative* SDK deployment :warning: failure :warning:"
+                    "text": "*Expo* plugin deployment :warning: failure :warning:"
                   }
                 },
                 {
