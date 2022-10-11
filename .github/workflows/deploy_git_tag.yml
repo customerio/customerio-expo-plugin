@@ -13,7 +13,7 @@ jobs:
     steps:
       - name: semantic-release setup
         uses: levibostian/action-semantic-release-justwork@v1
-         env:
+        env:
           SSH_AUTH_SOCK: /tmp/ssh_agent.sock
 
       - name: Deploy git tag via semantic release
