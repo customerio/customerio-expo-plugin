@@ -2,11 +2,11 @@
 
 # Script that updates the package.json file in the SDK to newest semantic version.
 #
-# Designed to be run from CI server or manually. 
-# 
+# Designed to be run from CI server or manually.
+#
 # Use script: ./scripts/update-version.sh "0.1.1"
 
-set -e 
+set -e
 
 NEW_VERSION="$1"
 
