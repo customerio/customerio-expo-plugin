@@ -17,7 +17,7 @@
     "clean": "rm -rf lib",
     "expo-module": "expo-module",
     "lint": "eslint . --fix",
-    "tc": "tsc --noEmit",
+    "typescript": "tsc --noEmit",
     "prepare": "npm run clean && bob build"
   },
   "keywords": [
