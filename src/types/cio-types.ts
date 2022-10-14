@@ -21,8 +21,3 @@ export type CustomerIOPluginOptionsAndroid = {
   androidPath: string;
   googleServicesFilePath?: string;
 };
-
-export enum Mode {
-  Dev = 'development',
-  Prod = 'production',
-}
