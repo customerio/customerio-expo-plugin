@@ -137,7 +137,7 @@ export const withAppDelegateModifications: ConfigPlugin<any> = (
 
     stringContents = addImport(
       stringContents,
-      config.modRequest.projectName as string,
+      config.modRequest.projectName as string
     );
     stringContents = addNotificationHandlerDeclaration(stringContents);
     stringContents = addNotificationConfiguration(stringContents);

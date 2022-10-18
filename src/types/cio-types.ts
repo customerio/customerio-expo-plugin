@@ -16,6 +16,7 @@ export type CustomerIOPluginOptionsIOS = {
   appleTeamId?: string;
   appName?: string;
   useRichPush?: boolean;
+  enablePushNotification?: boolean;
 };
 
 export type CustomerIOPluginOptionsAndroid = {

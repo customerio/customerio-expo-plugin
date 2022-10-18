@@ -14,9 +14,12 @@ export function withCIOIos(
     config = withCioNotificationsXcodeProject(config, props);
   }
 
-  config = withAppDelegateModifications(config, props);
+  if (props.enablePushNotification) {
+    config = withAppDelegateModifications(config, props);
+    config = withCioAppdelegateXcodeProject(config, props);
+  }
+
   config = withCioXcodeProject(config, props);
-  config = withCioAppdelegateXcodeProject(config, props);
 
   return config;
 }
