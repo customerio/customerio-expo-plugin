@@ -135,7 +135,10 @@ export const withAppDelegateModifications: ConfigPlugin<any> = (
     headerContent = addAppdelegateHeaderModification(headerContent);
     FileManagement.write(headerPath, headerContent);
 
-    stringContents = addImport(stringContents, config.modRequest.projectName);
+    stringContents = addImport(
+      stringContents,
+      config.modRequest.projectName as string,
+    );
     stringContents = addNotificationHandlerDeclaration(stringContents);
     stringContents = addNotificationConfiguration(stringContents);
     stringContents = addAdditionalMethodsForPushNotifications(stringContents);
