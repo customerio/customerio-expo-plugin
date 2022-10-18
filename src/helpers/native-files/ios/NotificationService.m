@@ -1,6 +1,6 @@
 
-#import "CIONotificationService.h"
-#import "CIONotificationService-Swift.h"
+#import "NotificationService.h"
+#import "NotificationService-Swift.h"
 
 @interface NotificationService ()
 

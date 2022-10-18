@@ -1,8 +1,7 @@
 export const LOCAL_PATH_TO_CIO_NSE_FILES = `node_modules/customerio-expo-plugin/src/helpers/native-files/ios`;
 export const IOS_DEPLOYMENT_TARGET = '13.0';
 export const CIO_PODFILE_REGEX = /pod 'RCT-Folly'/;
-export const CIO_PODFILE_NOTIFICATION_REGEX =
-  /target 'CIONotificationService' do/;
+export const CIO_PODFILE_NOTIFICATION_REGEX = /target 'NotificationService' do/;
 export const GROUP_IDENTIFIER_TEMPLATE_REGEX = /{{GROUP_IDENTIFIER}}/gm;
 export const BUNDLE_SHORT_VERSION_TEMPLATE_REGEX = /{{BUNDLE_SHORT_VERSION}}/gm;
 export const BUNDLE_VERSION_TEMPLATE_REGEX = /{{BUNDLE_VERSION}}/gm;
@@ -27,7 +26,7 @@ export const CIO_APPDELEGATEHEADER_REGEX =
 export const DEFAULT_BUNDLE_VERSION = '1';
 export const DEFAULT_BUNDLE_SHORT_VERSION = '1.0';
 export const CIO_TARGET_NAME = 'CustomerIOSDK';
-export const CIO_NOTIFICATION_TARGET_NAME = 'CIONotificationService';
+export const CIO_NOTIFICATION_TARGET_NAME = 'NotificationService';
 export const CIO_APPDELEGATEHEADER_SNIPPET = `
 #import <UserNotifications/UserNotifications.h>
 

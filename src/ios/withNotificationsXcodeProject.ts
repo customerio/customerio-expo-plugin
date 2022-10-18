@@ -44,9 +44,9 @@ const addNotificationServiceExtension = async (
 
     const files = [
       PLIST_FILENAME,
-      'CIONotificationService.h',
-      'CIONotificationService.swift',
-      'CIONotificationService.m',
+      'NotificationService.h',
+      'NotificationService.swift',
+      'NotificationService.m',
     ];
 
     const getTargetFile = (filename: string) =>
@@ -109,7 +109,7 @@ const addNotificationServiceExtension = async (
 
     // Add build phases to the new target
     xcodeProject.addBuildPhase(
-      ['CIONotificationService.m', 'CIONotificationService.swift'],
+      ['NotificationService.m', 'NotificationService.swift'],
       'PBXSourcesBuildPhase',
       'Sources',
       nseTarget.uuid
