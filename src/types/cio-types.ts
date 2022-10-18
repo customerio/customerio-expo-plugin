@@ -15,6 +15,7 @@ export type CustomerIOPluginOptionsIOS = {
   iosDeploymentTarget?: string;
   appleTeamId?: string;
   appName?: string;
+  useRichPush?: boolean;
 };
 
 export type CustomerIOPluginOptionsAndroid = {
