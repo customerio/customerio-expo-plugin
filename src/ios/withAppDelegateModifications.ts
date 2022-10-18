@@ -32,12 +32,12 @@ const additionalMethodsForPushNotifications = `${pushCodeSnippets.join(
   '\n'
 )}\n`; // Join w/ newlines and ensure a newline at the end.
 
-const addImport = (stringContents: string) => {
+const addImport = (stringContents: string, appName: string) => {
   const importRegex = /^(#import .*)\n/gm;
   const addedImport = `
 // Add swift bridge imports
 #import <ExpoModulesCore-Swift.h>
-#import <testiosapp-Swift.h>
+#import <${appName}-Swift.h>
   `;
 
   const match = stringContents.match(importRegex);
@@ -135,7 +135,7 @@ export const withAppDelegateModifications: ConfigPlugin<any> = (
     headerContent = addAppdelegateHeaderModification(headerContent);
     FileManagement.write(headerPath, headerContent);
 
-    stringContents = addImport(stringContents);
+    stringContents = addImport(stringContents, config.modRequest.projectName);
     stringContents = addNotificationHandlerDeclaration(stringContents);
     stringContents = addNotificationConfiguration(stringContents);
     stringContents = addAdditionalMethodsForPushNotifications(stringContents);
