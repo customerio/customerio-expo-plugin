@@ -2,8 +2,6 @@ import Foundation
 import UserNotifications
 import CioMessagingPush
 
-// MARK: - CIO-TECH-ASSISTANCE
-// This is another example of handling ObjC calls for Swift CustomerIO SDK
 @objc
 public class NotificationServiceCioManager : NSObject {
 

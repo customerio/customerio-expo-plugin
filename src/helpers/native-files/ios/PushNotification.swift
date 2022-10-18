@@ -1,10 +1,3 @@
-//
-//  PushNotification.swift
-//  testandroidapp
-//
-//  Created by Segun Xtreem on 10/09/2022.
-//
-
 import Foundation
 import CioMessagingPushAPN
 import CioTracking
@@ -16,12 +9,11 @@ public class CIOAppPushNotificationsHandler : NSObject {
 
   public override init() {}
 
-  // MARK: - ObjCNEW
   @objc(registerPushNotification:)
   public func registerPushNotification(withNotificationDelegate notificationDelegate: UNUserNotificationCenterDelegate) {
 
     let center  = UNUserNotificationCenter.current()
-    center.delegate = notificationDelegate // MARK: - ObjCNEW
+    center.delegate = notificationDelegate
     center.requestAuthorization(options: [.sound, .alert, .badge]) { (granted, error) in
       if error == nil{
         DispatchQueue.main.async {
@@ -41,7 +33,6 @@ public class CIOAppPushNotificationsHandler : NSObject {
     MessagingPush.shared.application(application, didFailToRegisterForRemoteNotificationsWithError: error)
   }
 
-  // MARK: - ObjCNEW
   @objc(userNotificationCenter:didReceiveNotificationResponse:withCompletionHandler:)
   public func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) {
     let handled = MessagingPush.shared.userNotificationCenter(center, didReceive: response,
