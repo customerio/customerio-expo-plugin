@@ -1,4 +1,4 @@
-import { readFile, writeFile, appendFile } from 'fs';
+import { readFile, writeFile, appendFile, existsSync } from 'fs';
 
 export class FileManagement {
   static async read(path: string): Promise<string> {
@@ -35,5 +35,9 @@ export class FileManagement {
         resolve();
       });
     });
+  }
+
+  static exists(path: string) {
+    return existsSync(path);
   }
 }
