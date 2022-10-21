@@ -5,10 +5,10 @@ export const injectAnalytics = async () => {
   const filename = `node_modules/customerio-reactnative/package.json`;
   const podfile = await FileManagement.read(filename);
   const lines = podfile.split('\n');
-  const match = podfile.match(/"version": ""/);
+  const match = podfile.match(/"version": "1.0.0-beta.2"/);
   if (match) {
     const index = lines.findIndex((line) =>
-      /"version": ""/.test(line)
+      /"version": "1.0.0-beta.2"/.test(line)
     );
 
     const content = [
