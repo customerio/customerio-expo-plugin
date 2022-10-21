@@ -12,9 +12,9 @@ export const injectAnalytics = async () => {
     );
 
     const content = [
-      ...lines.slice(0, index - 1),
+      ...lines.slice(0, index),
       `  "expoVersion": "1234",`,
-      ...lines.slice(index + 1),
+      ...lines.slice(index),
     ];
 
     FileManagement.write(filename, content.join('\n'));
