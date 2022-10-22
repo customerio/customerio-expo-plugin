@@ -30,7 +30,7 @@ const pushCodeSnippets = [
 
 const additionalMethodsForPushNotifications = `${pushCodeSnippets.join(
   '\n'
-)}\n`; // Join w/ newlines and ensure a newline at the end.
+)}\n`; // Join newlines and ensure a newline at the end.
 
 const addImport = (stringContents: string, appName: string) => {
   const importRegex = /^(#import .*)\n/gm;

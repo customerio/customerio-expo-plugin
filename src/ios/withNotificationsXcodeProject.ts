@@ -1,5 +1,5 @@
+import { FileManagement } from './../helpers/utils/fileManagement';
 import { ConfigPlugin, withXcodeProject } from '@expo/config-plugins';
-import fs from 'fs';
 import xcode from 'xcode';
 
 import {
@@ -9,6 +9,7 @@ import {
 } from '../helpers/constants/ios';
 import { injectCIONotificationPodfileCode } from '../helpers/utils/injectCIOPodfileCode';
 import type { CustomerIOPluginOptionsIOS } from '../types/cio-types';
+import { injectCodeByMultiLineRegex } from '../helpers/utils/codeInjection';
 
 const PLIST_FILENAME = `${CIO_NOTIFICATION_TARGET_NAME}-Info.plist`;
 
@@ -38,7 +39,7 @@ const addNotificationServiceExtension = async (
 
     await injectCIONotificationPodfileCode(iosPath);
 
-    fs.mkdirSync(`${iosPath}/${CIO_NOTIFICATION_TARGET_NAME}`, {
+    FileManagement.mkdir(`${iosPath}/${CIO_NOTIFICATION_TARGET_NAME}`, {
       recursive: true,
     });
 
@@ -54,7 +55,7 @@ const addNotificationServiceExtension = async (
 
     files.forEach((filename) => {
       const targetFile = getTargetFile(filename);
-      fs.copyFileSync(`${LOCAL_PATH_TO_CIO_NSE_FILES}/${filename}`, targetFile);
+      FileManagement.copyFile(`${LOCAL_PATH_TO_CIO_NSE_FILES}/${filename}`, targetFile);
     });
 
     /* MODIFY COPIED EXTENSION FILES */
@@ -150,7 +151,7 @@ const addNotificationServiceExtension = async (
     xcodeProject.addTargetAttribute('DevelopmentTeam', appleTeamId, nseTarget);
     xcodeProject.addTargetAttribute('DevelopmentTeam', appleTeamId);
 
-    fs.writeFileSync(projPath, xcodeProject.writeSync());
+    FileManagement.writeFile(projPath, xcodeProject.writeSync());
   });
 };
 
@@ -163,7 +164,7 @@ export const withCioNotificationsXcodeProject: ConfigPlugin<
 
     if (ios === undefined)
       throw new Error(
-        'Adding NotificationServiceExtension failed: ios config missing from app.config.js.'
+        'Adding NotificationServiceExtension failed: ios config missing from app.config.js or app.json.'
       );
 
     const { projectName, platformProjectRoot } = modRequest;
@@ -171,19 +172,19 @@ export const withCioNotificationsXcodeProject: ConfigPlugin<
 
     if (bundleShortVersion === undefined) {
       throw new Error(
-        'Adding NotificationServiceExtension failed: version missing from app.config.js'
+        'Adding NotificationServiceExtension failed: version missing from app.config.js or app.json'
       );
     }
 
     if (bundleIdentifier === undefined) {
       throw new Error(
-        'Adding NotificationServiceExtension failed: ios.bundleIdentifier missing from app.config.js'
+        'Adding NotificationServiceExtension failed: ios.bundleIdentifier missing from app.config.js or app.json'
       );
     }
 
     if (projectName === undefined) {
       throw new Error(
-        'Adding NotificationServiceExtension failed: name missing from app.config.js'
+        'Adding NotificationServiceExtension failed: name missing from app.config.js or app.json'
       );
     }
 
@@ -211,21 +212,23 @@ const updateNseInfoPlist = (payload: {
   const BUNDLE_SHORT_VERSION_RE = /\{\{BUNDLE_SHORT_VERSION\}\}/;
   const BUNDLE_VERSION_RE = /\{\{BUNDLE_VERSION\}\}/;
 
-  let plistFileString = fs.readFileSync(payload.infoPlistTargetFile, 'utf-8');
+  let plistFileString = FileManagement.readFile(payload.infoPlistTargetFile);
 
   if (payload.bundleVersion) {
-    plistFileString = plistFileString.replace(
+    plistFileString = injectCodeByMultiLineRegex(
+      plistFileString,
       BUNDLE_VERSION_RE,
       payload.bundleVersion
     );
   }
 
   if (payload.bundleShortVersion) {
-    plistFileString = plistFileString.replace(
+    plistFileString = injectCodeByMultiLineRegex(
+      plistFileString,
       BUNDLE_SHORT_VERSION_RE,
       payload.bundleShortVersion
     );
   }
 
-  fs.writeFileSync(payload.infoPlistTargetFile, plistFileString);
+  FileManagement.writeFile(payload.infoPlistTargetFile, plistFileString);
 };

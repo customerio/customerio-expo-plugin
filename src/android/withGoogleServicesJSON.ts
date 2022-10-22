@@ -1,5 +1,5 @@
+import { FileManagement } from './../helpers/utils/fileManagement';
 import { withProjectBuildGradle, ConfigPlugin } from '@expo/config-plugins';
-import { copyFileSync } from 'fs';
 
 import type { CustomerIOPluginOptionsAndroid } from './../types/cio-types';
 
@@ -14,7 +14,7 @@ export const withGoogleServicesJSON: ConfigPlugin<
     const { androidPath, googleServicesFilePath } = options;
     if (googleServicesFilePath) {
       try {
-        copyFileSync(
+        FileManagement.copyFile(
           `${googleServicesFilePath}google-services.json`,
           `${androidPath}/app/google-services.json`
         );

@@ -1,5 +1,5 @@
+import { FileManagement } from './../helpers/utils/fileManagement';
 import { ConfigPlugin, withXcodeProject } from '@expo/config-plugins';
-import fs from 'fs';
 import xcode from 'xcode';
 
 import {
@@ -12,27 +12,22 @@ const addNotificationServiceExtensionFile = async (
   options: CustomerIOPluginOptionsIOS
 ) => {
   const { iosPath, appName } = options;
-
   const projPath = `${iosPath}/${appName}.xcodeproj/project.pbxproj`;
-
   const xcodeProject = xcode.project(projPath);
 
   xcodeProject.parse(async function (err: Error) {
     if (err) {
       throw new Error(`Error parsing iOS project: ${JSON.stringify(err)}`);
     }
-
-    fs.mkdirSync(`${iosPath}/${appName}`, {
+    FileManagement.mkdir(`${iosPath}/${appName}`, {
       recursive: true,
     });
 
     const file = 'PushNotification.swift';
-
     const getTargetFile = (filename: string) =>
       `${iosPath}/${appName}/${filename}`;
-
     const targetFile = getTargetFile(file);
-    fs.copyFileSync(`${LOCAL_PATH_TO_CIO_NSE_FILES}/${file}`, targetFile);
+    FileManagement.copyFile(`${LOCAL_PATH_TO_CIO_NSE_FILES}/${file}`, targetFile);
   });
 };
 

@@ -32,4 +32,4 @@ export const withAnalytics: ConfigPlugin<CustomerIOPluginOptionsIOS> = (config) 
 
     return props;
   });
-  };
+};
