@@ -13,11 +13,12 @@ export const withAnalytics: ConfigPlugin<CustomerIOPluginOptionsIOS> = (config) 
       const pJsonFile = await FileManagement.read(filename);
       const lines = pJsonFile.split('\n');
       const missingMmatch = pJsonFile.match(versionRegEx);
-      const existatch = pJsonFile.match(/"expoVersion": ".*"/);
+      const expoVersionRegex = /"expoVersion": ".*"/;
+      const existatch = pJsonFile.match(expoVersionRegex);
 
       if (existatch && !missingMmatch) {
         const index = lines.findIndex((line) =>
-          /"expoVersion": ".*"/.test(line)
+          expoVersionRegex.test(line)
         );
 
         const content = [
