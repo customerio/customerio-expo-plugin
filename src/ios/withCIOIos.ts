@@ -10,11 +10,14 @@ export function withCIOIos(
   config: ExpoConfig,
   props: CustomerIOPluginOptionsIOS
 ) {
+  console.log(props)
   if (props.pushNotification?.useRichPush) {
+    console.log('rich')
     config = withCioNotificationsXcodeProject(config, props);
   }
 
   if (props.pushNotification) {
+    console.log('push')
     config = withAppDelegateModifications(config, props);
     config = withCioAppdelegateXcodeProject(config, props);
   }
