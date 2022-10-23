@@ -11,11 +11,16 @@ export const withProjectGoogleServices: ConfigPlugin<
   CustomerIOPluginOptionsAndroid
 > = (configOuter) => {
   return withProjectBuildGradle(configOuter, (props) => {
-    props.modResults.contents = injectCodeByMultiLineRegex(
-      props.modResults.contents,
-      CIO_PROJECT_BUILDSCRIPTS_REGEX,
-      `$1\n${CIO_PROJECT_GOOGLE_SNIPPET}`
-    );
+    const regex = new RegExp(CIO_PROJECT_GOOGLE_SNIPPET);
+    const match = props.modResults.contents.match(regex);
+    if (!match) {
+      props.modResults.contents = injectCodeByMultiLineRegex(
+        props.modResults.contents,
+        CIO_PROJECT_BUILDSCRIPTS_REGEX,
+        `$1\n${CIO_PROJECT_GOOGLE_SNIPPET}`
+      );
+    }
+
     return props;
   });
 };

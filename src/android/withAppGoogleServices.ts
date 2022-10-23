@@ -11,11 +11,18 @@ export const withAppGoogleServices: ConfigPlugin<
   CustomerIOPluginOptionsAndroid
 > = (configOuter) => {
   return withAppBuildGradle(configOuter, (props) => {
-    props.modResults.contents = injectCodeByMultiLineRegex(
-      props.modResults.contents,
-      CIO_APP_APPLY_REGEX,
-      `$1\n${CIO_APP_GOOGLE_SNIPPET}`
-    );
+    const regex = new RegExp(CIO_APP_GOOGLE_SNIPPET);
+    const match = props.modResults.contents.match(regex);
+    if (!match) {
+      props.modResults.contents = injectCodeByMultiLineRegex(
+        props.modResults.contents,
+        CIO_APP_APPLY_REGEX,
+        `$1\n${CIO_APP_GOOGLE_SNIPPET}`
+      );
+    } else {
+      console.log('app/build.gradle snippet already exists. Skipping...');
+    }
+
     return props;
   });
 };

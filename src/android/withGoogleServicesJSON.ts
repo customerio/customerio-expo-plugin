@@ -12,7 +12,7 @@ export const withGoogleServicesJSON: ConfigPlugin<
       googleServicesFilePath: cioProps?.googleServicesFilePath,
     };
     const { androidPath, googleServicesFilePath } = options;
-    if (googleServicesFilePath) {
+    if (googleServicesFilePath && !FileManagement.exists(`${androidPath}/app/google-services.json`)) {
       try {
         FileManagement.copyFile(
           `${googleServicesFilePath}google-services.json`,
@@ -23,6 +23,8 @@ export const withGoogleServicesJSON: ConfigPlugin<
           'There was an error copying your google-services.json file.'
         );
       }
+    } else {
+      console.log(`File already exists: ${androidPath}/app/google-services.json. Skipping...`)
     }
 
     return props;

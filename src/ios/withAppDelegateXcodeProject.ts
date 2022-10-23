@@ -8,7 +8,7 @@ import {
 } from '../helpers/constants/ios';
 import type { CustomerIOPluginOptionsIOS } from '../types/cio-types';
 
-const addNotificationServiceExtensionFile = async (
+const addNotificationSwiftFile = async (
   options: CustomerIOPluginOptionsIOS
 ) => {
   const { iosPath, appName } = options;
@@ -16,18 +16,24 @@ const addNotificationServiceExtensionFile = async (
   const xcodeProject = xcode.project(projPath);
 
   xcodeProject.parse(async function (err: Error) {
-    if (err) {
-      throw new Error(`Error parsing iOS project: ${JSON.stringify(err)}`);
-    }
-    FileManagement.mkdir(`${iosPath}/${appName}`, {
-      recursive: true,
-    });
-
     const file = 'PushNotification.swift';
     const getTargetFile = (filename: string) =>
       `${iosPath}/${appName}/${filename}`;
-    const targetFile = getTargetFile(file);
-    FileManagement.copyFile(`${LOCAL_PATH_TO_CIO_NSE_FILES}/${file}`, targetFile);
+    if (err) {
+      throw new Error(`Error parsing iOS project: ${JSON.stringify(err)}`);
+    }
+
+    if (!FileManagement.exists(getTargetFile(file))) {
+      FileManagement.mkdir(`${iosPath}/${appName}`, {
+        recursive: true,
+      });
+
+      const targetFile = getTargetFile(file);
+      FileManagement.copyFile(`${LOCAL_PATH_TO_CIO_NSE_FILES}/${file}`, targetFile);
+    } else {
+      console.log(`${getTargetFile(file)} already exists. Skipping...`);
+    }
+
   });
 };
 
@@ -74,7 +80,7 @@ export const withCioAppdelegateXcodeProject: ConfigPlugin<
       iosDeploymentTarget,
     };
 
-    await addNotificationServiceExtensionFile(options);
+    await addNotificationSwiftFile(options);
 
     return config;
   });

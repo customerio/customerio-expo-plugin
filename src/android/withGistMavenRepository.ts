@@ -1,6 +1,7 @@
 import { withProjectBuildGradle, ConfigPlugin } from '@expo/config-plugins';
 
 import {
+  CIO_GIST_MAVEN_REGEX,
   CIO_PROJECT_ALLPROJECTS_REGEX,
   CIO_PROJECT_GIST_MAVEN_SNIPPET,
 } from '../helpers/constants/android';
@@ -11,11 +12,17 @@ export const withGistMavenRepository: ConfigPlugin<
   CustomerIOPluginOptionsAndroid
 > = (configOuter) => {
   return withProjectBuildGradle(configOuter, (props) => {
-    props.modResults.contents = injectCodeByMultiLineRegex(
-      props.modResults.contents,
-      CIO_PROJECT_ALLPROJECTS_REGEX,
-      `$1\n${CIO_PROJECT_GIST_MAVEN_SNIPPET}`
-    );
+    const targetMatch = props.modResults.contents.match(CIO_GIST_MAVEN_REGEX);
+    if (!targetMatch) {
+      props.modResults.contents = injectCodeByMultiLineRegex(
+        props.modResults.contents,
+        CIO_PROJECT_ALLPROJECTS_REGEX,
+        `$1\n${CIO_PROJECT_GIST_MAVEN_SNIPPET}`
+      );
+    } else {
+      console.log('build.gradle snippet alreade exists. Skipping...');
+    }
+
     return props;
   });
 };

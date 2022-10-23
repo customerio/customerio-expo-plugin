@@ -34,11 +34,7 @@ const additionalMethodsForPushNotifications = `${pushCodeSnippets.join(
 
 const addImport = (stringContents: string, appName: string) => {
   const importRegex = /^(#import .*)\n/gm;
-  const addedImport = `
-// Add swift bridge imports
-#import <ExpoModulesCore-Swift.h>
-#import <${appName}-Swift.h>
-  `;
+  const addedImport = getImportSnippet(appName);
 
   const match = stringContents.match(importRegex);
   let endOfMatchIndex: number;
@@ -128,26 +124,41 @@ export const withAppDelegateModifications: ConfigPlugin<any> = (
 ) => {
   return withAppDelegate(configOuter, async (config) => {
     let stringContents = config.modResults.contents;
-    const headerPath = getAppDelegateHeaderFilePath(
-      config.modRequest.projectRoot
-    );
-    let headerContent = await FileManagement.read(headerPath);
-    headerContent = addAppdelegateHeaderModification(headerContent);
-    FileManagement.write(headerPath, headerContent);
+    const regex = new RegExp(`#import <${config.modRequest.projectName}-Swift.h>`);
+    const match = stringContents.match(regex);
 
-    stringContents = addImport(
-      stringContents,
-      config.modRequest.projectName as string
-    );
-    stringContents = addNotificationHandlerDeclaration(stringContents);
-    stringContents = addNotificationConfiguration(stringContents);
-    stringContents = addAdditionalMethodsForPushNotifications(stringContents);
-    stringContents =
-      addDidFailToRegisterForRemoteNotificationsWithError(stringContents);
-    stringContents =
-      AddDidRegisterForRemoteNotificationsWithDeviceToken(stringContents);
+    if (!match) {
+      const headerPath = getAppDelegateHeaderFilePath(
+        config.modRequest.projectRoot
+      );
+      let headerContent = await FileManagement.read(headerPath);
+      headerContent = addAppdelegateHeaderModification(headerContent);
+      FileManagement.write(headerPath, headerContent);
 
-    config.modResults.contents = stringContents;
+      stringContents = addImport(
+        stringContents,
+        config.modRequest.projectName as string
+      );
+      stringContents = addNotificationHandlerDeclaration(stringContents);
+      stringContents = addNotificationConfiguration(stringContents);
+      stringContents = addAdditionalMethodsForPushNotifications(stringContents);
+      stringContents =
+        addDidFailToRegisterForRemoteNotificationsWithError(stringContents);
+      stringContents =
+        AddDidRegisterForRemoteNotificationsWithDeviceToken(stringContents);
+
+      config.modResults.contents = stringContents;
+    } else {
+      console.log('Customerio AppDelegate changes already exist. Skipping...');
+    }
+
     return config;
   });
 };
+function getImportSnippet(appName: string) {
+  return `
+// Add swift bridge imports
+#import <ExpoModulesCore-Swift.h>
+#import <${appName}-Swift.h>
+  `;
+}
