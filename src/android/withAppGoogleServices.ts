@@ -4,7 +4,6 @@ import {
   CIO_APP_APPLY_REGEX,
   CIO_APP_GOOGLE_SNIPPET,
 } from '../helpers/constants/android';
-import { injectCodeByMultiLineRegex } from '../helpers/utils/codeInjection';
 import type { CustomerIOPluginOptionsAndroid } from '../types/cio-types';
 
 export const withAppGoogleServices: ConfigPlugin<
@@ -14,8 +13,7 @@ export const withAppGoogleServices: ConfigPlugin<
     const regex = new RegExp(CIO_APP_GOOGLE_SNIPPET);
     const match = props.modResults.contents.match(regex);
     if (!match) {
-      props.modResults.contents = injectCodeByMultiLineRegex(
-        props.modResults.contents,
+      props.modResults.contents = props.modResults.contents.replace(
         CIO_APP_APPLY_REGEX,
         `$1\n${CIO_APP_GOOGLE_SNIPPET}`
       );

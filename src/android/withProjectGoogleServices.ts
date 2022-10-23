@@ -1,5 +1,4 @@
 import { ConfigPlugin, withProjectBuildGradle } from '@expo/config-plugins';
-import { injectCodeByMultiLineRegex } from '../helpers/utils/codeInjection';
 
 import {
   CIO_PROJECT_BUILDSCRIPTS_REGEX,
@@ -14,8 +13,7 @@ export const withProjectGoogleServices: ConfigPlugin<
     const regex = new RegExp(CIO_PROJECT_GOOGLE_SNIPPET);
     const match = props.modResults.contents.match(regex);
     if (!match) {
-      props.modResults.contents = injectCodeByMultiLineRegex(
-        props.modResults.contents,
+      props.modResults.contents = props.modResults.contents.replace(
         CIO_PROJECT_BUILDSCRIPTS_REGEX,
         `$1\n${CIO_PROJECT_GOOGLE_SNIPPET}`
       );
