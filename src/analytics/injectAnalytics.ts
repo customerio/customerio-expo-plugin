@@ -1,10 +1,10 @@
 import { LIB_VERSION } from './../version';
 import { ConfigPlugin, withXcodeProject } from '@expo/config-plugins';
 import { FileManagement } from '../helpers/utils/fileManagement';
-import type { CustomerIOPluginOptionsIOS } from '../types/cio-types';
+import type { CustomerIOPluginOptions } from '../types/cio-types';
 
 
-export const withAnalytics: ConfigPlugin<CustomerIOPluginOptionsIOS> = (config) => {
+export const withAnalytics: ConfigPlugin<CustomerIOPluginOptions> = (config) => {
   return withXcodeProject(config, async (props) => {
     const expoVersionSnippet = `"expoVersion": "${LIB_VERSION}"`;
     let versionRegEx = new RegExp(expoVersionSnippet);

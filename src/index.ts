@@ -4,18 +4,23 @@ import { withAnalytics } from './analytics/injectAnalytics';
 import { withCIOAndroid } from './android/withCIOAndroid';
 import { withCIOIos } from './ios/withCIOIos';
 import type {
-  CustomerIOPluginOptionsIOS,
-  CustomerIOPluginOptionsAndroid,
+  CustomerIOPluginOptions,
 } from './types/cio-types';
 
 // Entry point for config plugin
 function withCustomerIOPlugin(
   config: ExpoConfig,
-  props: CustomerIOPluginOptionsIOS | CustomerIOPluginOptionsAndroid
+  props: CustomerIOPluginOptions
 ) {
-  config = withCIOIos(config, props as CustomerIOPluginOptionsIOS);
-  config = withCIOAndroid(config, props as CustomerIOPluginOptionsAndroid);
-  config = withAnalytics(config, props as any);
+  if (props.ios) {
+    config = withCIOIos(config, props.ios);
+  }
+
+  if (props.android) {
+    config = withCIOAndroid(config, props.android);
+  }
+
+  config = withAnalytics(config, props);
 
   return config;
 }

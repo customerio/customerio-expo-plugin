@@ -26,7 +26,7 @@ export const withGoogleServicesJSON: ConfigPlugin<
         }
       }
     } else {
-      console.log(`File already exists: ${androidPath}/app/google-services.json. Skipping...`)
+      console.log(`File already exists: ${androidPath}/app/google-services.json. Skipping...`);
     }
 
     return props;
