@@ -74,7 +74,7 @@ export const withCioAppdelegateXcodeProject: ConfigPlugin<
       appleTeamId,
       bundleIdentifier,
       bundleShortVersion,
-      bundleVersion: buildNumber ?? DEFAULT_BUNDLE_VERSION,
+      bundleVersion: buildNumber || DEFAULT_BUNDLE_VERSION,
       iosPath: platformProjectRoot,
       appName: projectName,
       iosDeploymentTarget,
