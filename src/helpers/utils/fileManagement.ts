@@ -1,4 +1,14 @@
-import { readFile, writeFile, appendFile, existsSync, copyFileSync, mkdirSync, writeFileSync, readFileSync, MakeDirectoryOptions } from 'fs';
+import {
+  readFile,
+  writeFile,
+  appendFile,
+  existsSync,
+  copyFileSync,
+  mkdirSync,
+  writeFileSync,
+  readFileSync,
+  MakeDirectoryOptions,
+} from 'fs';
 
 export class FileManagement {
   static async read(path: string): Promise<string> {
@@ -43,10 +53,7 @@ export class FileManagement {
 
   static copyFile(src: string, dest: string) {
     try {
-      copyFileSync(
-        src,
-        dest
-      );
+      copyFileSync(src, dest);
     } catch (err) {
       console.log(`Error copying file from ${src} to ${dest}: `, err);
     }

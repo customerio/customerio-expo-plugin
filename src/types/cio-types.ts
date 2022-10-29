@@ -25,8 +25,7 @@ export type CustomerIOPluginOptionsAndroid = {
   googleServicesFilePath?: string;
 };
 
-
 export type CustomerIOPluginOptions = {
-  android: CustomerIOPluginOptionsAndroid,
-  ios: CustomerIOPluginOptionsIOS
-}
+  android: CustomerIOPluginOptionsAndroid;
+  ios: CustomerIOPluginOptionsIOS;
+};

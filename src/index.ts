@@ -1,11 +1,9 @@
 import type { ExpoConfig } from '@expo/config-types';
-import { withAnalytics } from './analytics/injectAnalytics';
 
+import { withAnalytics } from './analytics/injectAnalytics';
 import { withCIOAndroid } from './android/withCIOAndroid';
 import { withCIOIos } from './ios/withCIOIos';
-import type {
-  CustomerIOPluginOptions,
-} from './types/cio-types';
+import type { CustomerIOPluginOptions } from './types/cio-types';
 
 // Entry point for config plugin
 function withCustomerIOPlugin(

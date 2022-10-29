@@ -1,7 +1,8 @@
 export const CIO_PROJECT_BUILDSCRIPTS_REGEX =
   /(buildscript\s*\{(.|\n)*dependencies\s*\{)/;
 export const CIO_APP_APPLY_REGEX = /(apply plugin: "com.android.application")/;
-export const CIO_GIST_MAVEN_REGEX = /maven { url "https:\/\/maven.gist.build" }/;
+export const CIO_GIST_MAVEN_REGEX =
+  /maven { url "https:\/\/maven.gist.build" }/;
 export const CIO_PROJECT_ALLPROJECTS_REGEX =
   /(allprojects\s*\{(.|\n)*repositories\s*\{)/;
 

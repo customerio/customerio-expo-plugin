@@ -124,7 +124,9 @@ export const withAppDelegateModifications: ConfigPlugin<any> = (
 ) => {
   return withAppDelegate(configOuter, async (config) => {
     let stringContents = config.modResults.contents;
-    const regex = new RegExp(`#import <${config.modRequest.projectName}-Swift.h>`);
+    const regex = new RegExp(
+      `#import <${config.modRequest.projectName}-Swift.h>`
+    );
     const match = stringContents.match(regex);
 
     if (!match) {

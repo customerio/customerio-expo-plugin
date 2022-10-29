@@ -1,4 +1,3 @@
-import { FileManagement } from './../helpers/utils/fileManagement';
 import { ConfigPlugin, withXcodeProject } from '@expo/config-plugins';
 import xcode from 'xcode';
 
@@ -7,9 +6,10 @@ import {
   DEFAULT_BUNDLE_VERSION,
   LOCAL_PATH_TO_CIO_NSE_FILES,
 } from '../helpers/constants/ios';
+import { injectCodeByMultiLineRegex } from '../helpers/utils/codeInjection';
 import { injectCIONotificationPodfileCode } from '../helpers/utils/injectCIOPodfileCode';
 import type { CustomerIOPluginOptionsIOS } from '../types/cio-types';
-import { injectCodeByMultiLineRegex } from '../helpers/utils/codeInjection';
+import { FileManagement } from './../helpers/utils/fileManagement';
 
 const PLIST_FILENAME = `${CIO_NOTIFICATION_TARGET_NAME}-Info.plist`;
 
@@ -55,7 +55,10 @@ const addNotificationServiceExtension = async (
 
     files.forEach((filename) => {
       const targetFile = getTargetFile(filename);
-      FileManagement.copyFile(`${LOCAL_PATH_TO_CIO_NSE_FILES}/${filename}`, targetFile);
+      FileManagement.copyFile(
+        `${LOCAL_PATH_TO_CIO_NSE_FILES}/${filename}`,
+        targetFile
+      );
     });
 
     /* MODIFY COPIED EXTENSION FILES */

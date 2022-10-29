@@ -1,4 +1,3 @@
-import { FileManagement } from './../helpers/utils/fileManagement';
 import { ConfigPlugin, withXcodeProject } from '@expo/config-plugins';
 import xcode from 'xcode';
 
@@ -7,6 +6,7 @@ import {
   LOCAL_PATH_TO_CIO_NSE_FILES,
 } from '../helpers/constants/ios';
 import type { CustomerIOPluginOptionsIOS } from '../types/cio-types';
+import { FileManagement } from './../helpers/utils/fileManagement';
 
 const addNotificationSwiftFile = async (
   options: CustomerIOPluginOptionsIOS
@@ -29,11 +29,13 @@ const addNotificationSwiftFile = async (
       });
 
       const targetFile = getTargetFile(file);
-      FileManagement.copyFile(`${LOCAL_PATH_TO_CIO_NSE_FILES}/${file}`, targetFile);
+      FileManagement.copyFile(
+        `${LOCAL_PATH_TO_CIO_NSE_FILES}/${file}`,
+        targetFile
+      );
     } else {
       console.log(`${getTargetFile(file)} already exists. Skipping...`);
     }
-
   });
 };
 
