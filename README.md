@@ -180,9 +180,9 @@ See our complete SDK documentation at [https://customer.io/docs/sdk/expo/](https
 
 # Contributing
 
-Thanks for taking an interest in our project! We welcome your contributions. Check out [our development instructions](docs/dev-notes/DEVELOPMENT.md) to get your environment set up and start contributing.
+Thanks for taking an interest in our project! We welcome your contributions.
 
-> **Note**: We value an open, welcoming, diverse, inclusive, and healthy community for this project. We expect all  contributors to follow our [code of conduct](CODE_OF_CONDUCT.md). 
+We value an open, welcoming, diverse, inclusive, and healthy community for this project. We expect all  contributors to follow our [code of conduct](CODE_OF_CONDUCT.md). 
 
 # License
 
