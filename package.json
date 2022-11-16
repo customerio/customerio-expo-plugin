@@ -14,12 +14,12 @@
   ],
   "scripts": {
     "build": "npm run clean && tsc",
-    "prebuild": "node -p \"'export const LIB_VERSION = ' + JSON.stringify(require('./package.json').version) + ';'\" > src/version.ts",
-    "clean": "rm -rf lib && npm run prebuild",
+    "clean": "rm -rf lib",
     "expo-module": "expo-module",
     "lint": "eslint . --fix",
     "typescript": "tsc --noEmit",
-    "prepare": "npm run clean && bob build"
+    "prepare": "npm run clean && bob build",
+    "postinstall": "node src/postInstall.js"
   },
   "keywords": [
     "react-native",
@@ -35,8 +35,8 @@
   "publishConfig": {
     "registry": "https://registry.npmjs.org/"
   },
-  "peerDependencies": {
-    "customerio-reactnative-expo": "*"
+  "dependencies": {
+    "customerio-reactnative": "latest"
   },
   "devDependencies": {
     "@expo/config-plugins": "^4.1.4",
