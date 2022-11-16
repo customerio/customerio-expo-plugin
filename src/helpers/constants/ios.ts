@@ -67,12 +67,12 @@ export const CIO_WILLPRESENTNOTIFICATIONHANDLER_SNIPPET = `
 }`;
 export const CIO_PODFILE_NOTIFICATION_SNIPPET = `
 target '${CIO_NOTIFICATION_TARGET_NAME}' do
-  pod 'CustomerIO/MessagingPushAPN', '~> 1.2.0-alpha.3'
+  pod 'CustomerIO/MessagingPushAPN', '~> 1.2.5'
 end`;
 export const CIO_PODFILE_SNIPPET = `
   pod 'RCT-Folly', :podspec => '../node_modules/react-native/third-party-podspecs/RCT-Folly.podspec'
   pod 'boost', :podspec => '../node_modules/react-native/third-party-podspecs/boost.podspec'
-  pod 'CustomerIO/MessagingPushAPN', '~> 1.2.0-alpha.3'`;
+  pod 'CustomerIO/MessagingPushAPN', '~> 1.2.5'`;
 export const CIO_PODFILE_TARGET_NAMES_SNIPPET = `
   cio_target_names = [
     'CustomerIOTracking',
