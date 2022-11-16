@@ -3,7 +3,7 @@ const pJsonFile = require('../package.json')
 
 const expoVersionSnippet = `"expoVersion": "${pJsonFile.version}"`;
 const versionRegEx = new RegExp(expoVersionSnippet);
-const filename = `node_modules/customerio-reactnative/package.json`;
+const filename = `../customerio-reactnative/package.json`;
 if (fs.existsSync(filename)) {
   const pJsonFile = fs.readFileSync(filename, 'utf8');
   const lines = pJsonFile.split('\n');
