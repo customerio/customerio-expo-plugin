@@ -24,7 +24,7 @@
     "lint": "eslint . --fix",
     "typescript": "tsc --noEmit",
     "prepare": "npm run clean && bob build",
-    "postinstall": "node lib/commonjs/postInstall.js"
+    "postinstall": "node src/postInstall.js"
   },
   "keywords": [
     "react-native",

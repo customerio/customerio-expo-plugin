@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, writeFileSync } from 'fs';
+const fs = require('fs');
 
 export function runPostInstall() {
   const pJsonFile = require(`${__dirname}/../../package.json`);
@@ -11,10 +11,10 @@ export function runPostInstall() {
   const rnPjsonFile = `${__dirname}/../../../customerio-reactnative/package.json`;
 
   // if react native SDK is installed
-  if (existsSync(rnPjsonFile)) {
+  if (fs.existsSync(rnPjsonFile)) {
     try {
       // read react native SDK package.json
-      const rnPJson = readFileSync(rnPjsonFile, 'utf8');
+      const rnPJson = fs.readFileSync(rnPjsonFile, 'utf8');
 
       // split react native SDK package.json lines into array
       const lines = rnPJson.split('\n');
@@ -34,7 +34,7 @@ export function runPostInstall() {
         ];
 
         // save react native SDK package.json file
-        writeFileSync(rnPjsonFile, content.join('\n'), 'utf8');
+        fs.writeFileSync(rnPjsonFile, content.join('\n'), 'utf8');
       }
     } catch (error) {}
   }
