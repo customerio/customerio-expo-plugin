@@ -14,13 +14,27 @@ const rnPjsonFile = `${__dirname}/../../customerio-reactnative/package.json`;
 if (fs.existsSync(rnPjsonFile)) {
   try {
     // read react native SDK package.json
-    const rnPJson = readFileSync(rnPjsonFile, 'utf8');
+    const rnPJson = fs.readFileSync(rnPjsonFile, 'utf8');
 
-    const rnPackage = JSON.parse(rnPJson);
-    rnPackage.expoVersion = pJsonFile.version;
+    // split react native SDK package.json lines into array
+    const lines = rnPJson.split('\n');
+    const missingMmatch = rnPJson.match(versionRegEx);
+    const expoVersionRegex = /"expoVersion": ".*"/;
+    const existatch = rnPJson.match(expoVersionRegex);
 
-    writeFileSync(rnPjsonFile, JSON.stringify(rnPackage, null, 2));
-  } catch (error) {
-    console.error(error)
-  }
+    // check if expoVersion key exists in current package and it has not been set already
+    if (existatch && !missingMmatch) {
+      const index = lines.findIndex((line) => expoVersionRegex.test(line));
+
+      // set react native SDK expoVersion to current version in expo plugin package
+      const content = [
+        ...lines.slice(0, index),
+        `  ${expoVersionSnippet},`,
+        ...lines.slice(index + 1),
+      ];
+
+      // save react native SDK package.json file
+      fs.writeFileSync(rnPjsonFile, content.join('\n'), 'utf8');
+    }
+  } catch (error) {}
 }
