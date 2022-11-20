@@ -1,14 +1,14 @@
 const fs = require('fs');
 
 export function runPostInstall() {
-  const pJsonFile = require(`${__dirname}/../../package.json`);
+  const pJsonFile = require(`${__dirname}/../package.json`);
 
   // regex for current expoVersion
   const expoVersionSnippet = `"expoVersion": "${pJsonFile.version}"`;
   const versionRegEx = new RegExp(expoVersionSnippet);
 
   // react native SDK package.json path
-  const rnPjsonFile = `${__dirname}/../../../customerio-reactnative/package.json`;
+  const rnPjsonFile = `${__dirname}/../../customerio-reactnative/package.json`;
 
   // if react native SDK is installed
   if (fs.existsSync(rnPjsonFile)) {
