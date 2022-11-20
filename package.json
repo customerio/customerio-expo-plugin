@@ -41,7 +41,7 @@
     "registry": "https://registry.npmjs.org/"
   },
   "peerDependencies": {
-    "customerio-reactnative": "file:../customerio-reactnative"
+    "customerio-reactnative": "*"
   },
   "devDependencies": {
     "@expo/config-plugins": "^4.1.4",
