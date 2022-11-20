@@ -1,6 +1,6 @@
 {
   "name": "customerio-expo-plugin",
-  "version": "1.0.0-alpha.3",
+  "version": "1.0.0-alpha.4",
   "description": "Expo config plugin for the Customer IO React Native SDK",
   "main": "lib/commonjs/index",
   "module": "lib/module/index",
@@ -12,9 +12,14 @@
     "src",
     "lib/**/*"
   ],
+  "exports": {
+    ".": "./lib/commonjs/index.js",
+    "./version": "./lib/commonjs/version.js"
+  },
   "scripts": {
     "build": "npm run clean && tsc",
-    "clean": "rm -rf lib",
+    "prebuild": "node -p \"'export const LIB_VERSION = ' + JSON.stringify(require('./package.json').version) + ';'\" > src/version.ts",
+    "clean": "rm -rf lib && npm run prebuild",
     "expo-module": "expo-module",
     "lint": "eslint . --fix",
     "typescript": "tsc --noEmit",
@@ -36,7 +41,7 @@
     "registry": "https://registry.npmjs.org/"
   },
   "peerDependencies": {
-    "customerio-reactnative": "*"
+    "customerio-reactnative": "file:../customerio-reactnative"
   },
   "devDependencies": {
     "@expo/config-plugins": "^4.1.4",
