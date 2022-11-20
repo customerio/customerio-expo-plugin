@@ -20,5 +20,7 @@ if (fs.existsSync(rnPjsonFile)) {
     rnPackage.expoVersion = pJsonFile.version;
 
     writeFileSync(rnPjsonFile, JSON.stringify(rnPackage, null, 2));
-  } catch (error) {}
+  } catch (error) {
+    console.error(error)
+  }
 }
