@@ -1,6 +1,6 @@
 const fs = require('fs');
 
-export function runPostInstall() {
+function runPostInstall() {
   const pJsonFile = require(`${__dirname}/../package.json`);
 
   // regex for current expoVersion
@@ -39,3 +39,6 @@ export function runPostInstall() {
     } catch (error) {}
   }
 }
+
+
+exports.runPostInstall = runPostInstall;
