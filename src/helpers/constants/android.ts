@@ -4,7 +4,7 @@ export const CIO_APP_APPLY_REGEX = /(apply plugin: "com.android.application")/;
 export const CIO_GIST_MAVEN_REGEX =
   /maven { url "https:\/\/maven.gist.build" }/;
 export const CIO_PROJECT_ALLPROJECTS_REGEX =
-  /(allprojects\s*\{(.|\n)*repositories\s*\{)/;
+  /(allprojects\s*\{(.|\n){1,500}repositories\s*\{)/;
 
 export const CIO_PROJECT_GIST_MAVEN_SNIPPET =
   '        maven { url "https://maven.gist.build" }';
