@@ -164,7 +164,7 @@ export const withCioNotificationsXcodeProject: ConfigPlugin<
 > = (configOuter, props) => {
   return withXcodeProject(configOuter, async (config) => {
     const { modRequest, ios, version: bundleShortVersion } = config;
-    const { appleTeamId, iosDeploymentTarget } = props;
+    const { appleTeamId, iosDeploymentTarget, useFrameworks } = props;
 
     if (ios === undefined)
       throw new Error(
@@ -199,6 +199,7 @@ export const withCioNotificationsXcodeProject: ConfigPlugin<
       bundleVersion: buildNumber || DEFAULT_BUNDLE_VERSION,
       iosPath: platformProjectRoot,
       appName: projectName,
+      useFrameworks,
       iosDeploymentTarget,
     };
 
