@@ -274,7 +274,7 @@ async function addPushNotificationFile(
   }
 
   const group = xcodeProject.pbxCreateGroup(appName);
-  const classesKey = xcodeProject.findPBXGroupKey({ name: `${appName}` }); //idk what CustomTemplate means
+  const classesKey = xcodeProject.findPBXGroupKey({ name: `${appName}` });
   xcodeProject.addToPbxGroup(group, classesKey);
 
   xcodeProject.addSourceFile(`${appName}/${file}`, null, group);
