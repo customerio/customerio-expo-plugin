@@ -24,6 +24,7 @@ const addNotificationServiceExtension = async (
     bundleShortVersion,
     bundleVersion,
     iosPath,
+    useFrameworks,
     appName,
     iosDeploymentTarget,
   } = options;
@@ -37,7 +38,7 @@ const addNotificationServiceExtension = async (
       throw new Error(`Error parsing iOS project: ${JSON.stringify(err)}`);
     }
 
-    await injectCIONotificationPodfileCode(iosPath);
+    await injectCIONotificationPodfileCode(iosPath, useFrameworks);
 
     FileManagement.mkdir(`${iosPath}/${CIO_NOTIFICATION_TARGET_NAME}`, {
       recursive: true,

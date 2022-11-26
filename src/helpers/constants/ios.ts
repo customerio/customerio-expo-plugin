@@ -1,5 +1,6 @@
 export const LOCAL_PATH_TO_CIO_NSE_FILES = `node_modules/customerio-expo-plugin/src/helpers/native-files/ios`;
 export const IOS_DEPLOYMENT_TARGET = '13.0';
+export const CIO_SDK_VERSION = '1.2.5';
 export const CIO_PODFILE_REGEX = /pod 'RCT-Folly'/;
 export const CIO_CIO_TARGET_REGEX = /cio_target_names/;
 export const CIO_PODFILE_NOTIFICATION_REGEX = /target 'NotificationService' do/;
@@ -67,12 +68,17 @@ export const CIO_WILLPRESENTNOTIFICATIONHANDLER_SNIPPET = `
 }`;
 export const CIO_PODFILE_NOTIFICATION_SNIPPET = `
 target '${CIO_NOTIFICATION_TARGET_NAME}' do
-  pod 'CustomerIO/MessagingPushAPN', '~> 1.2.5'
+  pod 'CustomerIO/MessagingPushAPN', '~> ${CIO_SDK_VERSION}'
+end`;
+export const CIO_PODFILE_NOTIFICATION_STATIC_FRAMEWORK_SNIPPET = `
+target '${CIO_NOTIFICATION_TARGET_NAME}' do
+  use_frameworks! :linkage => :static
+  pod 'CustomerIO/MessagingPushAPN', '~> ${CIO_SDK_VERSION}'
 end`;
 export const CIO_PODFILE_SNIPPET = `
   pod 'RCT-Folly', :podspec => '../node_modules/react-native/third-party-podspecs/RCT-Folly.podspec'
   pod 'boost', :podspec => '../node_modules/react-native/third-party-podspecs/boost.podspec'
-  pod 'CustomerIO/MessagingPushAPN', '~> 1.2.5'`;
+  pod 'CustomerIO/MessagingPushAPN', '~> ${CIO_SDK_VERSION}'`;
 export const CIO_PODFILE_TARGET_NAMES_SNIPPET = `
   cio_target_names = [
     'CustomerIOTracking',
