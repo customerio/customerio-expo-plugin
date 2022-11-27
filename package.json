@@ -12,9 +12,14 @@
     "src",
     "lib/**/*"
   ],
+  "exports": {
+    ".": "./lib/commonjs/index.js",
+    "./version": "./lib/commonjs/version.js"
+  },
   "scripts": {
     "build": "npm run clean && tsc",
-    "clean": "rm -rf lib",
+    "prebuild": "node -p \"'export const LIB_VERSION = ' + JSON.stringify(require('./package.json').version) + ';'\" > src/version.ts",
+    "clean": "rm -rf lib && npm run prebuild",
     "expo-module": "expo-module",
     "lint": "eslint . --fix",
     "typescript": "tsc --noEmit",
