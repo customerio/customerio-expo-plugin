@@ -66,19 +66,16 @@ export const CIO_WILLPRESENTNOTIFICATIONHANDLER_SNIPPET = `
 - (void)userNotificationCenter:(UNUserNotificationCenter* )center willPresentNotification:(UNNotification* )notification withCompletionHandler:(void (^)(UNNotificationPresentationOptions options))completionHandler {
   completionHandler( UNNotificationPresentationOptionAlert + UNNotificationPresentationOptionSound);
 }`;
+export const CIO_PODFILE_SNIPPET = `  pod 'CustomerIO/MessagingPushAPN', '~> ${CIO_SDK_VERSION}'`;
 export const CIO_PODFILE_NOTIFICATION_SNIPPET = `
 target '${CIO_NOTIFICATION_TARGET_NAME}' do
-  pod 'CustomerIO/MessagingPushAPN', '~> ${CIO_SDK_VERSION}'
+${CIO_PODFILE_SNIPPET}
 end`;
 export const CIO_PODFILE_NOTIFICATION_STATIC_FRAMEWORK_SNIPPET = `
 target '${CIO_NOTIFICATION_TARGET_NAME}' do
   use_frameworks! :linkage => :static
-  pod 'CustomerIO/MessagingPushAPN', '~> ${CIO_SDK_VERSION}'
+${CIO_PODFILE_SNIPPET}
 end`;
-export const CIO_PODFILE_SNIPPET = `
-  pod 'RCT-Folly', :podspec => '../node_modules/react-native/third-party-podspecs/RCT-Folly.podspec'
-  pod 'boost', :podspec => '../node_modules/react-native/third-party-podspecs/boost.podspec'
-  pod 'CustomerIO/MessagingPushAPN', '~> ${CIO_SDK_VERSION}'`;
 export const CIO_PODFILE_TARGET_NAMES_SNIPPET = `
   cio_target_names = [
     'CustomerIOTracking',
