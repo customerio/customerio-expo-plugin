@@ -40,7 +40,7 @@
   "publishConfig": {
     "registry": "https://registry.npmjs.org/"
   },
-  "dependencies": {
+  "peerDependencies": {
     "customerio-reactnative": "*"
   },
   "devDependencies": {
