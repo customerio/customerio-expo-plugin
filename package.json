@@ -12,6 +12,10 @@
     "src",
     "lib/**/*"
   ],
+  "exports": {
+    ".": "./lib/commonjs/index.js",
+    "./postinstall": "./src/postInstallHelper.js"
+  },
   "scripts": {
     "build": "npm run clean && tsc",
     "prebuild": "node -p \"'export const LIB_VERSION = ' + JSON.stringify(require('./package.json').version) + ';'\" > src/version.ts",
