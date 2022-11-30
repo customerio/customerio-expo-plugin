@@ -18,8 +18,7 @@
   },
   "scripts": {
     "build": "npm run clean && tsc",
-    "prebuild": "node -p \"'export const LIB_VERSION = ' + JSON.stringify(require('./package.json').version) + ';'\" > src/version.ts",
-    "clean": "rm -rf lib && npm run prebuild",
+    "clean": "rm -rf lib",
     "expo-module": "expo-module",
     "lint": "eslint . --fix",
     "typescript": "tsc --noEmit",
