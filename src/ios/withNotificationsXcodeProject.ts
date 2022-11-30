@@ -24,6 +24,7 @@ const addNotificationServiceExtension = async (
     bundleShortVersion,
     bundleVersion,
     iosPath,
+    useFrameworks,
     appName,
     iosDeploymentTarget,
   } = options;
@@ -37,7 +38,7 @@ const addNotificationServiceExtension = async (
       throw new Error(`Error parsing iOS project: ${JSON.stringify(err)}`);
     }
 
-    await injectCIONotificationPodfileCode(iosPath);
+    await injectCIONotificationPodfileCode(iosPath, useFrameworks);
 
     FileManagement.mkdir(`${iosPath}/${CIO_NOTIFICATION_TARGET_NAME}`, {
       recursive: true,
@@ -163,7 +164,7 @@ export const withCioNotificationsXcodeProject: ConfigPlugin<
 > = (configOuter, props) => {
   return withXcodeProject(configOuter, async (config) => {
     const { modRequest, ios, version: bundleShortVersion } = config;
-    const { appleTeamId, iosDeploymentTarget } = props;
+    const { appleTeamId, iosDeploymentTarget, useFrameworks } = props;
 
     if (ios === undefined)
       throw new Error(
@@ -198,6 +199,7 @@ export const withCioNotificationsXcodeProject: ConfigPlugin<
       bundleVersion: buildNumber || DEFAULT_BUNDLE_VERSION,
       iosPath: platformProjectRoot,
       appName: projectName,
+      useFrameworks,
       iosDeploymentTarget,
     };
 

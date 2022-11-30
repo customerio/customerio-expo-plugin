@@ -1,3 +1,4 @@
+import type { CustomerIOPluginOptionsIOS } from '../../types/cio-types';
 import {
   CIO_PODFILE_REGEX,
   CIO_PODFILE_SNIPPET,
@@ -6,6 +7,7 @@ import {
   CIO_PODFILE_POST_INSTALL_SNIPPET,
   CIO_PODFILE_POST_INSTALL_FALLBACK_SNIPPET,
   CIO_PODFILE_NOTIFICATION_SNIPPET,
+  CIO_PODFILE_NOTIFICATION_STATIC_FRAMEWORK_SNIPPET,
   CIO_PODFILE_NOTIFICATION_REGEX,
   CIO_CIO_TARGET_REGEX,
 } from '../constants/ios';
@@ -42,12 +44,19 @@ export async function injectCIOPodfileCode(iosPath: string) {
   }
 }
 
-export async function injectCIONotificationPodfileCode(iosPath: string) {
+export async function injectCIONotificationPodfileCode(
+  iosPath: string,
+  useFrameworks: CustomerIOPluginOptionsIOS['useFrameworks']
+) {
   const filename = `${iosPath}/Podfile`;
   const podfile = await FileManagement.read(filename);
   const matches = podfile.match(CIO_PODFILE_NOTIFICATION_REGEX);
 
   if (!matches) {
-    FileManagement.append(filename, CIO_PODFILE_NOTIFICATION_SNIPPET);
+    const snippet =
+      useFrameworks === 'static'
+        ? CIO_PODFILE_NOTIFICATION_STATIC_FRAMEWORK_SNIPPET
+        : CIO_PODFILE_NOTIFICATION_SNIPPET;
+    FileManagement.append(filename, snippet);
   }
 }
