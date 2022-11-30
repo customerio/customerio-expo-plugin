@@ -14,7 +14,7 @@
   ],
   "exports": {
     ".": "./lib/commonjs/index.js",
-    "./version": "./lib/commonjs/version.js"
+    "./postinstall": "./src/postInstallHelper.js"
   },
   "scripts": {
     "build": "npm run clean && tsc",
