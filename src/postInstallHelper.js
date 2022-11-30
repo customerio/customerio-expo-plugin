@@ -4,7 +4,6 @@ function runPostInstall() {
   // react native SDK package.json path
   const rnPjsonFile = `${__dirname}/../../customerio-reactnative/package.json`;
 
-  try {
     // if react native SDK is installed
     if (fs.existsSync(rnPjsonFile)) {
       const rnPJson = fs.readFileSync(rnPJsonFile, 'utf8');
@@ -14,7 +13,6 @@ function runPostInstall() {
 
       fs.writeFileSync(rnPJsonFile, JSON.stringify(rnPackage, null, 2));
     }
-  } catch (error) {}
 }
 
 exports.runPostInstall = runPostInstall;
