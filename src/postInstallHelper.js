@@ -10,6 +10,7 @@ function runPostInstall() {
 
       const rnPackage = JSON.parse(rnPJson);
       rnPackage.expoVersion = expoPjsonFile.version;
+      console.error(rnPackage, expoPjsonFile)
 
       fs.writeFileSync(rnPjsonFile, JSON.stringify(rnPackage, null, 2));
 }
