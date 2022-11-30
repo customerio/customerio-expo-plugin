@@ -1,3 +1,5 @@
-const ph = require('./postInstallHelper');
+try {
+  const ph = require('./postInstallHelper');
 
-ph.runPostInstall();
+  ph.runPostInstall();
+} catch (error) {}
