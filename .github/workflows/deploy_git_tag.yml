@@ -49,6 +49,9 @@ jobs:
           payload: |
             {
               "text": "Expo plugin git tag created",
+              "username": "Expo deployment bot",
+              "icon_url": "https://logos-download.com/wp-content/uploads/2021/01/Expo_Logo.png",
+              "channel": "#squad-mobile",
               "blocks": [
                 {
                   "type": "section",
@@ -81,6 +84,9 @@ jobs:
           payload: |
             {
               "text": "Expo plugin deployment failure",
+              "username": "Expo deployment bot",
+              "icon_url": "https://logos-download.com/wp-content/uploads/2021/01/Expo_Logo.png",
+              "channel": "#squad-mobile",
               "blocks": [
                 {
                   "type": "section",
