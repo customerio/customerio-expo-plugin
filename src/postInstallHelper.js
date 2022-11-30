@@ -8,13 +8,13 @@ function runPostInstall() {
     // if react native SDK is installed
     if (fs.existsSync(rnPjsonFile)) {
       const rnPJson = fs.readFileSync(rnPjsonFile, 'utf8');
+      expoPjson = require(expoPjsonFile);
 
       const rnPackage = JSON.parse(rnPJson);
-      rnPackage.expoVersion = expoPjsonFile.version;
+      rnPackage.expoVersion = expoPjson.version;
 
 
       fs.writeFileSync(rnPjsonFile, JSON.stringify(rnPackage, null, 2));
-      throw new Error (`RN: ${rnPJson}`);
     }
 }
 
