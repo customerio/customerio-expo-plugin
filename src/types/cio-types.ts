@@ -15,6 +15,7 @@ export type CustomerIOPluginOptionsIOS = {
   iosDeploymentTarget?: string;
   appleTeamId?: string;
   appName?: string;
+  useFrameworks?: 'static' | 'dynamic';
   pushNotification?: {
     useRichPush: boolean;
   };
