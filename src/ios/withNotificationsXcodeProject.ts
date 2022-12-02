@@ -18,6 +18,8 @@ const TARGETED_DEVICE_FAMILY = `"1,2"`;
 const addNotificationServiceExtension = async (
   options: CustomerIOPluginOptionsIOS
 ) => {
+  // iosPath and appName are predefined from Expo config.
+  // See function withCioNotificationsXcodeProject to get where the variabes are pulled from.
   const { iosPath, appName } = options;
 
   const projPath = `${iosPath}/${appName}.xcodeproj/project.pbxproj`;
@@ -58,6 +60,7 @@ export const withCioNotificationsXcodeProject: ConfigPlugin<
         'Adding NotificationServiceExtension failed: ios config missing from app.config.js or app.json.'
       );
 
+    // projectName and platformProjectRoot translates to appName and iosPath in addNotificationServiceExtension()
     const { projectName, platformProjectRoot } = modRequest;
     const { bundleIdentifier, buildNumber } = ios;
 
