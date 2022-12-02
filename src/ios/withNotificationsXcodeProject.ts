@@ -262,7 +262,7 @@ async function addPushNotificationFile(
   xcodeProject: any
 ) {
   const { iosPath, appName } = options;
-  const file = 'PushNotification.swift';
+  const file = 'PushService.swift';
   const getTargetFile = (filename: string) =>
     `${iosPath}/${appName}/${filename}`;
 
