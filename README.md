@@ -40,7 +40,7 @@ By default, the plugin expects to use Apple's Push Notification service (APNs) f
          "customerio-expo-plugin",
          {
                "android": {
-                  "googleServicesFilePath": "files/"
+                  "googleServicesFile": "./files/google-services.json",
                },
                "ios": {
                   "pushNotification": {
@@ -119,7 +119,7 @@ The `customerio-expo-plugin` supports the following configuration options. In mo
             <td>Required if you want to setup iOS even if it is empty. Eg (<code>"ios": {}</code>).</td>
         </tr>
         <tr>
-            <td><code>android.googleServicesFilePath</code></td>
+            <td><code>android.googleServicesFile</code></td>
             <td>string</td>
             <td><code>undefined</code></td>
             <td>Set the path to the folder that contains your <code>google-services.json</code> file with a trailing slash (<code>/</code>).</td>

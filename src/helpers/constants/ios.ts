@@ -47,8 +47,6 @@ export const CIO_DIDREGISTERFORREMOTENOTIFICATIONSWITHDEVICETOKEN_SNIPPET = `
   return [pnHandlerObj application:application deviceToken:deviceToken];
 `;
 
-// Configure Customerio push notifications SDK by adding to application:didFinishLaunchingWithOptions: delegate method
-// From Braze docs: https://www.customer.io/docs/sdk/react-native/push/#obj-c-push
 export const CIO_CONFIGURECIOSDKPUSHNOTIFICATION_SNIPPET = `
   // Register for push notifications
   [pnHandlerObj registerPushNotification:self];

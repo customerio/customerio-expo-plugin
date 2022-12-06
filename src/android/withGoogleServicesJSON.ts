@@ -9,14 +9,14 @@ export const withGoogleServicesJSON: ConfigPlugin<
   return withProjectBuildGradle(configOuter, (props) => {
     const options: CustomerIOPluginOptionsAndroid = {
       androidPath: props.modRequest.platformProjectRoot,
-      googleServicesFilePath: cioProps?.googleServicesFilePath,
+      googleServicesFile: cioProps?.googleServicesFile,
     };
-    const { androidPath, googleServicesFilePath } = options;
+    const { androidPath, googleServicesFile } = options;
     if (!FileManagement.exists(`${androidPath}/app/google-services.json`)) {
-      if (googleServicesFilePath) {
+      if (googleServicesFile && FileManagement.exists(googleServicesFile)) {
         try {
           FileManagement.copyFile(
-            `${googleServicesFilePath}google-services.json`,
+            googleServicesFile,
             `${androidPath}/app/google-services.json`
           );
         } catch (e) {
