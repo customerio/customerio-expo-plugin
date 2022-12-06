@@ -136,6 +136,12 @@ The `customerio-expo-plugin` supports the following configuration options. In mo
             <td><code>false</code></td>
             <td>Enables rich push for iOS</td>
         </tr>
+        <tr>
+            <td style="white-space:nowrap;"><code>ios.useFrameworks</code></td>
+            <td>string</td>
+            <td><code>undefined</code></td>
+            <td>This is optional, it allows the plugin to work with static libraries. Options are <code>static</code> and <code>dynamic</code></td>
+        </tr>
     </tbody>
 </table>
 
