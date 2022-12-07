@@ -116,7 +116,8 @@ const addRichPushXcodeProj = async (
 
   await injectCIONotificationPodfileCode(iosPath, useFrameworks);
 
-  FileManagement.mkdir(`${iosPath}/${CIO_NOTIFICATION_TARGET_NAME}`, {
+  const nsePath = `${iosPath}/${CIO_NOTIFICATION_TARGET_NAME}`;
+  FileManagement.mkdir(nsePath, {
     recursive: true,
   });
 
@@ -127,8 +128,7 @@ const addRichPushXcodeProj = async (
     'NotificationService.m',
   ];
 
-  const getTargetFile = (filename: string) =>
-    `${iosPath}/${CIO_NOTIFICATION_TARGET_NAME}/${filename}`;
+  const getTargetFile = (filename: string) => `${nsePath}/${filename}`;
 
   files.forEach((filename) => {
     const targetFile = getTargetFile(filename);
@@ -266,11 +266,11 @@ async function addPushNotificationFile(
 ) {
   const { iosPath, appName } = options;
   const file = 'PushService.swift';
-  const getTargetFile = (filename: string) =>
-    `${iosPath}/${appName}/${filename}`;
+  const appPath = `${iosPath}/${appName}`;
+  const getTargetFile = (filename: string) => `${appPath}/${filename}`;
 
   if (!FileManagement.exists(getTargetFile(file))) {
-    FileManagement.mkdir(`${iosPath}/${appName}`, {
+    FileManagement.mkdir(appPath, {
       recursive: true,
     });
 
