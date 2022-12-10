@@ -7,7 +7,7 @@
 
 ![min swift version is 5.3](https://img.shields.io/badge/min%20Swift%20version-5.3-orange)
 ![min ios version is 13](https://img.shields.io/badge/min%20iOS%20version-13-blue)
-[![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.0-4baaaa.svg)](code_of_conduct.md) 
+[![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.0-4baaaa.svg)](code_of_conduct.md)
 [![codecov](https://codecov.io/gh/customerio/customerio-expo-plugin/branch/develop/graph/badge.svg?token=IZ9RP9XD1O)](https://codecov.io/gh/customerio/customerio-expo-plugin)
 
 # Customer.io Expo Plugin
@@ -70,10 +70,6 @@ By default, the plugin expects to use Apple's Push Notification service (APNs) f
       ]
    }
    ```
-
-   1. Go to `ios/{your_appname}.xcworkspace` in XCode.
-   1. Right-click the main target `{your_appname}` and click **Add files to "{your_appname}"**.
-   1. Select `{your_appname}/PushNotification.swift` and click **Add**.
 
 1. Add an import statement to your project for the react native library. We haven't included it below, but you can import `CioLogLevel` to set log outputs to something other than `error`; this may help you debug your application.
    ```javascript
@@ -140,6 +136,12 @@ The `customerio-expo-plugin` supports the following configuration options. In mo
             <td><code>false</code></td>
             <td>Enables rich push for iOS</td>
         </tr>
+        <tr>
+            <td style="white-space:nowrap;"><code>ios.useFrameworks</code></td>
+            <td>string</td>
+            <td><code>undefined</code></td>
+            <td>This is optional, it allows the plugin to work with static libraries. Options are <code>static</code> and <code>dynamic</code></td>
+        </tr>
     </tbody>
 </table>
 
@@ -182,7 +184,7 @@ See our complete SDK documentation at [https://customer.io/docs/sdk/expo/](https
 
 Thanks for taking an interest in our project! We welcome your contributions.
 
-We value an open, welcoming, diverse, inclusive, and healthy community for this project. We expect all  contributors to follow our [code of conduct](CODE_OF_CONDUCT.md). 
+We value an open, welcoming, diverse, inclusive, and healthy community for this project. We expect all  contributors to follow our [code of conduct](CODE_OF_CONDUCT.md).
 
 # License
 

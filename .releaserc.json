@@ -16,7 +16,7 @@
       "changelogFile": "CHANGELOG.md"
     }],
     ["@semantic-release/exec",{
-        "verifyReleaseCmd": "./scripts/update-version.sh 1.0.0-alpha.4"
+        "verifyReleaseCmd": "./scripts/update-version.sh ${nextRelease.version}"
       }
     ],
     ["@semantic-release/git", {
