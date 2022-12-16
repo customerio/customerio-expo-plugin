@@ -6,7 +6,7 @@ import {
   DEFAULT_BUNDLE_VERSION,
   LOCAL_PATH_TO_CIO_NSE_FILES,
 } from '../helpers/constants/ios';
-import { injectCodeByMultiLineRegex } from '../helpers/utils/codeInjection';
+import { replaceCodeByRegex } from '../helpers/utils/codeInjection';
 import { injectCIONotificationPodfileCode } from '../helpers/utils/injectCIOPodfileCode';
 import type { CustomerIOPluginOptionsIOS } from '../types/cio-types';
 import { FileManagement } from './../helpers/utils/fileManagement';
@@ -242,7 +242,7 @@ const updateNseInfoPlist = (payload: {
   let plistFileString = FileManagement.readFile(payload.infoPlistTargetFile);
 
   if (payload.bundleVersion) {
-    plistFileString = injectCodeByMultiLineRegex(
+    plistFileString = replaceCodeByRegex(
       plistFileString,
       BUNDLE_VERSION_RE,
       payload.bundleVersion
@@ -250,7 +250,7 @@ const updateNseInfoPlist = (payload: {
   }
 
   if (payload.bundleShortVersion) {
-    plistFileString = injectCodeByMultiLineRegex(
+    plistFileString = replaceCodeByRegex(
       plistFileString,
       BUNDLE_SHORT_VERSION_RE,
       payload.bundleShortVersion
