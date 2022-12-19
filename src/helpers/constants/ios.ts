@@ -4,6 +4,7 @@ export const CIO_SDK_VERSION = '2.0.0';
 export const CIO_PODFILE_REGEX = /pod 'CustomerIO\/MessagingPushAPN'/;
 export const CIO_CIO_TARGET_REGEX = /cio_target_names/;
 export const CIO_PODFILE_NOTIFICATION_REGEX = /target 'NotificationService' do/;
+export const CIO_PODFILE_POST_INSTALL_REGEX = /post_install do \|installer\|/;
 export const GROUP_IDENTIFIER_TEMPLATE_REGEX = /{{GROUP_IDENTIFIER}}/gm;
 export const BUNDLE_SHORT_VERSION_TEMPLATE_REGEX = /{{BUNDLE_SHORT_VERSION}}/gm;
 export const BUNDLE_VERSION_TEMPLATE_REGEX = /{{BUNDLE_VERSION}}/gm;
