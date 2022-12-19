@@ -22,6 +22,14 @@ export function injectCodeByMultiLineRegex(
   return fileContent.replace(lineRegex, `$&\n${snippet}`);
 }
 
+export function replaceCodeByRegex(
+  fileContent: string,
+  lineRegex: RegExp,
+  snippet: string
+) {
+  return fileContent.replace(lineRegex, snippet);
+}
+
 export function injectCodeByMultiLineRegexAndReplaceLine(
   fileContent: string,
   lineRegex: RegExp,
