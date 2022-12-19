@@ -12,9 +12,8 @@ export function withCIOIos(
   if (props.pushNotification) {
     config = withAppDelegateModifications(config, props);
     config = withCioNotificationsXcodeProject(config, props);
+    config = withCioXcodeProject(config, props);
   }
-
-  config = withCioXcodeProject(config, props);
 
   return config;
 }
