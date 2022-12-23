@@ -12,6 +12,7 @@ import type { CustomerIOPluginOptionsIOS } from '../types/cio-types';
 import { FileManagement } from './../helpers/utils/fileManagement';
 
 const PLIST_FILENAME = `${CIO_NOTIFICATION_TARGET_NAME}-Info.plist`;
+const ENV_FILENAME = 'Env.swift';
 
 const TARGETED_DEVICE_FAMILY = `"1,2"`;
 
@@ -126,7 +127,7 @@ const addRichPushXcodeProj = async (
     'NotificationService.h',
     'NotificationService.swift',
     'NotificationService.m',
-    'Env.swift',
+    ENV_FILENAME,
   ];
 
   const getTargetFile = (filename: string) => `${nsePath}/${filename}`;
@@ -146,6 +147,7 @@ const addRichPushXcodeProj = async (
     bundleShortVersion,
     infoPlistTargetFile,
   });
+  updateNseEnv(options, getTargetFile(ENV_FILENAME));
 
   // Create new PBXGroup for the extension
   const extGroup = xcodeProject.addPbxGroup(
@@ -259,6 +261,34 @@ const updateNseInfoPlist = (payload: {
   }
 
   FileManagement.writeFile(payload.infoPlistTargetFile, plistFileString);
+};
+
+const updateNseEnv = (
+  options: CustomerIOPluginOptionsIOS,
+  envFileName: string
+) => {
+  const SITE_ID_RE = /\{\{SITE_ID\}\}/;
+  const API_KEY_RE = /\{\{API_KEY\}\}/;
+
+  let envFileContent = FileManagement.readFile(envFileName);
+
+  if (options.pushNotification?.env?.siteId) {
+    envFileContent = replaceCodeByRegex(
+      envFileContent,
+      SITE_ID_RE,
+      options.pushNotification?.env?.siteId
+    );
+  }
+
+  if (options.pushNotification?.env?.apiKey) {
+    envFileContent = replaceCodeByRegex(
+      envFileContent,
+      API_KEY_RE,
+      options.pushNotification?.env?.apiKey
+    );
+  }
+
+  FileManagement.writeFile(envFileName, envFileContent);
 };
 
 async function addPushNotificationFile(
