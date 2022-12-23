@@ -21,6 +21,7 @@ export type CustomerIOPluginOptionsIOS = {
     env: {
       siteId: string;
       apiKey: string;
+      region: string;
     };
   };
 };

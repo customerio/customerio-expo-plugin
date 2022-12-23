@@ -269,6 +269,7 @@ const updateNseEnv = (
 ) => {
   const SITE_ID_RE = /\{\{SITE_ID\}\}/;
   const API_KEY_RE = /\{\{API_KEY\}\}/;
+  const REGION_RE = /\{\{REGION\}\}/;
 
   let envFileContent = FileManagement.readFile(envFileName);
 
@@ -285,6 +286,14 @@ const updateNseEnv = (
       envFileContent,
       API_KEY_RE,
       options.pushNotification?.env?.apiKey
+    );
+  }
+
+  if (options.pushNotification?.env?.region) {
+    envFileContent = replaceCodeByRegex(
+      envFileContent,
+      REGION_RE,
+      options.pushNotification?.env?.region
     );
   }
 
