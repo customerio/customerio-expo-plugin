@@ -126,6 +126,7 @@ const addRichPushXcodeProj = async (
     'NotificationService.h',
     'NotificationService.swift',
     'NotificationService.m',
+    'Env.swift',
   ];
 
   const getTargetFile = (filename: string) => `${nsePath}/${filename}`;
@@ -189,7 +190,7 @@ const addRichPushXcodeProj = async (
 
   // Add build phases to the new target
   xcodeProject.addBuildPhase(
-    ['NotificationService.m', 'NotificationService.swift'],
+    ['NotificationService.m', 'NotificationService.swift', 'Env.swift'],
     'PBXSourcesBuildPhase',
     'Sources',
     nseTarget.uuid
