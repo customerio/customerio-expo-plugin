@@ -290,11 +290,13 @@ const updateNseEnv = (
   }
 
   if (options.pushNotification?.env?.region) {
-    envFileContent = replaceCodeByRegex(
-      envFileContent,
-      REGION_RE,
-      options.pushNotification?.env?.region
-    );
+    let region = '';
+    if (options.pushNotification?.env?.region === 'us') {
+      region = 'Region.US';
+    } else if (options.pushNotification?.env?.region === 'eu') {
+      region = 'Region.EU';
+    }
+    envFileContent = replaceCodeByRegex(envFileContent, REGION_RE, region);
   }
 
   FileManagement.writeFile(envFileName, envFileContent);
