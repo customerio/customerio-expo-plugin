@@ -18,12 +18,17 @@ export type CustomerIOPluginOptionsIOS = {
   useFrameworks?: 'static' | 'dynamic';
   pushNotification?: {
     useRichPush: boolean;
+    env: {
+      siteId: string;
+      apiKey: string;
+      region: string;
+    };
   };
 };
 
 export type CustomerIOPluginOptionsAndroid = {
   androidPath: string;
-  googleServicesFilePath?: string;
+  googleServicesFile?: string;
 };
 
 export type CustomerIOPluginOptions = {
