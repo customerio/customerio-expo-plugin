@@ -1,3 +1,10 @@
+## [1.0.0-beta.2](https://github.com/customerio/customerio-expo-plugin/compare/1.0.0-beta.1...1.0.0-beta.2) (2022-12-30)
+
+
+### Bug Fixes
+
+* removed restriction on peerDependencies to prevent issues on customer end ([#24](https://github.com/customerio/customerio-expo-plugin/issues/24)) ([bce90c0](https://github.com/customerio/customerio-expo-plugin/commit/bce90c0031c10707328c7a16f528f8536bd1c12e))
+
 ## [1.0.0-alpha.7](https://github.com/customerio/customerio-expo-plugin/compare/1.0.0-alpha.6...1.0.0-alpha.7) (2022-12-30)
 
 
