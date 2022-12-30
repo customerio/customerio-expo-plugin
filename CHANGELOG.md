@@ -1,3 +1,21 @@
+## [1.0.0-alpha.6](https://github.com/customerio/customerio-expo-plugin/compare/1.0.0-alpha.5...1.0.0-alpha.6) (2022-12-30)
+
+
+### ⚠ BREAKING CHANGES
+
+* changed googleServicesFilePath to googleServicesFile (#16)
+
+### Features
+
+* fixed issues with adding file to target ([#10](https://github.com/customerio/customerio-expo-plugin/issues/10)) ([0674c66](https://github.com/customerio/customerio-expo-plugin/commit/0674c6624dad61fdaa86800327c32f66a37470da))
+* rich push environment variable setup ([#23](https://github.com/customerio/customerio-expo-plugin/issues/23)) ([8d83c95](https://github.com/customerio/customerio-expo-plugin/commit/8d83c955ea2f19d9d8ab9a10c069279f1f57db0e))
+* user agent for expo ([#8](https://github.com/customerio/customerio-expo-plugin/issues/8)) ([19e78b1](https://github.com/customerio/customerio-expo-plugin/commit/19e78b1f00b04627004af4fa7f2a53c1b0f33ac8))
+
+
+### Code Refactoring
+
+* changed googleServicesFilePath to googleServicesFile ([#16](https://github.com/customerio/customerio-expo-plugin/issues/16)) ([26be4db](https://github.com/customerio/customerio-expo-plugin/commit/26be4db53893432882b52b25c6040b40c76bca7b))
+
 ## [1.0.0-alpha.5](https://github.com/customerio/customerio-expo-plugin/compare/1.0.0-alpha.4...1.0.0-alpha.5) (2022-12-20)
 
 
