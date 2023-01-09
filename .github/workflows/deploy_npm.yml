@@ -34,7 +34,7 @@ jobs:
               "text": "Expo plugin deployed to npm",
               "username": "Expo deployment bot",
               "icon_url": "https://logos-download.com/wp-content/uploads/2021/01/Expo_Logo.png",
-              "channel": "#squad-mobile",
+              "channel": "#mobile-deployments",
               "blocks": [
                 {
                   "type": "section",
@@ -69,7 +69,7 @@ jobs:
               "text": "Expo plugin deployment failure",
               "username": "Expo deployment bot",
               "icon_url": "https://logos-download.com/wp-content/uploads/2021/01/Expo_Logo.png",
-              "channel": "#squad-mobile",
+              "channel": "#mobile-deployments",
               "blocks": [
                 {
                   "type": "section",
