@@ -291,9 +291,9 @@ const updateNseEnv = (
 
   if (options.pushNotification?.env?.region) {
     let region = '';
-    if (options.pushNotification?.env?.region === 'us') {
+    if (options.pushNotification?.env?.region?.toLowerCase() === 'us') {
       region = 'Region.US';
-    } else if (options.pushNotification?.env?.region === 'eu') {
+    } else if (options.pushNotification?.env?.region?.toLowerCase() === 'eu') {
       region = 'Region.EU';
     }
     envFileContent = replaceCodeByRegex(envFileContent, REGION_RE, region);
