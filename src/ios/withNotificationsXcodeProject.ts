@@ -290,13 +290,23 @@ const updateNseEnv = (
   }
 
   if (options.pushNotification?.env?.region) {
-    let region = '';
-    if (options.pushNotification?.env?.region?.toLowerCase() === 'us') {
-      region = 'Region.US';
-    } else if (options.pushNotification?.env?.region?.toLowerCase() === 'eu') {
-      region = 'Region.EU';
+    const regionMap = {
+      us: 'Region.US',
+      eu: 'Region.EU',
+    };
+    const region = options.pushNotification?.env?.region?.toLowerCase();
+    const mappedRegion = (regionMap as any)[region] || '';
+    if (!mappedRegion) {
+      console.warn(
+        `${options.pushNotification?.env?.region} is an invalid region. Please use the values from the docs: https://customer.io/docs/sdk/expo/getting-started/#configure-the-plugin`
+      );
+    } else {
+      envFileContent = replaceCodeByRegex(
+        envFileContent,
+        REGION_RE,
+        mappedRegion
+      );
     }
-    envFileContent = replaceCodeByRegex(envFileContent, REGION_RE, region);
   }
 
   FileManagement.writeFile(envFileName, envFileContent);
