@@ -122,7 +122,7 @@ The `customerio-expo-plugin` supports the following configuration options. In mo
             <td><code>android.googleServicesFile</code></td>
             <td>string</td>
             <td><code>undefined</code></td>
-            <td>Set the path to the folder that contains your <code>google-services.json</code> file with a trailing slash (<code>/</code>).</td>
+            <td>Set the path to your <code>google-services.json</code> file.</td>
         </tr>
         <tr>
             <td><code>ios.pushNotification</code></td>
@@ -135,6 +135,12 @@ The `customerio-expo-plugin` supports the following configuration options. In mo
             <td>boolean</td>
             <td><code>false</code></td>
             <td>Enables rich push for iOS</td>
+        </tr>
+        <tr>
+            <td style="white-space:nowrap;"><code>ios.pushNotification.env</code></td>
+            <td>object</td>
+            <td><code>undefined</code></td>
+            <td>Set environment variables to use for rich push workaround. This field should be filled when enabling rich push. Expected values: `siteId`: `string`,`apiKey`: `string`, `region`: `us` or `eu`</td>
         </tr>
         <tr>
             <td style="white-space:nowrap;"><code>ios.useFrameworks</code></td>
