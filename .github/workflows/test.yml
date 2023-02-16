@@ -7,7 +7,7 @@ jobs:
     name: Test able to deploy to npm
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
         with:
           node-version: '16'
@@ -16,5 +16,5 @@ jobs:
       - name: Compile
         run: npm run build
 
-      - name: Pushlish test
+      - name: Publish test
         run: npm publish --dry-run
