@@ -9,20 +9,6 @@ public class CIOAppPushNotificationsHandler : NSObject {
 
   public override init() {}
 
-  @objc(registerPushNotification:)
-  public func registerPushNotification(withNotificationDelegate notificationDelegate: UNUserNotificationCenterDelegate) {
-
-    let center  = UNUserNotificationCenter.current()
-    center.delegate = notificationDelegate
-    center.requestAuthorization(options: [.sound, .alert, .badge]) { (granted, error) in
-      if error == nil{
-        DispatchQueue.main.async {
-          UIApplication.shared.registerForRemoteNotifications()
-        }
-      }
-    }
-  }
-
   @objc(application:deviceToken:)
   public func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
     MessagingPush.shared.application(application, didRegisterForRemoteNotificationsWithDeviceToken: deviceToken)

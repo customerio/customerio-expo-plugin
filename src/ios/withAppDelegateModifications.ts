@@ -5,11 +5,9 @@ import {
   CIO_APPDELEGATEDECLARATION_REGEX,
   CIO_APPDELEGATEHEADER_REGEX,
   CIO_APPDELEGATEHEADER_SNIPPET,
-  CIO_CONFIGURECIOSDKPUSHNOTIFICATION_SNIPPET,
   CIO_DIDFAILTOREGISTERFORREMOTENOTIFICATIONSWITHERRORFULL_REGEX,
   CIO_DIDFAILTOREGISTERFORREMOTENOTIFICATIONSWITHERROR_REGEX,
   CIO_DIDFAILTOREGISTERFORREMOTENOTIFICATIONSWITHERROR_SNIPPET,
-  CIO_DIDFINISHLAUNCHINGMETHOD_REGEX,
   CIO_DIDRECEIVENOTIFICATIONRESPONSEHANDLER_SNIPPET,
   CIO_DIDREGISTERFORREMOTENOTIFICATIONSWITHDEVICETOKEN_REGEX,
   CIO_DIDREGISTERFORREMOTENOTIFICATIONSWITHDEVICETOKEN_SNIPPET,
@@ -60,16 +58,6 @@ const addNotificationHandlerDeclaration = (stringContents: string) => {
     stringContents,
     CIO_APPDELEGATEDECLARATION_REGEX,
     CIO_PUSHNOTIFICATIONHANDLERDECLARATION_SNIPPET
-  );
-
-  return stringContents;
-};
-
-const addNotificationConfiguration = (stringContents: string) => {
-  stringContents = injectCodeByMultiLineRegex(
-    stringContents,
-    CIO_DIDFINISHLAUNCHINGMETHOD_REGEX,
-    CIO_CONFIGURECIOSDKPUSHNOTIFICATION_SNIPPET
   );
 
   return stringContents;
@@ -142,7 +130,6 @@ export const withAppDelegateModifications: ConfigPlugin<any> = (
         config.modRequest.projectName as string
       );
       stringContents = addNotificationHandlerDeclaration(stringContents);
-      stringContents = addNotificationConfiguration(stringContents);
       stringContents = addAdditionalMethodsForPushNotifications(stringContents);
       stringContents =
         addDidFailToRegisterForRemoteNotificationsWithError(stringContents);
