@@ -43,8 +43,6 @@
     "customerio-reactnative": "^2.0.0-beta.1"
   },
   "devDependencies": {
-    "@expo/config-plugins": "^5.0.4",
-    "@expo/config-types": "^47.0.0",
     "@typescript-eslint/eslint-plugin": "^5.21.0",
     "@typescript-eslint/parser": "^5.21.0",
     "eslint": "^8.14.0",
