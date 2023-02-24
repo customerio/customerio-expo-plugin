@@ -38,7 +38,9 @@ export const withAndroidManifestUpdates: ConfigPlugin<
           },
         ],
       });
-      console.log('Added Firebase messaging service to AndroidManifest.xml');
+      console.log(
+        'Successfully set CustomerIO push handler as priority in AndroidManifest.xml'
+      );
     }
 
     props.modResults.manifest.application = application;
