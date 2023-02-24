@@ -85,6 +85,7 @@ export const withCioNotificationsXcodeProject: ConfigPlugin<
     }
 
     const options = {
+      ...props,
       appleTeamId,
       bundleIdentifier,
       bundleShortVersion,
@@ -369,6 +370,7 @@ const updatePushFile = (
   if (!options.disableNotificationRegistration) {
     snippet = CIO_REGISTER_PUSHNOTIFICATION_SNIPPET;
   }
+
   envFileContent = replaceCodeByRegex(envFileContent, REGISTER_RE, snippet);
 
   FileManagement.writeFile(envFileName, envFileContent);
