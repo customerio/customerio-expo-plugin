@@ -3,6 +3,7 @@ import xcode from 'xcode';
 
 import {
   CIO_NOTIFICATION_TARGET_NAME,
+  CIO_REGISTER_PUSHNOTIFICATION_SNIPPET,
   DEFAULT_BUNDLE_VERSION,
   LOCAL_PATH_TO_CIO_NSE_FILES,
 } from '../helpers/constants/ios';
@@ -310,13 +311,13 @@ async function addPushNotificationFile(
   const file = 'PushService.swift';
   const appPath = `${iosPath}/${appName}`;
   const getTargetFile = (filename: string) => `${appPath}/${filename}`;
+  const targetFile = getTargetFile(file);
 
   if (!FileManagement.exists(getTargetFile(file))) {
     FileManagement.mkdir(appPath, {
       recursive: true,
     });
 
-    const targetFile = getTargetFile(file);
     FileManagement.copyFile(
       `${LOCAL_PATH_TO_CIO_NSE_FILES}/${file}`,
       targetFile
@@ -325,9 +326,28 @@ async function addPushNotificationFile(
     console.log(`${getTargetFile(file)} already exists. Skipping...`);
   }
 
+  updatePushFile(options, targetFile);
+
   const group = xcodeProject.pbxCreateGroup('CustomerIONotifications');
   const classesKey = xcodeProject.findPBXGroupKey({ name: `${appName}` });
   xcodeProject.addToPbxGroup(group, classesKey);
 
   xcodeProject.addSourceFile(`${appName}/${file}`, null, group);
 }
+
+const updatePushFile = (
+  options: CustomerIOPluginOptionsIOS,
+  envFileName: string
+) => {
+  const REGISTER_RE = /\{\{REGISTER_SNIPPET\}\}/;
+
+  let envFileContent = FileManagement.readFile(envFileName);
+
+  let snippet = '';
+  if (options.disableNotificationRegistration) {
+    snippet = CIO_REGISTER_PUSHNOTIFICATION_SNIPPET;
+  }
+  envFileContent = replaceCodeByRegex(envFileContent, REGISTER_RE, snippet);
+
+  FileManagement.writeFile(envFileName, envFileContent);
+};

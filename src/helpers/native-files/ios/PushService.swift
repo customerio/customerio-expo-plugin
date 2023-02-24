@@ -9,6 +9,8 @@ public class CIOAppPushNotificationsHandler : NSObject {
 
   public override init() {}
 
+  {{REGISTER_SNIPPET}}
+
   @objc(application:deviceToken:)
   public func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
     MessagingPush.shared.application(application, didRegisterForRemoteNotificationsWithDeviceToken: deviceToken)
