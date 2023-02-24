@@ -125,6 +125,12 @@ The `customerio-expo-plugin` supports the following configuration options. In mo
             <td>Set the path to your <code>google-services.json</code> file.</td>
         </tr>
         <tr>
+            <td><code>android.setHighPriorityPushHandler</code></td>
+            <td>boolean</td>
+            <td><code>undefined</code></td>
+            <td>This is optional, if you choose to use a 3rd party plugin to handle notification permissions, but want our SDK to handle the notifications, this sets `io.customer.messagingpush.CustomerIOFirebaseMessagingService` as high priority.</td>
+        </tr>
+        <tr>
             <td><code>ios.pushNotification</code></td>
             <td>object</td>
             <td style="white-space:nowrap;"><code>undefined</code></td>
@@ -147,6 +153,12 @@ The `customerio-expo-plugin` supports the following configuration options. In mo
             <td>string</td>
             <td><code>undefined</code></td>
             <td>This is optional, it allows the plugin to work with static libraries. Options are <code>static</code> and <code>dynamic</code></td>
+        </tr>
+        <tr>
+            <td style="white-space:nowrap;"><code>ios.disableNotificationRegistration</code></td>
+            <td>boolean</td>
+            <td><code>undefined</code></td>
+            <td>This is optional, it removes the the `registerPushNotification` handler and allows you to use any 3rd party plugin to handle the permission request </td>
         </tr>
     </tbody>
 </table>
