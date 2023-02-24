@@ -30,6 +30,7 @@ export type CustomerIOPluginOptionsIOS = {
 export type CustomerIOPluginOptionsAndroid = {
   androidPath: string;
   googleServicesFile?: string;
+  setHighPriorityPushHandler?: boolean;
 };
 
 export type CustomerIOPluginOptions = {
