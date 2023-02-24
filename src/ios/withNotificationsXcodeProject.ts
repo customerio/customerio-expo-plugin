@@ -344,7 +344,7 @@ const updatePushFile = (
   let envFileContent = FileManagement.readFile(envFileName);
 
   let snippet = '';
-  if (options.disableNotificationRegistration) {
+  if (!options.disableNotificationRegistration) {
     snippet = CIO_REGISTER_PUSHNOTIFICATION_SNIPPET;
   }
   envFileContent = replaceCodeByRegex(envFileContent, REGISTER_RE, snippet);
