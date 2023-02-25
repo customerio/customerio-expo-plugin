@@ -158,7 +158,7 @@ The `customerio-expo-plugin` supports the following configuration options. In mo
             <td style="white-space:nowrap;"><code>ios.disableNotificationRegistration</code></td>
             <td>boolean</td>
             <td><code>undefined</code></td>
-            <td>This is optional, it removes the the `registerPushNotification` handler and allows you to use any 3rd party plugin to handle the permission request </td>
+            <td>This is optional, it removes the `registerPushNotification` handler and allows you to use any 3rd party plugin to handle the permission request </td>
         </tr>
     </tbody>
 </table>
