@@ -128,7 +128,7 @@ The `customerio-expo-plugin` supports the following configuration options. In mo
             <td><code>android.setHighPriorityPushHandler</code></td>
             <td>boolean</td>
             <td><code>undefined</code></td>
-            <td>This is optional, if you choose to use a 3rd party plugin to handle notification permissions, but want our SDK to handle the notifications, this sets `io.customer.messagingpush.CustomerIOFirebaseMessagingService` as high priority.</td>
+            <td>This is optional, if you choose to use a 3rd party plugin to handle notification permissions, but want our SDK to handle the notifications.</td>
         </tr>
         <tr>
             <td><code>ios.pushNotification</code></td>
