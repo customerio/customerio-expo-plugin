@@ -1,6 +1,7 @@
 import type { ExpoConfig } from '@expo/config-types';
 
 import type { CustomerIOPluginOptionsAndroid } from '../types/cio-types';
+import { withAndroidManifestUpdates } from './withAndroidManifestUpdates';
 import { withAppGoogleServices } from './withAppGoogleServices';
 import { withGistMavenRepository } from './withGistMavenRepository';
 import { withGoogleServicesJSON } from './withGoogleServicesJSON';
@@ -14,6 +15,9 @@ export function withCIOAndroid(
   config = withProjectGoogleServices(config, props);
   config = withAppGoogleServices(config, props);
   config = withGoogleServicesJSON(config, props);
+  if (props.setHighPriorityPushHandler) {
+    config = withAndroidManifestUpdates(config, props);
+  }
 
   return config;
 }

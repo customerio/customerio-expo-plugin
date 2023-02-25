@@ -74,3 +74,18 @@ target '${CIO_NOTIFICATION_TARGET_NAME}' do
   use_frameworks! :linkage => :static
 ${CIO_PODFILE_SNIPPET}
 end`;
+
+export const CIO_REGISTER_PUSHNOTIFICATION_SNIPPET = `
+@objc(registerPushNotification:)
+  public func registerPushNotification(withNotificationDelegate notificationDelegate: UNUserNotificationCenterDelegate) {
+
+    let center  = UNUserNotificationCenter.current()
+    center.delegate = notificationDelegate
+    center.requestAuthorization(options: [.sound, .alert, .badge]) { (granted, error) in
+      if error == nil{
+        DispatchQueue.main.async {
+          UIApplication.shared.registerForRemoteNotifications()
+        }
+      }
+    }
+  }`;

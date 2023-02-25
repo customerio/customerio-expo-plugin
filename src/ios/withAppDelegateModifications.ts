@@ -22,6 +22,7 @@ import {
   injectCodeByMultiLineRegexAndReplaceLine,
 } from '../helpers/utils/codeInjection';
 import { FileManagement } from '../helpers/utils/fileManagement';
+import type { CustomerIOPluginOptionsIOS } from '../types/cio-types';
 
 const pushCodeSnippets = [
   CIO_DIDRECEIVENOTIFICATIONRESPONSEHANDLER_SNIPPET,
@@ -119,9 +120,9 @@ const addAppdelegateHeaderModification = (stringContents: string) => {
   return stringContents;
 };
 
-export const withAppDelegateModifications: ConfigPlugin<any> = (
-  configOuter
-) => {
+export const withAppDelegateModifications: ConfigPlugin<
+  CustomerIOPluginOptionsIOS
+> = (configOuter, props) => {
   return withAppDelegate(configOuter, async (config) => {
     let stringContents = config.modResults.contents;
     const regex = new RegExp(
@@ -142,7 +143,9 @@ export const withAppDelegateModifications: ConfigPlugin<any> = (
         config.modRequest.projectName as string
       );
       stringContents = addNotificationHandlerDeclaration(stringContents);
-      stringContents = addNotificationConfiguration(stringContents);
+      if (!props.disableNotificationRegistration) {
+        stringContents = addNotificationConfiguration(stringContents);
+      }
       stringContents = addAdditionalMethodsForPushNotifications(stringContents);
       stringContents =
         addDidFailToRegisterForRemoteNotificationsWithError(stringContents);
