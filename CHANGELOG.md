@@ -1,3 +1,10 @@
+## [1.0.0-beta.4](https://github.com/customerio/customerio-expo-plugin/compare/1.0.0-beta.3...1.0.0-beta.4) (2023-02-27)
+
+
+### Features
+
+* flexible notification request handling ([#40](https://github.com/customerio/customerio-expo-plugin/issues/40)) ([447a7c2](https://github.com/customerio/customerio-expo-plugin/commit/447a7c271d2da8d64ad12c5b16207c2c0500a45e))
+
 ## [1.0.0-beta.3](https://github.com/customerio/customerio-expo-plugin/compare/1.0.0-beta.2...1.0.0-beta.3) (2023-02-20)
 
 
