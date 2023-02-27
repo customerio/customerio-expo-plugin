@@ -1,3 +1,10 @@
+## [1.0.0-beta.6](https://github.com/customerio/customerio-expo-plugin/compare/1.0.0-beta.5...1.0.0-beta.6) (2023-02-27)
+
+
+### Bug Fixes
+
+* github ref in npm publish step of deploy action ([#47](https://github.com/customerio/customerio-expo-plugin/issues/47)) ([59fb7f0](https://github.com/customerio/customerio-expo-plugin/commit/59fb7f0ad5ff05adb828166f4d62d96d18b08f9c))
+
 ## [1.0.0-beta.5](https://github.com/customerio/customerio-expo-plugin/compare/1.0.0-beta.4...1.0.0-beta.5) (2023-02-27)
 
 
