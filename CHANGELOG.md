@@ -1,3 +1,10 @@
+## [1.0.0-beta.5](https://github.com/customerio/customerio-expo-plugin/compare/1.0.0-beta.4...1.0.0-beta.5) (2023-02-27)
+
+
+### Bug Fixes
+
+* added dependencies ([#46](https://github.com/customerio/customerio-expo-plugin/issues/46)) ([5a2b643](https://github.com/customerio/customerio-expo-plugin/commit/5a2b643828e080a771fbd24795e818bada1c0e2f))
+
 ## [1.0.0-beta.4](https://github.com/customerio/customerio-expo-plugin/compare/1.0.0-beta.3...1.0.0-beta.4) (2023-02-27)
 
 
