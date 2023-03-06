@@ -145,7 +145,10 @@ export const withAppDelegateModifications: ConfigPlugin<
       stringContents = addNotificationHandlerDeclaration(stringContents);
 
       // any other value would be treated as true, it has to be explicitly false to disable
-      if (props.disableNotificationRegistration === false) {
+      if (
+        typeof props.disableNotificationRegistration !== 'undefined' &&
+        props.disableNotificationRegistration === false
+      ) {
         stringContents = addNotificationConfiguration(stringContents);
       }
       stringContents = addAdditionalMethodsForPushNotifications(stringContents);
