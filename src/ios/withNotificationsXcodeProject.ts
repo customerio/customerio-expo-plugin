@@ -367,7 +367,10 @@ const updatePushFile = (
   let envFileContent = FileManagement.readFile(envFileName);
 
   let snippet = '';
-  if (!options.disableNotificationRegistration) {
+  if (
+    options.disableNotificationRegistration !== undefined &&
+    options.disableNotificationRegistration === false
+  ) {
     snippet = CIO_REGISTER_PUSHNOTIFICATION_SNIPPET;
   }
 

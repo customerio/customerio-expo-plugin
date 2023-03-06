@@ -146,7 +146,7 @@ export const withAppDelegateModifications: ConfigPlugin<
 
       // any other value would be treated as true, it has to be explicitly false to disable
       if (
-        typeof props.disableNotificationRegistration !== 'undefined' &&
+        props.disableNotificationRegistration !== undefined &&
         props.disableNotificationRegistration === false
       ) {
         stringContents = addNotificationConfiguration(stringContents);
