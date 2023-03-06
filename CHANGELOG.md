@@ -1,3 +1,10 @@
+## [1.0.0-beta.7](https://github.com/customerio/customerio-expo-plugin/compare/1.0.0-beta.6...1.0.0-beta.7) (2023-03-06)
+
+
+### Features
+
+* support for React Native and iOS SDK v2 ([#51](https://github.com/customerio/customerio-expo-plugin/issues/51)) ([65a76d9](https://github.com/customerio/customerio-expo-plugin/commit/65a76d98da8c1d012c0ff9f6bb697aea47d3b74f))
+
 ## [1.0.0-beta.6](https://github.com/customerio/customerio-expo-plugin/compare/1.0.0-beta.5...1.0.0-beta.6) (2023-02-27)
 
 
