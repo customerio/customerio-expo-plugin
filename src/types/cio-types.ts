@@ -15,6 +15,7 @@ export type CustomerIOPluginOptionsIOS = {
   iosDeploymentTarget?: string;
   appleTeamId?: string;
   appName?: string;
+  disableNotificationRegistration?: boolean;
   useFrameworks?: 'static' | 'dynamic';
   pushNotification?: {
     useRichPush: boolean;
@@ -29,6 +30,7 @@ export type CustomerIOPluginOptionsIOS = {
 export type CustomerIOPluginOptionsAndroid = {
   androidPath: string;
   googleServicesFile?: string;
+  setHighPriorityPushHandler?: boolean;
 };
 
 export type CustomerIOPluginOptions = {

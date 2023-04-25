@@ -122,7 +122,13 @@ The `customerio-expo-plugin` supports the following configuration options. In mo
             <td><code>android.googleServicesFile</code></td>
             <td>string</td>
             <td><code>undefined</code></td>
-            <td>Set the path to the folder that contains your <code>google-services.json</code> file with a trailing slash (<code>/</code>).</td>
+            <td>Set the path to your <code>google-services.json</code> file.</td>
+        </tr>
+        <tr>
+            <td><code>android.setHighPriorityPushHandler</code></td>
+            <td>boolean</td>
+            <td><code>undefined</code></td>
+            <td>This is optional, if you choose to use a 3rd party plugin to handle notification permissions, but want our SDK to handle the notifications.</td>
         </tr>
         <tr>
             <td><code>ios.pushNotification</code></td>
@@ -137,10 +143,22 @@ The `customerio-expo-plugin` supports the following configuration options. In mo
             <td>Enables rich push for iOS</td>
         </tr>
         <tr>
+            <td style="white-space:nowrap;"><code>ios.pushNotification.env</code></td>
+            <td>object</td>
+            <td><code>undefined</code></td>
+            <td>Set environment variables to use for rich push workaround. This field should be filled when enabling rich push. Expected values: `siteId`: `string`,`apiKey`: `string`, `region`: `us` or `eu`</td>
+        </tr>
+        <tr>
             <td style="white-space:nowrap;"><code>ios.useFrameworks</code></td>
             <td>string</td>
             <td><code>undefined</code></td>
             <td>This is optional, it allows the plugin to work with static libraries. Options are <code>static</code> and <code>dynamic</code></td>
+        </tr>
+        <tr>
+            <td style="white-space:nowrap;"><code>ios.disableNotificationRegistration</code></td>
+            <td>boolean</td>
+            <td><code>undefined</code></td>
+            <td>This is optional, it removes the `registerPushNotification` handler and allows you to use any 3rd party plugin to handle the permission request </td>
         </tr>
     </tbody>
 </table>

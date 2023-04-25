@@ -3,6 +3,7 @@ import xcode from 'xcode';
 
 import {
   CIO_NOTIFICATION_TARGET_NAME,
+  CIO_REGISTER_PUSHNOTIFICATION_SNIPPET,
   DEFAULT_BUNDLE_VERSION,
   LOCAL_PATH_TO_CIO_NSE_FILES,
 } from '../helpers/constants/ios';
@@ -84,6 +85,7 @@ export const withCioNotificationsXcodeProject: ConfigPlugin<
     }
 
     const options = {
+      ...props,
       appleTeamId,
       bundleIdentifier,
       bundleShortVersion,
@@ -116,6 +118,15 @@ const addRichPushXcodeProj = async (
   } = options;
 
   await injectCIONotificationPodfileCode(iosPath, useFrameworks);
+
+  // Check if `CIO_NOTIFICATION_TARGET_NAME` group already exist in the project
+  // If true then skip creating a new group to avoid duplicate folders
+  if (xcodeProject.pbxTargetByName(CIO_NOTIFICATION_TARGET_NAME)) {
+    console.warn(
+      `${CIO_NOTIFICATION_TARGET_NAME} already exists in project. Skipping...`
+    );
+    return;
+  }
 
   const nsePath = `${iosPath}/${CIO_NOTIFICATION_TARGET_NAME}`;
   FileManagement.mkdir(nsePath, {
@@ -160,7 +171,7 @@ const addRichPushXcodeProj = async (
   // files / folder appear in the file explorer in Xcode.
   const groups = xcodeProject.hash.project.objects['PBXGroup'];
   Object.keys(groups).forEach((key) => {
-    if (groups[key].name === undefined) {
+    if (groups[key].name === undefined && groups[key].path === undefined) {
       xcodeProject.addToPbxGroup(extGroup.uuid, key);
     }
   });
@@ -290,13 +301,23 @@ const updateNseEnv = (
   }
 
   if (options.pushNotification?.env?.region) {
-    let region = '';
-    if (options.pushNotification?.env?.region === 'us') {
-      region = 'Region.US';
-    } else if (options.pushNotification?.env?.region === 'eu') {
-      region = 'Region.EU';
+    const regionMap = {
+      us: 'Region.US',
+      eu: 'Region.EU',
+    };
+    const region = options.pushNotification?.env?.region?.toLowerCase();
+    const mappedRegion = (regionMap as any)[region] || '';
+    if (!mappedRegion) {
+      console.warn(
+        `${options.pushNotification?.env?.region} is an invalid region. Please use the values from the docs: https://customer.io/docs/sdk/expo/getting-started/#configure-the-plugin`
+      );
+    } else {
+      envFileContent = replaceCodeByRegex(
+        envFileContent,
+        REGION_RE,
+        mappedRegion
+      );
     }
-    envFileContent = replaceCodeByRegex(envFileContent, REGION_RE, region);
   }
 
   FileManagement.writeFile(envFileName, envFileContent);
@@ -310,20 +331,25 @@ async function addPushNotificationFile(
   const file = 'PushService.swift';
   const appPath = `${iosPath}/${appName}`;
   const getTargetFile = (filename: string) => `${appPath}/${filename}`;
+  const targetFile = getTargetFile(file);
 
+  // Check whether {file} exists in the project. If false, then add the file
+  // If {file} exists then skip and return
   if (!FileManagement.exists(getTargetFile(file))) {
     FileManagement.mkdir(appPath, {
       recursive: true,
     });
 
-    const targetFile = getTargetFile(file);
     FileManagement.copyFile(
       `${LOCAL_PATH_TO_CIO_NSE_FILES}/${file}`,
       targetFile
     );
   } else {
     console.log(`${getTargetFile(file)} already exists. Skipping...`);
+    return;
   }
+
+  updatePushFile(options, targetFile);
 
   const group = xcodeProject.pbxCreateGroup('CustomerIONotifications');
   const classesKey = xcodeProject.findPBXGroupKey({ name: `${appName}` });
@@ -331,3 +357,24 @@ async function addPushNotificationFile(
 
   xcodeProject.addSourceFile(`${appName}/${file}`, null, group);
 }
+
+const updatePushFile = (
+  options: CustomerIOPluginOptionsIOS,
+  envFileName: string
+) => {
+  const REGISTER_RE = /\{\{REGISTER_SNIPPET\}\}/;
+
+  let envFileContent = FileManagement.readFile(envFileName);
+
+  let snippet = '';
+  if (
+    options.disableNotificationRegistration !== undefined &&
+    options.disableNotificationRegistration === false
+  ) {
+    snippet = CIO_REGISTER_PUSHNOTIFICATION_SNIPPET;
+  }
+
+  envFileContent = replaceCodeByRegex(envFileContent, REGISTER_RE, snippet);
+
+  FileManagement.writeFile(envFileName, envFileContent);
+};
