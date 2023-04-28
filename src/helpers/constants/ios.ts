@@ -1,4 +1,14 @@
-export const LOCAL_PATH_TO_CIO_NSE_FILES = `./node_modules/customerio-expo-plugin/src/helpers/native-files/ios`;
+const findWorkspaceRoot = require('find-workspace-root');
+const workspaceRoot = findWorkspaceRoot();
+const path = require('path');
+const nodeModulesPath = workspaceRoot
+  ? path.join(workspaceRoot, 'node_modules')
+  : './node_modules';
+
+export const LOCAL_PATH_TO_CIO_NSE_FILES = path.join(
+  nodeModulesPath,
+  'customerio-expo-plugin/src/helpers/native-files/ios'
+);
 export const IOS_DEPLOYMENT_TARGET = '13.0';
 export const CIO_SDK_VERSION = "'~> 2.0'";
 export const CIO_PODFILE_REGEX = /pod 'CustomerIO\/MessagingPushAPN'/;

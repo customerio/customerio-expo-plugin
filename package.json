@@ -111,5 +111,8 @@
         }
       ]
     ]
+  },
+  "dependencies": {
+    "find-workspace-root": "^1.0.1"
   }
 }
