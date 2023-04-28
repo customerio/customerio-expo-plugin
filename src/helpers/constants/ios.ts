@@ -1,13 +1,17 @@
-const findWorkspaceRoot = require('find-workspace-root');
-const workspaceRoot = findWorkspaceRoot();
 const path = require('path');
-const nodeModulesPath = workspaceRoot
-  ? path.join(workspaceRoot, 'node_modules')
-  : './node_modules';
+
+// Find the path to the package
+let pluginIndexPath = require.resolve('customerio-expo-plugin');
+
+// remove index.js from the end of the pluginIndexPath
+pluginIndexPath = path.dirname(pluginIndexPath);
+
+// This is the path to the root of the customerio-expo-plugin package
+const pluginPackageRoot = path.join(pluginIndexPath, '..', '..');
 
 export const LOCAL_PATH_TO_CIO_NSE_FILES = path.join(
-  nodeModulesPath,
-  'customerio-expo-plugin/src/helpers/native-files/ios'
+  pluginPackageRoot,
+  'src/helpers/native-files/ios'
 );
 export const IOS_DEPLOYMENT_TARGET = '13.0';
 export const CIO_SDK_VERSION = "'~> 2.0'";
