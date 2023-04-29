@@ -1,13 +1,10 @@
+const finder = require('find-package-json');
 const path = require('path');
 
-// Find the path to the package
-let pluginIndexPath = require.resolve('customerio-expo-plugin');
-
-// remove index.js from the end of the pluginIndexPath
-pluginIndexPath = path.dirname(pluginIndexPath);
-
+const f = finder(__dirname);
+let pluginPackageRoot = f.next().filename;
 // This is the path to the root of the customerio-expo-plugin package
-const pluginPackageRoot = path.join(pluginIndexPath, '..', '..');
+pluginPackageRoot = path.dirname(pluginPackageRoot);
 
 export const LOCAL_PATH_TO_CIO_NSE_FILES = path.join(
   pluginPackageRoot,
