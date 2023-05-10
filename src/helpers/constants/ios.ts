@@ -40,6 +40,7 @@ CIOAppPushNotificationsHandler* pnHandlerObj = [[CIOAppPushNotificationsHandler 
 `;
 
 export const CIO_DIDFAILTOREGISTERFORREMOTENOTIFICATIONSWITHERROR_SNIPPET = `
+  [super application:application didFailToRegisterForRemoteNotificationsWithError:error];
   [pnHandlerObj application:application error:error];
 `;
 
