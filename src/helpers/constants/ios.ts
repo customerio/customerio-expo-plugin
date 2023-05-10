@@ -47,6 +47,11 @@ export const CIO_DIDREGISTERFORREMOTENOTIFICATIONSWITHDEVICETOKEN_SNIPPET = `
   return [pnHandlerObj application:application deviceToken:deviceToken];
 `;
 
+export const CIO_DIDREGISTERFORREMOTENOTIFICATIONSWITHDEVICETOKEN_EXPO_SUPPORT_SNIPPET = `
+  [super application:application didRegisterForRemoteNotificationsWithDeviceToken:deviceToken]
+  return [pnHandlerObj application:application deviceToken:deviceToken];
+`;
+
 export const CIO_CONFIGURECIOSDKPUSHNOTIFICATION_SNIPPET = `
   // Register for push notifications
   [pnHandlerObj registerPushNotification:self];
