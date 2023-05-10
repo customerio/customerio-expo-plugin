@@ -11,7 +11,6 @@ import {
   CIO_DIDFAILTOREGISTERFORREMOTENOTIFICATIONSWITHERROR_SNIPPET,
   CIO_DIDFINISHLAUNCHINGMETHOD_REGEX,
   CIO_DIDRECEIVENOTIFICATIONRESPONSEHANDLER_SNIPPET,
-  CIO_DIDREGISTERFORREMOTENOTIFICATIONSWITHDEVICETOKEN_EXPO_SUPPORT_SNIPPET,
   CIO_DIDREGISTERFORREMOTENOTIFICATIONSWITHDEVICETOKEN_REGEX,
   CIO_DIDREGISTERFORREMOTENOTIFICATIONSWITHDEVICETOKEN_SNIPPET,
   CIO_PUSHNOTIFICATIONHANDLERDECLARATION_SNIPPET,
@@ -101,18 +100,6 @@ const addDidRegisterForRemoteNotificationsWithDeviceToken = (
   return stringContents;
 };
 
-const addDidRegisterForRemoteNotificationsWithDeviceTokenWithExpoSupport = (
-  stringContents: string
-) => {
-  stringContents = injectCodeByMultiLineRegexAndReplaceLine(
-    stringContents,
-    CIO_DIDREGISTERFORREMOTENOTIFICATIONSWITHDEVICETOKEN_REGEX,
-    CIO_DIDREGISTERFORREMOTENOTIFICATIONSWITHDEVICETOKEN_EXPO_SUPPORT_SNIPPET
-  );
-
-  return stringContents;
-};
-
 const addAdditionalMethodsForPushNotifications = (stringContents: string) => {
   stringContents = injectCodeByMultiLineRegex(
     stringContents,
@@ -163,17 +150,12 @@ export const withAppDelegateModifications: ConfigPlugin<
         props.disableNotificationRegistration === false
       ) {
         stringContents = addNotificationConfiguration(stringContents);
-        stringContents =
-          addDidRegisterForRemoteNotificationsWithDeviceTokenWithExpoSupport(
-            stringContents
-          );
-      } else {
-        stringContents =
-          addDidRegisterForRemoteNotificationsWithDeviceToken(stringContents);
       }
       stringContents = addAdditionalMethodsForPushNotifications(stringContents);
       stringContents =
         addDidFailToRegisterForRemoteNotificationsWithError(stringContents);
+      stringContents =
+        addDidRegisterForRemoteNotificationsWithDeviceToken(stringContents);
 
       config.modResults.contents = stringContents;
     } else {
