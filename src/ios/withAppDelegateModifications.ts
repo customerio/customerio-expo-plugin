@@ -88,7 +88,7 @@ const addDidFailToRegisterForRemoteNotificationsWithError = (
   return stringContents;
 };
 
-const AddDidRegisterForRemoteNotificationsWithDeviceToken = (
+const addDidRegisterForRemoteNotificationsWithDeviceToken = (
   stringContents: string
 ) => {
   stringContents = injectCodeByMultiLineRegexAndReplaceLine(
@@ -155,7 +155,7 @@ export const withAppDelegateModifications: ConfigPlugin<
       stringContents =
         addDidFailToRegisterForRemoteNotificationsWithError(stringContents);
       stringContents =
-        AddDidRegisterForRemoteNotificationsWithDeviceToken(stringContents);
+        addDidRegisterForRemoteNotificationsWithDeviceToken(stringContents);
 
       config.modResults.contents = stringContents;
     } else {
