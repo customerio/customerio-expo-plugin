@@ -1,3 +1,10 @@
+## [1.0.0-beta.8](https://github.com/customerio/customerio-expo-plugin/compare/1.0.0-beta.7...1.0.0-beta.8) (2023-05-11)
+
+
+### Bug Fixes
+
+* expo-notifications compatibility with customerio-expo-plugin ([#70](https://github.com/customerio/customerio-expo-plugin/issues/70)) ([fe5cd0f](https://github.com/customerio/customerio-expo-plugin/commit/fe5cd0f5d0dd715e76b8bbfd656b4667eaf63dbf))
+
 ## [1.0.0-beta.7](https://github.com/customerio/customerio-expo-plugin/compare/1.0.0-beta.6...1.0.0-beta.7) (2023-03-06)
 
 
