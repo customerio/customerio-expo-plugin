@@ -45,7 +45,7 @@ export const CIO_DIDFAILTOREGISTERFORREMOTENOTIFICATIONSWITHERROR_SNIPPET = `
 `;
 
 export const CIO_DIDREGISTERFORREMOTENOTIFICATIONSWITHDEVICETOKEN_SNIPPET = `
-  [super application:application didRegisterForRemoteNotificationsWithDeviceToken:deviceToken]
+  [super application:application didRegisterForRemoteNotificationsWithDeviceToken:deviceToken];
   return [pnHandlerObj application:application deviceToken:deviceToken];
 `;
 
