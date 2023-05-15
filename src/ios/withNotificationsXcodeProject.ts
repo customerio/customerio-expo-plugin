@@ -17,14 +17,15 @@ const ENV_FILENAME = 'Env.swift';
 const TARGETED_DEVICE_FAMILY = `"1,2"`;
 
 const addNotificationServiceExtension = async (
-  options: CustomerIOPluginOptionsIOS
+  options: CustomerIOPluginOptionsIOS,
+  xcodeProject: any
 ) => {
   if (options.pushNotification) {
-    await addPushNotificationFile(options, options.xcodeProject);
+    await addPushNotificationFile(options, xcodeProject);
   }
 
   if (options.pushNotification?.useRichPush) {
-    await addRichPushXcodeProj(options, options.xcodeProject);
+    await addRichPushXcodeProj(options, xcodeProject);
   }
 };
 
@@ -78,10 +79,9 @@ export const withCioNotificationsXcodeProject: ConfigPlugin<
       useFrameworks,
       iosDeploymentTarget,
       pushNotification,
-      xcodeProject: config.modResults
     };
 
-    await addNotificationServiceExtension(options);
+    await addNotificationServiceExtension(options, config.modResults);
 
     return config;
   });
