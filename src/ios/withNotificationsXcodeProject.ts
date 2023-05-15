@@ -1,5 +1,4 @@
 import { ConfigPlugin, withXcodeProject } from '@expo/config-plugins';
-import xcode from 'xcode';
 
 import {
   CIO_NOTIFICATION_TARGET_NAME,
@@ -20,29 +19,13 @@ const TARGETED_DEVICE_FAMILY = `"1,2"`;
 const addNotificationServiceExtension = async (
   options: CustomerIOPluginOptionsIOS
 ) => {
-  // iosPath and appName are predefined from Expo config.
-  // See function withCioNotificationsXcodeProject to get where the variabes are pulled from.
-  const { iosPath, appName } = options;
+  if (options.pushNotification) {
+    await addPushNotificationFile(options, options.xcodeProject);
+  }
 
-  const projPath = `${iosPath}/${appName}.xcodeproj/project.pbxproj`;
-
-  const xcodeProject = xcode.project(projPath);
-
-  xcodeProject.parse(async function (err: Error) {
-    if (err) {
-      throw new Error(`Error parsing iOS project: ${JSON.stringify(err)}`);
-    }
-
-    if (options.pushNotification) {
-      await addPushNotificationFile(options, xcodeProject);
-    }
-
-    if (options.pushNotification?.useRichPush) {
-      await addRichPushXcodeProj(options, xcodeProject);
-    }
-
-    FileManagement.writeFile(projPath, xcodeProject.writeSync());
-  });
+  if (options.pushNotification?.useRichPush) {
+    await addRichPushXcodeProj(options, options.xcodeProject);
+  }
 };
 
 export const withCioNotificationsXcodeProject: ConfigPlugin<
@@ -95,6 +78,7 @@ export const withCioNotificationsXcodeProject: ConfigPlugin<
       useFrameworks,
       iosDeploymentTarget,
       pushNotification,
+      xcodeProject: config.modResults
     };
 
     await addNotificationServiceExtension(options);

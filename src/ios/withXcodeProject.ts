@@ -15,6 +15,7 @@ export const withCioXcodeProject: ConfigPlugin<CustomerIOPluginOptionsIOS> = (
       bundleVersion: props.ios?.buildNumber,
       bundleShortVersion: props?.version,
       iosDeploymentTarget: cioProps?.iosDeploymentTarget,
+      xcodeProject: props.modResults,
     };
     const { iosPath } = options;
 

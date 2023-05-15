@@ -25,6 +25,7 @@ export type CustomerIOPluginOptionsIOS = {
       region: string;
     };
   };
+  xcodeProject: any;
 };
 
 export type CustomerIOPluginOptionsAndroid = {
