@@ -1,3 +1,10 @@
+## [1.0.0-beta.9](https://github.com/customerio/customerio-expo-plugin/compare/1.0.0-beta.8...1.0.0-beta.9) (2023-05-17)
+
+
+### Bug Fixes
+
+* compatibility for monorepos ([#67](https://github.com/customerio/customerio-expo-plugin/issues/67)) ([14fa86c](https://github.com/customerio/customerio-expo-plugin/commit/14fa86cab7b2c3465f7d1afe2906aef70c59af3b))
+
 ## [1.0.0-beta.8](https://github.com/customerio/customerio-expo-plugin/compare/1.0.0-beta.7...1.0.0-beta.8) (2023-05-11)
 
 

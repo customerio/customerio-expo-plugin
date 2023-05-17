@@ -1,6 +1,6 @@
 {
   "name": "customerio-expo-plugin",
-  "version": "1.0.0-beta.8",
+  "version": "1.0.0-beta.9",
   "description": "Expo config plugin for the Customer IO React Native SDK",
   "main": "lib/commonjs/index",
   "module": "lib/module/index",
