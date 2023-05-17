@@ -1,4 +1,15 @@
-export const LOCAL_PATH_TO_CIO_NSE_FILES = `./node_modules/customerio-expo-plugin/src/helpers/native-files/ios`;
+const finder = require('find-package-json');
+const path = require('path');
+
+const f = finder(__dirname);
+let pluginPackageRoot = f.next().filename;
+// This is the path to the root of the customerio-expo-plugin package
+pluginPackageRoot = path.dirname(pluginPackageRoot);
+
+export const LOCAL_PATH_TO_CIO_NSE_FILES = path.join(
+  pluginPackageRoot,
+  'src/helpers/native-files/ios'
+);
 export const IOS_DEPLOYMENT_TARGET = '13.0';
 export const CIO_SDK_VERSION = "'~> 2.0'";
 export const CIO_PODFILE_REGEX = /pod 'CustomerIO\/MessagingPushAPN'/;
