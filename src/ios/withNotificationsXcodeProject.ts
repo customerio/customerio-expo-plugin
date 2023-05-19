@@ -17,6 +17,17 @@ const ENV_FILENAME = 'Env.swift';
 
 const TARGETED_DEVICE_FAMILY = `"1,2"`;
 
+const parseXcodeProject = (xcodeProject: any) =>
+  new Promise((resolve, reject) => {
+    xcodeProject.parse((err: any) => {
+      if (err) {
+        reject(new Error(`Error parsing iOS project: ${JSON.stringify(err)}`));
+      } else {
+        resolve(xcodeProject);
+      }
+    });
+  });
+
 const addNotificationServiceExtension = async (
   options: CustomerIOPluginOptionsIOS
 ) => {
@@ -28,10 +39,8 @@ const addNotificationServiceExtension = async (
 
   const xcodeProject = xcode.project(projPath);
 
-  xcodeProject.parse(async function (err: Error) {
-    if (err) {
-      throw new Error(`Error parsing iOS project: ${JSON.stringify(err)}`);
-    }
+  try {
+    await parseXcodeProject(xcodeProject);
 
     if (options.pushNotification) {
       await addPushNotificationFile(options, xcodeProject);
@@ -41,8 +50,11 @@ const addNotificationServiceExtension = async (
       await addRichPushXcodeProj(options, xcodeProject);
     }
 
-    FileManagement.writeFile(projPath, xcodeProject.writeSync());
-  });
+    return xcodeProject;
+  } catch (error: any) {
+    console.error(error);
+    return null;
+  }
 };
 
 export const withCioNotificationsXcodeProject: ConfigPlugin<
@@ -97,7 +109,11 @@ export const withCioNotificationsXcodeProject: ConfigPlugin<
       pushNotification,
     };
 
-    await addNotificationServiceExtension(options);
+    const modifiedProjectFile = await addNotificationServiceExtension(options);
+
+    if (modifiedProjectFile) {
+      config.modResults = modifiedProjectFile;
+    }
 
     return config;
   });
