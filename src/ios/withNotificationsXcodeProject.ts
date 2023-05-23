@@ -1,4 +1,8 @@
-import { ConfigPlugin, withXcodeProject } from '@expo/config-plugins';
+import {
+  ConfigPlugin,
+  XcodeProject,
+  withXcodeProject,
+} from '@expo/config-plugins';
 
 import {
   CIO_NOTIFICATION_TARGET_NAME,
@@ -18,14 +22,20 @@ const TARGETED_DEVICE_FAMILY = `"1,2"`;
 
 const addNotificationServiceExtension = async (
   options: CustomerIOPluginOptionsIOS,
-  xcodeProject: any
+  xcodeProject: XcodeProject
 ) => {
-  if (options.pushNotification) {
-    await addPushNotificationFile(options, xcodeProject);
-  }
+  try {
+    if (options.pushNotification) {
+      await addPushNotificationFile(options, xcodeProject);
+    }
 
-  if (options.pushNotification?.useRichPush) {
-    await addRichPushXcodeProj(options, xcodeProject);
+    if (options.pushNotification?.useRichPush) {
+      await addRichPushXcodeProj(options, xcodeProject);
+    }
+    return xcodeProject;
+  } catch (error: any) {
+    console.error(error);
+    return null;
   }
 };
 
@@ -81,7 +91,14 @@ export const withCioNotificationsXcodeProject: ConfigPlugin<
       pushNotification,
     };
 
-    await addNotificationServiceExtension(options, config.modResults);
+    const modifiedProjectFile = await addNotificationServiceExtension(
+      options,
+      config.modResults
+    );
+
+    if (modifiedProjectFile) {
+      config.modResults = modifiedProjectFile;
+    }
 
     return config;
   });
