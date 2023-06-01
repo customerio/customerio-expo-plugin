@@ -1,5 +1,8 @@
-import { ConfigPlugin, withXcodeProject } from '@expo/config-plugins';
-import xcode from 'xcode';
+import {
+  ConfigPlugin,
+  XcodeProject,
+  withXcodeProject,
+} from '@expo/config-plugins';
 
 import {
   CIO_NOTIFICATION_TARGET_NAME,
@@ -18,21 +21,10 @@ const ENV_FILENAME = 'Env.swift';
 const TARGETED_DEVICE_FAMILY = `"1,2"`;
 
 const addNotificationServiceExtension = async (
-  options: CustomerIOPluginOptionsIOS
+  options: CustomerIOPluginOptionsIOS,
+  xcodeProject: XcodeProject
 ) => {
-  // iosPath and appName are predefined from Expo config.
-  // See function withCioNotificationsXcodeProject to get where the variabes are pulled from.
-  const { iosPath, appName } = options;
-
-  const projPath = `${iosPath}/${appName}.xcodeproj/project.pbxproj`;
-
-  const xcodeProject = xcode.project(projPath);
-
-  xcodeProject.parse(async function (err: Error) {
-    if (err) {
-      throw new Error(`Error parsing iOS project: ${JSON.stringify(err)}`);
-    }
-
+  try {
     if (options.pushNotification) {
       await addPushNotificationFile(options, xcodeProject);
     }
@@ -40,9 +32,11 @@ const addNotificationServiceExtension = async (
     if (options.pushNotification?.useRichPush) {
       await addRichPushXcodeProj(options, xcodeProject);
     }
-
-    FileManagement.writeFile(projPath, xcodeProject.writeSync());
-  });
+    return xcodeProject;
+  } catch (error: any) {
+    console.error(error);
+    return null;
+  }
 };
 
 export const withCioNotificationsXcodeProject: ConfigPlugin<
@@ -97,7 +91,14 @@ export const withCioNotificationsXcodeProject: ConfigPlugin<
       pushNotification,
     };
 
-    await addNotificationServiceExtension(options);
+    const modifiedProjectFile = await addNotificationServiceExtension(
+      options,
+      config.modResults
+    );
+
+    if (modifiedProjectFile) {
+      config.modResults = modifiedProjectFile;
+    }
 
     return config;
   });
