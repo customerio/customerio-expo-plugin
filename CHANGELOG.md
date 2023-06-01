@@ -1,3 +1,10 @@
+## [1.0.0-beta.10](https://github.com/customerio/customerio-expo-plugin/compare/1.0.0-beta.9...1.0.0-beta.10) (2023-06-01)
+
+
+### Bug Fixes
+
+* xcode race condition fix ([#76](https://github.com/customerio/customerio-expo-plugin/issues/76)) ([ff136ba](https://github.com/customerio/customerio-expo-plugin/commit/ff136ba21e08c4b63a17ad298c8fd71934108efc))
+
 ## [1.0.0-beta.9](https://github.com/customerio/customerio-expo-plugin/compare/1.0.0-beta.8...1.0.0-beta.9) (2023-05-17)
 
 
