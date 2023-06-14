@@ -65,6 +65,11 @@ export const CIO_CONFIGURECIOSDKPUSHNOTIFICATION_SNIPPET = `
   [pnHandlerObj registerPushNotification:self];
 `;
 
+export const CIO_CONFIGURECIOSDKUSERNOTIFICATIONCENTER_SNIPPET = `
+  UNUserNotificationCenter *center = [UNUserNotificationCenter currentNotificationCenter];
+  center.delegate = self;
+`;
+
 // Enable push handling - notification response
 export const CIO_DIDRECEIVENOTIFICATIONRESPONSEHANDLER_SNIPPET = `
 - (void)userNotificationCenter:(UNUserNotificationCenter *)center didReceiveNotificationResponse:(UNNotificationResponse *)response withCompletionHandler:(void(^)(void))completionHandler {
@@ -93,7 +98,6 @@ export const CIO_REGISTER_PUSHNOTIFICATION_SNIPPET = `
   public func registerPushNotification(withNotificationDelegate notificationDelegate: UNUserNotificationCenterDelegate) {
 
     let center  = UNUserNotificationCenter.current()
-    center.delegate = notificationDelegate
     center.requestAuthorization(options: [.sound, .alert, .badge]) { (granted, error) in
       if error == nil{
         DispatchQueue.main.async {
