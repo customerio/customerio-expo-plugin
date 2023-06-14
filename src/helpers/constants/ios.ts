@@ -20,7 +20,7 @@ export const GROUP_IDENTIFIER_TEMPLATE_REGEX = /{{GROUP_IDENTIFIER}}/gm;
 export const BUNDLE_SHORT_VERSION_TEMPLATE_REGEX = /{{BUNDLE_SHORT_VERSION}}/gm;
 export const BUNDLE_VERSION_TEMPLATE_REGEX = /{{BUNDLE_VERSION}}/gm;
 export const CIO_DIDFINISHLAUNCHINGMETHOD_REGEX =
-  /\[super(\s)application:application(\s)didFinishLaunchingWithOptions:launchOptions\];/;
+  /.*\[super(\s)application:application(\s)didFinishLaunchingWithOptions:launchOptions\];/;
 
 export const CIO_DIDFAILTOREGISTERFORREMOTENOTIFICATIONSWITHERROR_REGEX =
   /return \[super application:application didFailToRegisterForRemoteNotificationsWithError:error\];/;
