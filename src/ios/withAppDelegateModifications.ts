@@ -6,6 +6,7 @@ import {
   CIO_APPDELEGATEHEADER_REGEX,
   CIO_APPDELEGATEHEADER_SNIPPET,
   CIO_CONFIGURECIOSDKPUSHNOTIFICATION_SNIPPET,
+  CIO_CONFIGURECIOSDKUSERNOTIFICATIONCENTER_SNIPPET,
   CIO_DIDFAILTOREGISTERFORREMOTENOTIFICATIONSWITHERRORFULL_REGEX,
   CIO_DIDFAILTOREGISTERFORREMOTENOTIFICATIONSWITHERROR_REGEX,
   CIO_DIDFAILTOREGISTERFORREMOTENOTIFICATIONSWITHERROR_SNIPPET,
@@ -17,6 +18,7 @@ import {
   CIO_WILLPRESENTNOTIFICATIONHANDLER_SNIPPET,
 } from '../helpers/constants/ios';
 import {
+  injectCodeBeforeMultiLineRegex,
   injectCodeByLineNumber,
   injectCodeByMultiLineRegex,
   injectCodeByMultiLineRegexAndReplaceLine,
@@ -67,10 +69,20 @@ const addNotificationHandlerDeclaration = (stringContents: string) => {
 };
 
 const addNotificationConfiguration = (stringContents: string) => {
-  stringContents = injectCodeByMultiLineRegex(
+  stringContents = injectCodeBeforeMultiLineRegex(
     stringContents,
     CIO_DIDFINISHLAUNCHINGMETHOD_REGEX,
     CIO_CONFIGURECIOSDKPUSHNOTIFICATION_SNIPPET
+  );
+
+  return stringContents;
+};
+
+const addUserNotificationCenterConfiguration = (stringContents: string) => {
+  stringContents = injectCodeBeforeMultiLineRegex(
+    stringContents,
+    CIO_DIDFINISHLAUNCHINGMETHOD_REGEX,
+    CIO_CONFIGURECIOSDKUSERNOTIFICATIONCENTER_SNIPPET
   );
 
   return stringContents;
@@ -151,6 +163,7 @@ export const withAppDelegateModifications: ConfigPlugin<
       ) {
         stringContents = addNotificationConfiguration(stringContents);
       }
+      stringContents = addUserNotificationCenterConfiguration(stringContents);
       stringContents = addAdditionalMethodsForPushNotifications(stringContents);
       stringContents =
         addDidFailToRegisterForRemoteNotificationsWithError(stringContents);

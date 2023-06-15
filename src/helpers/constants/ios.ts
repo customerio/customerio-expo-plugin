@@ -20,7 +20,7 @@ export const GROUP_IDENTIFIER_TEMPLATE_REGEX = /{{GROUP_IDENTIFIER}}/gm;
 export const BUNDLE_SHORT_VERSION_TEMPLATE_REGEX = /{{BUNDLE_SHORT_VERSION}}/gm;
 export const BUNDLE_VERSION_TEMPLATE_REGEX = /{{BUNDLE_VERSION}}/gm;
 export const CIO_DIDFINISHLAUNCHINGMETHOD_REGEX =
-  /(- \(BOOL\)application:\(UIApplication \*\)application didFinishLaunchingWithOptions:\(NSDictionary \*\)launchOptions(\s|\n)*?\{)((.|\n)*)\[super(\s)application:application(\s)didFinishLaunchingWithOptions:launchOptions\];/;
+  /.*\[super(\s)application:application(\s)didFinishLaunchingWithOptions:launchOptions\];/;
 
 export const CIO_DIDFAILTOREGISTERFORREMOTENOTIFICATIONSWITHERROR_REGEX =
   /return \[super application:application didFailToRegisterForRemoteNotificationsWithError:error\];/;
@@ -63,6 +63,11 @@ export const CIO_DIDREGISTERFORREMOTENOTIFICATIONSWITHDEVICETOKEN_SNIPPET = `
 export const CIO_CONFIGURECIOSDKPUSHNOTIFICATION_SNIPPET = `
   // Register for push notifications
   [pnHandlerObj registerPushNotification:self];
+`;
+
+export const CIO_CONFIGURECIOSDKUSERNOTIFICATIONCENTER_SNIPPET = `
+  UNUserNotificationCenter *center = [UNUserNotificationCenter currentNotificationCenter];
+  center.delegate = self;
 `;
 
 // Enable push handling - notification response
