@@ -126,7 +126,6 @@ const addAppdelegateHeaderModification = (stringContents: string) => {
   stringContents = stringContents.replace(
     CIO_APPDELEGATEHEADER_REGEX,
     (match, p1, _p2, p3) => {
-      console.log('p1', match, p1, _p2, p3);
       if (p3 && p3.includes('UNUserNotificationCenterDelegate')) {
         // The AppDelegate declaration already includes UNUserNotificationCenterDelegate, so we don't need to modify it
         return match;
