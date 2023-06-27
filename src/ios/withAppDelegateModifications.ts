@@ -131,10 +131,12 @@ const addAppdelegateHeaderModification = (stringContents: string) => {
         return match;
       } else if (p3) {
         // Other delegates exist, append ours
-        return `${p1}<${p3}, UNUserNotificationCenterDelegate>`;
+        return `#import <UserNotifications/UserNotifications.h>
+        ${p1}<${p3}, UNUserNotificationCenterDelegate>`;
       } else {
         // No delegates exist, add ours
-        return `${p1} <UNUserNotificationCenterDelegate>`;
+        return `#import <UserNotifications/UserNotifications.h>
+        ${p1.trim()} <UNUserNotificationCenterDelegate>`;
       }
     }
   );
