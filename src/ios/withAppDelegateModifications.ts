@@ -4,7 +4,6 @@ import { getAppDelegateHeaderFilePath } from '@expo/config-plugins/build/ios/Pat
 import {
   CIO_APPDELEGATEDECLARATION_REGEX,
   CIO_APPDELEGATEHEADER_REGEX,
-  CIO_APPDELEGATEHEADER_SNIPPET,
   CIO_CONFIGURECIOSDKPUSHNOTIFICATION_SNIPPET,
   CIO_CONFIGURECIOSDKUSERNOTIFICATIONCENTER_SNIPPET,
   CIO_DIDFAILTOREGISTERFORREMOTENOTIFICATIONSWITHERRORFULL_REGEX,
@@ -123,10 +122,24 @@ const addAdditionalMethodsForPushNotifications = (stringContents: string) => {
 };
 
 const addAppdelegateHeaderModification = (stringContents: string) => {
-  stringContents = injectCodeByMultiLineRegexAndReplaceLine(
-    stringContents,
+  // Add UNUserNotificationCenterDelegate if needed
+  stringContents = stringContents.replace(
     CIO_APPDELEGATEHEADER_REGEX,
-    CIO_APPDELEGATEHEADER_SNIPPET
+    (match, p1, p2) => {
+      if (p2) {
+        // The AppDelegate declaration already includes UNUserNotificationCenterDelegate, so we don't need to modify it
+        return match;
+      } else {
+        // We need to add UNUserNotificationCenterDelegate to the AppDelegate declaration
+        if (match.includes('<') && match.includes('>')) {
+          // Other delegates exist, append ours
+          return match.replace('>', ', UNUserNotificationCenterDelegate>');
+        } else {
+          // No delegates exist, add ours
+          return `${p1} <UNUserNotificationCenterDelegate>`;
+        }
+      }
+    }
   );
 
   return stringContents;

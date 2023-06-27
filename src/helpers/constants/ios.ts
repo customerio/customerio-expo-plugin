@@ -35,16 +35,11 @@ export const CIO_APPDELEGATEDECLARATION_REGEX =
   /@implementation AppDelegate(.|\n)/;
 
 export const CIO_APPDELEGATEHEADER_REGEX =
-/(@interface AppDelegate\s:\sEXAppDelegateWrapper)(.*\bUNUserNotificationCenterDelegate\b.*)?/;
+  /(@interface AppDelegate\s:\sEXAppDelegateWrapper)(.*\bUNUserNotificationCenterDelegate\b.*)?/;
 export const DEFAULT_BUNDLE_VERSION = '1';
 export const DEFAULT_BUNDLE_SHORT_VERSION = '1.0';
 export const CIO_TARGET_NAME = 'CustomerIOSDK';
 export const CIO_NOTIFICATION_TARGET_NAME = 'NotificationService';
-export const CIO_APPDELEGATEHEADER_SNIPPET = `
-#import <UserNotifications/UserNotifications.h>
-
-@interface AppDelegate : EXAppDelegateWrapper <RCTBridgeDelegate, UNUserNotificationCenterDelegate>
-`;
 
 export const CIO_PUSHNOTIFICATIONHANDLERDECLARATION_SNIPPET = `
 CIOAppPushNotificationsHandler* pnHandlerObj = [[CIOAppPushNotificationsHandler alloc] init];
