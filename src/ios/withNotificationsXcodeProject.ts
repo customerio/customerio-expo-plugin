@@ -25,6 +25,7 @@ const addNotificationServiceExtension = async (
   xcodeProject: XcodeProject
 ) => {
   try {
+    updateNseEnv(options, ENV_FILENAME)
     if (options.pushNotification) {
       await addPushNotificationFile(options, xcodeProject);
     }
