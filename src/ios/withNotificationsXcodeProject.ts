@@ -25,7 +25,6 @@ const addNotificationServiceExtension = async (
   xcodeProject: XcodeProject
 ) => {
   try {
-    updateNseEnv(options, ENV_FILENAME)
     if (options.pushNotification) {
       await addPushNotificationFile(options, xcodeProject);
     }
@@ -349,8 +348,23 @@ async function addPushNotificationFile(
     console.log(`${getTargetFile(file)} already exists. Skipping...`);
     return;
   }
-
   updatePushFile(options, targetFile);
+
+
+  if (!FileManagement.exists(getTargetFile(ENV_FILENAME))) {
+    FileManagement.mkdir(appPath, {
+      recursive: true,
+    });
+
+    FileManagement.copyFile(
+      `${LOCAL_PATH_TO_CIO_NSE_FILES}/${ENV_FILENAME}`,
+      targetFile
+    );
+  } else {
+    console.log(`${getTargetFile(file)} already exists. Skipping...`);
+    return;
+  }
+updateNseEnv(options, ENV_FILENAME)
 
   const group = xcodeProject.pbxCreateGroup('CustomerIONotifications');
   const classesKey = xcodeProject.findPBXGroupKey({ name: `${appName}` });
