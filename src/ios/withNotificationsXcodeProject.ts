@@ -364,7 +364,9 @@ async function addPushNotificationFile(
     console.log(`${getTargetFile(file)} already exists. Skipping...`);
     return;
   }
-updateNseEnv(options, ENV_FILENAME)
+  const getTargetFileEnv = (filename: string) => `${appPath}/${filename}`;
+  const targetFileEnv = getTargetFileEnv(ENV_FILENAME);
+updateNseEnv(options, targetFileEnv)
 
   const group = xcodeProject.pbxCreateGroup('CustomerIONotifications');
   const classesKey = xcodeProject.findPBXGroupKey({ name: `${appName}` });
