@@ -65,6 +65,11 @@ export const CIO_CONFIGURECIOSDKPUSHNOTIFICATION_SNIPPET = `
   [pnHandlerObj registerPushNotification:self];
 `;
 
+export const CIO_INITIALIZECIOSDK_SNIPPET = `
+  // Initialize Customer.io SDK
+  [pnHandlerObj initializeCioSdk];
+`;
+
 // Enable push handling - notification response
 export const CIO_DIDRECEIVENOTIFICATIONRESPONSEHANDLER_SNIPPET = `
 - (void)userNotificationCenter:(UNUserNotificationCenter *)center didReceiveNotificationResponse:(UNNotificationResponse *)response withCompletionHandler:(void(^)(void))completionHandler {
