@@ -331,6 +331,7 @@ async function addPushNotificationFile(
   const appPath = `${iosPath}/${appName}`;
   const getTargetFile = (filename: string) => `${appPath}/${filename}`;
   const targetFile = getTargetFile(file);
+  updatePushFile(options, targetFile);
 
   // Check whether {file} exists in the project. If false, then add the file
   // If {file} exists then skip and return
@@ -350,7 +351,6 @@ async function addPushNotificationFile(
     return;
   }
 
-  updatePushFile(options, targetFile);
 
   const group = xcodeProject.pbxCreateGroup('CustomerIONotifications');
   const classesKey = xcodeProject.findPBXGroupKey({ name: `${appName}` });
