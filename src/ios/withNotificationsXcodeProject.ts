@@ -158,6 +158,7 @@ const addRichPushXcodeProj = async (
     bundleShortVersion,
     infoPlistTargetFile,
   });
+  // updateNseEnv(options, getTargetFile(ENV_FILENAME));
 
   // Create new PBXGroup for the extension
   const extGroup = xcodeProject.addPbxGroup(
@@ -202,7 +203,7 @@ const addRichPushXcodeProj = async (
 
   // Add build phases to the new target
   xcodeProject.addBuildPhase(
-    ['NotificationService.m', 'NotificationService.swift', 'Env.swift'],
+    ['NotificationService.m', 'NotificationService.swift'],
     'PBXSourcesBuildPhase',
     'Sources',
     nseTarget.uuid
@@ -331,7 +332,6 @@ async function addPushNotificationFile(
   const appPath = `${iosPath}/${appName}`;
   const getTargetFile = (filename: string) => `${appPath}/${filename}`;
   const targetFile = getTargetFile(file);
-  updatePushFile(options, targetFile);
 
   // Check whether {file} exists in the project. If false, then add the file
   // If {file} exists then skip and return
@@ -344,13 +344,12 @@ async function addPushNotificationFile(
       `${LOCAL_PATH_TO_CIO_NSE_FILES}/${file}`,
       targetFile
     );
-      updateNseEnv(options, getTargetFile(ENV_FILENAME));
-
   } else {
     console.log(`${getTargetFile(file)} already exists. Skipping...`);
     return;
   }
 
+  updatePushFile(options, targetFile);
 
   const group = xcodeProject.pbxCreateGroup('CustomerIONotifications');
   const classesKey = xcodeProject.findPBXGroupKey({ name: `${appName}` });
