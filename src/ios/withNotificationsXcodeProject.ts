@@ -139,7 +139,6 @@ const addRichPushXcodeProj = async (
     'NotificationService.h',
     'NotificationService.swift',
     'NotificationService.m',
-    ENV_FILENAME,
   ];
 
   const getTargetFile = (filename: string) => `${nsePath}/${filename}`;
@@ -159,7 +158,6 @@ const addRichPushXcodeProj = async (
     bundleShortVersion,
     infoPlistTargetFile,
   });
-  updateNseEnv(options, getTargetFile(ENV_FILENAME));
 
   // Create new PBXGroup for the extension
   const extGroup = xcodeProject.addPbxGroup(
@@ -345,6 +343,8 @@ async function addPushNotificationFile(
       `${LOCAL_PATH_TO_CIO_NSE_FILES}/${file}`,
       targetFile
     );
+      updateNseEnv(options, getTargetFile(ENV_FILENAME));
+
   } else {
     console.log(`${getTargetFile(file)} already exists. Skipping...`);
     return;
