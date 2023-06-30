@@ -1,7 +1,7 @@
 import {
   ConfigPlugin,
   XcodeProject,
-  withXcodeProject,
+  withXcodeProject
 } from '@expo/config-plugins';
 
 import {
@@ -34,6 +34,8 @@ const addNotificationServiceExtension = async (
     if (options.pushNotification?.useRichPush) {
       await addRichPushXcodeProj(options, xcodeProject);
     }
+
+    xcodeProject.addTargetMembership(`${options.appName}/${ENV_FILENAME}`, CIO_NOTIFICATION_TARGET_NAME)
 
     return xcodeProject;
   } catch (error: any) {
@@ -101,7 +103,10 @@ export const withCioNotificationsXcodeProject: ConfigPlugin<
 
     if (modifiedProjectFile) {
       config.modResults = modifiedProjectFile;
+      
     }
+
+    
 
     return config;
   });
@@ -117,7 +122,6 @@ const addRichPushXcodeProj = async (
     bundleShortVersion,
     bundleVersion,
     iosPath,
-    appName,
     iosDeploymentTarget,
     useFrameworks,
   } = options;
@@ -205,7 +209,7 @@ const addRichPushXcodeProj = async (
 
   // Add build phases to the new target
   xcodeProject.addBuildPhase(
-    ['NotificationService.m', 'NotificationService.swift', `${appName}/${ENV_FILENAME}`],
+    ['NotificationService.m', 'NotificationService.swift'],
     'PBXSourcesBuildPhase',
     'Sources',
     nseTarget.uuid
