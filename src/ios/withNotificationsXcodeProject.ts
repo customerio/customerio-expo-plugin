@@ -410,7 +410,7 @@ async function addBuildEnvironmentFile(
     return;
   }
 
-  updateEnvFile(options, targetFile);
+  updateEnvFile(targetFile);
 
   const group = xcodeProject.pbxCreateGroup('CustomerIONotifications');
   const classesKey = xcodeProject.findPBXGroupKey({ name: `${appName}` });
@@ -420,7 +420,6 @@ async function addBuildEnvironmentFile(
 }
 
 const updateEnvFile = (
-  options: CustomerIOPluginOptionsIOS,
   envFileName: string
 ) => {
   // const REGISTER_RE = /\{\{CIO_INITIALIZECIOSDK_SNIPPET\}\}/;
