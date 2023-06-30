@@ -18,6 +18,7 @@ import { FileManagement } from './../helpers/utils/fileManagement';
 
 const PLIST_FILENAME = `${CIO_NOTIFICATION_TARGET_NAME}-Info.plist`;
 const ENV_FILENAME = 'Env.swift';
+const PUSHSERVICE_FILENAME = "PushService.swift"
 
 const TARGETED_DEVICE_FAMILY = `"1,2"`;
 
@@ -141,7 +142,6 @@ const addRichPushXcodeProj = async (
     'NotificationService.h',
     'NotificationService.swift',
     'NotificationService.m',
-    ENV_FILENAME,
   ];
 
   const getTargetFile = (filename: string) => `${nsePath}/${filename}`;
@@ -161,7 +161,6 @@ const addRichPushXcodeProj = async (
     bundleShortVersion,
     infoPlistTargetFile,
   });
-  updateNseEnv(options, getTargetFile(ENV_FILENAME));
 
   // Create new PBXGroup for the extension
   const extGroup = xcodeProject.addPbxGroup(
@@ -332,21 +331,11 @@ async function addPushNotificationFile(
 ) {
   const { iosPath, appName } = options;
   const files = [
-    'PushService.swift',
+    PUSHSERVICE_FILENAME,
     ENV_FILENAME,
   ];
   const appPath = `${iosPath}/${appName}`;
   const getTargetFile = (filename: string) => `${appPath}/${filename}`;
-  // const targetFile = getTargetFile(file); 
-
-  // Check whether {file} exists in the project. If false, then add the file
-  // If {file} exists then skip and return
-  
-    // FileManagement.copyFile(
-    //   `${LOCAL_PATH_TO_CIO_NSE_FILES}/${file}`,
-    //   targetFile
-    // );
-
     files.forEach((filename) => {
       if (!FileManagement.exists(getTargetFile(filename))) {
         FileManagement.mkdir(appPath, {
@@ -372,7 +361,7 @@ async function addPushNotificationFile(
     xcodeProject.addSourceFile(`${appName}/${file}`, null, group);
   });
 
-  updatePushFile(options, getTargetFile("PushService.swift"));
+  updatePushFile(options, getTargetFile(PUSHSERVICE_FILENAME));
   updateNseEnv(options, getTargetFile(ENV_FILENAME))
 }
 
@@ -396,41 +385,3 @@ const updatePushFile = (
 
   FileManagement.writeFile(envFileName, envFileContent);
 };
-
-// New Methods Aman added
-// async function addBuildEnvironmentFile(
-//   options: CustomerIOPluginOptionsIOS) {
-//   const { iosPath, appName } = options;
-//   const file = 'Env.swift';
-//   const appPath = `${iosPath}/${appName}`;
-
-//   const getTargetFile = (filename: string) => `${appPath}/CustomerIONotifications/${filename}`;
-
-//     const targetFile = getTargetFile(file);
-//     FileManagement.copyFile(
-//       `${LOCAL_PATH_TO_CIO_NSE_FILES}/${file}`,
-//       targetFile
-//     );
-
-//     updateNseEnv(options, getTargetFile(ENV_FILENAME));
-// }
-
-// const updateEnvFile = (
-//   envFileName: string
-// ) => {
-//   // const REGISTER_RE = /\{\{CIO_INITIALIZECIOSDK_SNIPPET\}\}/;
-
-//   let envFileContent = FileManagement.readFile(envFileName);
-
-//   // let snippet = '';
-//   // if (
-//   //   options.disableNotificationRegistration !== undefined &&
-//   //   options.disableNotificationRegistration === false
-//   // ) {
-//   //   snippet = CIO_REGISTER_PUSHNOTIFICATION_SNIPPET;
-//   // }
-
-//   // envFileContent = replaceCodeByRegex(envFileContent, REGISTER_RE, snippet);
-
-//   FileManagement.writeFile(envFileName, envFileContent);
-// };
