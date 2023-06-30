@@ -34,7 +34,7 @@ const addNotificationServiceExtension = async (
       await addRichPushXcodeProj(options, xcodeProject);
     }
 
-    await addBuildEnvironmentFile(options, xcodeProject);
+    await addBuildEnvironmentFile(options);
 
     return xcodeProject;
   } catch (error: any) {
@@ -355,7 +355,7 @@ async function addPushNotificationFile(
   }
 
   updatePushFile(options, targetFile);
-
+  
   const group = xcodeProject.pbxCreateGroup('CustomerIONotifications');
   const classesKey = xcodeProject.findPBXGroupKey({ name: `${appName}` });
   xcodeProject.addToPbxGroup(group, classesKey);
@@ -386,55 +386,38 @@ const updatePushFile = (
 
 // New Methods Aman added
 async function addBuildEnvironmentFile(
-  options: CustomerIOPluginOptionsIOS,
-  xcodeProject: any,
-) {
+  options: CustomerIOPluginOptionsIOS) {
   const { iosPath, appName } = options;
   const file = 'Env.swift';
   const appPath = `${iosPath}/${appName}`;
-  const getTargetFile = (filename: string) => `${appPath}/${filename}`;
-  const targetFile = getTargetFile(file); 
 
-  // Check whether {file} exists in the project. If false, then add the file
-  // If {file} exists then skip and return
-  if (!FileManagement.exists(getTargetFile(file))) {
-    FileManagement.mkdir(appPath, {
-      recursive: true,
-    });
+  const getTargetFile = (filename: string) => `${appPath}/CustomerIONotifications/${filename}`;
 
+    const targetFile = getTargetFile(file);
     FileManagement.copyFile(
       `${LOCAL_PATH_TO_CIO_NSE_FILES}/${file}`,
       targetFile
     );
-  } else {
-    console.log(`${getTargetFile(file)} already exists. Skipping...`);
-    return;
-  }
 
-  updateEnvFile(targetFile);
-  // const group = xcodeProject.pbxGroupByName('CustomerIONotifications');
-  // const classesKey = xcodeProject.findPBXGroupKey({ name: `${appName}` });
-  // xcodeProject.addToPbxGroup(group, classesKey);
-
-  xcodeProject.addSourceFile(`${appName}/${file}`, null, "CustomerIONotifications");
+    updateNseEnv(options, getTargetFile(ENV_FILENAME));
 }
 
-const updateEnvFile = (
-  envFileName: string
-) => {
-  // const REGISTER_RE = /\{\{CIO_INITIALIZECIOSDK_SNIPPET\}\}/;
+// const updateEnvFile = (
+//   envFileName: string
+// ) => {
+//   // const REGISTER_RE = /\{\{CIO_INITIALIZECIOSDK_SNIPPET\}\}/;
 
-  let envFileContent = FileManagement.readFile(envFileName);
+//   let envFileContent = FileManagement.readFile(envFileName);
 
-  // let snippet = '';
-  // if (
-  //   options.disableNotificationRegistration !== undefined &&
-  //   options.disableNotificationRegistration === false
-  // ) {
-  //   snippet = CIO_REGISTER_PUSHNOTIFICATION_SNIPPET;
-  // }
+//   // let snippet = '';
+//   // if (
+//   //   options.disableNotificationRegistration !== undefined &&
+//   //   options.disableNotificationRegistration === false
+//   // ) {
+//   //   snippet = CIO_REGISTER_PUSHNOTIFICATION_SNIPPET;
+//   // }
 
-  // envFileContent = replaceCodeByRegex(envFileContent, REGISTER_RE, snippet);
+//   // envFileContent = replaceCodeByRegex(envFileContent, REGISTER_RE, snippet);
 
-  FileManagement.writeFile(envFileName, envFileContent);
-};
+//   FileManagement.writeFile(envFileName, envFileContent);
+// };
