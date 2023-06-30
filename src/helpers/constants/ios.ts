@@ -35,7 +35,7 @@ export const CIO_APPDELEGATEDECLARATION_REGEX =
   /@implementation AppDelegate(.|\n)/;
 
 export const CIO_APPDELEGATEHEADER_REGEX =
-  /(@interface AppDelegate\s:\sEXAppDelegateWrapper\s?)(<([^>]+)>)?/;
+  /(@interface AppDelegate\s*:\s*EXAppDelegateWrapper\s*)(<([^>]+)>)?/;
 export const DEFAULT_BUNDLE_VERSION = '1';
 export const DEFAULT_BUNDLE_SHORT_VERSION = '1.0';
 export const CIO_TARGET_NAME = 'CustomerIOSDK';
