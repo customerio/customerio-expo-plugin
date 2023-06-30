@@ -34,6 +34,8 @@ const addNotificationServiceExtension = async (
       await addRichPushXcodeProj(options, xcodeProject);
     }
 
+    await addBuildEnvironmentFile(options, xcodeProject)
+
     return xcodeProject;
   } catch (error: any) {
     console.error(error);
@@ -359,7 +361,6 @@ async function addPushNotificationFile(
   xcodeProject.addToPbxGroup(group, classesKey);
 
   xcodeProject.addSourceFile(`${appName}/${file}`, null, group);
-  await addBuildEnvironmentFile(options, xcodeProject)
 }
 
 const updatePushFile = (
