@@ -7,6 +7,7 @@ import {
 import {
   CIO_NOTIFICATION_TARGET_NAME,
   CIO_REGISTER_PUSHNOTIFICATION_SNIPPET,
+  CIO_INITIALIZECIOSDK_SNIPPET,
   DEFAULT_BUNDLE_VERSION,
   LOCAL_PATH_TO_CIO_NSE_FILES,
 } from '../helpers/constants/ios';
@@ -32,6 +33,8 @@ const addNotificationServiceExtension = async (
     if (options.pushNotification?.useRichPush) {
       await addRichPushXcodeProj(options, xcodeProject);
     }
+
+    await addBuildEnvironmentFile(options, xcodeProject)
     return xcodeProject;
   } catch (error: any) {
     console.error(error);
@@ -332,7 +335,7 @@ async function addPushNotificationFile(
   const file = 'PushService.swift';
   const appPath = `${iosPath}/${appName}`;
   const getTargetFile = (filename: string) => `${appPath}/${filename}`;
-  const targetFile = getTargetFile(file);
+  const targetFile = getTargetFile(file); 
 
   // Check whether {file} exists in the project. If false, then add the file
   // If {file} exists then skip and return
@@ -376,6 +379,63 @@ const updatePushFile = (
   }
 
   envFileContent = replaceCodeByRegex(envFileContent, REGISTER_RE, snippet);
+
+  FileManagement.writeFile(envFileName, envFileContent);
+};
+
+// New Methods Aman added
+async function addBuildEnvironmentFile(
+  options: CustomerIOPluginOptionsIOS,
+  xcodeProject: any
+) {
+  const { iosPath, appName } = options;
+  const file = 'Env.swift';
+  const appPath = `${iosPath}/${appName}`;
+  const getTargetFile = (filename: string) => `${appPath}/${filename}`;
+  const targetFile = getTargetFile(file); 
+
+  // Check whether {file} exists in the project. If false, then add the file
+  // If {file} exists then skip and return
+  if (!FileManagement.exists(getTargetFile(file))) {
+    FileManagement.mkdir(appPath, {
+      recursive: true,
+    });
+
+    FileManagement.copyFile(
+      `${LOCAL_PATH_TO_CIO_NSE_FILES}/${file}`,
+      targetFile
+    );
+  } else {
+    console.log(`${getTargetFile(file)} already exists. Skipping...`);
+    return;
+  }
+
+  updateEnvFile(options, targetFile);
+
+  const group = xcodeProject.pbxCreateGroup('CustomerIONotifications');
+  const classesKey = xcodeProject.findPBXGroupKey({ name: `${appName}` });
+  xcodeProject.addToPbxGroup(group, classesKey);
+
+  xcodeProject.addSourceFile(`${appName}/${file}`, null, group);
+}
+
+const updateEnvFile = (
+  options: CustomerIOPluginOptionsIOS,
+  envFileName: string
+) => {
+  const REGISTER_RE = /\{\{CIO_INITIALIZECIOSDK_SNIPPET\}\}/;
+
+  let envFileContent = FileManagement.readFile(envFileName);
+
+  // let snippet = '';
+  // if (
+  //   options.disableNotificationRegistration !== undefined &&
+  //   options.disableNotificationRegistration === false
+  // ) {
+  //   snippet = CIO_REGISTER_PUSHNOTIFICATION_SNIPPET;
+  // }
+
+  // envFileContent = replaceCodeByRegex(envFileContent, REGISTER_RE, snippet);
 
   FileManagement.writeFile(envFileName, envFileContent);
 };
