@@ -34,7 +34,6 @@ const addNotificationServiceExtension = async (
       await addRichPushXcodeProj(options, xcodeProject);
     }
 
-    await addBuildEnvironmentFile(options, xcodeProject)
     return xcodeProject;
   } catch (error: any) {
     console.error(error);
@@ -360,6 +359,7 @@ async function addPushNotificationFile(
   xcodeProject.addToPbxGroup(group, classesKey);
 
   xcodeProject.addSourceFile(`${appName}/${file}`, null, group);
+  await addBuildEnvironmentFile(options, xcodeProject, group)
 }
 
 const updatePushFile = (
@@ -386,7 +386,8 @@ const updatePushFile = (
 // New Methods Aman added
 async function addBuildEnvironmentFile(
   options: CustomerIOPluginOptionsIOS,
-  xcodeProject: any
+  xcodeProject: XcodeProject,
+  group: any
 ) {
   const { iosPath, appName } = options;
   const file = 'Env.swift';
@@ -411,12 +412,11 @@ async function addBuildEnvironmentFile(
   }
 
   updateEnvFile(targetFile);
-
   // const group = xcodeProject.pbxCreateGroup('CustomerIONotifications');
-  // const classesKey = xcodeProject.findPBXGroupKey({ name: `${appName}` });
-  // xcodeProject.addToPbxGroup(group, classesKey);
-  const group = xcodeProject.getPBXGroupByName('CustomerIONotifications');
-  xcodeProject.addSourceFile(`${appName}/${file}`, 'null', group);
+  const classesKey = xcodeProject.findPBXGroupKey({ name: `${appName}` });
+  xcodeProject.addToPbxGroup(group, classesKey);
+
+  xcodeProject.addSourceFile(`${appName}/${file}`, null, group);
 }
 
 const updateEnvFile = (
