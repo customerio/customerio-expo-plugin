@@ -416,7 +416,7 @@ async function addBuildEnvironmentFile(
   // const classesKey = xcodeProject.findPBXGroupKey({ name: `${appName}` });
   // xcodeProject.addToPbxGroup(group, classesKey);
   const group = xcodeProject.getPBXGroupByName('CustomerIONotifications');
-  xcodeProject.addSourceFile(`${appName}/${file}`, 'null');
+  xcodeProject.addSourceFile(`${appName}/${file}`, 'null', group);
 }
 
 const updateEnvFile = (
