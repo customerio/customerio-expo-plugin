@@ -1,7 +1,8 @@
 import {
   ConfigPlugin,
   XcodeProject,
-  withXcodeProject
+  withXcodeProject,
+  mod
 } from '@expo/config-plugins';
 
 import {
@@ -34,8 +35,6 @@ const addNotificationServiceExtension = async (
     if (options.pushNotification?.useRichPush) {
       await addRichPushXcodeProj(options, xcodeProject);
     }
-
-    xcodeProject.addTargetMembership(`${options.appName}/${ENV_FILENAME}`, CIO_NOTIFICATION_TARGET_NAME)
 
     return xcodeProject;
   } catch (error: any) {
@@ -105,8 +104,8 @@ export const withCioNotificationsXcodeProject: ConfigPlugin<
       config.modResults = modifiedProjectFile;
       
     }
-
     
+    mod.addTargetMembership(`${options.appName}/${ENV_FILENAME}`, CIO_NOTIFICATION_TARGET_NAME)
 
     return config;
   });
