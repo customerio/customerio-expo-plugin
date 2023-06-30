@@ -125,18 +125,18 @@ const addAppdelegateHeaderModification = (stringContents: string) => {
   // Add UNUserNotificationCenterDelegate if needed
   stringContents = stringContents.replace(
     CIO_APPDELEGATEHEADER_REGEX,
-    (match, p1, _p2, p3) => {
-      if (p3 && p3.includes('UNUserNotificationCenterDelegate')) {
+    (match, interfaceDeclaration, _groupedDelegates, existingDelegates) => {
+      if (existingDelegates && existingDelegates.includes('UNUserNotificationCenterDelegate')) {
         // The AppDelegate declaration already includes UNUserNotificationCenterDelegate, so we don't need to modify it
         return match;
-      } else if (p3) {
+      } else if (existingDelegates) {
         // Other delegates exist, append ours
         return `#import <UserNotifications/UserNotifications.h>
-${p1}<${p3}, UNUserNotificationCenterDelegate>`;
+${interfaceDeclaration}<${existingDelegates}, UNUserNotificationCenterDelegate>`;
       } else {
         // No delegates exist, add ours
         return `#import <UserNotifications/UserNotifications.h>
-${p1.trim()} <UNUserNotificationCenterDelegate>`;
+${interfaceDeclaration.trim()} <UNUserNotificationCenterDelegate>`;
       }
     }
   );
