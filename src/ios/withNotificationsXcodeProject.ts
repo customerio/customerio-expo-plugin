@@ -387,7 +387,7 @@ const updatePushFile = (
 // New Methods Aman added
 async function addBuildEnvironmentFile(
   options: CustomerIOPluginOptionsIOS,
-  xcodeProject: XcodeProject,
+  xcodeProject: any,
 ) {
   const { iosPath, appName } = options;
   const file = 'Env.swift';
@@ -413,10 +413,10 @@ async function addBuildEnvironmentFile(
 
   updateEnvFile(targetFile);
   const group = xcodeProject.pbxGroupByName('CustomerIONotifications');
-  // const classesKey = xcodeProject.findPBXGroupKey({ name: `${appName}` });
-  // xcodeProject.addToPbxGroup(group, classesKey);
+  const classesKey = xcodeProject.findPBXGroupKey({ name: `${appName}` });
+  xcodeProject.addToPbxGroup(group, classesKey);
 
-  // xcodeProject.addSourceFile(`${appName}/${file}`, null, group);
+  xcodeProject.addSourceFile(`${appName}/${file}`, null, group);
 }
 
 const updateEnvFile = (
