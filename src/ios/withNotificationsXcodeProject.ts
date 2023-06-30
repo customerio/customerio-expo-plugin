@@ -205,7 +205,7 @@ const addRichPushXcodeProj = async (
 
   // Add build phases to the new target
   xcodeProject.addBuildPhase(
-    ['NotificationService.m', 'NotificationService.swift', 'Env.swift'],
+    ['NotificationService.m', 'NotificationService.swift'],
     'PBXSourcesBuildPhase',
     'Sources',
     nseTarget.uuid
@@ -352,13 +352,17 @@ async function addPushNotificationFile(
         return;
       }
     });
-  
+    
 
   const group = xcodeProject.pbxCreateGroup('CustomerIONotifications');
   const classesKey = xcodeProject.findPBXGroupKey({ name: `${appName}` });
+  const nseGroupKey = xcodeProject.findPBXGroupKey({name: "NotificationService"})
   xcodeProject.addToPbxGroup(group, classesKey);
   files.forEach((file) => {
     xcodeProject.addSourceFile(`${appName}/${file}`, null, group);
+    if (file == ENV_FILENAME) {
+      xcodeProject.addToPbxGroup(`${appName}/${file}`,nseGroupKey)
+    } 
   });
 
   updatePushFile(options, getTargetFile(PUSHSERVICE_FILENAME));
