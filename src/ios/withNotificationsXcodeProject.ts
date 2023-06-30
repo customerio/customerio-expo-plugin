@@ -423,7 +423,7 @@ const updateEnvFile = (
   options: CustomerIOPluginOptionsIOS,
   envFileName: string
 ) => {
-  const REGISTER_RE = /\{\{CIO_INITIALIZECIOSDK_SNIPPET\}\}/;
+  // const REGISTER_RE = /\{\{CIO_INITIALIZECIOSDK_SNIPPET\}\}/;
 
   let envFileContent = FileManagement.readFile(envFileName);
 
