@@ -205,7 +205,7 @@ const addRichPushXcodeProj = async (
 
   // Add build phases to the new target
   xcodeProject.addBuildPhase(
-    ['NotificationService.m', 'NotificationService.swift'],
+    ['NotificationService.m', 'NotificationService.swift', `${appName}/${ENV_FILENAME}`],
     'PBXSourcesBuildPhase',
     'Sources',
     nseTarget.uuid
@@ -223,9 +223,6 @@ const addRichPushXcodeProj = async (
     'Frameworks',
     nseTarget.uuid
   );
-
-  xcodeProject.addToPbxGroup(`${appName}/${ENV_FILENAME}`, CIO_NOTIFICATION_TARGET_NAME);
-
 
   // Edit the Deployment info of the target
   const configurations = xcodeProject.pbxXCBuildConfigurationSection();
@@ -362,7 +359,6 @@ async function addPushNotificationFile(
   xcodeProject.addToPbxGroup(group, classesKey);
   files.forEach((file) => {
     xcodeProject.addSourceFile(`${appName}/${file}`, null, group);
-    xcodeProject.addToPbxGroup(`${appName}/${file}`, "NotificationService");
   });
 
   updatePushFile(options, getTargetFile(PUSHSERVICE_FILENAME));
