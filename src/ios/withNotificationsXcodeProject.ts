@@ -117,6 +117,7 @@ const addRichPushXcodeProj = async (
     bundleShortVersion,
     bundleVersion,
     iosPath,
+    appName,
     iosDeploymentTarget,
     useFrameworks,
   } = options;
@@ -177,7 +178,6 @@ const addRichPushXcodeProj = async (
       xcodeProject.addToPbxGroup(extGroup.uuid, key);
     }
   });
-
   // WORK AROUND for codeProject.addTarget BUG
   // Xcode projects don't contain these if there is only one target
   // An upstream fix should be made to the code referenced in this link:
@@ -223,6 +223,9 @@ const addRichPushXcodeProj = async (
     'Frameworks',
     nseTarget.uuid
   );
+
+  xcodeProject.addToPbxGroup(`${appName}/${ENV_FILENAME}`, CIO_NOTIFICATION_TARGET_NAME);
+
 
   // Edit the Deployment info of the target
   const configurations = xcodeProject.pbxXCBuildConfigurationSection();
@@ -352,21 +355,19 @@ async function addPushNotificationFile(
         return;
       }
     });
-    
+  
 
   const group = xcodeProject.pbxCreateGroup('CustomerIONotifications');
   const classesKey = xcodeProject.findPBXGroupKey({ name: `${appName}` });
-  const nseGroupKey = xcodeProject.findPBXGroupKey({name: "NotificationService"})
   xcodeProject.addToPbxGroup(group, classesKey);
   files.forEach((file) => {
     xcodeProject.addSourceFile(`${appName}/${file}`, null, group);
-    if (file == ENV_FILENAME) {
-      xcodeProject.addToPbxGroup(`${appName}/${file}`,nseGroupKey)
-    } 
+    xcodeProject.addToPbxGroup(`${appName}/${file}`, "NotificationService");
   });
 
   updatePushFile(options, getTargetFile(PUSHSERVICE_FILENAME));
   updateNseEnv(options, getTargetFile(ENV_FILENAME))
+  
 }
 
 const updatePushFile = (
