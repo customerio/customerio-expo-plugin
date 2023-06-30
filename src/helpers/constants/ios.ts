@@ -41,6 +41,8 @@ export const DEFAULT_BUNDLE_SHORT_VERSION = '1.0';
 export const CIO_TARGET_NAME = 'CustomerIOSDK';
 export const CIO_NOTIFICATION_TARGET_NAME = 'NotificationService';
 
+export const CIO_APPDELEGATEHEADER_IMPORT_SNIPPET = `#import <UserNotifications/UserNotifications.h>`;
+export const CIO_APPDELEGATEHEADER_USER_NOTIFICATION_CENTER_SNIPPET = 'UNUserNotificationCenterDelegate';
 export const CIO_PUSHNOTIFICATIONHANDLERDECLARATION_SNIPPET = `
 CIOAppPushNotificationsHandler* pnHandlerObj = [[CIOAppPushNotificationsHandler alloc] init];
 `;

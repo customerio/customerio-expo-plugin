@@ -3,7 +3,9 @@ import { getAppDelegateHeaderFilePath } from '@expo/config-plugins/build/ios/Pat
 
 import {
   CIO_APPDELEGATEDECLARATION_REGEX,
+  CIO_APPDELEGATEHEADER_IMPORT_SNIPPET,
   CIO_APPDELEGATEHEADER_REGEX,
+  CIO_APPDELEGATEHEADER_USER_NOTIFICATION_CENTER_SNIPPET,
   CIO_CONFIGURECIOSDKPUSHNOTIFICATION_SNIPPET,
   CIO_CONFIGURECIOSDKUSERNOTIFICATIONCENTER_SNIPPET,
   CIO_DIDFAILTOREGISTERFORREMOTENOTIFICATIONSWITHERRORFULL_REGEX,
@@ -126,17 +128,17 @@ const addAppdelegateHeaderModification = (stringContents: string) => {
   stringContents = stringContents.replace(
     CIO_APPDELEGATEHEADER_REGEX,
     (match, interfaceDeclaration, _groupedDelegates, existingDelegates) => {
-      if (existingDelegates && existingDelegates.includes('UNUserNotificationCenterDelegate')) {
+      if (existingDelegates && existingDelegates.includes(CIO_APPDELEGATEHEADER_USER_NOTIFICATION_CENTER_SNIPPET)) {
         // The AppDelegate declaration already includes UNUserNotificationCenterDelegate, so we don't need to modify it
         return match;
       } else if (existingDelegates) {
         // Other delegates exist, append ours
-        return `#import <UserNotifications/UserNotifications.h>
-${interfaceDeclaration}<${existingDelegates}, UNUserNotificationCenterDelegate>`;
+        return `${CIO_APPDELEGATEHEADER_IMPORT_SNIPPET}
+${interfaceDeclaration}<${existingDelegates}, ${CIO_APPDELEGATEHEADER_USER_NOTIFICATION_CENTER_SNIPPET}>`;
       } else {
         // No delegates exist, add ours
-        return `#import <UserNotifications/UserNotifications.h>
-${interfaceDeclaration.trim()} <UNUserNotificationCenterDelegate>`;
+        return `${CIO_APPDELEGATEHEADER_IMPORT_SNIPPET}
+${interfaceDeclaration.trim()} <${CIO_APPDELEGATEHEADER_USER_NOTIFICATION_CENTER_SNIPPET}>`;
       }
     }
   );
