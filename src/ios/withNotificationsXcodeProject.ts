@@ -34,7 +34,7 @@ const addNotificationServiceExtension = async (
       await addRichPushXcodeProj(options, xcodeProject);
     }
 
-    await addBuildEnvironmentFile(options, xcodeProject)
+    await addBuildEnvironmentFile(options, xcodeProject);
 
     return xcodeProject;
   } catch (error: any) {
@@ -413,10 +413,10 @@ async function addBuildEnvironmentFile(
 
   updateEnvFile(targetFile);
   const group = xcodeProject.pbxGroupByName('CustomerIONotifications');
-  const classesKey = xcodeProject.findPBXGroupKey({ name: `${appName}` });
-  xcodeProject.addToPbxGroup(group, classesKey);
+  // const classesKey = xcodeProject.findPBXGroupKey({ name: `${appName}` });
+  // xcodeProject.addToPbxGroup(group, classesKey);
 
-  xcodeProject.addSourceFile(`${appName}/${file}`, null, group);
+  // xcodeProject.addSourceFile(`${appName}/${file}`, null, group);
 }
 
 const updateEnvFile = (
