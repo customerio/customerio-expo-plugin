@@ -359,7 +359,7 @@ async function addPushNotificationFile(
   xcodeProject.addToPbxGroup(group, classesKey);
 
   xcodeProject.addSourceFile(`${appName}/${file}`, null, group);
-  await addBuildEnvironmentFile(options, xcodeProject, group)
+  await addBuildEnvironmentFile(options, xcodeProject)
 }
 
 const updatePushFile = (
@@ -387,7 +387,6 @@ const updatePushFile = (
 async function addBuildEnvironmentFile(
   options: CustomerIOPluginOptionsIOS,
   xcodeProject: XcodeProject,
-  group: any
 ) {
   const { iosPath, appName } = options;
   const file = 'Env.swift';
@@ -412,7 +411,7 @@ async function addBuildEnvironmentFile(
   }
 
   updateEnvFile(targetFile);
-  // const group = xcodeProject.pbxCreateGroup('CustomerIONotifications');
+  const group = xcodeProject.pbxGroupByName('CustomerIONotifications');
   const classesKey = xcodeProject.findPBXGroupKey({ name: `${appName}` });
   xcodeProject.addToPbxGroup(group, classesKey);
 
