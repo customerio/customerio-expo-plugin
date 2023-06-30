@@ -134,11 +134,13 @@ const addAppdelegateHeaderModification = (stringContents: string) => {
       } else if (existingDelegates) {
         // Other delegates exist, append ours
         return `${CIO_APPDELEGATEHEADER_IMPORT_SNIPPET}
-${interfaceDeclaration}<${existingDelegates}, ${CIO_APPDELEGATEHEADER_USER_NOTIFICATION_CENTER_SNIPPET}>`;
+${interfaceDeclaration}<${existingDelegates}, ${CIO_APPDELEGATEHEADER_USER_NOTIFICATION_CENTER_SNIPPET}>
+`;
       } else {
         // No delegates exist, add ours
         return `${CIO_APPDELEGATEHEADER_IMPORT_SNIPPET}
-${interfaceDeclaration.trim()} <${CIO_APPDELEGATEHEADER_USER_NOTIFICATION_CENTER_SNIPPET}>`;
+${interfaceDeclaration.trim()} <${CIO_APPDELEGATEHEADER_USER_NOTIFICATION_CENTER_SNIPPET}>
+`;
       }
     }
   );
