@@ -331,34 +331,49 @@ async function addPushNotificationFile(
   xcodeProject: any
 ) {
   const { iosPath, appName } = options;
-  const file = 'PushService.swift';
+  const files = [
+    'PushService.swift',
+    ENV_FILENAME,
+  ];
   const appPath = `${iosPath}/${appName}`;
   const getTargetFile = (filename: string) => `${appPath}/${filename}`;
-  const targetFile = getTargetFile(file); 
+  // const targetFile = getTargetFile(file); 
 
   // Check whether {file} exists in the project. If false, then add the file
   // If {file} exists then skip and return
-  if (!FileManagement.exists(getTargetFile(file))) {
-    FileManagement.mkdir(appPath, {
-      recursive: true,
-    });
+  
+    // FileManagement.copyFile(
+    //   `${LOCAL_PATH_TO_CIO_NSE_FILES}/${file}`,
+    //   targetFile
+    // );
 
-    FileManagement.copyFile(
-      `${LOCAL_PATH_TO_CIO_NSE_FILES}/${file}`,
-      targetFile
-    );
-  } else {
-    console.log(`${getTargetFile(file)} already exists. Skipping...`);
-    return;
-  }
+    files.forEach((filename) => {
+      if (!FileManagement.exists(getTargetFile(filename))) {
+        FileManagement.mkdir(appPath, {
+          recursive: true,
+        });
+
+        const targetFile = getTargetFile(filename);
+      FileManagement.copyFile(
+        `${LOCAL_PATH_TO_CIO_NSE_FILES}/${filename}`,
+        targetFile
+      );
+      } else {
+        console.log(`${getTargetFile(filename)} already exists. Skipping...`);
+        return;
+      }
+    });
+  
 
   const group = xcodeProject.pbxCreateGroup('CustomerIONotifications');
   const classesKey = xcodeProject.findPBXGroupKey({ name: `${appName}` });
   xcodeProject.addToPbxGroup(group, classesKey);
-  xcodeProject.addSourceFile(`${appName}/${file}`, null, group);
+  files.forEach((file) => {
+    xcodeProject.addSourceFile(`${appName}/${file}`, null, group);
+  });
 
-  updatePushFile(options, targetFile);
-  await addBuildEnvironmentFile(options);
+  updatePushFile(options, getTargetFile("PushService.swift"));
+  updateNseEnv(options, getTargetFile(ENV_FILENAME))
 }
 
 const updatePushFile = (
@@ -383,22 +398,22 @@ const updatePushFile = (
 };
 
 // New Methods Aman added
-async function addBuildEnvironmentFile(
-  options: CustomerIOPluginOptionsIOS) {
-  const { iosPath, appName } = options;
-  const file = 'Env.swift';
-  const appPath = `${iosPath}/${appName}`;
+// async function addBuildEnvironmentFile(
+//   options: CustomerIOPluginOptionsIOS) {
+//   const { iosPath, appName } = options;
+//   const file = 'Env.swift';
+//   const appPath = `${iosPath}/${appName}`;
 
-  const getTargetFile = (filename: string) => `${appPath}/CustomerIONotifications/${filename}`;
+//   const getTargetFile = (filename: string) => `${appPath}/CustomerIONotifications/${filename}`;
 
-    const targetFile = getTargetFile(file);
-    FileManagement.copyFile(
-      `${LOCAL_PATH_TO_CIO_NSE_FILES}/${file}`,
-      targetFile
-    );
+//     const targetFile = getTargetFile(file);
+//     FileManagement.copyFile(
+//       `${LOCAL_PATH_TO_CIO_NSE_FILES}/${file}`,
+//       targetFile
+//     );
 
-    updateNseEnv(options, getTargetFile(ENV_FILENAME));
-}
+//     updateNseEnv(options, getTargetFile(ENV_FILENAME));
+// }
 
 // const updateEnvFile = (
 //   envFileName: string
