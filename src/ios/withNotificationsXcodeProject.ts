@@ -364,10 +364,9 @@ const updatePushFile = (
   envFileName: string
 ) => {
   const REGISTER_RE = /\{\{REGISTER_SNIPPET\}\}/;
-
   let envFileContent = FileManagement.readFile(envFileName);
-
   let snippet = '';
+
   if (
     options.disableNotificationRegistration !== undefined &&
     options.disableNotificationRegistration === false
