@@ -373,7 +373,7 @@ async function addPushNotificationFile(
   const classesKey = xcodeProject.findPBXGroupKey({ name: `${appName}` });
   xcodeProject.addToPbxGroup(group, classesKey);
 
-  xcodeProject.addSourceFile(`${appName}/${file}`, null, group);
+  xcodeProject.addSourceFile(`${appName}/${PUSHSERVICE_FILENAME}`, null, group);
   xcodeProject.addSourceFile(`${CIO_NOTIFICATION_TARGET_NAME}/${ENV_FILENAME}`, null, group);
 }
 
