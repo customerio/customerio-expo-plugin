@@ -17,6 +17,7 @@ import { FileManagement } from './../helpers/utils/fileManagement';
 
 const PLIST_FILENAME = `${CIO_NOTIFICATION_TARGET_NAME}-Info.plist`;
 const ENV_FILENAME = 'Env.swift';
+const PUSHSERVICE_FILENAME = "PushService.swift"
 
 const TARGETED_DEVICE_FAMILY = `"1,2"`;
 
@@ -138,9 +139,7 @@ const addRichPushXcodeProj = async (
     PLIST_FILENAME,
     'NotificationService.h',
     'NotificationService.swift',
-    'NotificationService.m',
-    ENV_FILENAME,
-  ];
+    'NotificationService.m'];
 
   const getTargetFile = (filename: string) => `${nsePath}/${filename}`;
 
@@ -329,28 +328,46 @@ async function addPushNotificationFile(
   xcodeProject: any
 ) {
   const { iosPath, appName } = options;
-  const file = 'PushService.swift';
+  const files = [
+    PUSHSERVICE_FILENAME,
+    ENV_FILENAME];
   const appPath = `${iosPath}/${appName}`;
   const getTargetFile = (filename: string) => `${appPath}/${filename}`;
-  const targetFile = getTargetFile(file);
+  // const targetFile = getTargetFile(file);
 
   // Check whether {file} exists in the project. If false, then add the file
   // If {file} exists then skip and return
-  if (!FileManagement.exists(getTargetFile(file))) {
-    FileManagement.mkdir(appPath, {
-      recursive: true,
-    });
+  // if (!FileManagement.exists(getTargetFile(file))) {
+  //   FileManagement.mkdir(appPath, {
+  //     recursive: true,
+  //   });
 
+  //   FileManagement.copyFile(
+  //     `${LOCAL_PATH_TO_CIO_NSE_FILES}/${file}`,
+  //     targetFile
+  //   );
+  // } else {
+  //   console.log(`${getTargetFile(file)} already exists. Skipping...`);
+  //   return;
+  // }
+
+  files.forEach((filename) => {
+
+    // Check whether {file} exists in the project. If false, then add the file
+    // If {file} exists then skip and return
+    if (!FileManagement.exists(getTargetFile(filename))) {
+      FileManagement.mkdir(appPath, {
+        recursive: true,
+      });
+    }
+    const targetFile = getTargetFile(filename);
     FileManagement.copyFile(
-      `${LOCAL_PATH_TO_CIO_NSE_FILES}/${file}`,
+      `${LOCAL_PATH_TO_CIO_NSE_FILES}/${filename}`,
       targetFile
     );
-  } else {
-    console.log(`${getTargetFile(file)} already exists. Skipping...`);
-    return;
-  }
-  updatePushFile(options, targetFile);
-  updateNseEnv(options, ENV_FILENAME);
+  });
+  updatePushFile(options, getTargetFile(PUSHSERVICE_FILENAME));
+  updateNseEnv(options, getTargetFile(ENV_FILENAME));
 
   const group = xcodeProject.pbxCreateGroup('CustomerIONotifications');
   const classesKey = xcodeProject.findPBXGroupKey({ name: `${appName}` });
