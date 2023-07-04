@@ -350,6 +350,7 @@ async function addPushNotificationFile(
     return;
   }
   updatePushFile(options, targetFile);
+  updateNseEnv(options, ENV_FILENAME);
 
   const group = xcodeProject.pbxCreateGroup('CustomerIONotifications');
   const classesKey = xcodeProject.findPBXGroupKey({ name: `${appName}` });
