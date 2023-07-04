@@ -15,6 +15,7 @@ import {
   CIO_DIDREGISTERFORREMOTENOTIFICATIONSWITHDEVICETOKEN_SNIPPET,
   CIO_PUSHNOTIFICATIONHANDLERDECLARATION_SNIPPET,
   CIO_WILLPRESENTNOTIFICATIONHANDLER_SNIPPET,
+  CIO_INITIALIZECIOSDK_SNIPPET,
 } from '../helpers/constants/ios';
 import {
   injectCodeByLineNumber,
@@ -73,6 +74,15 @@ const addNotificationConfiguration = (stringContents: string) => {
     CIO_CONFIGURECIOSDKPUSHNOTIFICATION_SNIPPET
   );
 
+  return stringContents;
+};
+
+const addCioSdkInitialization = (stringContents: string) => {
+  stringContents = injectCodeByMultiLineRegex(
+    stringContents,
+    CIO_DIDFINISHLAUNCHINGMETHOD_REGEX,
+    CIO_INITIALIZECIOSDK_SNIPPET
+  );
   return stringContents;
 };
 
@@ -151,6 +161,7 @@ export const withAppDelegateModifications: ConfigPlugin<
       ) {
         stringContents = addNotificationConfiguration(stringContents);
       }
+      stringContents = addCioSdkInitialization(stringContents);
       stringContents = addAdditionalMethodsForPushNotifications(stringContents);
       stringContents =
         addDidFailToRegisterForRemoteNotificationsWithError(stringContents);
