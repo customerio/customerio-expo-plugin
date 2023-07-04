@@ -17,7 +17,7 @@ import { FileManagement } from './../helpers/utils/fileManagement';
 
 const PLIST_FILENAME = `${CIO_NOTIFICATION_TARGET_NAME}-Info.plist`;
 const ENV_FILENAME = 'Env.swift';
-
+const PUSHSERVICE_FILENAME = "PushService.swift"
 const TARGETED_DEVICE_FAMILY = `"1,2"`;
 
 const addNotificationServiceExtension = async (
@@ -329,7 +329,7 @@ async function addPushNotificationFile(
   xcodeProject: any
 ) {
   const { iosPath, appName } = options;
-  const file = 'PushService.swift';
+  const file = PUSHSERVICE_FILENAME;
   const appPath = `${iosPath}/${appName}`;
   const getTargetFile = (filename: string) => `${appPath}/${filename}`;
   const targetFile = getTargetFile(file);
@@ -356,7 +356,34 @@ async function addPushNotificationFile(
   const classesKey = xcodeProject.findPBXGroupKey({ name: `${appName}` });
   xcodeProject.addToPbxGroup(group, classesKey);
 
+  // Env.swift file is added as a reference from NSE target.
+  // In case `useRichPush` is `false` then NSE target is not created.
+  // In such case, this method checks if useRichPush is false then
+  // adds the Env.swift file to main target.
+  let envFilePath =`${CIO_NOTIFICATION_TARGET_NAME}/${ENV_FILENAME}`
+  if (!options.pushNotification?.useRichPush) {
+    await addEnvFile(options);
+    envFilePath = `${appName}/${ENV_FILENAME}`
+  }
+  xcodeProject.addSourceFile(envFilePath, null, group);
   xcodeProject.addSourceFile(`${appName}/${file}`, null, group);
+}
+
+async function addEnvFile(options: CustomerIOPluginOptionsIOS) {
+  const { iosPath, appName } = options;
+  const appPath = `${iosPath}/${appName}`;
+  const getTargetFile = (filename: string) => `${appPath}/${filename}`;
+  if (!FileManagement.exists(getTargetFile(ENV_FILENAME))) {
+    FileManagement.mkdir(appPath, {
+      recursive: true,
+    });
+  }
+  FileManagement.copyFile(
+    `${LOCAL_PATH_TO_CIO_NSE_FILES}/${ENV_FILENAME}`,
+    getTargetFile(ENV_FILENAME)
+  );
+
+  updateNseEnv(options, getTargetFile(ENV_FILENAME));
 }
 
 const updatePushFile = (
