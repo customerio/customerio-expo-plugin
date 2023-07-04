@@ -6,6 +6,11 @@ let pluginPackageRoot = f.next().filename;
 // This is the path to the root of the customerio-expo-plugin package
 pluginPackageRoot = path.dirname(pluginPackageRoot);
 
+export const LOCAL_PATH_TO_RN_SDK = path.join(
+  pluginPackageRoot,
+  '../customerio-reactnative'
+)
+
 export const LOCAL_PATH_TO_CIO_NSE_FILES = path.join(
   pluginPackageRoot,
   'src/helpers/native-files/ios'

@@ -1,4 +1,5 @@
 import type { CustomerIOPluginOptionsIOS } from '../../types/cio-types';
+import { LOCAL_PATH_TO_RN_SDK } from '../constants/ios';
 import { injectCodeByRegex } from './codeInjection';
 import { FileManagement } from './fileManagement';
 
@@ -18,7 +19,7 @@ export async function injectCIOPodfileCode(iosPath: string) {
 
     const snippetToInjectInPodfile = `
 ${blockStart}
-  pod 'customerio-reactnative/apn', :path => '../node_modules/customerio-reactnative'
+  pod 'customerio-reactnative/apn', :path => '${LOCAL_PATH_TO_RN_SDK}'
 ${blockEnd}
 `.trim();
 
@@ -52,7 +53,7 @@ export async function injectCIONotificationPodfileCode(
 ${blockStart}
 target 'NotificationService' do
   ${useFrameworks === 'static' ? 'use_frameworks! :linkage => :static' : ''}
-  pod 'customerio-reactnative-richpush/apn', :path => '../node_modules/customerio-reactnative'
+  pod 'customerio-reactnative-richpush/apn', :path => '${LOCAL_PATH_TO_RN_SDK}'
 end
 ${blockEnd}
 `.trim();
