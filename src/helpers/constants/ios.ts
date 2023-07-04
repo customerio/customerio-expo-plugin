@@ -65,6 +65,11 @@ export const CIO_DIDRECEIVENOTIFICATIONRESPONSEHANDLER_SNIPPET = `
 - (void)userNotificationCenter:(UNUserNotificationCenter *)center didReceiveNotificationResponse:(UNNotificationResponse *)response withCompletionHandler:(void(^)(void))completionHandler {
   [pnHandlerObj userNotificationCenter:center didReceiveNotificationResponse:response withCompletionHandler:completionHandler];
 }`;
+// Initialize Customer.io iOS SDK
+export const CIO_INITIALIZECIOSDK_SNIPPET = `
+  // Initialize Customer.io SDK
+  [pnHandlerObj initializeCioSdk];
+`;
 
 // Foreground push handling
 export const CIO_WILLPRESENTNOTIFICATIONHANDLER_SNIPPET = `
