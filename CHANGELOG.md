@@ -1,3 +1,10 @@
+## [1.0.0-beta.12](https://github.com/customerio/customerio-expo-plugin/compare/1.0.0-beta.11...1.0.0-beta.12) (2023-07-06)
+
+
+### Bug Fixes
+
+* path fix for monorepo support ([#91](https://github.com/customerio/customerio-expo-plugin/issues/91)) ([8f551d3](https://github.com/customerio/customerio-expo-plugin/commit/8f551d3948cf33267220b58d5c6271b97db15594))
+
 ## [1.0.0-beta.11](https://github.com/customerio/customerio-expo-plugin/compare/1.0.0-beta.10...1.0.0-beta.11) (2023-07-03)
 
 
