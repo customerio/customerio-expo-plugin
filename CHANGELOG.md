@@ -1,3 +1,14 @@
+## [1.0.0-beta.11](https://github.com/customerio/customerio-expo-plugin/compare/1.0.0-beta.10...1.0.0-beta.11) (2023-07-03)
+
+
+### ⚠ BREAKING CHANGES
+
+* auto-update native SDK and easier rich push install (#81)
+
+### Bug Fixes
+
+* auto-update native SDK and easier rich push install ([#81](https://github.com/customerio/customerio-expo-plugin/issues/81)) ([793e927](https://github.com/customerio/customerio-expo-plugin/commit/793e9274cf83cfbea6334957a1df2a96ccb80f2d))
+
 ## [1.0.0-beta.10](https://github.com/customerio/customerio-expo-plugin/compare/1.0.0-beta.9...1.0.0-beta.10) (2023-06-01)
 
 

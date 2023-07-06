@@ -1,6 +1,6 @@
 {
   "name": "customerio-expo-plugin",
-  "version": "1.0.0-beta.10",
+  "version": "1.0.0-beta.11",
   "description": "Expo config plugin for the Customer IO React Native SDK",
   "main": "lib/commonjs/index",
   "module": "lib/module/index",
@@ -40,7 +40,7 @@
     "registry": "https://registry.npmjs.org/"
   },
   "peerDependencies": {
-    "customerio-reactnative": "^2.0.0"
+    "customerio-reactnative": "^3.0.0"
   },
   "devDependencies": {
     "@expo/config-plugins": "^4.1.4",
