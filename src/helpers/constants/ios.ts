@@ -54,7 +54,7 @@ export const CIO_DIDREGISTERFORREMOTENOTIFICATIONSWITHDEVICETOKEN_SNIPPET = `
 
 export const CIO_CONFIGURECIOSDKPUSHNOTIFICATION_SNIPPET = `
   // Register for push notifications
-  [pnHandlerObj registerPushNotification:self];
+  [pnHandlerObj registerPushNotification];
 `;
 
 export const CIO_CONFIGURECIOSDKUSERNOTIFICATIONCENTER_SNIPPET = `
@@ -75,11 +75,10 @@ export const CIO_WILLPRESENTNOTIFICATIONHANDLER_SNIPPET = `
   completionHandler( UNNotificationPresentationOptionAlert + UNNotificationPresentationOptionSound);
 }`;
 export const CIO_REGISTER_PUSHNOTIFICATION_SNIPPET = `
-@objc(registerPushNotification:)
-  public func registerPushNotification(withNotificationDelegate notificationDelegate: UNUserNotificationCenterDelegate) {
+@objc(registerPushNotification)
+  public func registerPushNotification() {
 
     let center  = UNUserNotificationCenter.current()
-    center.delegate = notificationDelegate
     center.requestAuthorization(options: [.sound, .alert, .badge]) { (granted, error) in
       if error == nil{
         DispatchQueue.main.async {
