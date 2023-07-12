@@ -179,7 +179,12 @@ export const withAppDelegateModifications: ConfigPlugin<
       ) {
         stringContents = addNotificationConfiguration(stringContents);
       }
-      stringContents = addUserNotificationCenterConfiguration(stringContents);
+      if (
+        props.disableNotificationCenter !== undefined &&
+        props.disableNotificationCenter === false
+      ) {
+        stringContents = addUserNotificationCenterConfiguration(stringContents);
+      }
       stringContents = addAdditionalMethodsForPushNotifications(stringContents);
       stringContents =
         addDidFailToRegisterForRemoteNotificationsWithError(stringContents);
