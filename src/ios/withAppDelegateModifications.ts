@@ -180,8 +180,8 @@ export const withAppDelegateModifications: ConfigPlugin<
         stringContents = addNotificationConfiguration(stringContents);
       }
       if (
-        props.handleNotificationSetup !== undefined &&
-        props.handleNotificationSetup === false
+        props.handleNotificationClick !== undefined &&
+        props.handleNotificationClick === true
       ) {
         stringContents = addUserNotificationCenterConfiguration(stringContents);
       }
