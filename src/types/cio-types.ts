@@ -17,6 +17,7 @@ export type CustomerIOPluginOptionsIOS = {
   appName?: string;
   disableNotificationRegistration?: boolean;
   handleNotificationClick?:boolean;
+  handleDeeplinkInKilledState?:boolean;
   useFrameworks?: 'static' | 'dynamic';
   pushNotification?: {
     useRichPush: boolean;

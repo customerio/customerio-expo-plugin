@@ -8,6 +8,7 @@ import {
   CIO_APPDELEGATEHEADER_USER_NOTIFICATION_CENTER_SNIPPET,
   CIO_CONFIGURECIOSDKPUSHNOTIFICATION_SNIPPET,
   CIO_CONFIGURECIOSDKUSERNOTIFICATIONCENTER_SNIPPET,
+  CIO_CONFIGUREDEEPLINK_KILLEDSTATE_SNIPPET,
   CIO_DIDFAILTOREGISTERFORREMOTENOTIFICATIONSWITHERRORFULL_REGEX,
   CIO_DIDFAILTOREGISTERFORREMOTENOTIFICATIONSWITHERROR_REGEX,
   CIO_DIDFAILTOREGISTERFORREMOTENOTIFICATIONSWITHERROR_SNIPPET,
@@ -84,6 +85,16 @@ const addUserNotificationCenterConfiguration = (stringContents: string) => {
     stringContents,
     CIO_DIDFINISHLAUNCHINGMETHOD_REGEX,
     CIO_CONFIGURECIOSDKUSERNOTIFICATIONCENTER_SNIPPET
+  );
+
+  return stringContents;
+};
+
+const addHandleDeeplinkInKilledStateConfiguration = (stringContents: string) => {
+  stringContents = injectCodeBeforeMultiLineRegex(
+    stringContents,
+    CIO_DIDFINISHLAUNCHINGMETHOD_REGEX,
+    CIO_CONFIGUREDEEPLINK_KILLEDSTATE_SNIPPET
   );
 
   return stringContents;
@@ -185,6 +196,14 @@ export const withAppDelegateModifications: ConfigPlugin<
       ) {
         stringContents = addUserNotificationCenterConfiguration(stringContents);
       }
+
+      if (
+        props.handleDeeplinkInKilledState !== undefined &&
+        props.handleDeeplinkInKilledState == true
+      ) {
+        stringContents = addHandleDeeplinkInKilledStateConfiguration(stringContents)
+      }
+  
       stringContents = addAdditionalMethodsForPushNotifications(stringContents);
       stringContents =
         addDidFailToRegisterForRemoteNotificationsWithError(stringContents);

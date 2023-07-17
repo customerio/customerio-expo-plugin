@@ -62,6 +62,21 @@ export const CIO_CONFIGURECIOSDKUSERNOTIFICATIONCENTER_SNIPPET = `
   center.delegate = self;
 `;
 
+export const CIO_CONFIGUREDEEPLINK_KILLEDSTATE_SNIPPET = `
+// Deep link workaround for app killed state start
+NSMutableDictionary *modifiedLaunchOptions = [NSMutableDictionary dictionaryWithDictionary:launchOptions];
+  if (launchOptions[UIApplicationLaunchOptionsRemoteNotificationKey]) {
+      NSDictionary *pushContent = launchOptions[UIApplicationLaunchOptionsRemoteNotificationKey];
+      if (pushContent[@"CIO"] && pushContent[@"CIO"][@"push"] && pushContent[@"CIO"][@"push"][@"link"]) {
+        NSString *initialURL = pushContent[@"CIO"][@"push"][@"link"];
+          if (!launchOptions[UIApplicationLaunchOptionsURLKey]) {
+              modifiedLaunchOptions[UIApplicationLaunchOptionsURLKey] = [NSURL URLWithString:initialURL];
+          }
+      }
+  }
+//Deep link workaround for app killed state ends
+`;
+
 // Enable push handling - notification response
 export const CIO_DIDRECEIVENOTIFICATIONRESPONSEHANDLER_SNIPPET = `
 - (void)userNotificationCenter:(UNUserNotificationCenter *)center didReceiveNotificationResponse:(UNNotificationResponse *)response withCompletionHandler:(void(^)(void))completionHandler {
