@@ -31,6 +31,10 @@ export const CIO_APPDELEGATEDECLARATION_REGEX =
 
 export const CIO_APPDELEGATEHEADER_REGEX =
   /(@interface AppDelegate\s*:\s*EXAppDelegateWrapper\s*)(<([^>]+)>)?/;
+
+export const CIO_RCTBRIDGE_DEEPLINK_MODIFIEDOPTIONS_REGEX = 
+/RCTBridge\s*\*\s*\w+\s*=\s*\[\s*self\.reactDelegate\s+createBridgeWithDelegate:self\s+launchOptions:launchOptions\s*\];\s*$/
+
 export const DEFAULT_BUNDLE_VERSION = '1';
 export const DEFAULT_BUNDLE_SHORT_VERSION = '1.0';
 export const CIO_TARGET_NAME = 'CustomerIOSDK';
@@ -41,6 +45,9 @@ export const CIO_APPDELEGATEHEADER_USER_NOTIFICATION_CENTER_SNIPPET = 'UNUserNot
 export const CIO_PUSHNOTIFICATIONHANDLERDECLARATION_SNIPPET = `
 CIOAppPushNotificationsHandler* pnHandlerObj = [[CIOAppPushNotificationsHandler alloc] init];
 `;
+export const CIO_RCTBRIDGE_DEEPLINK_MODIFIEDOPTIONS_SNIPPET = `
+RCTBridge *bridge = [self.reactDelegate createBridgeWithDelegate:self launchOptions:modifiedLaunchOptions])`
+
 
 export const CIO_DIDFAILTOREGISTERFORREMOTENOTIFICATIONSWITHERROR_SNIPPET = `
   [super application:application didFailToRegisterForRemoteNotificationsWithError:error];

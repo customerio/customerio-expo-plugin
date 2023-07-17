@@ -17,6 +17,8 @@ import {
   CIO_DIDREGISTERFORREMOTENOTIFICATIONSWITHDEVICETOKEN_REGEX,
   CIO_DIDREGISTERFORREMOTENOTIFICATIONSWITHDEVICETOKEN_SNIPPET,
   CIO_PUSHNOTIFICATIONHANDLERDECLARATION_SNIPPET,
+  CIO_RCTBRIDGE_DEEPLINK_MODIFIEDOPTIONS_REGEX,
+  CIO_RCTBRIDGE_DEEPLINK_MODIFIEDOPTIONS_SNIPPET,
   CIO_WILLPRESENTNOTIFICATIONHANDLER_SNIPPET,
 } from '../helpers/constants/ios';
 import {
@@ -24,6 +26,7 @@ import {
   injectCodeByLineNumber,
   injectCodeByMultiLineRegex,
   injectCodeByMultiLineRegexAndReplaceLine,
+  replaceCodeByRegex,
 } from '../helpers/utils/codeInjection';
 import { FileManagement } from '../helpers/utils/fileManagement';
 import type { CustomerIOPluginOptionsIOS } from '../types/cio-types';
@@ -202,6 +205,7 @@ export const withAppDelegateModifications: ConfigPlugin<
         props.handleDeeplinkInKilledState == true
       ) {
         stringContents = addHandleDeeplinkInKilledStateConfiguration(stringContents)
+        replaceCodeByRegex(stringContents, CIO_RCTBRIDGE_DEEPLINK_MODIFIEDOPTIONS_REGEX, CIO_RCTBRIDGE_DEEPLINK_MODIFIEDOPTIONS_SNIPPET);
       }
   
       stringContents = addAdditionalMethodsForPushNotifications(stringContents);
