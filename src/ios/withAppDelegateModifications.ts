@@ -96,7 +96,7 @@ const addUserNotificationCenterConfiguration = (stringContents: string) => {
 const addHandleDeeplinkInKilledStateConfiguration = (stringContents: string) => {
   stringContents = injectCodeBeforeMultiLineRegex(
     stringContents,
-    CIO_DIDFINISHLAUNCHINGMETHOD_REGEX,
+    CIO_RCTBRIDGE_DEEPLINK_MODIFIEDOPTIONS_REGEX,
     CIO_CONFIGUREDEEPLINK_KILLEDSTATE_SNIPPET
   );
 
@@ -205,7 +205,7 @@ export const withAppDelegateModifications: ConfigPlugin<
         props.handleDeeplinkInKilledState == true
       ) {
         stringContents = addHandleDeeplinkInKilledStateConfiguration(stringContents)
-        replaceCodeByRegex(stringContents, CIO_RCTBRIDGE_DEEPLINK_MODIFIEDOPTIONS_REGEX, CIO_RCTBRIDGE_DEEPLINK_MODIFIEDOPTIONS_SNIPPET);
+        stringContents = replaceCodeByRegex(stringContents, CIO_RCTBRIDGE_DEEPLINK_MODIFIEDOPTIONS_REGEX, CIO_RCTBRIDGE_DEEPLINK_MODIFIEDOPTIONS_SNIPPET);
       }
   
       stringContents = addAdditionalMethodsForPushNotifications(stringContents);
