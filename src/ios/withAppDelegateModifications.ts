@@ -162,6 +162,11 @@ ${interfaceDeclaration.trim()} <${CIO_APPDELEGATEHEADER_USER_NOTIFICATION_CENTER
   return stringContents;
 };
 
+const addHandleDeeplinkInKilledState = (stringContents: string) => {
+  stringContents = addHandleDeeplinkInKilledStateConfiguration(stringContents)
+  stringContents = replaceCodeByRegex(stringContents, CIO_RCTBRIDGE_DEEPLINK_MODIFIEDOPTIONS_REGEX, CIO_RCTBRIDGE_DEEPLINK_MODIFIEDOPTIONS_SNIPPET);
+  return stringContents
+}
 export const withAppDelegateModifications: ConfigPlugin<
   CustomerIOPluginOptionsIOS
 > = (configOuter, props) => {
@@ -202,10 +207,9 @@ export const withAppDelegateModifications: ConfigPlugin<
 
       if (
         props.handleDeeplinkInKilledState !== undefined &&
-        props.handleDeeplinkInKilledState == true
+        props.handleDeeplinkInKilledState === true
       ) {
-        stringContents = addHandleDeeplinkInKilledStateConfiguration(stringContents)
-        stringContents = replaceCodeByRegex(stringContents, CIO_RCTBRIDGE_DEEPLINK_MODIFIEDOPTIONS_REGEX, CIO_RCTBRIDGE_DEEPLINK_MODIFIEDOPTIONS_SNIPPET);
+        stringContents = addHandleDeeplinkInKilledState(stringContents);
       }
   
       stringContents = addAdditionalMethodsForPushNotifications(stringContents);
