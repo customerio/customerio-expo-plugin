@@ -1,5 +1,6 @@
 const finder = require('find-package-json');
 const path = require('path');
+const Constants = require("expo-constants");
 
 const f = finder(__dirname);
 let pluginPackageRoot = f.next().filename;
@@ -34,7 +35,7 @@ export const CIO_APPDELEGATEHEADER_REGEX =
 
 export const CIO_RCTBRIDGE_DEEPLINK_MODIFIEDOPTIONS_REGEX = 
 /^\s*RCTBridge\s*\*\s*\w+\s*=\s*\[\s*self\.reactDelegate\s+createBridgeWithDelegate:self\s+launchOptions:launchOptions\s*\];\s*$/gm;
-
+export const EXPO_VERSION = Constants.expoVersion
 export const DEFAULT_BUNDLE_VERSION = '1';
 export const DEFAULT_BUNDLE_SHORT_VERSION = '1.0';
 export const CIO_TARGET_NAME = 'CustomerIOSDK';
