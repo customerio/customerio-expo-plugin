@@ -1,6 +1,6 @@
 import { ConfigPlugin, withAppDelegate } from '@expo/config-plugins';
 import { getAppDelegateHeaderFilePath } from '@expo/config-plugins/build/ios/Paths';
-import Constants from 'expo-constants';
+const Constants = require("expo-constants");
 
 import {
   CIO_APPDELEGATEDECLARATION_REGEX,
