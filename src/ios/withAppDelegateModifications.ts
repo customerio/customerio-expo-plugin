@@ -1,5 +1,6 @@
 import { ConfigPlugin, withAppDelegate } from '@expo/config-plugins';
 import { getAppDelegateHeaderFilePath } from '@expo/config-plugins/build/ios/Paths';
+import Constants from 'expo-constants';
 
 import {
   CIO_APPDELEGATEDECLARATION_REGEX,
@@ -41,6 +42,8 @@ const additionalMethodsForPushNotifications = `${pushCodeSnippets.join(
 )}\n`; // Join newlines and ensure a newline at the end.
 
 const addImport = (stringContents: string, appName: string) => {
+  console.log(`Version ${Constants.expoVersion}`);
+
   const importRegex = /^(#import .*)\n/gm;
   const addedImport = getImportSnippet(appName);
 
