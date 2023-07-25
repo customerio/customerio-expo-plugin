@@ -17,7 +17,6 @@ import {
   CIO_WILLPRESENTNOTIFICATIONHANDLER_SNIPPET,
 } from '../helpers/constants/ios';
 import {
-  injectCodeByLineNumber,
   injectCodeByMultiLineRegex,
   injectCodeByMultiLineRegexAndReplaceLine,
 } from '../helpers/utils/codeInjection';
@@ -34,24 +33,13 @@ const additionalMethodsForPushNotifications = `${pushCodeSnippets.join(
 )}\n`; // Join newlines and ensure a newline at the end.
 
 const addImport = (stringContents: string, appName: string) => {
-  const importRegex = /^(#import .*)\n/gm;
   const addedImport = getImportSnippet(appName);
 
-  const match = stringContents.match(importRegex);
-  let endOfMatchIndex: number;
-  if (!match || match.index === undefined) {
-    // No imports found, just add to start of file:
-    endOfMatchIndex = 0;
-  } else {
-    // Add after first import:
-    endOfMatchIndex = match.index + match[0].length;
-  }
-
-  stringContents = injectCodeByLineNumber(
-    stringContents,
-    endOfMatchIndex,
-    addedImport
-  ).join('\n');
+  stringContents = stringContents.replace(
+    /#import "AppDelegate.h"/g,
+    `#import "AppDelegate.h"
+    ${addedImport}`
+  );
 
   return stringContents;
 };
