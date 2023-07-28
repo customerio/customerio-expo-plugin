@@ -10,17 +10,18 @@ import {
   CIO_CONFIGURECIOSDKUSERNOTIFICATIONCENTER_SNIPPET,
   CIO_CONFIGUREDEEPLINK_KILLEDSTATE_SNIPPET,
   CIO_DIDFAILTOREGISTERFORREMOTENOTIFICATIONSWITHERRORFULL_REGEX,
+  CIO_RCTBRIDGE_DEEPLINK_MODIFIEDOPTIONS_REGEX,
   CIO_DIDFAILTOREGISTERFORREMOTENOTIFICATIONSWITHERROR_REGEX,
   CIO_DIDFAILTOREGISTERFORREMOTENOTIFICATIONSWITHERROR_SNIPPET,
   CIO_DIDFINISHLAUNCHINGMETHOD_REGEX,
   CIO_DIDRECEIVENOTIFICATIONRESPONSEHANDLER_SNIPPET,
   CIO_DIDREGISTERFORREMOTENOTIFICATIONSWITHDEVICETOKEN_REGEX,
   CIO_DIDREGISTERFORREMOTENOTIFICATIONSWITHDEVICETOKEN_SNIPPET,
+  CIO_LAUNCHOPTIONS_DEEPLINK_MODIFIEDOPTIONS_REGEX,
   CIO_PUSHNOTIFICATIONHANDLERDECLARATION_SNIPPET,
-  CIO_RCTBRIDGE_DEEPLINK_MODIFIEDOPTIONS_REGEX,
-  CIO_RCTBRIDGE_DEEPLINK_MODIFIEDOPTIONS_SNIPPET,
   CIO_WILLPRESENTNOTIFICATIONHANDLER_SNIPPET,
-  EXPO_VERSION,
+  CIO_LAUNCHOPTIONS_MODIFIEDOPTIONS_SNIPPET,
+  CIO_RCTBRIDGE_DEEPLINK_MODIFIEDOPTIONS_SNIPPET,
 } from '../helpers/constants/ios';
 import {
   injectCodeBeforeMultiLineRegex,
@@ -28,6 +29,7 @@ import {
   injectCodeByMultiLineRegex,
   injectCodeByMultiLineRegexAndReplaceLine,
   replaceCodeByRegex,
+  matchRegexExists
 } from '../helpers/utils/codeInjection';
 import { FileManagement } from '../helpers/utils/fileManagement';
 import type { CustomerIOPluginOptionsIOS } from '../types/cio-types';
@@ -42,7 +44,6 @@ const additionalMethodsForPushNotifications = `${pushCodeSnippets.join(
 )}\n`; // Join newlines and ensure a newline at the end.
 
 const addImport = (stringContents: string, appName: string) => {
-  console.log(`Version - ${EXPO_VERSION}`);
   const importRegex = /^(#import .*)\n/gm;
   const addedImport = getImportSnippet(appName);
 
@@ -95,10 +96,10 @@ const addUserNotificationCenterConfiguration = (stringContents: string) => {
   return stringContents;
 };
 
-const addHandleDeeplinkInKilledStateConfiguration = (stringContents: string) => {
+const addHandleDeeplinkInKilledStateConfiguration = (stringContents: string, regex: RegExp) => {
   stringContents = injectCodeBeforeMultiLineRegex(
     stringContents,
-    CIO_RCTBRIDGE_DEEPLINK_MODIFIEDOPTIONS_REGEX,
+    regex,
     CIO_CONFIGUREDEEPLINK_KILLEDSTATE_SNIPPET
   );
 
@@ -164,11 +165,23 @@ ${interfaceDeclaration.trim()} <${CIO_APPDELEGATEHEADER_USER_NOTIFICATION_CENTER
   return stringContents;
 };
 
-const addHandleDeeplinkInKilledState = (stringContents: string) => {
-  stringContents = addHandleDeeplinkInKilledStateConfiguration(stringContents)
-  stringContents = replaceCodeByRegex(stringContents, CIO_RCTBRIDGE_DEEPLINK_MODIFIEDOPTIONS_REGEX, CIO_RCTBRIDGE_DEEPLINK_MODIFIEDOPTIONS_SNIPPET);
+const addHandleDeeplinkInKilledState = (stringContents: string) => {  
+  var snippet = undefined
+  var regex = CIO_LAUNCHOPTIONS_DEEPLINK_MODIFIEDOPTIONS_REGEX;
+  if (matchRegexExists(stringContents, CIO_RCTBRIDGE_DEEPLINK_MODIFIEDOPTIONS_REGEX)) {
+    snippet = CIO_RCTBRIDGE_DEEPLINK_MODIFIEDOPTIONS_SNIPPET;
+    regex = CIO_RCTBRIDGE_DEEPLINK_MODIFIEDOPTIONS_REGEX;
+  }
+  else if (matchRegexExists(stringContents, CIO_LAUNCHOPTIONS_DEEPLINK_MODIFIEDOPTIONS_REGEX)) {
+    snippet = CIO_LAUNCHOPTIONS_MODIFIEDOPTIONS_SNIPPET;
+  }
+  if (snippet !== undefined) {
+  stringContents = addHandleDeeplinkInKilledStateConfiguration(stringContents, regex);
+  stringContents = replaceCodeByRegex(stringContents, CIO_LAUNCHOPTIONS_DEEPLINK_MODIFIEDOPTIONS_REGEX, snippet);
+  }
   return stringContents
 }
+
 export const withAppDelegateModifications: ConfigPlugin<
   CustomerIOPluginOptionsIOS
 > = (configOuter, props) => {
