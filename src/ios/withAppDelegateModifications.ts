@@ -169,7 +169,7 @@ ${interfaceDeclaration.trim()} <${CIO_APPDELEGATEHEADER_USER_NOTIFICATION_CENTER
 const addHandleDeeplinkInKilledState = (stringContents: string) => {
   // Find if the deep link code snippet is already present
   if (matchRegexExists(stringContents, CIO_DEEPLINK_COMMENT_REGEX)) {
-    return
+    return stringContents
   }
 
   // Check if the app delegate is using RCTBridge or LaunchOptions
