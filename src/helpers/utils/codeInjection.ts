@@ -38,6 +38,9 @@ export function replaceCodeByRegex(
   return fileContent.replace(lineRegex, snippet);
 }
 
+export function matchRegexExists(fileContent: string, regex: RegExp) {
+  return regex.test(fileContent);
+}
 export function injectCodeByMultiLineRegexAndReplaceLine(
   fileContent: string,
   lineRegex: RegExp,
