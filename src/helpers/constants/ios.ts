@@ -38,6 +38,7 @@ export const CIO_RCTBRIDGE_DEEPLINK_MODIFIEDOPTIONS_REGEX =
 export const CIO_LAUNCHOPTIONS_DEEPLINK_MODIFIEDOPTIONS_REGEX = 
 /^\s*return\s\[\s*super\s*application:\s*application\s*didFinishLaunchingWithOptions\s*:\s*launchOptions\s*\];/gm;
 
+export const CIO_DEEPLINK_COMMENT_REGEX = /\sDeep link workaround for app killed state start/gm;
 export const DEFAULT_BUNDLE_VERSION = '1';
 export const DEFAULT_BUNDLE_SHORT_VERSION = '1.0';
 export const CIO_TARGET_NAME = 'CustomerIOSDK';

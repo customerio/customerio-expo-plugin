@@ -22,6 +22,7 @@ import {
   CIO_WILLPRESENTNOTIFICATIONHANDLER_SNIPPET,
   CIO_LAUNCHOPTIONS_MODIFIEDOPTIONS_SNIPPET,
   CIO_RCTBRIDGE_DEEPLINK_MODIFIEDOPTIONS_SNIPPET,
+  CIO_DEEPLINK_COMMENT_REGEX,
 } from '../helpers/constants/ios';
 import {
   injectCodeBeforeMultiLineRegex,
@@ -165,7 +166,13 @@ ${interfaceDeclaration.trim()} <${CIO_APPDELEGATEHEADER_USER_NOTIFICATION_CENTER
   return stringContents;
 };
 
-const addHandleDeeplinkInKilledState = (stringContents: string) => {  
+const addHandleDeeplinkInKilledState = (stringContents: string) => {
+  // Find if the deep link code snippet is already present
+  if (matchRegexExists(stringContents, CIO_DEEPLINK_COMMENT_REGEX)) {
+    return
+  }
+
+  // Check if the app delegate is using RCTBridge or LaunchOptions
   var snippet = undefined
   var regex = CIO_LAUNCHOPTIONS_DEEPLINK_MODIFIEDOPTIONS_REGEX;
   if (matchRegexExists(stringContents, CIO_RCTBRIDGE_DEEPLINK_MODIFIEDOPTIONS_REGEX)) {
@@ -175,6 +182,7 @@ const addHandleDeeplinkInKilledState = (stringContents: string) => {
   else if (matchRegexExists(stringContents, CIO_LAUNCHOPTIONS_DEEPLINK_MODIFIEDOPTIONS_REGEX)) {
     snippet = CIO_LAUNCHOPTIONS_MODIFIEDOPTIONS_SNIPPET;
   }
+  // Add code only if the app delegate is using RCTBridge or LaunchOptions
   if (snippet !== undefined) {
   stringContents = addHandleDeeplinkInKilledStateConfiguration(stringContents, regex);
   stringContents = replaceCodeByRegex(stringContents, CIO_LAUNCHOPTIONS_DEEPLINK_MODIFIEDOPTIONS_REGEX, snippet);
