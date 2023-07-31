@@ -185,7 +185,7 @@ const addHandleDeeplinkInKilledState = (stringContents: string) => {
   // Add code only if the app delegate is using RCTBridge or LaunchOptions
   if (snippet !== undefined) {
   stringContents = addHandleDeeplinkInKilledStateConfiguration(stringContents, regex);
-  stringContents = replaceCodeByRegex(stringContents, CIO_LAUNCHOPTIONS_DEEPLINK_MODIFIEDOPTIONS_REGEX, snippet);
+  stringContents = replaceCodeByRegex(stringContents, regex, snippet);
   }
   return stringContents
 }
