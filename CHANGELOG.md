@@ -1,3 +1,42 @@
+## [1.0.0-beta.13](https://github.com/customerio/customerio-expo-plugin/compare/1.0.0-beta.12...1.0.0-beta.13) (2023-08-07)
+
+
+### Bug Fixes
+
+* modified regex for Expo 48 and added UNUserNotificationCenter snippet ([#82](https://github.com/customerio/customerio-expo-plugin/issues/82)) ([e5cbc77](https://github.com/customerio/customerio-expo-plugin/commit/e5cbc77b3e3f12801dc27845abeb982a335d7572))
+
+## [1.0.0-beta.12](https://github.com/customerio/customerio-expo-plugin/compare/1.0.0-beta.11...1.0.0-beta.12) (2023-07-06)
+
+
+### Bug Fixes
+
+* path fix for monorepo support ([#91](https://github.com/customerio/customerio-expo-plugin/issues/91)) ([8f551d3](https://github.com/customerio/customerio-expo-plugin/commit/8f551d3948cf33267220b58d5c6271b97db15594))
+
+## [1.0.0-beta.11](https://github.com/customerio/customerio-expo-plugin/compare/1.0.0-beta.10...1.0.0-beta.11) (2023-07-03)
+
+
+### ⚠ BREAKING CHANGES
+
+* auto-update native SDK and easier rich push install (#81)
+
+### Bug Fixes
+
+* auto-update native SDK and easier rich push install ([#81](https://github.com/customerio/customerio-expo-plugin/issues/81)) ([793e927](https://github.com/customerio/customerio-expo-plugin/commit/793e9274cf83cfbea6334957a1df2a96ccb80f2d))
+
+## [1.0.0-beta.10](https://github.com/customerio/customerio-expo-plugin/compare/1.0.0-beta.9...1.0.0-beta.10) (2023-06-01)
+
+
+### Bug Fixes
+
+* xcode race condition fix ([#76](https://github.com/customerio/customerio-expo-plugin/issues/76)) ([ff136ba](https://github.com/customerio/customerio-expo-plugin/commit/ff136ba21e08c4b63a17ad298c8fd71934108efc))
+
+## [1.0.0-beta.9](https://github.com/customerio/customerio-expo-plugin/compare/1.0.0-beta.8...1.0.0-beta.9) (2023-05-17)
+
+
+### Bug Fixes
+
+* compatibility for monorepos ([#67](https://github.com/customerio/customerio-expo-plugin/issues/67)) ([14fa86c](https://github.com/customerio/customerio-expo-plugin/commit/14fa86cab7b2c3465f7d1afe2906aef70c59af3b))
+
 ## [1.0.0-beta.8](https://github.com/customerio/customerio-expo-plugin/compare/1.0.0-beta.7...1.0.0-beta.8) (2023-05-11)
 
 
