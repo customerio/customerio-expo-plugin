@@ -26,7 +26,6 @@ import {
 } from '../helpers/constants/ios';
 import {
   injectCodeBeforeMultiLineRegex,
-  injectCodeByLineNumber,
   injectCodeByMultiLineRegex,
   injectCodeByMultiLineRegexAndReplaceLine,
   replaceCodeByRegex,
