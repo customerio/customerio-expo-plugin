@@ -1,3 +1,10 @@
+## [1.0.0-beta.13](https://github.com/customerio/customerio-expo-plugin/compare/1.0.0-beta.12...1.0.0-beta.13) (2023-08-07)
+
+
+### Bug Fixes
+
+* modified regex for Expo 48 and added UNUserNotificationCenter snippet ([#82](https://github.com/customerio/customerio-expo-plugin/issues/82)) ([e5cbc77](https://github.com/customerio/customerio-expo-plugin/commit/e5cbc77b3e3f12801dc27845abeb982a335d7572))
+
 ## [1.0.0-beta.12](https://github.com/customerio/customerio-expo-plugin/compare/1.0.0-beta.11...1.0.0-beta.12) (2023-07-06)
 
 

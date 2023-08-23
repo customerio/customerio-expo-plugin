@@ -22,6 +22,14 @@ export function injectCodeByMultiLineRegex(
   return fileContent.replace(lineRegex, `$&\n${snippet}`);
 }
 
+export function injectCodeBeforeMultiLineRegex(
+  fileContent: string,
+  lineRegex: RegExp,
+  snippet: string
+) {
+  return fileContent.replace(lineRegex, `${snippet}\n$&`);
+}
+
 export function replaceCodeByRegex(
   fileContent: string,
   lineRegex: RegExp,
@@ -30,6 +38,9 @@ export function replaceCodeByRegex(
   return fileContent.replace(lineRegex, snippet);
 }
 
+export function matchRegexExists(fileContent: string, regex: RegExp) {
+  return regex.test(fileContent);
+}
 export function injectCodeByMultiLineRegexAndReplaceLine(
   fileContent: string,
   lineRegex: RegExp,
