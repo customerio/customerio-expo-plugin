@@ -23,7 +23,7 @@ jobs:
       - uses: actions/checkout@v3
 
       - name: Deploy git tag via semantic release
-        uses: cycjimmy/semantic-release-action@v3
+        uses: cycjimmy/semantic-release-action@v4
         id: semantic-release
         with:
           # version numbers below can be in many forms: M, M.m, M.m.p
