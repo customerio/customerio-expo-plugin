@@ -12,5 +12,6 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    target-branch: "cleaning/dependabot"
     # Disable version updates for npm dependencies
     open-pull-requests-limit: 0
