@@ -6,5 +6,11 @@ updates:
       interval: "hourly"
     target-branch: "cleaning/dependabot"
     commit-message:
-      prefix: "chore"
+      prefix: "chore:"
       include: "scope"
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    # Disable version updates for npm dependencies
+    open-pull-requests-limit: 0
