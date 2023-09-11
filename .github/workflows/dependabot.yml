@@ -3,8 +3,9 @@ updates:
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: "hourly"
-    target-branch: "cleaning/dependabot"
+      interval: "weekly"
+    reviewers:
+      - "customerio/mobile"
     commit-message:
-      prefix: "chore:"
+      prefix: "chore"
       include: "scope"
