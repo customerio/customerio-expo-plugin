@@ -3,17 +3,8 @@ updates:
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: "daily"
-      time: "17:55"
+      interval: "hourly"
     target-branch: "cleaning/dependabot"
     commit-message:
       prefix: "chore:"
       include: "scope"
-  - package-ecosystem: "npm"
-    directory: "/"
-    schedule:
-      interval: "daily"
-      time: "17:55"
-    target-branch: "cleaning/dependabot"
-    # Disable version updates for npm dependencies
-    open-pull-requests-limit: 0
