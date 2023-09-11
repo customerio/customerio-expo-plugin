@@ -1,4 +1,4 @@
-# Dependabot helps update dependencies to keep them up-to-date. 
+# Dependabot helps update dependencies to keep them up-to-date.
 # Configuration docs: https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
 version: 2
 updates:
