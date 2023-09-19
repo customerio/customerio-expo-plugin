@@ -28,7 +28,7 @@ jobs:
         with:
           # version numbers below can be in many forms: M, M.m, M.m.p
           extra_plugins: |
-            conventional-changelog-conventionalcommits@4
+            conventional-changelog-conventionalcommits
             @semantic-release/changelog
             @semantic-release/git
             @semantic-release/github
