@@ -19,7 +19,13 @@ export async function injectCIOPodfileCode(iosPath: string) {
 
     const snippetToInjectInPodfile = `
 ${blockStart}
-  pod 'customerio-reactnative/apn', :path => '${getRelativePathToRNSDK(filename)}'
+  pod 'customerio-reactnative/apn', :path => '${getRelativePathToRNSDK(
+    filename
+  )}'
+
+  pod 'CustomerIOTracking', :git => 'https://github.com/customerio/customerio-ios.git', :branch => 'levi/reliable-open-metrics'
+  pod 'CustomerIOMessagingInApp', :git => 'https://github.com/customerio/customerio-ios.git', :branch => 'levi/reliable-open-metrics'
+  pod 'CustomerIOMessagingPushAPN', :git => 'https://github.com/customerio/customerio-ios.git', :branch => 'levi/reliable-open-metrics'
 ${blockEnd}
 `.trim();
 
@@ -53,7 +59,12 @@ export async function injectCIONotificationPodfileCode(
 ${blockStart}
 target 'NotificationService' do
   ${useFrameworks === 'static' ? 'use_frameworks! :linkage => :static' : ''}
-  pod 'customerio-reactnative-richpush/apn', :path => '${getRelativePathToRNSDK(filename)}'
+  pod 'customerio-reactnative-richpush/apn', :path => '${getRelativePathToRNSDK(
+    filename
+  )}'
+
+  pod 'CustomerIOTracking', :git => 'https://github.com/customerio/customerio-ios.git', :branch => 'levi/reliable-open-metrics'
+  pod 'CustomerIOMessagingPushAPN', :git => 'https://github.com/customerio/customerio-ios.git', :branch => 'levi/reliable-open-metrics'
 end
 ${blockEnd}
 `.trim();

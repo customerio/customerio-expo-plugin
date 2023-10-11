@@ -9,7 +9,7 @@ pluginPackageRoot = path.dirname(pluginPackageRoot);
 export const LOCAL_PATH_TO_RN_SDK = path.join(
   pluginPackageRoot,
   '../customerio-reactnative'
-)
+);
 
 export const LOCAL_PATH_TO_CIO_NSE_FILES = path.join(
   pluginPackageRoot,
@@ -42,20 +42,22 @@ export const CIO_APPDELEGATEDECLARATION_REGEX =
 export const CIO_APPDELEGATEHEADER_REGEX =
   /(@interface AppDelegate\s*:\s*EXAppDelegateWrapper\s*)(<([^>]+)>)?/;
 
-export const CIO_RCTBRIDGE_DEEPLINK_MODIFIEDOPTIONS_REGEX = 
-/^\s*RCTBridge\s*\*\s*\w+\s*=\s*\[\s*self\.reactDelegate\s+createBridgeWithDelegate:self\s+launchOptions:launchOptions\s*\];\s*$/gm;
+export const CIO_RCTBRIDGE_DEEPLINK_MODIFIEDOPTIONS_REGEX =
+  /^\s*RCTBridge\s*\*\s*\w+\s*=\s*\[\s*self\.reactDelegate\s+createBridgeWithDelegate:self\s+launchOptions:launchOptions\s*\];\s*$/gm;
 
-export const CIO_LAUNCHOPTIONS_DEEPLINK_MODIFIEDOPTIONS_REGEX = 
-/^\s*return\s\[\s*super\s*application:\s*application\s*didFinishLaunchingWithOptions\s*:\s*launchOptions\s*\];/gm;
+export const CIO_LAUNCHOPTIONS_DEEPLINK_MODIFIEDOPTIONS_REGEX =
+  /^\s*return\s\[\s*super\s*application:\s*application\s*didFinishLaunchingWithOptions\s*:\s*launchOptions\s*\];/gm;
 
-export const CIO_DEEPLINK_COMMENT_REGEX = /\sDeep link workaround for app killed state start/gm;
+export const CIO_DEEPLINK_COMMENT_REGEX =
+  /\sDeep link workaround for app killed state start/gm;
 export const DEFAULT_BUNDLE_VERSION = '1';
 export const DEFAULT_BUNDLE_SHORT_VERSION = '1.0';
 export const CIO_TARGET_NAME = 'CustomerIOSDK';
 export const CIO_NOTIFICATION_TARGET_NAME = 'NotificationService';
 
 export const CIO_APPDELEGATEHEADER_IMPORT_SNIPPET = `#import <UserNotifications/UserNotifications.h>`;
-export const CIO_APPDELEGATEHEADER_USER_NOTIFICATION_CENTER_SNIPPET = 'UNUserNotificationCenterDelegate';
+export const CIO_APPDELEGATEHEADER_USER_NOTIFICATION_CENTER_SNIPPET =
+  'UNUserNotificationCenterDelegate';
 export const CIO_PUSHNOTIFICATIONHANDLERDECLARATION_SNIPPET = `
 CIOAppPushNotificationsHandler* pnHandlerObj = [[CIOAppPushNotificationsHandler alloc] init];
 `;
@@ -64,7 +66,7 @@ RCTBridge *bridge = [self.reactDelegate createBridgeWithDelegate:self launchOpti
 `;
 
 export const CIO_LAUNCHOPTIONS_MODIFIEDOPTIONS_SNIPPET = `
-return [super application:application didFinishLaunchingWithOptions:modifiedLaunchOptions];`
+return [super application:application didFinishLaunchingWithOptions:modifiedLaunchOptions];`;
 
 export const CIO_DIDFAILTOREGISTERFORREMOTENOTIFICATIONSWITHERROR_SNIPPET = `
   [super application:application didFailToRegisterForRemoteNotificationsWithError:error];
@@ -82,8 +84,15 @@ export const CIO_CONFIGURECIOSDKPUSHNOTIFICATION_SNIPPET = `
 `;
 
 export const CIO_CONFIGURECIOSDKUSERNOTIFICATIONCENTER_SNIPPET = `
+[pnHandlerObj setupCioClickHandler];
+
+// Be compatible with expo-notifications package by manually setting it as the delegate since the CIO SDK already set it. 
+#if __has_include(<EXNotifications/EXNotificationCenterDelegate.h>)
+  id<UNUserNotificationCenterDelegate> notificationCenterDelegate = (id<UNUserNotificationCenterDelegate>) [EXModuleRegistryProvider getSingletonModuleForClass:[EXNotificationCenterDelegate class]];
+
   UNUserNotificationCenter *center = [UNUserNotificationCenter currentNotificationCenter];
-  center.delegate = self;
+  center.delegate = notificationCenterDelegate;
+#endif
 `;
 
 export const CIO_CONFIGUREDEEPLINK_KILLEDSTATE_SNIPPET = `

@@ -11,6 +11,11 @@ public class CIOAppPushNotificationsHandler : NSObject {
 
   {{REGISTER_SNIPPET}}
 
+  @objc(setupCioClickHandler)
+  public func setupCioClickHandler() {
+    MessagingPush.initialize()
+  }
+
   @objc(application:deviceToken:)
   public func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
     MessagingPush.shared.application(application, didRegisterForRemoteNotificationsWithDeviceToken: deviceToken)
