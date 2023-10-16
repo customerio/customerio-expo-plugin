@@ -61,5 +61,5 @@ export function injectCodeByLineNumber(
     content = [...lines.slice(0, index), snippet, ...lines.slice(index)];
   }
 
-  return content;
+  return content.join('\n');
 }

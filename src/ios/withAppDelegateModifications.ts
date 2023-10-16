@@ -62,7 +62,7 @@ const addImport = (stringContents: string, appName: string) => {
     stringContents,
     endOfMatchIndex,
     addedImport
-  ).join('\n');
+  );
 
   return stringContents;
 };
@@ -144,17 +144,21 @@ const addAdditionalMethodsForPushNotifications = (stringContents: string) => {
   return stringContents;
 };
 
-const addAppdelegateHeaderModification = (stringContents: string) => {
+const addExpoNotificationsHeaderModification = (stringContents: string) => {
   stringContents = injectCodeByLineNumber(
     stringContents,
-    1,
+    0,
     `
 #if __has_include(<EXNotifications/EXNotificationCenterDelegate.h>)
 #import <EXNotifications/EXNotificationCenterDelegate.h>
 #endif
 `
-  ).join('\n');
+  );
 
+  return stringContents;
+};
+
+const addAppdelegateHeaderModification = (stringContents: string) => {
   // Add UNUserNotificationCenterDelegate if needed
   stringContents = stringContents.replace(
     CIO_APPDELEGATEHEADER_REGEX,
@@ -270,6 +274,8 @@ export const withAppDelegateModifications: ConfigPlugin<
         addDidFailToRegisterForRemoteNotificationsWithError(stringContents);
       stringContents =
         addDidRegisterForRemoteNotificationsWithDeviceToken(stringContents);
+
+      stringContents = addExpoNotificationsHeaderModification(stringContents);
 
       config.modResults.contents = stringContents;
     } else {
