@@ -124,5 +124,4 @@ export const CIO_REGISTER_PUSHNOTIFICATION_SNIPPET = `
           UIApplication.shared.registerForRemoteNotifications()
         }
       }
-    }
-  }`;
+    }`;

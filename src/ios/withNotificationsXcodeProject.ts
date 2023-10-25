@@ -6,7 +6,6 @@ import {
 
 import {
   CIO_NOTIFICATION_TARGET_NAME,
-  CIO_REGISTER_PUSHNOTIFICATION_SNIPPET,
   DEFAULT_BUNDLE_VERSION,
   LOCAL_PATH_TO_CIO_NSE_FILES,
 } from '../helpers/constants/ios';
@@ -26,7 +25,7 @@ const addNotificationServiceExtension = async (
 ) => {
   try {
     if (options.pushNotification) {
-      await addPushNotificationFile(options, xcodeProject);
+      // await addPushNotificationFile(options, xcodeProject);
     }
 
     if (options.pushNotification?.useRichPush) {
@@ -324,58 +323,58 @@ const updateNseEnv = (
   FileManagement.writeFile(envFileName, envFileContent);
 };
 
-async function addPushNotificationFile(
-  options: CustomerIOPluginOptionsIOS,
-  xcodeProject: any
-) {
-  const { iosPath, appName } = options;
-  const file = 'PushService.swift';
-  const appPath = `${iosPath}/${appName}`;
-  const getTargetFile = (filename: string) => `${appPath}/${filename}`;
-  const targetFile = getTargetFile(file);
+// async function addPushNotificationFile(
+//   options: CustomerIOPluginOptionsIOS,
+//   xcodeProject: any
+// ) {
+//   const { iosPath, appName } = options;
+//   const file = 'PushService.swift';
+//   const appPath = `${iosPath}/${appName}`;
+//   const getTargetFile = (filename: string) => `${appPath}/${filename}`;
+//   const targetFile = getTargetFile(file);
 
-  // Check whether {file} exists in the project. If false, then add the file
-  // If {file} exists then skip and return
-  if (!FileManagement.exists(getTargetFile(file))) {
-    FileManagement.mkdir(appPath, {
-      recursive: true,
-    });
+//   // Check whether {file} exists in the project. If false, then add the file
+//   // If {file} exists then skip and return
+//   if (!FileManagement.exists(getTargetFile(file))) {
+//     FileManagement.mkdir(appPath, {
+//       recursive: true,
+//     });
 
-    FileManagement.copyFile(
-      `${LOCAL_PATH_TO_CIO_NSE_FILES}/${file}`,
-      targetFile
-    );
-  } else {
-    console.log(`${getTargetFile(file)} already exists. Skipping...`);
-    return;
-  }
+//     FileManagement.copyFile(
+//       `${LOCAL_PATH_TO_CIO_NSE_FILES}/${file}`,
+//       targetFile
+//     );
+//   } else {
+//     console.log(`${getTargetFile(file)} already exists. Skipping...`);
+//     return;
+//   }
 
-  updatePushFile(options, targetFile);
+//   updatePushFile(options, targetFile);
 
-  const group = xcodeProject.pbxCreateGroup('CustomerIONotifications');
-  const classesKey = xcodeProject.findPBXGroupKey({ name: `${appName}` });
-  xcodeProject.addToPbxGroup(group, classesKey);
+//   const group = xcodeProject.pbxCreateGroup('CustomerIONotifications');
+//   const classesKey = xcodeProject.findPBXGroupKey({ name: `${appName}` });
+//   xcodeProject.addToPbxGroup(group, classesKey);
 
-  xcodeProject.addSourceFile(`${appName}/${file}`, null, group);
-}
+//   xcodeProject.addSourceFile(`${appName}/${file}`, null, group);
+// }
 
-const updatePushFile = (
-  options: CustomerIOPluginOptionsIOS,
-  envFileName: string
-) => {
-  const REGISTER_RE = /\{\{REGISTER_SNIPPET\}\}/;
+// const updatePushFile = (
+//   options: CustomerIOPluginOptionsIOS,
+//   envFileName: string
+// ) => {
+//   const REGISTER_RE = /\{\{REGISTER_SNIPPET\}\}/;
 
-  let envFileContent = FileManagement.readFile(envFileName);
+//   let envFileContent = FileManagement.readFile(envFileName);
 
-  let snippet = '';
-  if (
-    options.disableNotificationRegistration !== undefined &&
-    options.disableNotificationRegistration === false
-  ) {
-    snippet = CIO_REGISTER_PUSHNOTIFICATION_SNIPPET;
-  }
+//   let snippet = '';
+//   if (
+//     options.disableNotificationRegistration !== undefined &&
+//     options.disableNotificationRegistration === false
+//   ) {
+//     snippet = CIO_REGISTER_PUSHNOTIFICATION_SNIPPET;
+//   }
 
-  envFileContent = replaceCodeByRegex(envFileContent, REGISTER_RE, snippet);
+//   envFileContent = replaceCodeByRegex(envFileContent, REGISTER_RE, snippet);
 
-  FileManagement.writeFile(envFileName, envFileContent);
-};
+//   FileManagement.writeFile(envFileName, envFileContent);
+// };
