@@ -23,11 +23,11 @@ ${blockStart}
     filename
   )}'
 
-  pod 'CustomerIOCommon', :git => 'https://github.com/customerio/customerio-ios.git', :branch => 'levi/reliable-open-metrics'
-  pod 'CustomerIOTracking', :git => 'https://github.com/customerio/customerio-ios.git', :branch => 'levi/reliable-open-metrics'
-  pod 'CustomerIOMessagingInApp', :git => 'https://github.com/customerio/customerio-ios.git', :branch => 'levi/reliable-open-metrics'
-  pod 'CustomerIOMessagingPushAPN', :git => 'https://github.com/customerio/customerio-ios.git', :branch => 'levi/reliable-open-metrics'
-  pod 'CustomerIOMessagingPush', :git => 'https://github.com/customerio/customerio-ios.git', :branch => 'levi/reliable-open-metrics'
+  pod 'CustomerIOCommon', :git => 'https://github.com/customerio/customerio-ios.git', :branch => 'levi/reliable-open-metrics-prototyping'
+  pod 'CustomerIOTracking', :git => 'https://github.com/customerio/customerio-ios.git', :branch => 'levi/reliable-open-metrics-prototyping'
+  pod 'CustomerIOMessagingInApp', :git => 'https://github.com/customerio/customerio-ios.git', :branch => 'levi/reliable-open-metrics-prototyping'
+  pod 'CustomerIOMessagingPushAPN', :git => 'https://github.com/customerio/customerio-ios.git', :branch => 'levi/reliable-open-metrics-prototyping'
+  pod 'CustomerIOMessagingPush', :git => 'https://github.com/customerio/customerio-ios.git', :branch => 'levi/reliable-open-metrics-prototyping'
 ${blockEnd}
 `.trim();
 
@@ -65,10 +65,10 @@ target 'NotificationService' do
     filename
   )}'
 
-  pod 'CustomerIOCommon', :git => 'https://github.com/customerio/customerio-ios.git', :branch => 'levi/reliable-open-metrics'
-  pod 'CustomerIOTracking', :git => 'https://github.com/customerio/customerio-ios.git', :branch => 'levi/reliable-open-metrics'
-  pod 'CustomerIOMessagingPushAPN', :git => 'https://github.com/customerio/customerio-ios.git', :branch => 'levi/reliable-open-metrics'
-  pod 'CustomerIOMessagingPush', :git => 'https://github.com/customerio/customerio-ios.git', :branch => 'levi/reliable-open-metrics'
+  pod 'CustomerIOCommon', :git => 'https://github.com/customerio/customerio-ios.git', :branch => 'levi/reliable-open-metrics-prototyping'
+  pod 'CustomerIOTracking', :git => 'https://github.com/customerio/customerio-ios.git', :branch => 'levi/reliable-open-metrics-prototyping'
+  pod 'CustomerIOMessagingPushAPN', :git => 'https://github.com/customerio/customerio-ios.git', :branch => 'levi/reliable-open-metrics-prototyping'
+  pod 'CustomerIOMessagingPush', :git => 'https://github.com/customerio/customerio-ios.git', :branch => 'levi/reliable-open-metrics-prototyping'
 end
 ${blockEnd}
 `.trim();
