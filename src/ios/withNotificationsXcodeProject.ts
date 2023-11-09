@@ -374,8 +374,34 @@ const updatePushFile = (
   ) {
     snippet = CIO_REGISTER_PUSHNOTIFICATION_SNIPPET;
   }
-
   envFileContent = replaceCodeByRegex(envFileContent, REGISTER_RE, snippet);
+
+  if (options.pushNotification) {
+    envFileContent = replaceCodeByRegex(
+      envFileContent,
+      /\{\{SITE_ID\}\}/,
+      options.pushNotification.env.siteId
+    );
+    envFileContent = replaceCodeByRegex(
+      envFileContent,
+      /\{\{API_KEY\}\}/,
+      options.pushNotification.env.apiKey
+    );
+    envFileContent = replaceCodeByRegex(
+      envFileContent,
+      /\{\{REGION\}\}/,
+      options.pushNotification.env.region.toUpperCase()
+    );
+  }
+
+  const autoTrackPushEvents =
+    options.handleNotificationClick === undefined ||
+    options.handleNotificationClick === true;
+  envFileContent = replaceCodeByRegex(
+    envFileContent,
+    /\{\{AUTO_TRACK_PUSH_EVENTS\}\}/,
+    autoTrackPushEvents.toString()
+  );
 
   FileManagement.writeFile(envFileName, envFileContent);
 };

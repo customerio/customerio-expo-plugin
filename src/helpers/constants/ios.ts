@@ -83,16 +83,23 @@ export const CIO_CONFIGURECIOSDKPUSHNOTIFICATION_SNIPPET = `
   [pnHandlerObj registerPushNotification];
 `;
 
+export const CIO_INITIALIZECIOSDK_SNIPPET = `  
+  [pnHandlerObj initializeCioSdk];
+`;
+
 export const CIO_CONFIGURECIOSDKUSERNOTIFICATIONCENTER_SNIPPET = `
-[pnHandlerObj setupCioClickHandler];
+// Be compatible with expo-notifications package by manually setting it as the click handler after the CIO SDK sets itself as the click handler. 
+// expo-notifications will not set itself as click handler if it detects a click handler is already set in the app. So, it must be done manually. 
+# if __has_include(<EXNotifications/EXNotificationCenterDelegate.h>)
+  // Creating a new instance, as the comments in expo-notifications suggests, does not work. With this code, if you send a CIO push to device and click on it,
+  // no push metrics reporting will occur.
+  // EXNotificationCenterDelegate *notificationCenterDelegate = [[EXNotificationCenterDelegate alloc] init];
 
-// Be compatible with expo-notifications package by manually setting it as the delegate since the CIO SDK already set it. 
-#if __has_include(<EXNotifications/EXNotificationCenterDelegate.h>)
+  // ...instead, get the singleton reference from Expo. 
   id<UNUserNotificationCenterDelegate> notificationCenterDelegate = (id<UNUserNotificationCenterDelegate>) [EXModuleRegistryProvider getSingletonModuleForClass:[EXNotificationCenterDelegate class]];
-
   UNUserNotificationCenter *center = [UNUserNotificationCenter currentNotificationCenter];
   center.delegate = notificationCenterDelegate;
-#endif
+# endif
 `;
 
 export const CIO_CONFIGUREDEEPLINK_KILLEDSTATE_SNIPPET = `
@@ -110,18 +117,6 @@ NSMutableDictionary *modifiedLaunchOptions = [NSMutableDictionary dictionaryWith
 //Deep link workaround for app killed state ends
 `;
 
-// Enable push handling - notification response
-export const CIO_DIDRECEIVENOTIFICATIONRESPONSEHANDLER_SNIPPET = `
-- (void)userNotificationCenter:(UNUserNotificationCenter *)center didReceiveNotificationResponse:(UNNotificationResponse *)response withCompletionHandler:(void(^)(void))completionHandler {
-  [pnHandlerObj userNotificationCenter:center didReceiveNotificationResponse:response withCompletionHandler:completionHandler];
-}`;
-
-// Foreground push handling
-export const CIO_WILLPRESENTNOTIFICATIONHANDLER_SNIPPET = `
-// show push when the app is in foreground
-- (void)userNotificationCenter:(UNUserNotificationCenter* )center willPresentNotification:(UNNotification* )notification withCompletionHandler:(void (^)(UNNotificationPresentationOptions options))completionHandler {
-  completionHandler( UNNotificationPresentationOptionAlert + UNNotificationPresentationOptionSound);
-}`;
 export const CIO_REGISTER_PUSHNOTIFICATION_SNIPPET = `
 @objc(registerPushNotification)
   public func registerPushNotification() {

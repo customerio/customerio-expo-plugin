@@ -9,20 +9,18 @@ import {
   CIO_CONFIGURECIOSDKPUSHNOTIFICATION_SNIPPET,
   CIO_CONFIGURECIOSDKUSERNOTIFICATIONCENTER_SNIPPET,
   CIO_CONFIGUREDEEPLINK_KILLEDSTATE_SNIPPET,
-  CIO_DIDFAILTOREGISTERFORREMOTENOTIFICATIONSWITHERRORFULL_REGEX,
   CIO_RCTBRIDGE_DEEPLINK_MODIFIEDOPTIONS_REGEX,
   CIO_DIDFAILTOREGISTERFORREMOTENOTIFICATIONSWITHERROR_REGEX,
   CIO_DIDFAILTOREGISTERFORREMOTENOTIFICATIONSWITHERROR_SNIPPET,
   CIO_DIDFINISHLAUNCHINGMETHOD_REGEX,
-  CIO_DIDRECEIVENOTIFICATIONRESPONSEHANDLER_SNIPPET,
   CIO_DIDREGISTERFORREMOTENOTIFICATIONSWITHDEVICETOKEN_REGEX,
   CIO_DIDREGISTERFORREMOTENOTIFICATIONSWITHDEVICETOKEN_SNIPPET,
   CIO_LAUNCHOPTIONS_DEEPLINK_MODIFIEDOPTIONS_REGEX,
   CIO_PUSHNOTIFICATIONHANDLERDECLARATION_SNIPPET,
-  CIO_WILLPRESENTNOTIFICATIONHANDLER_SNIPPET,
   CIO_LAUNCHOPTIONS_MODIFIEDOPTIONS_SNIPPET,
   CIO_RCTBRIDGE_DEEPLINK_MODIFIEDOPTIONS_SNIPPET,
   CIO_DEEPLINK_COMMENT_REGEX,
+  CIO_INITIALIZECIOSDK_SNIPPET,
 } from '../helpers/constants/ios';
 import {
   injectCodeBeforeMultiLineRegex,
@@ -34,15 +32,6 @@ import {
 } from '../helpers/utils/codeInjection';
 import { FileManagement } from '../helpers/utils/fileManagement';
 import type { CustomerIOPluginOptionsIOS } from '../types/cio-types';
-
-const pushCodeSnippets = [
-  CIO_DIDRECEIVENOTIFICATIONRESPONSEHANDLER_SNIPPET,
-  CIO_WILLPRESENTNOTIFICATIONHANDLER_SNIPPET,
-];
-
-const additionalMethodsForPushNotifications = `${pushCodeSnippets.join(
-  '\n'
-)}\n`; // Join newlines and ensure a newline at the end.
 
 const addImport = (stringContents: string, appName: string) => {
   const importRegex = /^(#import .*)\n/gm;
@@ -82,6 +71,16 @@ const addNotificationConfiguration = (stringContents: string) => {
     stringContents,
     CIO_DIDFINISHLAUNCHINGMETHOD_REGEX,
     CIO_CONFIGURECIOSDKPUSHNOTIFICATION_SNIPPET
+  );
+
+  return stringContents;
+};
+
+const addInitializeNativeCioSdk = (stringContents: string) => {
+  stringContents = injectCodeBeforeMultiLineRegex(
+    stringContents,
+    CIO_DIDFINISHLAUNCHINGMETHOD_REGEX,
+    CIO_INITIALIZECIOSDK_SNIPPET
   );
 
   return stringContents;
@@ -129,16 +128,6 @@ const addDidRegisterForRemoteNotificationsWithDeviceToken = (
     stringContents,
     CIO_DIDREGISTERFORREMOTENOTIFICATIONSWITHDEVICETOKEN_REGEX,
     CIO_DIDREGISTERFORREMOTENOTIFICATIONSWITHDEVICETOKEN_SNIPPET
-  );
-
-  return stringContents;
-};
-
-const addAdditionalMethodsForPushNotifications = (stringContents: string) => {
-  stringContents = injectCodeByMultiLineRegex(
-    stringContents,
-    CIO_DIDFAILTOREGISTERFORREMOTENOTIFICATIONSWITHERRORFULL_REGEX,
-    additionalMethodsForPushNotifications
   );
 
   return stringContents;
@@ -255,6 +244,9 @@ export const withAppDelegateModifications: ConfigPlugin<
       ) {
         stringContents = addNotificationConfiguration(stringContents);
       }
+
+      stringContents = addInitializeNativeCioSdk(stringContents);
+
       if (
         props.handleNotificationClick === undefined ||
         props.handleNotificationClick === true
@@ -269,7 +261,6 @@ export const withAppDelegateModifications: ConfigPlugin<
         stringContents = addHandleDeeplinkInKilledState(stringContents);
       }
 
-      stringContents = addAdditionalMethodsForPushNotifications(stringContents);
       stringContents =
         addDidFailToRegisterForRemoteNotificationsWithError(stringContents);
       stringContents =

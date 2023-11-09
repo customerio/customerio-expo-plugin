@@ -11,9 +11,17 @@ public class CIOAppPushNotificationsHandler : NSObject {
 
   {{REGISTER_SNIPPET}}
 
-  @objc(setupCioClickHandler)
-  public func setupCioClickHandler() {
-    MessagingPush.initialize()
+  @objc(initializeCioSdk)
+  public func initializeCioSdk() {
+    let configAutoTrackPushEvents = {{AUTO_TRACK_PUSH_EVENTS}}
+
+    CustomerIO.initialize(siteId: "{{SITE_ID}}", apiKey: "{{API_KEY}}", region: .{{REGION}}) { config in
+      config.autoTrackPushEvents = configAutoTrackPushEvents
+    }
+
+    if configAutoTrackPushEvents {
+      MessagingPush.initialize()
+    }
   }
 
   @objc(application:deviceToken:)
@@ -24,17 +32,5 @@ public class CIOAppPushNotificationsHandler : NSObject {
   @objc(application:error:)
   public func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
     MessagingPush.shared.application(application, didFailToRegisterForRemoteNotificationsWithError: error)
-  }
-
-  @objc(userNotificationCenter:didReceiveNotificationResponse:withCompletionHandler:)
-  public func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) {
-    let handled = MessagingPush.shared.userNotificationCenter(center, didReceive: response,
-  withCompletionHandler: completionHandler)
-
-    // If the Customer.io SDK does not handle the push, it's up to you to handle it and call the
-    // completion handler. If the SDK did handle it, it called the completion handler for you.
-    if !handled {
-      completionHandler()
-    }
   }
 }
