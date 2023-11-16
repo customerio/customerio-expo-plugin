@@ -22,12 +22,6 @@ ${blockStart}
   pod 'customerio-reactnative/apn', :path => '${getRelativePathToRNSDK(
     filename
   )}'
-
-  pod 'CustomerIOCommon', :git => 'https://github.com/customerio/customerio-ios.git', :branch => 'levi/reliable-open-metrics-prototyping'
-  pod 'CustomerIOTracking', :git => 'https://github.com/customerio/customerio-ios.git', :branch => 'levi/reliable-open-metrics-prototyping'
-  pod 'CustomerIOMessagingInApp', :git => 'https://github.com/customerio/customerio-ios.git', :branch => 'levi/reliable-open-metrics-prototyping'
-  pod 'CustomerIOMessagingPushAPN', :git => 'https://github.com/customerio/customerio-ios.git', :branch => 'levi/reliable-open-metrics-prototyping'
-  pod 'CustomerIOMessagingPush', :git => 'https://github.com/customerio/customerio-ios.git', :branch => 'levi/reliable-open-metrics-prototyping'
 ${blockEnd}
 `.trim();
 
@@ -64,11 +58,6 @@ target 'NotificationService' do
   pod 'customerio-reactnative-richpush/apn', :path => '${getRelativePathToRNSDK(
     filename
   )}'
-
-  pod 'CustomerIOCommon', :git => 'https://github.com/customerio/customerio-ios.git', :branch => 'levi/reliable-open-metrics-prototyping'
-  pod 'CustomerIOTracking', :git => 'https://github.com/customerio/customerio-ios.git', :branch => 'levi/reliable-open-metrics-prototyping'
-  pod 'CustomerIOMessagingPushAPN', :git => 'https://github.com/customerio/customerio-ios.git', :branch => 'levi/reliable-open-metrics-prototyping'
-  pod 'CustomerIOMessagingPush', :git => 'https://github.com/customerio/customerio-ios.git', :branch => 'levi/reliable-open-metrics-prototyping'
 end
 ${blockEnd}
 `.trim();

@@ -133,6 +133,8 @@ const addDidRegisterForRemoteNotificationsWithDeviceToken = (
   return stringContents;
 };
 
+// Adds required import for Expo Notifications package in AppDelegate.
+// Required to call functions from the package.
 const addExpoNotificationsHeaderModification = (stringContents: string) => {
   stringContents = injectCodeByLineNumber(
     stringContents,

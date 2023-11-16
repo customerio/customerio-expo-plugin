@@ -13,15 +13,10 @@ public class CIOAppPushNotificationsHandler : NSObject {
 
   @objc(initializeCioSdk)
   public func initializeCioSdk() {
-    let configAutoTrackPushEvents = {{AUTO_TRACK_PUSH_EVENTS}}
-
     CustomerIO.initialize(siteId: "{{SITE_ID}}", apiKey: "{{API_KEY}}", region: .{{REGION}}) { config in
-      config.autoTrackPushEvents = configAutoTrackPushEvents
+      config.autoTrackPushEvents = {{AUTO_TRACK_PUSH_EVENTS}}
     }
-
-    if configAutoTrackPushEvents {
-      MessagingPush.initialize()
-    }
+    MessagingPushAPN.initialize()
   }
 
   @objc(application:deviceToken:)
