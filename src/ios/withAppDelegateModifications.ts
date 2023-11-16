@@ -7,7 +7,6 @@ import {
   CIO_APPDELEGATEHEADER_REGEX,
   CIO_APPDELEGATEHEADER_USER_NOTIFICATION_CENTER_SNIPPET,
   CIO_CONFIGURECIOSDKPUSHNOTIFICATION_SNIPPET,
-  CIO_CONFIGURECIOSDKUSERNOTIFICATIONCENTER_SNIPPET,
   CIO_CONFIGUREDEEPLINK_KILLEDSTATE_SNIPPET,
   CIO_RCTBRIDGE_DEEPLINK_MODIFIEDOPTIONS_REGEX,
   CIO_DIDFAILTOREGISTERFORREMOTENOTIFICATIONSWITHERROR_REGEX,
@@ -81,16 +80,6 @@ const addInitializeNativeCioSdk = (stringContents: string) => {
     stringContents,
     CIO_DIDFINISHLAUNCHINGMETHOD_REGEX,
     CIO_INITIALIZECIOSDK_SNIPPET
-  );
-
-  return stringContents;
-};
-
-const addUserNotificationCenterConfiguration = (stringContents: string) => {
-  stringContents = injectCodeBeforeMultiLineRegex(
-    stringContents,
-    CIO_DIDFINISHLAUNCHINGMETHOD_REGEX,
-    CIO_CONFIGURECIOSDKUSERNOTIFICATIONCENTER_SNIPPET
   );
 
   return stringContents;
@@ -248,13 +237,6 @@ export const withAppDelegateModifications: ConfigPlugin<
       }
 
       stringContents = addInitializeNativeCioSdk(stringContents);
-
-      if (
-        props.handleNotificationClick === undefined ||
-        props.handleNotificationClick === true
-      ) {
-        stringContents = addUserNotificationCenterConfiguration(stringContents);
-      }
 
       if (
         props.handleDeeplinkInKilledState !== undefined &&
