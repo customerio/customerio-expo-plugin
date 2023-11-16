@@ -19,6 +19,7 @@ public class CIOAppPushNotificationsHandler : NSObject {
       // This is because after AppDelegate.didFinishLaunching is called, the app will start handling push click events. 
       // Configuring auto track push events after this point will not work.
       config.autoTrackPushEvents = {{AUTO_TRACK_PUSH_EVENTS}}
+      config.showPushAppInForeground = {{SHOW_PUSH_APP_IN_FOREGROUND}}
     }
     MessagingPushAPN.initialize()
   }

@@ -403,5 +403,14 @@ const updatePushFile = (
     autoTrackPushEvents.toString()
   );
 
+  const showPushAppInForeground =
+    options.showPushAppInForeground === undefined ||
+    options.showPushAppInForeground === true;
+  envFileContent = replaceCodeByRegex(
+    envFileContent,
+    /\{\{SHOW_PUSH_APP_IN_FOREGROUND\}\}/,
+    showPushAppInForeground.toString()
+  );
+
   FileManagement.writeFile(envFileName, envFileContent);
 };
