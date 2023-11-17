@@ -30,7 +30,7 @@ import {
   injectCodeByMultiLineRegex,
   injectCodeByMultiLineRegexAndReplaceLine,
   replaceCodeByRegex,
-  matchRegexExists
+  matchRegexExists,
 } from '../helpers/utils/codeInjection';
 import { FileManagement } from '../helpers/utils/fileManagement';
 import type { CustomerIOPluginOptionsIOS } from '../types/cio-types';
@@ -97,7 +97,10 @@ const addUserNotificationCenterConfiguration = (stringContents: string) => {
   return stringContents;
 };
 
-const addHandleDeeplinkInKilledStateConfiguration = (stringContents: string, regex: RegExp) => {
+const addHandleDeeplinkInKilledStateConfiguration = (
+  stringContents: string,
+  regex: RegExp
+) => {
   stringContents = injectCodeBeforeMultiLineRegex(
     stringContents,
     regex,
@@ -146,7 +149,12 @@ const addAppdelegateHeaderModification = (stringContents: string) => {
   stringContents = stringContents.replace(
     CIO_APPDELEGATEHEADER_REGEX,
     (match, interfaceDeclaration, _groupedDelegates, existingDelegates) => {
-      if (existingDelegates && existingDelegates.includes(CIO_APPDELEGATEHEADER_USER_NOTIFICATION_CENTER_SNIPPET)) {
+      if (
+        existingDelegates &&
+        existingDelegates.includes(
+          CIO_APPDELEGATEHEADER_USER_NOTIFICATION_CENTER_SNIPPET
+        )
+      ) {
         // The AppDelegate declaration already includes UNUserNotificationCenterDelegate, so we don't need to modify it
         return match;
       } else if (existingDelegates) {
@@ -169,26 +177,38 @@ ${interfaceDeclaration.trim()} <${CIO_APPDELEGATEHEADER_USER_NOTIFICATION_CENTER
 const addHandleDeeplinkInKilledState = (stringContents: string) => {
   // Find if the deep link code snippet is already present
   if (matchRegexExists(stringContents, CIO_DEEPLINK_COMMENT_REGEX)) {
-    return stringContents
+    return stringContents;
   }
 
   // Check if the app delegate is using RCTBridge or LaunchOptions
-  var snippet = undefined
-  var regex = CIO_LAUNCHOPTIONS_DEEPLINK_MODIFIEDOPTIONS_REGEX;
-  if (matchRegexExists(stringContents, CIO_RCTBRIDGE_DEEPLINK_MODIFIEDOPTIONS_REGEX)) {
+  let snippet = undefined;
+  let regex = CIO_LAUNCHOPTIONS_DEEPLINK_MODIFIEDOPTIONS_REGEX;
+  if (
+    matchRegexExists(
+      stringContents,
+      CIO_RCTBRIDGE_DEEPLINK_MODIFIEDOPTIONS_REGEX
+    )
+  ) {
     snippet = CIO_RCTBRIDGE_DEEPLINK_MODIFIEDOPTIONS_SNIPPET;
     regex = CIO_RCTBRIDGE_DEEPLINK_MODIFIEDOPTIONS_REGEX;
-  }
-  else if (matchRegexExists(stringContents, CIO_LAUNCHOPTIONS_DEEPLINK_MODIFIEDOPTIONS_REGEX)) {
+  } else if (
+    matchRegexExists(
+      stringContents,
+      CIO_LAUNCHOPTIONS_DEEPLINK_MODIFIEDOPTIONS_REGEX
+    )
+  ) {
     snippet = CIO_LAUNCHOPTIONS_MODIFIEDOPTIONS_SNIPPET;
   }
   // Add code only if the app delegate is using RCTBridge or LaunchOptions
   if (snippet !== undefined) {
-  stringContents = addHandleDeeplinkInKilledStateConfiguration(stringContents, regex);
-  stringContents = replaceCodeByRegex(stringContents, regex, snippet);
+    stringContents = addHandleDeeplinkInKilledStateConfiguration(
+      stringContents,
+      regex
+    );
+    stringContents = replaceCodeByRegex(stringContents, regex, snippet);
   }
-  return stringContents
-}
+  return stringContents;
+};
 
 export const withAppDelegateModifications: ConfigPlugin<
   CustomerIOPluginOptionsIOS
@@ -234,7 +254,7 @@ export const withAppDelegateModifications: ConfigPlugin<
       ) {
         stringContents = addHandleDeeplinkInKilledState(stringContents);
       }
-  
+
       stringContents = addAdditionalMethodsForPushNotifications(stringContents);
       stringContents =
         addDidFailToRegisterForRemoteNotificationsWithError(stringContents);
