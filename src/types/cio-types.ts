@@ -20,6 +20,7 @@ export type CustomerIOPluginOptionsIOS = {
    * @deprecated No longer has any effect. Use autoTrackPushEvents to control if push metrics should be automatically tracked by SDK.
    */
   handleNotificationClick?: boolean;
+  showPushAppInForeground?: boolean;
   autoTrackPushEvents?: boolean;
   handleDeeplinkInKilledState?: boolean;
   useFrameworks?: 'static' | 'dynamic';
