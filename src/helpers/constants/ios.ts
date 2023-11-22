@@ -85,9 +85,7 @@ export const CIO_CONFIGURECIOSDKPUSHNOTIFICATION_SNIPPET = `
 
 export const CIO_INITIALIZECIOSDK_SNIPPET = `  
   [pnHandlerObj initializeCioSdk];
-`;
 
-export const CIO_CONFIGURECIOSDKUSERNOTIFICATIONCENTER_SNIPPET = `
 // Code to make the CIO SDK compatible with expo-notifications package.
 // 
 // The CIO SDK and expo-notifications both need to handle when a push gets clicked. However, iOS only allows one click handler to be set per app.

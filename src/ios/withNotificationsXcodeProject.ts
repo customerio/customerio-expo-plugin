@@ -395,8 +395,8 @@ const updatePushFile = (
   }
 
   const autoTrackPushEvents =
-    options.handleNotificationClick === undefined ||
-    options.handleNotificationClick === true;
+    options.autoTrackPushEvents === undefined ||
+    options.autoTrackPushEvents === true;
   envFileContent = replaceCodeByRegex(
     envFileContent,
     /\{\{AUTO_TRACK_PUSH_EVENTS\}\}/,
