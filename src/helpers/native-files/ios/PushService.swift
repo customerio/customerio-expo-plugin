@@ -22,6 +22,7 @@ public class CIOAppPushNotificationsHandler : NSObject {
     }
     MessagingPushAPN.initialize { config in
       config.showPushAppInForeground = {{SHOW_PUSH_APP_IN_FOREGROUND}}
+      config.autoPushClickHandling = {{AUTO_TRACK_PUSH_EVENTS}}
     }
   }
 

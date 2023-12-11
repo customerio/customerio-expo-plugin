@@ -399,7 +399,7 @@ const updatePushFile = (
     options.autoTrackPushEvents === true;
   envFileContent = replaceCodeByRegex(
     envFileContent,
-    /\{\{AUTO_TRACK_PUSH_EVENTS\}\}/,
+    /\{\{AUTO_TRACK_PUSH_EVENTS\}\}/g,
     autoTrackPushEvents.toString()
   );
 
