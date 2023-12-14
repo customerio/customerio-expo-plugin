@@ -2,14 +2,14 @@
 #import "NotificationService.h"
 #import "NotificationService-Swift.h"
 
-@interface NotificationService ()
+@interface CIONotificationService ()
 
 @property (nonatomic, strong) void (^contentHandler)(UNNotificationContent *contentToDeliver);
 @property (nonatomic, strong) UNMutableNotificationContent *bestAttemptContent;
 
 @end
 
-@implementation NotificationService
+@implementation CIONotificationService
 
 - (void)didReceiveNotificationRequest:(UNNotificationRequest *)request withContentHandler:(void (^)(UNNotificationContent * _Nonnull))contentHandler {
     NotificationServiceCioManager* cioManagerObj = [[NotificationServiceCioManager alloc] init];

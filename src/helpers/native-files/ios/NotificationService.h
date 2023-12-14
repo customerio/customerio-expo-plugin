@@ -1,5 +1,5 @@
 #import <UserNotifications/UserNotifications.h>
 
-@interface NotificationService : UNNotificationServiceExtension
+@interface CIONotificationService : UNNotificationServiceExtension
 
 @end
