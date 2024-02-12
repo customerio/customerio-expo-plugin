@@ -24,9 +24,9 @@ jobs:
 
       - name: Deploy git tag via semantic release
         uses: cycjimmy/semantic-release-action@v4
-        id: semantic-release
+        id: semantic-release        
         with:
-          # version numbers below can be in many forms: M, M.m, M.m.p
+          semantic_version: latest
           extra_plugins: |
             conventional-changelog-conventionalcommits
             @semantic-release/changelog
