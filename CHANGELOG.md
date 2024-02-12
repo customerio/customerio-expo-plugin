@@ -1,3 +1,10 @@
+## [1.0.0-beta.14](https://github.com/customerio/customerio-expo-plugin/compare/1.0.0-beta.13...1.0.0-beta.14) (2024-02-12)
+
+
+### Features
+
+* automatically handle push click events and increase compatibility with 3rd party push modules ([#112](https://github.com/customerio/customerio-expo-plugin/issues/112)) ([a67e345](https://github.com/customerio/customerio-expo-plugin/commit/a67e3454bd5510dea122c8e027b87707af4d5104))
+
 ## [1.0.0-beta.13](https://github.com/customerio/customerio-expo-plugin/compare/1.0.0-beta.12...1.0.0-beta.13) (2023-08-07)
 
 
