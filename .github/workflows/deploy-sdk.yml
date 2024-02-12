@@ -126,7 +126,7 @@ jobs:
           ref: ${{ needs.deploy-git-tag.outputs.new_release_git_head }}
       - uses: actions/setup-node@v4
         with:
-          node-version: '16'
+          node-version: '20'
       - run: npm ci
 
       - name: Deploy to npm

@@ -11,6 +11,20 @@ public class CIOAppPushNotificationsHandler : NSObject {
 
   {{REGISTER_SNIPPET}}
 
+  @objc(initializeCioSdk)
+  public func initializeCioSdk() {
+    // Must initialize Customer.io before initializing MessagingPushAPN. 
+    CustomerIO.initialize(siteId: "{{SITE_ID}}", apiKey: "{{API_KEY}}", region: .{{REGION}}) { config in
+      // Must configure auto track push events before initializing MessagingPushAPN. 
+      // This is because after AppDelegate.didFinishLaunching is called, the app will start handling push click events. 
+      // Configuring auto track push events after this point will not work.
+      config.autoTrackPushEvents = {{AUTO_TRACK_PUSH_EVENTS}}
+    }
+    MessagingPushAPN.initialize { config in
+      config.showPushAppInForeground = {{SHOW_PUSH_APP_IN_FOREGROUND}}
+    }
+  }
+
   @objc(application:deviceToken:)
   public func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
     MessagingPush.shared.application(application, didRegisterForRemoteNotificationsWithDeviceToken: deviceToken)
@@ -19,17 +33,5 @@ public class CIOAppPushNotificationsHandler : NSObject {
   @objc(application:error:)
   public func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
     MessagingPush.shared.application(application, didFailToRegisterForRemoteNotificationsWithError: error)
-  }
-
-  @objc(userNotificationCenter:didReceiveNotificationResponse:withCompletionHandler:)
-  public func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) {
-    let handled = MessagingPush.shared.userNotificationCenter(center, didReceive: response,
-  withCompletionHandler: completionHandler)
-
-    // If the Customer.io SDK does not handle the push, it's up to you to handle it and call the
-    // completion handler. If the SDK did handle it, it called the completion handler for you.
-    if !handled {
-      completionHandler()
-    }
   }
 }

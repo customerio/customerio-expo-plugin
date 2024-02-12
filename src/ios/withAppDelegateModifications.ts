@@ -7,22 +7,19 @@ import {
   CIO_APPDELEGATEHEADER_REGEX,
   CIO_APPDELEGATEHEADER_USER_NOTIFICATION_CENTER_SNIPPET,
   CIO_CONFIGURECIOSDKPUSHNOTIFICATION_SNIPPET,
-  CIO_CONFIGURECIOSDKUSERNOTIFICATIONCENTER_SNIPPET,
   CIO_CONFIGUREDEEPLINK_KILLEDSTATE_SNIPPET,
-  CIO_DIDFAILTOREGISTERFORREMOTENOTIFICATIONSWITHERRORFULL_REGEX,
   CIO_RCTBRIDGE_DEEPLINK_MODIFIEDOPTIONS_REGEX,
   CIO_DIDFAILTOREGISTERFORREMOTENOTIFICATIONSWITHERROR_REGEX,
   CIO_DIDFAILTOREGISTERFORREMOTENOTIFICATIONSWITHERROR_SNIPPET,
   CIO_DIDFINISHLAUNCHINGMETHOD_REGEX,
-  CIO_DIDRECEIVENOTIFICATIONRESPONSEHANDLER_SNIPPET,
   CIO_DIDREGISTERFORREMOTENOTIFICATIONSWITHDEVICETOKEN_REGEX,
   CIO_DIDREGISTERFORREMOTENOTIFICATIONSWITHDEVICETOKEN_SNIPPET,
   CIO_LAUNCHOPTIONS_DEEPLINK_MODIFIEDOPTIONS_REGEX,
   CIO_PUSHNOTIFICATIONHANDLERDECLARATION_SNIPPET,
-  CIO_WILLPRESENTNOTIFICATIONHANDLER_SNIPPET,
   CIO_LAUNCHOPTIONS_MODIFIEDOPTIONS_SNIPPET,
   CIO_RCTBRIDGE_DEEPLINK_MODIFIEDOPTIONS_SNIPPET,
   CIO_DEEPLINK_COMMENT_REGEX,
+  CIO_INITIALIZECIOSDK_SNIPPET,
 } from '../helpers/constants/ios';
 import {
   injectCodeBeforeMultiLineRegex,
@@ -34,15 +31,6 @@ import {
 } from '../helpers/utils/codeInjection';
 import { FileManagement } from '../helpers/utils/fileManagement';
 import type { CustomerIOPluginOptionsIOS } from '../types/cio-types';
-
-const pushCodeSnippets = [
-  CIO_DIDRECEIVENOTIFICATIONRESPONSEHANDLER_SNIPPET,
-  CIO_WILLPRESENTNOTIFICATIONHANDLER_SNIPPET,
-];
-
-const additionalMethodsForPushNotifications = `${pushCodeSnippets.join(
-  '\n'
-)}\n`; // Join newlines and ensure a newline at the end.
 
 const addImport = (stringContents: string, appName: string) => {
   const importRegex = /^(#import .*)\n/gm;
@@ -62,7 +50,7 @@ const addImport = (stringContents: string, appName: string) => {
     stringContents,
     endOfMatchIndex,
     addedImport
-  ).join('\n');
+  );
 
   return stringContents;
 };
@@ -87,11 +75,11 @@ const addNotificationConfiguration = (stringContents: string) => {
   return stringContents;
 };
 
-const addUserNotificationCenterConfiguration = (stringContents: string) => {
+const addInitializeNativeCioSdk = (stringContents: string) => {
   stringContents = injectCodeBeforeMultiLineRegex(
     stringContents,
     CIO_DIDFINISHLAUNCHINGMETHOD_REGEX,
-    CIO_CONFIGURECIOSDKUSERNOTIFICATIONCENTER_SNIPPET
+    CIO_INITIALIZECIOSDK_SNIPPET
   );
 
   return stringContents;
@@ -134,11 +122,17 @@ const addDidRegisterForRemoteNotificationsWithDeviceToken = (
   return stringContents;
 };
 
-const addAdditionalMethodsForPushNotifications = (stringContents: string) => {
-  stringContents = injectCodeByMultiLineRegex(
+// Adds required import for Expo Notifications package in AppDelegate.
+// Required to call functions from the package.
+const addExpoNotificationsHeaderModification = (stringContents: string) => {
+  stringContents = injectCodeByLineNumber(
     stringContents,
-    CIO_DIDFAILTOREGISTERFORREMOTENOTIFICATIONSWITHERRORFULL_REGEX,
-    additionalMethodsForPushNotifications
+    0,
+    `
+#if __has_include(<EXNotifications/EXNotificationCenterDelegate.h>)
+#import <EXNotifications/EXNotificationCenterDelegate.h>
+#endif
+`
   );
 
   return stringContents;
@@ -241,12 +235,8 @@ export const withAppDelegateModifications: ConfigPlugin<
       ) {
         stringContents = addNotificationConfiguration(stringContents);
       }
-      if (
-        props.handleNotificationClick === undefined ||
-        props.handleNotificationClick === true
-      ) {
-        stringContents = addUserNotificationCenterConfiguration(stringContents);
-      }
+
+      stringContents = addInitializeNativeCioSdk(stringContents);
 
       if (
         props.handleDeeplinkInKilledState !== undefined &&
@@ -255,11 +245,12 @@ export const withAppDelegateModifications: ConfigPlugin<
         stringContents = addHandleDeeplinkInKilledState(stringContents);
       }
 
-      stringContents = addAdditionalMethodsForPushNotifications(stringContents);
       stringContents =
         addDidFailToRegisterForRemoteNotificationsWithError(stringContents);
       stringContents =
         addDidRegisterForRemoteNotificationsWithDeviceToken(stringContents);
+
+      stringContents = addExpoNotificationsHeaderModification(stringContents);
 
       config.modResults.contents = stringContents;
     } else {
