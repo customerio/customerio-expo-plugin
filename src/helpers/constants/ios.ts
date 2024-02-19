@@ -83,9 +83,32 @@ export const CIO_CONFIGURECIOSDKPUSHNOTIFICATION_SNIPPET = `
   [pnHandlerObj registerPushNotification];
 `;
 
-export const CIO_CONFIGURECIOSDKUSERNOTIFICATIONCENTER_SNIPPET = `
+export const CIO_INITIALIZECIOSDK_SNIPPET = `  
+  [pnHandlerObj initializeCioSdk];
+
+// Code to make the CIO SDK compatible with expo-notifications package.
+// 
+// The CIO SDK and expo-notifications both need to handle when a push gets clicked. However, iOS only allows one click handler to be set per app.
+// To get around this limitation, we set the CIO SDK as the click handler. The CIO SDK sets itself up so that when another SDK or host iOS app 
+// sets itself as the click handler, the CIO SDK will still be able to handle when the push gets clicked, even though it's not the designated 
+// click handler in iOS at runtime. 
+// 
+// This should work for most SDKs. However, expo-notifications is unique in it's implementation. It will not setup push click handling it if detects 
+// that another SDK or host iOS app has already set itself as the click handler:
+// https://github.com/expo/expo/blob/1b29637bec0b9888e8bc8c310476293a3e2d9786/packages/expo-notifications/ios/EXNotifications/Notifications/EXNotificationCenterDelegate.m#L31-L37
+// ...to get around this, we must manually set it as the click handler after the CIO SDK. That's what this code block does.
+//
+// Note: Initialize the native iOS SDK and setup SDK push click handling before running this code. 
+# if __has_include(<EXNotifications/EXNotificationCenterDelegate.h>)
+  // Creating a new instance, as the comments in expo-notifications suggests, does not work. With this code, if you send a CIO push to device and click on it,
+  // no push metrics reporting will occur.
+  // EXNotificationCenterDelegate *notificationCenterDelegate = [[EXNotificationCenterDelegate alloc] init];
+
+  // ...instead, get the singleton reference from Expo. 
+  id<UNUserNotificationCenterDelegate> notificationCenterDelegate = (id<UNUserNotificationCenterDelegate>) [EXModuleRegistryProvider getSingletonModuleForClass:[EXNotificationCenterDelegate class]];
   UNUserNotificationCenter *center = [UNUserNotificationCenter currentNotificationCenter];
-  center.delegate = self;
+  center.delegate = notificationCenterDelegate;
+# endif
 `;
 
 export const CIO_CONFIGUREDEEPLINK_KILLEDSTATE_SNIPPET = `
@@ -103,18 +126,6 @@ NSMutableDictionary *modifiedLaunchOptions = [NSMutableDictionary dictionaryWith
 //Deep link workaround for app killed state ends
 `;
 
-// Enable push handling - notification response
-export const CIO_DIDRECEIVENOTIFICATIONRESPONSEHANDLER_SNIPPET = `
-- (void)userNotificationCenter:(UNUserNotificationCenter *)center didReceiveNotificationResponse:(UNNotificationResponse *)response withCompletionHandler:(void(^)(void))completionHandler {
-  [pnHandlerObj userNotificationCenter:center didReceiveNotificationResponse:response withCompletionHandler:completionHandler];
-}`;
-
-// Foreground push handling
-export const CIO_WILLPRESENTNOTIFICATIONHANDLER_SNIPPET = `
-// show push when the app is in foreground
-- (void)userNotificationCenter:(UNUserNotificationCenter* )center willPresentNotification:(UNNotification* )notification withCompletionHandler:(void (^)(UNNotificationPresentationOptions options))completionHandler {
-  completionHandler( UNNotificationPresentationOptionAlert + UNNotificationPresentationOptionSound);
-}`;
 export const CIO_REGISTER_PUSHNOTIFICATION_SNIPPET = `
 @objc(registerPushNotification)
   public func registerPushNotification() {
