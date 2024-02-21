@@ -234,7 +234,7 @@ const addRichPushXcodeProj = async (
       const buildSettingsObj = configurations[key].buildSettings;
       buildSettingsObj.DEVELOPMENT_TEAM = appleTeamId;
       buildSettingsObj.IPHONEOS_DEPLOYMENT_TARGET =
-        iosDeploymentTarget || '13.0';
+        iosDeploymentTarget || '13.4';
       buildSettingsObj.TARGETED_DEVICE_FAMILY = TARGETED_DEVICE_FAMILY;
       buildSettingsObj.CODE_SIGN_STYLE = 'Automatic';
       buildSettingsObj.SWIFT_VERSION = 4.2;
