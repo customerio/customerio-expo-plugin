@@ -1,3 +1,10 @@
+## [1.0.0-beta.15](https://github.com/customerio/customerio-expo-plugin/compare/1.0.0-beta.14...1.0.0-beta.15) (2024-02-21)
+
+
+### Features
+
+* expo 50 upgrade ([#127](https://github.com/customerio/customerio-expo-plugin/issues/127)) ([cea103b](https://github.com/customerio/customerio-expo-plugin/commit/cea103bfd18dc62b256859a8b8544bb582415448))
+
 ## [1.0.0-beta.14](https://github.com/customerio/customerio-expo-plugin/compare/1.0.0-beta.13...1.0.0-beta.14) (2024-02-12)
 
 
