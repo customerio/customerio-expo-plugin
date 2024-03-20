@@ -21,6 +21,7 @@ public class CIOAppPushNotificationsHandler : NSObject {
       config.autoTrackPushEvents = {{AUTO_TRACK_PUSH_EVENTS}}
     }
     MessagingPushAPN.initialize { config in
+      config.autoFetchDeviceToken = {{AUTO_FETCH_DEVICE_TOKEN}} 
       config.showPushAppInForeground = {{SHOW_PUSH_APP_IN_FOREGROUND}}
     }
   }

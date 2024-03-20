@@ -412,5 +412,14 @@ const updatePushFile = (
     showPushAppInForeground.toString()
   );
 
+  const autoFetchDeviceToken = 
+    options.autoFetchDeviceToken === undefined ||
+    options.autoFetchDeviceToken === true;
+  envFileContent = replaceCodeByRegex(
+    envFileContent,
+    /\{\{AUTO_FETCH_DEVICE_TOKEN\}\}/,
+    autoFetchDeviceToken.toString()
+  );
+
   FileManagement.writeFile(envFileName, envFileContent);
 };
