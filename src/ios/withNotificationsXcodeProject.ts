@@ -139,6 +139,7 @@ const addRichPushXcodeProj = async (
     'NotificationService.h',
     'NotificationService.swift',
     'NotificationService.m',
+    'PrivacyInfo.xcprivacy',
     ENV_FILENAME,
   ];
 
@@ -210,7 +211,7 @@ const addRichPushXcodeProj = async (
     nseTarget.uuid
   );
   xcodeProject.addBuildPhase(
-    [],
+    ['PrivacyInfo.xcprivacy'],
     'PBXResourcesBuildPhase',
     'Resources',
     nseTarget.uuid
