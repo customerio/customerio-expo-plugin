@@ -1,3 +1,9 @@
+## [1.0.0-beta.16](https://github.com/customerio/customerio-expo-plugin/compare/1.0.0-beta.15...1.0.0-beta.16) (2024-10-25)
+
+### Bug Fixes
+
+* expo-doctor plugin error ([#154](https://github.com/customerio/customerio-expo-plugin/issues/154)) ([5b2adb3](https://github.com/customerio/customerio-expo-plugin/commit/5b2adb3ed251bc1c68328f504753df945c3b1d72))
+
 ## [1.0.0-beta.15](https://github.com/customerio/customerio-expo-plugin/compare/1.0.0-beta.14...1.0.0-beta.15) (2024-02-21)
 
 
