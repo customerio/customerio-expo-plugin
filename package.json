@@ -9,10 +9,12 @@
   "react-native": "src/index",
   "license": "MIT",
   "files": [
+    "app.plugin.js",
     "src",
     "lib/**/*"
   ],
   "exports": {
+    "./app.plugin.js": "./app.plugin.js",
     ".": "./lib/commonjs/index.js",
     "./postinstall": "./src/postInstallHelper.js"
   },
