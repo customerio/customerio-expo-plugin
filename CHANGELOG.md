@@ -1,3 +1,9 @@
+## [1.0.0-beta.17](https://github.com/customerio/customerio-expo-plugin/compare/1.0.0-beta.16...1.0.0-beta.17) (2024-11-21)
+
+### Features
+
+* bumped iOS deployment target for compatibility with Expo SDK 52 ([#156](https://github.com/customerio/customerio-expo-plugin/issues/156)) ([086b336](https://github.com/customerio/customerio-expo-plugin/commit/086b33679fc49978cc1256a91e66de6da582c9b0))
+
 ## [1.0.0-beta.16](https://github.com/customerio/customerio-expo-plugin/compare/1.0.0-beta.15...1.0.0-beta.16) (2024-10-25)
 
 ### Bug Fixes
