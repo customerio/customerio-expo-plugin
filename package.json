@@ -1,0 +1,17 @@
+{
+  "scripts": {
+    "test": "jest",
+    "setup-tests": "bash scripts/setup-test.sh",
+    "cleanup": "bash scripts/cleanup-after-tests.sh",
+    "test-plugin": "npm run setup-tests && npm run test && npm run cleanup"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.14",
+    "jest": "^29.7.0",
+    "jest-environment-jsdom": "^29.7.0",
+    "ts-jest": "^29.2.5"
+  },
+  "dependencies": {
+    "fs-extra": "^11.2.0"
+  }
+}
