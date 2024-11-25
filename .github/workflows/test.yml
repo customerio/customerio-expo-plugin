@@ -11,10 +11,15 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - run: npm ci
+
+      - name: Install dependencies
+        working-directory: plugin
+        run: npm ci
 
       - name: Compile
+        working-directory: plugin
         run: npm run build
 
       - name: Publish test
+        working-directory: plugin
         run: npm publish --dry-run
