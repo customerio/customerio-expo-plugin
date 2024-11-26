@@ -1,6 +1,5 @@
 import Foundation
 import UserNotifications
-import CioTracking
 import CioMessagingPushAPN
 
 @objc
@@ -10,8 +9,6 @@ public class NotificationServiceCioManager : NSObject {
 
     @objc(didReceive:withContentHandler:)
     public func didReceive(_ request: UNNotificationRequest, withContentHandler contentHandler: @escaping (UNNotificationContent) -> Void) {
-        CustomerIO
-            .initialize(siteId: Env.customerIOSiteId, apiKey: Env.customerIOApiKey, region: Env.customerIORegion) { config in }
         MessagingPush.shared.didReceive(request, withContentHandler: contentHandler)
     }
 
