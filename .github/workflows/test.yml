@@ -6,6 +6,9 @@ jobs:
   test-deploy:
     name: Test able to deploy to npm
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: plugin
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -13,13 +16,10 @@ jobs:
           node-version: '20'
 
       - name: Install dependencies
-        working-directory: plugin
         run: npm ci
 
       - name: Compile
-        working-directory: plugin
         run: npm run build
 
       - name: Publish test
-        working-directory: plugin
         run: npm publish --dry-run

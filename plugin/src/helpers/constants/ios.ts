@@ -16,9 +16,10 @@ export function getRelativePathToRNSDK(iosPath: string) {
   // Root path of the Expo project
   const rootAppPath = path.dirname(iosPath);
 
-  // Path of the cio RN package.json file
+  // Path of the cio RN package.json file. Example: test-app/node_modules/customerio-reactnative/package.json
   const pluginPackageJsonPath = resolveFrom.silent(rootAppPath, `customerio-reactnative/package.json`);
 
+  // Example: ../node_modules/customerio-reactnative
   return path.relative(iosPath, path.dirname(pluginPackageJsonPath));
 }
 
