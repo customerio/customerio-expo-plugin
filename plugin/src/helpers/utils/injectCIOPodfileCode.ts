@@ -20,7 +20,7 @@ export async function injectCIOPodfileCode(iosPath: string) {
     const snippetToInjectInPodfile = `
 ${blockStart}
   pod 'customerio-reactnative/apn', :path => '${getRelativePathToRNSDK(
-    filename
+    iosPath
   )}'
 ${blockEnd}
 `.trim();
@@ -56,7 +56,7 @@ ${blockStart}
 target 'NotificationService' do
   ${useFrameworks === 'static' ? 'use_frameworks! :linkage => :static' : ''}
   pod 'customerio-reactnative-richpush/apn', :path => '${getRelativePathToRNSDK(
-    filename
+    iosPath
   )}'
 end
 ${blockEnd}

@@ -1,23 +1,26 @@
 const finder = require('find-package-json');
 const path = require('path');
+const resolveFrom = require('resolve-from');
 
 const f = finder(__dirname);
 let pluginPackageRoot = f.next().filename;
 // This is the path to the root of the customerio-expo-plugin package
 pluginPackageRoot = path.dirname(pluginPackageRoot);
 
-export const LOCAL_PATH_TO_RN_SDK = path.join(
-  pluginPackageRoot,
-  '../customerio-reactnative'
-);
-
 export const LOCAL_PATH_TO_CIO_NSE_FILES = path.join(
   pluginPackageRoot,
   'src/helpers/native-files/ios'
 );
 
-export function getRelativePathToRNSDK(currentFile: string) {
-  return path.relative(path.dirname(currentFile), LOCAL_PATH_TO_RN_SDK);
+export function getRelativePathToRNSDK(iosPath: string) {
+  // Root path of the Expo project
+  const rootAppPath = path.dirname(iosPath);
+
+  // Path of the cio RN package.json file. Example: test-app/node_modules/customerio-reactnative/package.json
+  const pluginPackageJsonPath = resolveFrom.silent(rootAppPath, `customerio-reactnative/package.json`);
+
+  // Example: ../node_modules/customerio-reactnative
+  return path.relative(iosPath, path.dirname(pluginPackageJsonPath));
 }
 
 export const IOS_DEPLOYMENT_TARGET = '13.0';
