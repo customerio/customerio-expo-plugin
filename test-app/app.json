@@ -37,8 +37,7 @@
             "pushNotification": {
               "useRichPush": true,
               "env": {
-                "siteId": "<siteId>",
-                "apiKey": "<apiKey>",
+                "apiKey": "testApiKey",
                 "region": "us"
               }
             }
