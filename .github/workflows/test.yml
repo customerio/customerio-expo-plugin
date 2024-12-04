@@ -23,3 +23,23 @@ jobs:
 
       - name: Publish test
         run: npm publish --dry-run
+
+  test-plugin:
+    name: Test unit tests for plguin
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install plugin dependencies
+        working-directory: plugin
+        run: npm ci
+
+      - name: Install root dependencies
+        run: npm ci
+
+      - name: Run plugin tests
+        run: npm run test-plugin
+        
