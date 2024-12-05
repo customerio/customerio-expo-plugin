@@ -284,11 +284,11 @@ const updateNseEnv = (
 
   let envFileContent = FileManagement.readFile(envFileName);
 
-  if (options.pushNotification?.env?.apiKey) {
+  if (options.pushNotification?.env?.cdpApiKey) {
     envFileContent = replaceCodeByRegex(
       envFileContent,
       CDP_API_KEY_RE,
-      options.pushNotification?.env?.apiKey
+      options.pushNotification?.env?.cdpApiKey
     );
   }
 
@@ -371,7 +371,7 @@ const updatePushFile = (
     envFileContent = replaceCodeByRegex(
       envFileContent,
       /\{\{CDP_API_KEY\}\}/,
-      options.pushNotification.env.apiKey
+      options.pushNotification.env.cdpApiKey
     );
     envFileContent = replaceCodeByRegex(
       envFileContent,
