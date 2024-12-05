@@ -1,6 +1,5 @@
 import Foundation
 import CioMessagingPushAPN
-import CioTracking
 import UserNotifications
 import UIKit
 
@@ -13,16 +12,12 @@ public class CIOAppPushNotificationsHandler : NSObject {
 
   @objc(initializeCioSdk)
   public func initializeCioSdk() {
-    // Must initialize Customer.io before initializing MessagingPushAPN. 
-    CustomerIO.initialize(siteId: "{{SITE_ID}}", apiKey: "{{API_KEY}}", region: .{{REGION}}) { config in
-      // Must configure auto track push events before initializing MessagingPushAPN. 
-      // This is because after AppDelegate.didFinishLaunching is called, the app will start handling push click events. 
-      // Configuring auto track push events after this point will not work.
-      config.autoTrackPushEvents = {{AUTO_TRACK_PUSH_EVENTS}}
-    }
-    MessagingPushAPN.initialize { config in
-      config.showPushAppInForeground = {{SHOW_PUSH_APP_IN_FOREGROUND}}
-    }
+    MessagingPushAPN.initialize(
+      withConfig: MessagingPushConfigBuilder()
+        .showPushAppInForeground({{SHOW_PUSH_APP_IN_FOREGROUND}})
+        .autoTrackPushEvents({{AUTO_TRACK_PUSH_EVENTS}})
+        .build()
+    )
   }
 
   @objc(application:deviceToken:)

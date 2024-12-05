@@ -279,25 +279,16 @@ const updateNseEnv = (
   options: CustomerIOPluginOptionsIOS,
   envFileName: string
 ) => {
-  const SITE_ID_RE = /\{\{SITE_ID\}\}/;
-  const API_KEY_RE = /\{\{API_KEY\}\}/;
+  const CDP_API_KEY_RE = /\{\{CDP_API_KEY\}\}/;
   const REGION_RE = /\{\{REGION\}\}/;
 
   let envFileContent = FileManagement.readFile(envFileName);
 
-  if (options.pushNotification?.env?.siteId) {
+  if (options.pushNotification?.env?.cdpApiKey) {
     envFileContent = replaceCodeByRegex(
       envFileContent,
-      SITE_ID_RE,
-      options.pushNotification?.env?.siteId
-    );
-  }
-
-  if (options.pushNotification?.env?.apiKey) {
-    envFileContent = replaceCodeByRegex(
-      envFileContent,
-      API_KEY_RE,
-      options.pushNotification?.env?.apiKey
+      CDP_API_KEY_RE,
+      options.pushNotification?.env?.cdpApiKey
     );
   }
 
@@ -379,13 +370,8 @@ const updatePushFile = (
   if (options.pushNotification) {
     envFileContent = replaceCodeByRegex(
       envFileContent,
-      /\{\{SITE_ID\}\}/,
-      options.pushNotification.env.siteId
-    );
-    envFileContent = replaceCodeByRegex(
-      envFileContent,
-      /\{\{API_KEY\}\}/,
-      options.pushNotification.env.apiKey
+      /\{\{CDP_API_KEY\}\}/,
+      options.pushNotification.env.cdpApiKey
     );
     envFileContent = replaceCodeByRegex(
       envFileContent,

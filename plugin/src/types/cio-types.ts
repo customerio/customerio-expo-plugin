@@ -27,8 +27,7 @@ export type CustomerIOPluginOptionsIOS = {
   pushNotification?: {
     useRichPush: boolean;
     env: {
-      siteId: string;
-      apiKey: string;
+      cdpApiKey: string;
       region: string;
     };
   };
