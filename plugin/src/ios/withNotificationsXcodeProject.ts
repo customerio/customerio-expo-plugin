@@ -279,7 +279,7 @@ const updateNseEnv = (
   options: CustomerIOPluginOptionsIOS,
   envFileName: string
 ) => {
-  const API_KEY_RE = /\{\{CDP_API_KEY\}\}/;
+  const CDP_API_KEY_RE = /\{\{CDP_API_KEY\}\}/;
   const REGION_RE = /\{\{REGION\}\}/;
 
   let envFileContent = FileManagement.readFile(envFileName);
@@ -287,7 +287,7 @@ const updateNseEnv = (
   if (options.pushNotification?.env?.apiKey) {
     envFileContent = replaceCodeByRegex(
       envFileContent,
-      API_KEY_RE,
+      CDP_API_KEY_RE,
       options.pushNotification?.env?.apiKey
     );
   }
