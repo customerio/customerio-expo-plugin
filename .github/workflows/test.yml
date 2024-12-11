@@ -42,4 +42,27 @@ jobs:
 
       - name: Run plugin tests
         run: npm run test-plugin
-        
+  
+  build-android-app:
+    name: Build and compile Android app to ensure correctness
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Install plugin dependencies
+        working-directory: plugin
+        run: npm ci
+
+      - name: Setup test project
+        run: npm run setup-tests
+
+      - name: Build Android app
+        working-directory: test-app/android
+        run: ./gradlew assembleDebug
