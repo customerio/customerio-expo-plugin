@@ -1,6 +1,6 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`Plugin applies Google Services plugin in the app Gradle build file (Expo v52) 1`] = `
+exports[`Plugin applies Google Services plugin in the app Gradle build file 1`] = `
 "apply plugin: "com.android.application"
 apply plugin: "com.google.gms.google-services"  // Google Services plugin
 apply plugin: "org.jetbrains.kotlin.android"

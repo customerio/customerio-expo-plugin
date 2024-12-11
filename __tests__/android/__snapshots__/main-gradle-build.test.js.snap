@@ -1,6 +1,6 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`Plugin injects expted dependencies in the main Gradle build file (Expo v52) 1`] = `
+exports[`Plugin injects expted dependencies in the main Gradle build file 1`] = `
 "// Top-level build file where you can add configuration options common to all sub-projects/modules.
 
 buildscript {

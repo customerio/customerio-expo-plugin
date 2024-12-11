@@ -1,6 +1,6 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`Plugin injects CustomerIOFirebaseMessagingService in the app manifest (Expo v52) 1`] = `
+exports[`Plugin injects CustomerIOFirebaseMessagingService in the app manifest 1`] = `
 "<manifest xmlns:android="http://schemas.android.com/apk/res/android">
   <uses-permission android:name="android.permission.INTERNET"/>
   <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
