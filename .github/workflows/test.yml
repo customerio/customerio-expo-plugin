@@ -66,3 +66,28 @@ jobs:
       - name: Build Android app
         working-directory: test-app/android
         run: ./gradlew assembleDebug
+
+  build-ios-app:
+    name: Build and compile iOS app to ensure correctness
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install XCode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: "15.3"
+
+      - name: Install plugin dependencies
+        working-directory: plugin
+        run: npm ci
+
+      - name: Setup test project
+        run: npm run setup-tests
+
+      - name: Build iOS app
+        working-directory: test-app/ios
+        run: xcodebuild -workspace ExpoTestApp.xcworkspace -scheme ExpoTestApp -sdk iphonesimulator -configuration Debug build
