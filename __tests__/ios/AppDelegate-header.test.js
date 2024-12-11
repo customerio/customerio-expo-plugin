@@ -5,7 +5,7 @@ const testProjectPath = path.join(__dirname, "../../test-app");
 const iosPath = path.join(testProjectPath, "ios");
 const appDelegateHeaderPath = path.join(iosPath, "testapp/AppDelegate.h");
 
-test("Plugin injects CIO imports and calls into AppDelegate.h (Expo v52)", async () => {
+test("Plugin injects CIO imports and calls into AppDelegate.h", async () => {
   const content = await fs.readFile(appDelegateHeaderPath, "utf8");
 
   expect(content).toMatchSnapshot();

@@ -1,6 +1,6 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`Plugin injects CIO imports and calls into AppDelegate.mm (Expo v52) 1`] = `
+exports[`Plugin injects CIO imports and calls into AppDelegate.mm 1`] = `
 "
 #if __has_include(<EXNotifications/EXNotificationCenterDelegate.h>)
 #import <EXNotifications/EXNotificationCenterDelegate.h>
