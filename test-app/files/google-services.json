@@ -1,0 +1,46 @@
+{
+    "project_info": {
+      "project_number": "93259709906",
+      "project_id": "amiapp-reactnative",
+      "storage_bucket": "amiapp-reactnative.appspot.com"
+    },
+    "client": [
+      {
+        "client_info": {
+          "mobilesdk_app_id": "1:93259709906:android:8e70e0f3b341eb8027dc0b",
+          "android_client_info": {
+            "package_name": "io.customer.ami"
+          }
+        },
+        "oauth_client": [
+          {
+            "client_id": "93259709906-l7aijbcib0l7nr3ho89rek720alc1s9o.apps.googleusercontent.com",
+            "client_type": 3
+          }
+        ],
+        "api_key": [
+          {
+            "current_key": "AIzaSyBj5yABJbp_zAuuWj7Mnz7Yae4fld9togw"
+          }
+        ],
+        "services": {
+          "appinvite_service": {
+            "other_platform_oauth_client": [
+              {
+                "client_id": "93259709906-l7aijbcib0l7nr3ho89rek720alc1s9o.apps.googleusercontent.com",
+                "client_type": 3
+              },
+              {
+                "client_id": "93259709906-8pn1fj1si34773vg0eqc5i63kmtfctos.apps.googleusercontent.com",
+                "client_type": 2,
+                "ios_info": {
+                  "bundle_id": "io.customer.ami"
+                }
+              }
+            ]
+          }
+        }
+      }
+    ],
+    "configuration_version": "1"
+  }
