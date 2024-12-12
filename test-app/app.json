@@ -31,7 +31,8 @@
         "customerio-expo-plugin",
         {
           "android": {
-            "googleServicesFile": "./files/google-services.json"
+            "googleServicesFile": "./files/google-services.json",
+            "setHighPriorityPushHandler": true
           },
           "ios": {
             "pushNotification": {
