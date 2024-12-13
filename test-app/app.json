@@ -26,6 +26,10 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
+    "extra": {
+      "cdpApiKey": "@CDP_API_KEY@",
+      "siteId": "@SITE_ID@"
+    },
     "plugins": [
       [
         "customerio-expo-plugin",
@@ -38,7 +42,7 @@
             "pushNotification": {
               "useRichPush": true,
               "env": {
-                "cdpApiKey": "testApiKey",
+                "cdpApiKey": "@CDP_API_KEY@",
                 "region": "us"
               }
             }

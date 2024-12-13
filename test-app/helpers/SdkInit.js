@@ -4,15 +4,19 @@ import {
   CustomerIO,
   PushClickBehaviorAndroid,
 } from "customerio-reactnative";
+import Constants from "expo-constants";
 
 export function initializeCioSdk() {
+  const cdpApiKey = Constants.expoConfig.extra.cdpApiKey;
+  const siteId = Constants.expoConfig.extra.siteId;
+
   const config = {
-    cdpApiKey: "YourApiKey",
+    cdpApiKey: cdpApiKey,
     region: CioRegion.US,
     logLevel: CioLogLevel.Debug,
     trackApplicationLifecycleEvents: true,
     inApp: {
-      siteId: "YourSiteId",
+      siteId: siteId,
     },
     push: {
       android: {
