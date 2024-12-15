@@ -31,6 +31,10 @@ jobs:
       - name: Install SD CLI
         run: brew install sd
 
+      - name: Bundle install
+        working-directory: test-app
+        run: bundle install
+
       - name: Install plugin dependencies
         working-directory: plugin
         run: npm ci
