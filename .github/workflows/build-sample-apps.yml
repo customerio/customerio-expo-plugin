@@ -29,7 +29,7 @@ jobs:
         working-directory: plugin
         run: npm ci
 
-      - name: Setup test project
+      - name: Setup test projects
         run: npm run setup-tests
 
       - name: Setup CIO workspace credentials in test apps config
@@ -41,9 +41,11 @@ jobs:
         uses: maierj/fastlane-action@v3.1.0
         with:
           lane: android build
+          subdirectory: test-app
 
       - name: Build iOS app with fastlane
         uses: maierj/fastlane-action@v3.1.0
         with:
           lane: ios build
+          subdirectory: test-app
 
