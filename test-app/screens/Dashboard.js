@@ -1,75 +1,81 @@
-import React, { useState } from "react";
-import { View, TextInput, Button, StyleSheet } from "react-native";
-import { CustomerIO } from "customerio-reactnative";
+import React, { useState, useCallback } from "react";
+import { View, Button, StyleSheet, Text } from "react-native";
 import { requestPermissionForPush } from "../helpers/RequestPushPermission";
+import { useFocusEffect } from '@react-navigation/native';
+import Constants from "expo-constants";
 
-export default function DashboardScreen() {
-  const [email, setEmail] = useState("");
-  const [eventName, setEventName] = useState("");
+import LoginModal from "./LoginModal";
+import SendEventModal from "./SendEventModal";
+import DeviceAttributeModal from "./DeviceAttributesModal";
+import { CustomerIO } from "customerio-reactnative";
 
-  const handleLoginButtonPressed = () => {
-    const trimmedEmail = email.trim();
-    if (trimmedEmail === "") {
-      CustomerIO.clearIdentify();
-      alert(`Logged out!`);
-    } else {
-      CustomerIO.identify({
-        userId: trimmedEmail,
-        traits: {
-          first_name: trimmedEmail,
-          email: trimmedEmail,
-        },
-      });
-      alert(`Identified ${trimmedEmail}`);
-    }
-  };
+export default function DashboardScreen({ navigation }) {
+  const [loginModalVisible, seLoginModalVisible] = useState(false);
+  const [sendEventModalVisible, setSendEventModalVisible] = useState(false);
+  const [deviceAttributeModalVisible, setDeviceAttributeModalVisible] = useState(false);
 
-  const handleSendEventButtonPressed = () => {
-    CustomerIO.track(eventName, { product: "shoes", price: "29.99" });
-    alert(`Tracked event: ${eventName}`);
-  };
+  const cdpApiKey = Constants.expoConfig?.extra?.cdpApiKey || "Failed to load!";
+  const siteId = Constants.expoConfig?.extra?.siteId || "Failed to load!";
+  const workspaceInfo = "CDP API Key: " + cdpApiKey + "\n" +
+      "Site ID: " + siteId;
 
   const handleRequestPushPermissionButtonPressed = () => {
     requestPermissionForPush();
   };
 
+  const handleNavigateToTestScreenButtonPressed = () => {
+    navigation.navigate('NavigationTest')
+  }
+
+  useFocusEffect(
+    useCallback(() => {
+      CustomerIO.screen("Dashboard");
+
+      return () => {
+        console.log('Leaving DashboardScreen');
+      };
+    }, [])
+  );
+
   return (
     <View style={styles.container}>
-      {/* First Section */}
       <View style={styles.section}>
-        <TextInput
-          style={styles.input}
-          placeholder="Email"
-          keyboardType="email-address"
-          autoCapitalize="none"
-          value={email}
-          onChangeText={setEmail}
-        />
-        <Button title="Login" onPress={handleLoginButtonPressed} />
+        <Button title="Login" onPress={() => seLoginModalVisible(true)} />
       </View>
 
-      {/* Divider */}
-      <View style={styles.divider} />
-
-      {/* Second Section */}
       <View style={styles.section}>
-        <TextInput
-          style={styles.input}
-          placeholder="Event name"
-          autoCapitalize="none"
-          value={eventName}
-          onChangeText={setEventName}
-        />
-        <Button title="Send event" onPress={handleSendEventButtonPressed} />
+        <Button title="Send event" onPress={() => setSendEventModalVisible(true)} />
       </View>
 
-      {/* Divider */}
-      <View style={styles.divider} />
+      <View style={styles.section}>
+        <Button title="Device attribute" onPress={() => setDeviceAttributeModalVisible(true)} />
+      </View>
 
-      {/* Third Button */}
       <Button
         title="Request push permission"
         onPress={handleRequestPushPermissionButtonPressed}
+      />
+
+      <Button
+        title="Navigate to test screen"
+        onPress={handleNavigateToTestScreenButtonPressed}
+      />
+
+      <View style={styles.bottomLabelContainer}>
+        <Text style={styles.bottomLabel}>{workspaceInfo}</Text>
+      </View>
+
+      <LoginModal
+        visible={loginModalVisible}
+        onClose={() => seLoginModalVisible(false)}
+      />
+      <SendEventModal
+        visible={sendEventModalVisible}
+        onClose={() => setSendEventModalVisible(false)}
+      />
+      <DeviceAttributeModal
+        visible={deviceAttributeModalVisible}
+        onClose={() => setDeviceAttributeModalVisible(false)}
       />
     </View>
   );
@@ -95,10 +101,14 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     width: "80%",
   },
-  divider: {
-    height: 1,
-    backgroundColor: "#ccc",
-    width: "100%",
-    marginVertical: 10,
+  bottomLabelContainer: {
+    position: 'absolute',
+    bottom: 20, // Distance from the bottom of the screen
+    alignItems: 'center',
+    width: '100%',
+  },
+  bottomLabel: {
+    fontSize: 16,
+    color: 'gray',
   },
 });

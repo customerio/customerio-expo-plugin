@@ -27,21 +27,49 @@ platform :android do
     unless File.exist?(relative_apk_path)
       UI.user_error!("Couldn't find the APK at #{relative_apk_path}")
     end
+
+    # function 'setup_google_bucket_access' is a re-usable function inside of apple-code-signing Fastfile that we imported.
+    # This allows you to create a temporary file from a GitHub secret for added convenience.
+    # When uploading the build to Firebase App Distribution, the CI server needs to authenticate with Firebase. This is done with a
+    # Google Cloud Service Account json creds file. The base64 encoded value of this service account file is stored as this secret.
+    service_credentials_file_path = setup_google_bucket_access(
+      environment_variable_key: "FIREBASE_APP_DISTRIBUTION_SERVICE_ACCOUNT_CREDS_B64"
+    )
+
+    firebase_app_distribution(
+      apk_path: distribution_apk_path,
+      app: firebase_app_id, # Firebase app id is required. Get it from google-services.json file
+      service_credentials_file: service_credentials_file_path,
+      groups: 'feature-branch'
+      release_notes: 'Sample release notes'
+    )
   end
 end
 
 platform :ios do
   lane :build do |arguments|
 
-    # Use gym!
+    download_ci_code_signing_files
 
-    build_app(
+    gym(
       scheme: "ExpoTestApp",
       workspace: "ios/ExpoTestApp.xcworkspace",
       export_method: "ad-hoc",
-      output_directory: "./ios/build",
-      output_name: "ExpoTestApp.ipa"
+      configuration: "Release"
     )
 
+    # function 'setup_google_bucket_access' is a re-usable function inside of apple-code-signing Fastfile that we imported.
+    # This allows you to create a temporary file from a GitHub secret for added convenience.
+    # When uploading the build to Firebase App Distribution, the CI server needs to authenticate with Firebase. This is done with a
+    # Google Cloud Service Account json creds file. The base64 encoded value of this service account file is stored as this secret.
+    service_credentials_file_path = setup_google_bucket_access(
+      environment_variable_key: "FIREBASE_APP_DISTRIBUTION_SERVICE_ACCOUNT_CREDS_B64"
+    )
+
+    firebase_app_distribution(
+      service_credentials_file: service_credentials_file_path,
+      groups: 'feature-branch',
+      release_notes: 'Sample release notes'
+      )
   end
 end

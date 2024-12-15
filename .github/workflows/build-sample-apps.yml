@@ -41,7 +41,15 @@ jobs:
           cd test-app/ios
           fastlane download_development_code_signing
 
-            
+      - name: Build Android app with fastlane
+        uses: maierj/fastlane-action@v3.1.0
+        with:
+          lane: android build
+
+      - name: Build iOS app with fastlane
+        uses: maierj/fastlane-action@v3.1.0
+        with:
+          lane: ios build
 
       - name: Build Android app
         working-directory: test-app/android
