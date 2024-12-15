@@ -1,4 +1,4 @@
-name: Test
+name: Publish test apps
 
 on: [push, pull_request]
 
@@ -22,6 +22,9 @@ jobs:
         with:
           xcode-version: "15.3"
 
+      - name: Install SD CLI
+        run: brew install sd
+
       - name: Install plugin dependencies
         working-directory: plugin
         run: npm ci
@@ -33,13 +36,6 @@ jobs:
         run: |
           sd '@CDP_API_KEY@' "${{ secrets.CUSTOMERIO_EXPO_WORKSPACE_CDP_API_KEY }}" test-app/app.json
           sd '@SITE_ID@' "${{ secrets.CUSTOMERIO_EXPO_WORKSPACE_SITE_ID }}" test-app/app.json
-      
-      - name: Download iOS code signing
-        run: |
-          mkdir test-app/ios/fastlane
-          cp -R test-app/fastlane-singing/. test-app/ios/fastlane
-          cd test-app/ios
-          fastlane download_development_code_signing
 
       - name: Build Android app with fastlane
         uses: maierj/fastlane-action@v3.1.0
@@ -51,31 +47,3 @@ jobs:
         with:
           lane: ios build
 
-      - name: Build Android app
-        working-directory: test-app/android
-        run: ./gradlew assembleDebug
-
-  build-ios-app:
-    name: Build and compile iOS app to ensure correctness
-    runs-on: macos-14
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-
-      - name: Install XCode
-        uses: maxim-lobanov/setup-xcode@v1
-        with:
-          xcode-version: "15.3"
-
-      - name: Install plugin dependencies
-        working-directory: plugin
-        run: npm ci
-
-      - name: Setup test project
-        run: npm run setup-tests
-
-      - name: Build iOS app
-        working-directory: test-app/ios
-        run: xcodebuild -workspace ExpoTestApp.xcworkspace -scheme ExpoTestApp -sdk iphonesimulator -configuration Debug build
