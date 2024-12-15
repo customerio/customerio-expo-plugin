@@ -32,7 +32,7 @@ jobs:
       - name: Setup test project
         run: npm run setup-tests
 
-      - name: Setup workspace credentials
+      - name: Setup CIO workspace credentials in test apps config
         run: |
           sd '@CDP_API_KEY@' "${{ secrets.CUSTOMERIO_EXPO_WORKSPACE_CDP_API_KEY }}" test-app/app.json
           sd '@SITE_ID@' "${{ secrets.CUSTOMERIO_EXPO_WORKSPACE_SITE_ID }}" test-app/app.json
