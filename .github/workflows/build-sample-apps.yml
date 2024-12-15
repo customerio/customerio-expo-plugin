@@ -1,6 +1,6 @@
 name: Publish test apps
 
-on: [push, pull_request]
+on: [pull_request] # TODO add push
 
 jobs:
   build-apps:
@@ -21,6 +21,12 @@ jobs:
         uses: maxim-lobanov/setup-xcode@v1
         with:
           xcode-version: "15.3"
+      
+      - name: Install tools from Gemfile (ruby language) used for building our apps with
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.0'
+          bundler-cache: true
 
       - name: Install SD CLI
         run: brew install sd
