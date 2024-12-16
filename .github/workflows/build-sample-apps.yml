@@ -3,7 +3,7 @@ name: Publish test apps
 on:
   pull_request:
   push:
-    branches: [ main, feature/* ]
+    branches: [ beta, feature/* ]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
