@@ -10,6 +10,15 @@ platform :android do
     app_package_name = CredentialsManager::AppfileConfig.try_fetch_value(:package_name)
     firebase_app_id = find_firebase_app_id(app_identifier: app_package_name)
 
+    android_set_version_name(
+      version_name: get_new_app_version(),
+      gradle_file: "./android/app/build.gradle"
+    )
+    android_set_version_code(
+      version_code: get_new_build_version(),
+      gradle_file: "./android/app/build.gradle"
+    )
+
     # Build release APK using Fastlane's Gradle tool
     gradle(
       project_dir: "./android",
@@ -39,7 +48,7 @@ platform :android do
 
     firebase_app_distribution(
       apk_path: distribution_apk_path,
-      app: firebase_app_id, # Firebase app id is required. Get it from google-services.json file
+      app: firebase_app_id,
       service_credentials_file: service_credentials_file_path,
       groups: get_build_test_groups(),
       release_notes: get_build_notes()
