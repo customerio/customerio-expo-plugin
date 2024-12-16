@@ -55,20 +55,26 @@ platform :ios do
     update_project_provisioning(
       xcodeproj: "./ios/ExpoTestApp.xcodeproj",
       target_filter: "ExpoTestApp",
-      profile: "match AdHoc io.customer.ami"
+      profile: "ad21ce7c-1f32-40df-a2f4-919c0be79e44"
     )
 
     update_project_provisioning(
       xcodeproj: "./ios/ExpoTestApp.xcodeproj",
       target_filter: "NotificationService",
-      profile: "match AdHoc io.customer.ami.richpush"
+      profile: "c1055dbd-7028-4b54-a22d-807211e19f05"
     )
 
     gym(
       scheme: "ExpoTestApp",
       workspace: "ios/ExpoTestApp.xcworkspace",
       export_method: "ad-hoc",
-      configuration: "Release"
+      configuration: "Release",
+      export_options: {
+      provisioningProfiles: {
+          "io.customer.ami" => "match AdHoc io.customer.ami",
+          "io.customer.ami.richpush" => "match AdHoc io.customer.ami.richpush"
+        }
+      }
     )
 
     # function 'setup_google_bucket_access' is a re-usable function inside of apple-code-signing Fastfile that we imported.
