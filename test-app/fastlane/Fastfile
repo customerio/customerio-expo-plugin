@@ -55,13 +55,15 @@ platform :ios do
     update_project_provisioning(
       xcodeproj: "./ios/ExpoTestApp.xcodeproj",
       target_filter: "ExpoTestApp",
-      profile: "/Users/runner/Library/MobileDevice/Provisioning Profiles/ad21ce7c-1f32-40df-a2f4-919c0be79e44.mobileprovision"
+      profile: "/Users/runner/Library/MobileDevice/Provisioning Profiles/ad21ce7c-1f32-40df-a2f4-919c0be79e44.mobileprovision",
+      team_id: "2YC97BQN3N"
     )
 
     update_project_provisioning(
       xcodeproj: "./ios/ExpoTestApp.xcodeproj",
       target_filter: "NotificationService",
-      profile: "/Users/runner/Library/MobileDevice/Provisioning Profiles/c1055dbd-7028-4b54-a22d-807211e19f05.mobileprovision"
+      profile: "/Users/runner/Library/MobileDevice/Provisioning Profiles/c1055dbd-7028-4b54-a22d-807211e19f05.mobileprovision",
+      team_id: "2YC97BQN3N"
     )
 
     update_code_signing_settings(
