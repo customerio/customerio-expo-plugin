@@ -52,6 +52,23 @@ platform :ios do
 
     download_ci_code_signing_files
 
+    match(
+      type: "adhoc",
+      app_identifier: ["io.customer.ami", "io.customer.ami.richpush"]
+    )
+
+    update_project_provisioning(
+      xcodeproj: "./ios/ExpoTestApp.xcodeproj",
+      target_filter: "ExpoTestApp",
+      profile: "match AdHoc io.customer.ami"
+    )
+
+    update_project_provisioning(
+      xcodeproj: "./ios/ExpoTestApp.xcodeproj",
+      target_filter: "NotificationService",
+      profile: "match AdHoc io.customer.ami.richpush"
+    )
+
     gym(
       scheme: "ExpoTestApp",
       workspace: "ios/ExpoTestApp.xcworkspace",
