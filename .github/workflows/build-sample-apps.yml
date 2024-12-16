@@ -1,0 +1,55 @@
+name: Publish test apps
+
+on: [push, pull_request]
+
+jobs:
+  build-android-app:
+    name: Build and publish Android app
+    runs-on: ubuntu-latest
+    env:
+      GOOGLE_CLOUD_MATCH_READONLY_SERVICE_ACCOUNT_B64: ${{ secrets.GOOGLE_CLOUD_MATCH_READONLY_SERVICE_ACCOUNT_B64 }}
+      FIREBASE_APP_DISTRIBUTION_SERVICE_ACCOUNT_CREDS_B64: ${{ secrets.FIREBASE_APP_DISTRIBUTION_SERVICE_ACCOUNT_CREDS_B64 }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "17"
+      
+      - name: Install tools from Gemfile (ruby language) used for building our apps with
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.0'
+          bundler-cache: true
+
+      - name: Install sd CLI to use later in the workflow
+        uses: kenji-miyake/setup-sd@v2
+
+      - name: Bundle install
+        working-directory: test-app
+        run: bundle install
+
+      - name: Install plugin dependencies
+        working-directory: plugin
+        run: npm ci
+
+      - name: Setup test projects
+        run: npm run setup-tests
+
+      - name: Setup CIO workspace credentials in test apps config
+        run: |
+          sd '@CDP_API_KEY@' "${{ secrets.CUSTOMERIO_EXPO_WORKSPACE_CDP_API_KEY }}" test-app/app.json
+          sd '@SITE_ID@' "${{ secrets.CUSTOMERIO_EXPO_WORKSPACE_SITE_ID }}" test-app/app.json
+
+      - name: Build Android app with fastlane
+        uses: maierj/fastlane-action@v3.1.0
+        with:
+          lane: android build
+          subdirectory: test-app
+        env:
+          FIREBASE_APP_DISTRIBUTION_SERVICE_ACCOUNT_CREDS_B64: ${{ secrets.FIREBASE_APP_DISTRIBUTION_SERVICE_ACCOUNT_CREDS_B64 }}
+        continue-on-error: true
