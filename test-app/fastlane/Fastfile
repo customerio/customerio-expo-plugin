@@ -52,10 +52,6 @@ platform :ios do
 
     download_ci_code_signing_files
 
-    sh('security find-identity -v -p codesigning | grep ad21ce7c-1f32-40df-a2f4-919c0be79e44')
-    sh('ls ~/Library/MobileDevice/Provisioning\ Profiles/')
-    sh('ls /Users/runner/Library/MobileDevice/Provisioning\ Profiles/')
-
     update_project_provisioning(
       xcodeproj: "./ios/ExpoTestApp.xcodeproj",
       target_filter: "ExpoTestApp",
