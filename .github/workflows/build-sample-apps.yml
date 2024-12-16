@@ -50,14 +50,14 @@ jobs:
           sd '@CDP_API_KEY@' "${{ secrets.CUSTOMERIO_EXPO_WORKSPACE_CDP_API_KEY }}" test-app/app.json
           sd '@SITE_ID@' "${{ secrets.CUSTOMERIO_EXPO_WORKSPACE_SITE_ID }}" test-app/app.json
 
-      - name: Build Android app with fastlane
-        uses: maierj/fastlane-action@v3.1.0
-        with:
-          lane: android build
-          subdirectory: test-app
-        env:
-          FIREBASE_APP_DISTRIBUTION_SERVICE_ACCOUNT_CREDS_B64: ${{ secrets.FIREBASE_APP_DISTRIBUTION_SERVICE_ACCOUNT_CREDS_B64 }}
-        continue-on-error: true
+      # - name: Build Android app with fastlane
+      #   uses: maierj/fastlane-action@v3.1.0
+      #   with:
+      #     lane: android build
+      #     subdirectory: test-app
+      #   env:
+      #     FIREBASE_APP_DISTRIBUTION_SERVICE_ACCOUNT_CREDS_B64: ${{ secrets.FIREBASE_APP_DISTRIBUTION_SERVICE_ACCOUNT_CREDS_B64 }}
+      #   continue-on-error: true
 
       - name: Build iOS app with fastlane
         uses: maierj/fastlane-action@v3.1.0
