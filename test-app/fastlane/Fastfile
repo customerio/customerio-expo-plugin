@@ -64,6 +64,11 @@ platform :ios do
       profile: "/Users/runner/Library/MobileDevice/Provisioning Profiles/c1055dbd-7028-4b54-a22d-807211e19f05.mobileprovision"
     )
 
+    update_code_signing_settings(
+      use_automatic_signing: false,
+      path: "./ios/ExpoTestApp.xcodeproj"
+    )
+
     gym(
       scheme: "ExpoTestApp",
       workspace: "ios/ExpoTestApp.xcworkspace",
@@ -89,6 +94,6 @@ platform :ios do
       service_credentials_file: service_credentials_file_path,
       groups: 'feature-branch',
       release_notes: 'Sample release notes'
-      )
+    )
   end
 end
