@@ -36,7 +36,7 @@ export default function DeviceAttributeModal({ visible, onClose }) {
     >
       <View style={styles.modalOverlay}>
         <View style={styles.modalContainer}>
-          <Text style={styles.modalTitle}>Login</Text>
+          <Text style={styles.modalTitle}>Device Attributes</Text>
 
           <TextInput
             style={styles.input}

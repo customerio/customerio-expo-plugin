@@ -38,7 +38,7 @@ export default function SendEventModal({ visible, onClose }) {
     >
       <View style={styles.modalOverlay}>
         <View style={styles.modalContainer}>
-          <Text style={styles.modalTitle}>Login</Text>
+          <Text style={styles.modalTitle}>Send Event</Text>
 
           <TextInput
             style={styles.input}
