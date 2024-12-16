@@ -1,6 +1,13 @@
 name: Publish test apps
 
-on: [push, pull_request]
+on:
+  pull_request:
+  push:
+    branches: [ main, feature/* ]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build-android-app:
