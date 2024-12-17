@@ -12,7 +12,7 @@
     "@react-native-community/masked-view": "^0.1.11",
     "@react-navigation/native": "^7.0.14",
     "@react-navigation/stack": "^7.1.0",
-    "customerio-expo-plugin": "file:../plugin",
+    "customerio-expo-plugin": "file:..",
     "customerio-reactnative": "^4.1.1",
     "expo": "~52.0.11",
     "expo-status-bar": "~2.0.0",
