@@ -59,4 +59,3 @@ jobs:
           subdirectory: test-app
         env:
           FIREBASE_APP_DISTRIBUTION_SERVICE_ACCOUNT_CREDS_B64: ${{ secrets.FIREBASE_APP_DISTRIBUTION_SERVICE_ACCOUNT_CREDS_B64 }}
-        continue-on-error: true
