@@ -9,7 +9,7 @@ pluginPackageRoot = path.dirname(pluginPackageRoot);
 
 export const LOCAL_PATH_TO_CIO_NSE_FILES = path.join(
   pluginPackageRoot,
-  'src/helpers/native-files/ios'
+  'plugin/src/helpers/native-files/ios'
 );
 
 export function getRelativePathToRNSDK(iosPath: string) {
