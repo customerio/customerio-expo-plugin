@@ -34,6 +34,12 @@ exports[`Plugin injects CustomerIOFirebaseMessagingService in the app manifest 1
         <category android:name="android.intent.category.BROWSABLE"/>
         <data android:scheme="io.customer.ami"/>
       </intent-filter>
+      <intent-filter data-generated="true">
+        <action android:name="android.intent.action.VIEW"/>
+        <data android:scheme="expo-test-app" android:host="nav-test"/>
+        <category android:name="android.intent.category.BROWSABLE"/>
+        <category android:name="android.intent.category.DEFAULT"/>
+      </intent-filter>
     </activity>
   </application>
 </manifest>"
