@@ -17,6 +17,13 @@
       "bundleIdentifier": "io.customer.ami",
       "entitlements": {
         "aps-environment": "development"
+      },
+      "infoPlist": {
+        "CFBundleURLTypes": [
+          {
+            "CFBundleURLSchemes": ["expo-test-app"]
+          }
+        ]
       }
     },
     "android": {
@@ -24,7 +31,22 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "io.customer.ami"
+      "package": "io.customer.ami",
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "data": [
+            {
+              "scheme": "expo-test-app",
+              "host": "nav-test"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
+        }
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"

@@ -1,8 +1,10 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { View, Button, StyleSheet, Text } from 'react-native';
 import { requestPermissionForPush } from '../helpers/RequestPushPermission';
 import { useFocusEffect } from '@react-navigation/native';
 import Constants from 'expo-constants';
+import { Linking } from 'react-native';
+import { registerInAppMessagingEventListener } from '../helpers/InAppMessagingListener';
 
 import LoginModal from './LoginModal';
 import SendEventModal from './SendEventModal';
@@ -11,6 +13,10 @@ import ProfileAttributeModal from './ProfileAttributeModal';
 import { CustomerIO } from 'customerio-reactnative';
 
 export default function DashboardScreen({ navigation }) {
+  useEffect(() => {
+    registerInAppMessagingEventListener();
+  }, []);
+
   const [loginModalVisible, seLoginModalVisible] = useState(false);
   const [sendEventModalVisible, setSendEventModalVisible] = useState(false);
   const [deviceAttributeModalVisible, setDeviceAttributeModalVisible] =
@@ -31,6 +37,16 @@ export default function DashboardScreen({ navigation }) {
     navigation.navigate('NavigationTest');
   };
 
+  const handleDeeplinkToTestScreenButtonPressed = () => {
+    Linking.openURL('expo-test-app://nav-test')
+      .then(() => {
+        console.log('EXPO-TEST: Deeplinking to test screen opened successfully');
+      })
+      .catch((err) => {
+        console.error('EXPO-TEST: Deeplinking to test screen failed!', err);
+      });
+  };
+
   const handleLogoutButtonPressed = () => {
     CustomerIO.clearIdentify();
   };
@@ -40,7 +56,7 @@ export default function DashboardScreen({ navigation }) {
       CustomerIO.screen('Dashboard');
 
       return () => {
-        console.log('Leaving DashboardScreen');
+        console.log('EXPO-TEST: Leaving DashboardScreen');
       };
     }, [])
   );
@@ -83,6 +99,13 @@ export default function DashboardScreen({ navigation }) {
         <Button
           title="Navigate to test screen"
           onPress={handleNavigateToTestScreenButtonPressed}
+        />
+      </View>
+
+      <View style={styles.section}>
+        <Button
+          title="Deeplink to test screen"
+          onPress={handleDeeplinkToTestScreenButtonPressed}
         />
       </View>
 
