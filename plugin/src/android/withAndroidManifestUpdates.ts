@@ -65,8 +65,8 @@ const setManifestMetaData = (
   entries: (ManifestMetaData & { override?: boolean })[],
 ): ManifestMetaData[] => {
   // Inline function to safely set tools:replace
-  const setToolsReplace = (attributes: Record<string, string>, key: string, value: string): void => {
-    (attributes as Record<string, string>)[key] = value;
+  const setToolsReplace = (attributes: Record<string, string>): void => {
+    (attributes as Record<string, string>)['tools:node'] = 'replace';
   };
 
   // Update or add each metadata entry
@@ -78,7 +78,7 @@ const setManifestMetaData = (
       existingMetaData.$['android:value'] = attributes['android:value'];
 
       if (override) {
-        setToolsReplace(existingMetaData.$, 'tools:replace', 'android:value');
+        setToolsReplace(existingMetaData.$);
       }
     } else {
       // Else, add new metadata
@@ -89,7 +89,7 @@ const setManifestMetaData = (
       };
 
       if (override) {
-        setToolsReplace(newMetaData.$, 'tools:replace', 'android:value');
+        setToolsReplace(newMetaData.$);
       }
 
       metaData.push(newMetaData);
