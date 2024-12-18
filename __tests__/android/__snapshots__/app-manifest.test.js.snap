@@ -18,6 +18,8 @@ exports[`Plugin injects CustomerIOFirebaseMessagingService in the app manifest 1
     <meta-data android:name="expo.modules.updates.ENABLED" android:value="false"/>
     <meta-data android:name="expo.modules.updates.EXPO_UPDATES_CHECK_ON_LAUNCH" android:value="ALWAYS"/>
     <meta-data android:name="expo.modules.updates.EXPO_UPDATES_LAUNCH_WAIT_MS" android:value="0"/>
+    <meta-data android:name="io.customer.sdk.android.core.SDK_SOURCE" android:value="Expo" tools:replace="android:value"/>
+    <meta-data android:name="io.customer.sdk.android.core.SDK_VERSION" android:value="1.0.0-beta.17" tools:replace="android:value"/>
     <service android:name="io.customer.messagingpush.CustomerIOFirebaseMessagingService" android:exported="false">
       <intent-filter>
         <action android:name="com.google.firebase.MESSAGING_EVENT"/>

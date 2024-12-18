@@ -15,9 +15,7 @@ export function withCIOAndroid(
   config = withProjectGoogleServices(config, props);
   config = withAppGoogleServices(config, props);
   config = withGoogleServicesJSON(config, props);
-  if (props.setHighPriorityPushHandler) {
-    config = withAndroidManifestUpdates(config, props);
-  }
+  config = withAndroidManifestUpdates(config, props);
 
   return config;
 }

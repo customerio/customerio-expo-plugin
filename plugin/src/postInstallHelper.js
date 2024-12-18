@@ -2,19 +2,18 @@ const fs = require('fs');
 
 function runPostInstall() {
   // react native SDK package.json path
-  const rnPjsonFile = `${__dirname}/../../customerio-reactnative/package.json`;
-  const expoPjsonFile = `${__dirname}/../package.json`;
+  const reactNativePackageJsonFile = `${__dirname}/../../../customerio-reactnative/package.json`;
+  const expoPackageJsonFile = `${__dirname}/../../package.json`;
   try {
     // if react native SDK is installed
-    if (fs.existsSync(rnPjsonFile)) {
-      const rnPJson = fs.readFileSync(rnPjsonFile, 'utf8');
-      expoPjson = require(expoPjsonFile);
+    if (fs.existsSync(reactNativePackageJsonFile)) {
+      const reactNativePackageJson = fs.readFileSync(reactNativePackageJsonFile, 'utf8');
+      const expoPackageJson = require(expoPackageJsonFile);
 
-      const rnPackage = JSON.parse(rnPJson);
-      rnPackage.expoVersion = expoPjson.version;
+      const reactNativePackage = JSON.parse(reactNativePackageJson);
+      reactNativePackage.expoVersion = expoPackageJson.version;
 
-
-      fs.writeFileSync(rnPjsonFile, JSON.stringify(rnPackage, null, 2));
+      fs.writeFileSync(reactNativePackageJsonFile, JSON.stringify(reactNativePackage, null, 2));
     }
   } catch (error) {}
 }
