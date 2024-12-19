@@ -18,8 +18,7 @@ export default function App() {
     prefixes: ['expo-test-app://'],
     config: {
       screens: {
-        Dashboard: '',
-        Label: 'NavigationTest',
+        NavigationTest: 'nav-test'
       },
     },
   };
