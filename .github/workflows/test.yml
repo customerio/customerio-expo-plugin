@@ -22,7 +22,7 @@ jobs:
         run: npm publish --dry-run
 
   test-plugin:
-    name: Test unit tests for plguin
+    name: Test unit tests for plugin
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

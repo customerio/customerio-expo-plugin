@@ -33,6 +33,16 @@ npx expo run:android
 npx expo run:ios
 ```
 
+### Plugin Dependency Installation
+
+> Note: For Node.js 18 or newer, this typically runs automatically with `npm install`.
+
+We use tarball dependency to ensure our expo plugin is installed as if it was published, avoiding path issues and ensuring dependencies are resolved consistently. If you face errors, run following command before running `npm install`:
+
+```bash
+npm run preinstall
+``` 
+
 ## Convenience scripts
 
 Sometimes when you are making changes to the plugin, it's helpful to clear out dependencies or rebuild the plugin. There are a couple of convenience scripts that you can use.

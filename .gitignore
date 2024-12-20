@@ -4,6 +4,7 @@ node_modules
 .nvm
 npm-debug.log
 yarn-error.log
+*.tgz
 
 # OS X
 .DS_Store
