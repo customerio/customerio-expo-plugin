@@ -52,6 +52,12 @@ jobs:
           sd '@CDP_API_KEY@' "${{ secrets.CUSTOMERIO_EXPO_WORKSPACE_CDP_API_KEY }}" test-app/app.json
           sd '@SITE_ID@' "${{ secrets.CUSTOMERIO_EXPO_WORKSPACE_SITE_ID }}" test-app/app.json
 
+      - name: Update test app version
+        uses: maierj/fastlane-action@v3.1.0
+        with:
+          lane: update_expo_test_app_version
+          subdirectory: test-app
+
       - name: Build Android app with fastlane
         uses: maierj/fastlane-action@v3.1.0
         with:
@@ -107,6 +113,12 @@ jobs:
           cp test-app/files/GoogleService-Info.plist test-app/ios/GoogleService-Info.plist
           gem install xcodeproj
           ruby scripts/add-google-service-ios.rb
+
+      - name: Update test app version
+        uses: maierj/fastlane-action@v3.1.0
+        with:
+          lane: update_expo_test_app_version
+          subdirectory: test-app
 
       - name: Build iOS app with fastlane
         uses: maierj/fastlane-action@v3.1.0
