@@ -9,7 +9,7 @@ print_blue "\nInstalling root dependencies for plugin and tests...\n"
 npm install
 
 print_blue "\nInstalling test-app dependencies...\n"
-(cd test-app && npm install)
+(cd test-app && npm run preinstall && npm install)
 
 print_blue "\nGenerating Android and iOS native projects...\n"
 (cd test-app && npx npx expo prebuild)
