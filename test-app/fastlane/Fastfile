@@ -10,15 +10,6 @@ platform :android do
     app_package_name = CredentialsManager::AppfileConfig.try_fetch_value(:package_name)
     firebase_app_id = find_firebase_app_id(app_identifier: app_package_name)
 
-    android_set_version_name(
-      version_name: get_new_app_version(),
-      gradle_file: "./android/app/build.gradle"
-    )
-    android_set_version_code(
-      version_code: get_new_build_version(),
-      gradle_file: "./android/app/build.gradle"
-    )
-
     # Build release APK using Fastlane's Gradle tool
     gradle(
       project_dir: "./android",
@@ -63,15 +54,6 @@ platform :ios do
     download_ci_code_signing_files_local
 
     xcodeproj_path = "./ios/ExpoTestApp.xcodeproj"
-
-    ios_set_version(
-      xcodeproj: xcodeproj_path,
-      version: get_new_app_version()
-    )
-    ios_set_build_number(
-      xcodeproj: xcodeproj_path,
-      build_number: get_new_build_version()
-    )
 
     update_code_signing_settings(
       use_automatic_signing: false,
@@ -142,4 +124,32 @@ platform :ios do
       google_cloud_keys_file: google_cloud_keys_file_path
     )
   end 
+end
+
+lane :update_expo_test_app_version do |values|
+  app_json_path = File.join("..", 'app.json')
+
+  unless File.exist?(app_json_path)
+    UI.user_error!("app.json not found at #{app_json_path}")
+  end
+
+  version_name = get_new_app_version()
+  version_code = get_new_build_version()
+
+  app_json_content = File.read(app_json_path)
+  app_json_data = JSON.parse(app_json_content)
+
+  # Update version name and code
+  if app_json_data.dig('expo', 'version')
+    app_json_data['expo']['version'] = version_name if app_json_data['expo']['version']
+  end
+  if app_json_data.dig('expo', 'android', 'versionCode')
+    app_json_data['expo']['android']['versionCode'] = version_code.to_i
+  end
+  if app_json_data.dig('expo', 'ios', 'buildNumber')
+    app_json_data['expo']['ios']['buildNumber'] = version_code.to_s
+  end
+
+  File.write(app_json_path, JSON.pretty_generate(app_json_data))
+  UI.message("Updated version to #{version_name} and versionCode to #{version_code} in #{app_json_path}")
 end
