@@ -140,15 +140,11 @@ lane :update_expo_test_app_version do |values|
   app_json_data = JSON.parse(app_json_content)
 
   # Update version name and code
-  if app_json_data.dig('expo', 'version')
-    app_json_data['expo']['version'] = version_name if app_json_data['expo']['version']
-  end
-  if app_json_data.dig('expo', 'android', 'versionCode')
-    app_json_data['expo']['android']['versionCode'] = version_code.to_i
-  end
-  if app_json_data.dig('expo', 'ios', 'buildNumber')
-    app_json_data['expo']['ios']['buildNumber'] = version_code.to_s
-  end
+  app_json_data['expo']['version'] = version_name if app_json_data['expo']['version']
+  app_json_data['expo']['android']['versionCode'] = version_code.to_i
+  app_json_data['expo']['ios']['buildNumber'] = version_code.to_s
+
+  UI.message("Updated app.json content #{app_json_data}")
 
   File.write(app_json_path, JSON.pretty_generate(app_json_data))
   UI.message("Updated version to #{version_name} and versionCode to #{version_code} in #{app_json_path}")
