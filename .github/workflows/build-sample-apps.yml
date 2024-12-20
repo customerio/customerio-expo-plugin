@@ -40,6 +40,12 @@ jobs:
         working-directory: test-app
         run: bundle install
 
+      - name: Update test app version # This has to happen before we generate the native app
+        uses: maierj/fastlane-action@v3.1.0
+        with:
+          lane: update_expo_test_app_version
+          subdirectory: test-app
+
       - name: Install plugin dependencies
         working-directory: plugin
         run: npm ci
@@ -89,6 +95,12 @@ jobs:
       - name: Bundle install
         working-directory: test-app
         run: bundle install
+
+      - name: Update test app version # This has to happen before we generate the native app
+        uses: maierj/fastlane-action@v3.1.0
+        with:
+          lane: update_expo_test_app_version
+          subdirectory: test-app
 
       - name: Install plugin dependencies
         working-directory: plugin
