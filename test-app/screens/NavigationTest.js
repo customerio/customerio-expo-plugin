@@ -11,7 +11,7 @@ export default function NavigationTestScreen() {
 
       // Optional cleanup logic
       return () => {
-        console.log('Leaving LabelScreen');
+        console.log('EXPO-TEST: Leaving LabelScreen');
       };
     }, [])
   );

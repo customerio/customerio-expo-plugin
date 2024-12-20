@@ -29,7 +29,10 @@
     "test": "jest",
     "setup-tests": "bash scripts/setup-test.sh",
     "cleanup": "bash scripts/cleanup-after-tests.sh",
-    "test-plugin": "npm run setup-tests && npm run test && npm run cleanup"
+    "test-plugin": "npm run setup-tests && npm run test && npm run cleanup",
+    "cleanAll": "bash scripts/clean-all.sh",
+    "buildAll": "bash scripts/build-all.sh",
+    "cleanAndBuildAll": "npm run cleanAll && npm run buildAll"
   },
   "keywords": [
     "react-native",
