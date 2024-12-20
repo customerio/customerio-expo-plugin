@@ -7,15 +7,26 @@ function runPostInstall() {
   try {
     // if react native SDK is installed
     if (fs.existsSync(reactNativePackageJsonFile)) {
-      const reactNativePackageJson = fs.readFileSync(reactNativePackageJsonFile, 'utf8');
+      const reactNativePackageJson = fs.readFileSync(
+        reactNativePackageJsonFile,
+        'utf8'
+      );
       const expoPackageJson = require(expoPackageJsonFile);
 
       const reactNativePackage = JSON.parse(reactNativePackageJson);
       reactNativePackage.expoVersion = expoPackageJson.version;
 
-      fs.writeFileSync(reactNativePackageJsonFile, JSON.stringify(reactNativePackage, null, 2));
+      fs.writeFileSync(
+        reactNativePackageJsonFile,
+        JSON.stringify(reactNativePackage, null, 2)
+      );
     }
-  } catch (error) {}
+  } catch (error) {
+    console.warn(
+      'Unable to find customerio-reactnative package.json file. Please make sure you have installed the customerio-reactnative package.',
+      error
+    );
+  }
 }
 
 exports.runPostInstall = runPostInstall;
