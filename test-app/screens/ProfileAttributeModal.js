@@ -20,7 +20,7 @@ export default function ProfileAttributeModal({ visible, onClose }) {
     }
 
     const profileAttributes = {
-      attributeName: attributeValue,
+      [attributeName]: attributeValue,
     };
     CustomerIO.setProfileAttributes(profileAttributes);
 

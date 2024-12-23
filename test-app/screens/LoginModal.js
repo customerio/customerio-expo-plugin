@@ -22,7 +22,7 @@ export default function LoginModal({ visible, onClose }) {
     CustomerIO.identify({
       userId: email,
       traits: {
-        first_name: firstName,
+        name: firstName,
         email: email,
       },
     });
