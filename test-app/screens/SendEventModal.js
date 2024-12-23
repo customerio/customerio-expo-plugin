@@ -20,7 +20,7 @@ export default function SendEventModal({ visible, onClose }) {
       return;
     }
 
-    CustomerIO.track(eventName, { propertyName: propertyValue });
+    CustomerIO.track(eventName, { [propertyName]: propertyValue });
 
     setEventName("");
     setPropertyName("");

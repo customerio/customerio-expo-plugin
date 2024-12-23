@@ -19,7 +19,7 @@ export default function DeviceAttributeModal({ visible, onClose }) {
         return;
     }
 
-    CustomerIO.setDeviceAttributes({ attributeName: attributeValue });
+    CustomerIO.setDeviceAttributes({ [attributeName]: attributeValue });
 
     setAttributeName("");
     setAttributeValue("");
