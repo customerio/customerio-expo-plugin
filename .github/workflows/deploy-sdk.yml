@@ -1,7 +1,7 @@
 name: Deploy SDK
 
 # Only run after a pull request has been merged. This is because
-# bot account runs write operations on the github repo to push a tag
+# bot account runs write operations on the github repo to push a tag.
 on:
   push:
     branches: [beta] # all branches where deployments currently occur. Make sure this list matches list of branches in  `.releaserc` file.
