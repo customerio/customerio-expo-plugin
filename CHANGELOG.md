@@ -1,3 +1,11 @@
+## [1.0.0-beta.19](https://github.com/customerio/customerio-expo-plugin/compare/1.0.0-beta.18...1.0.0-beta.19) (2024-12-24)
+
+### ⚠ BREAKING CHANGES
+
+* Data pipeline support
+
+* BREAKING CHANGE: Bump SDK version ([#192](https://github.com/customerio/customerio-expo-plugin/issues/192)) ([59a019c](https://github.com/customerio/customerio-expo-plugin/commit/59a019c286e4f08fdace36b4b1264bfc8b781ada))
+
 ## [1.0.0-beta.18](https://github.com/customerio/customerio-expo-plugin/compare/1.0.0-beta.17...1.0.0-beta.18) (2024-12-24)
 
 ### ⚠ BREAKING CHANGES
