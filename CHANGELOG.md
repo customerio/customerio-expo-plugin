@@ -1,3 +1,13 @@
+## [1.0.0-beta.18](https://github.com/customerio/customerio-expo-plugin/compare/1.0.0-beta.17...1.0.0-beta.18) (2024-12-24)
+
+### ⚠ BREAKING CHANGES
+
+* Expo as a source for Data pipelines (#190)
+
+### Features
+
+* Expo as a source for Data pipelines ([#190](https://github.com/customerio/customerio-expo-plugin/issues/190)) ([be4738d](https://github.com/customerio/customerio-expo-plugin/commit/be4738d6790edb603fe94d56d9cd4d908b81acaa))
+
 ## [1.0.0-beta.17](https://github.com/customerio/customerio-expo-plugin/compare/1.0.0-beta.16...1.0.0-beta.17) (2024-11-21)
 
 ### Features
