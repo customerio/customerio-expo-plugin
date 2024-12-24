@@ -21,4 +21,4 @@ jobs:
       - name: Unpublish NPM Version
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: npm unpublish customerio-expo-plugin@${{ github.event.inputs.version }}
+        run: ./scripts/unpublish-npm-version.sh ${{ github.event.inputs.version }}
