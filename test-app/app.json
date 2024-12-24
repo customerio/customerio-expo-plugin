@@ -1,0 +1,78 @@
+{
+  "expo": {
+    "name": "Expo Test App",
+    "slug": "expo-test-app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "buildNumber": "1",
+      "supportsTablet": true,
+      "bundleIdentifier": "io.customer.ami",
+      "entitlements": {
+        "aps-environment": "development"
+      },
+      "infoPlist": {
+        "CFBundleURLTypes": [
+          {
+            "CFBundleURLSchemes": ["expo-test-app"]
+          }
+        ]
+      }
+    },
+    "android": {
+      "versionCode": 1,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "package": "io.customer.ami",
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "data": [
+            {
+              "scheme": "expo-test-app",
+              "host": "nav-test"
+            }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "cdpApiKey": "@CDP_API_KEY@",
+      "siteId": "@SITE_ID@"
+    },
+    "plugins": [
+      [
+        "customerio-expo-plugin",
+        {
+          "android": {
+            "googleServicesFile": "./files/google-services.json",
+            "setHighPriorityPushHandler": true
+          },
+          "ios": {
+            "pushNotification": {
+              "useRichPush": true,
+              "env": {
+                "cdpApiKey": "@CDP_API_KEY@",
+                "region": "us"
+              }
+            }
+          }
+        }
+      ]
+    ]
+  }
+}

@@ -1,10 +1,12 @@
+build
+lib
+
 # Node / Yarn
 node_modules
 *.log
 .nvm
 npm-debug.log
 yarn-error.log
-*.tgz
 
 # OS X
 .DS_Store

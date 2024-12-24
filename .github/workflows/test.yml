@@ -1,6 +1,9 @@
 name: Test
 
-on: [push, pull_request]
+on:
+  pull_request:
+  push:
+    branches: [ beta, feature/* ]
 
 jobs:
   test-deploy:
@@ -11,10 +14,28 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - run: npm ci
+
+      - name: Install dependencies
+        run: npm ci
 
       - name: Compile
         run: npm run build
 
       - name: Publish test
         run: npm publish --dry-run
+
+  test-plugin:
+    name: Test unit tests for plugin
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run plugin tests
+        run: npm run test-plugin
+        

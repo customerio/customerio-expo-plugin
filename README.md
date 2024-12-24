@@ -14,9 +14,13 @@ The Expo plugin takes advantage of our [React Native SDK](https://github.com/cus
 
 After you add the plugin to your project, you'll need to install our React Native SDK and run pre-build. The plugin automatically generates and configures the necessary native code files required to make our React Native SDK to work on your project.
 
-# Getting started 
+# Getting started
 
-You'll find our [complete SDK documentation at https://customer.io/docs/sdk/expo](https://customer.io/docs/sdk/expo/). 
+You'll find our [complete SDK documentation at https://customer.io/docs/sdk/expo](https://customer.io/docs/sdk/expo/).
+
+# Local development
+
+[Here is a quick start guide to start with local development.](/local-development-readme.md)
 
 # Contributing
 
