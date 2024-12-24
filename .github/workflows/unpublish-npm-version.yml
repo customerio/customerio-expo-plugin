@@ -1,0 +1,24 @@
+name: Unpublish Expo plugin NPM Version
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'The version of the customerio-expo-plugin package to unpublish'
+        required: true
+        type: string
+
+jobs:
+  unpublish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Unpublish NPM Version
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm unpublish customerio-expo-plugin@${{ github.event.inputs.version }}
