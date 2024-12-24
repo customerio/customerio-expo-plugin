@@ -40,7 +40,7 @@
     "android"
   ],
   "repository": "https://github.com/customerio/customerio-expo-plugin",
-  "author": "ami-segun <segun@customer.io> (https://customer.io/)",
+  "author": "CustomerIO Team <win@customer.io> (https://customer.io/)",
   "bugs": {
     "url": "https://github.com/customerio/customerio-expo-plugin/issues"
   },
