@@ -2,8 +2,6 @@
 
 set -e 
 
-VERSION=$1
-
 # version in package.json has already been updated when the git tag was made. 
 # we just need to push. 
 
@@ -26,4 +24,5 @@ echo "Testing authentication. This next command should not fail and should print
 npm whoami
 echo "Authentication complete."
 
-npm unpublish customerio-expo-plugin@$VERSION
+npm unpublish customerio-expo-plugin@1.0.0-beta.18
+npm unpublish customerio-expo-plugin@1.0.0-beta.19
