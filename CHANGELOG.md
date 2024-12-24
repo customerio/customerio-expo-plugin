@@ -1,3 +1,9 @@
+## [2.0.0-beta.1](https://github.com/customerio/customerio-expo-plugin/compare/1.0.0-beta.19...2.0.0-beta.1) (2024-12-24)
+
+### Features
+
+* Commit to trigger a new release ([15cb79d](https://github.com/customerio/customerio-expo-plugin/commit/15cb79ddaecf640f1a4401b89e6a3878250d92a8))
+
 ## [1.0.0-beta.19](https://github.com/customerio/customerio-expo-plugin/compare/1.0.0-beta.18...1.0.0-beta.19) (2024-12-24)
 
 ### ⚠ BREAKING CHANGES
