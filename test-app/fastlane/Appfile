@@ -3,4 +3,4 @@ app_identifier([
   "io.customer.ami.richpush",
 ])
 
-package_name("io.customer.ami")
+package_name("io.customer.testbed.expo")

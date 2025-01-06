@@ -33,7 +33,7 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "io.customer.ami",
+      "package": "io.customer.testbed.expo",
       "intentFilters": [
         {
           "action": "VIEW",
