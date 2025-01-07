@@ -3,7 +3,7 @@ const path = require("path");
 
 const testProjectPath = path.join(__dirname, "../../test-app");
 const iosPath = path.join(testProjectPath, "ios");
-const appDelegateHeaderPath = path.join(iosPath, "ExpoTestApp/AppDelegate.h");
+const appDelegateHeaderPath = path.join(iosPath, "ExpoTestbed/AppDelegate.h");
 
 test("Plugin injects CIO imports and calls into AppDelegate.h", async () => {
   const content = await fs.readFile(appDelegateHeaderPath, "utf8");

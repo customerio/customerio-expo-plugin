@@ -4,5 +4,5 @@
 configuration("Release")
 export_method("ad-hoc")
 # scheme in XCode workspace of native iOS app
-scheme("ExpoTestApp")
-workspace("ios/ExpoTestApp.xcworkspace")
+scheme("ExpoTestbed")
+workspace("ios/ExpoTestbed.xcworkspace")

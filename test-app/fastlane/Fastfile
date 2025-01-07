@@ -53,7 +53,7 @@ platform :ios do
 
     download_ci_code_signing_files_local
 
-    xcodeproj_path = "./ios/ExpoTestApp.xcodeproj"
+    xcodeproj_path = "./ios/ExpoTestbed.xcodeproj"
 
     update_code_signing_settings(
       use_automatic_signing: false,
@@ -62,14 +62,14 @@ platform :ios do
 
     update_project_provisioning(
       xcodeproj: xcodeproj_path,
-      target_filter: "ExpoTestApp",
-      profile: "/Users/runner/Library/MobileDevice/Provisioning Profiles/ad21ce7c-1f32-40df-a2f4-919c0be79e44.mobileprovision"
+      target_filter: "ExpoTestbed",
+      profile: "/Users/runner/Library/MobileDevice/Provisioning Profiles/d3cc77cc-5db1-407e-8d0c-1be8adcfe21f.mobileprovision"
     )
 
     update_project_provisioning(
       xcodeproj: xcodeproj_path,
       target_filter: "NotificationService",
-      profile: "/Users/runner/Library/MobileDevice/Provisioning Profiles/c1055dbd-7028-4b54-a22d-807211e19f05.mobileprovision"
+      profile: "/Users/runner/Library/MobileDevice/Provisioning Profiles/58de181b-adc5-4ac2-ae96-13139f8c72db.mobileprovision"
     )
 
     update_project_team(
@@ -78,8 +78,8 @@ platform :ios do
     )
 
     gym(
-      scheme: "ExpoTestApp",
-      workspace: "ios/ExpoTestApp.xcworkspace",
+      scheme: "ExpoTestbed",
+      workspace: "ios/ExpoTestbed.xcworkspace",
       export_method: "ad-hoc",
       configuration: "Release",
       codesigning_identity: "Apple Distribution: Peaberry Software, Inc. (2YC97BQN3N)",

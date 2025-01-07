@@ -9,7 +9,7 @@ exports[`Plugin injects CIO imports and calls into AppDelegate.mm 1`] = `
 
 // Add swift bridge imports
 #import <ExpoModulesCore-Swift.h>
-#import <ExpoTestApp-Swift.h>
+#import <ExpoTestbed-Swift.h>
   
 #import "AppDelegate.h"
 

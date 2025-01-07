@@ -1,8 +1,8 @@
 require 'xcodeproj'
 
-project_path = 'test-app/ios/ExpoTestApp.xcodeproj'
+project_path = 'test-app/ios/ExpoTestbed.xcodeproj'
 google_service_plist_path = 'GoogleService-Info.plist'
-target_name = 'ExpoTestApp'
+target_name = 'ExpoTestbed'
 
 # Open the Xcode project
 project = Xcodeproj::Project.open(project_path)
