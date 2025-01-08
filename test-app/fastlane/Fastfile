@@ -60,16 +60,22 @@ platform :ios do
       path: xcodeproj_path
     )
 
+    # We use sync_code_signing Fastlane to download certificates https://docs.fastlane.tools/actions/sync_code_signing/
+    # This internally uses sigh and it sets environment variables for provisioning profiles paths
+    # The format is sign_<bundle-id>_<type>_profile-path
+    # This makes sure that if signing files are recreated, they are picked up dynamically without having
+    # to update them manually
+
     update_project_provisioning(
       xcodeproj: xcodeproj_path,
       target_filter: "ExpoTestbed",
-      profile: "/Users/runner/Library/MobileDevice/Provisioning Profiles/d3cc77cc-5db1-407e-8d0c-1be8adcfe21f.mobileprovision"
+      profile: ENV["sigh_io.customer.testbed.expo.apn_adhoc_profile-path"]
     )
 
     update_project_provisioning(
       xcodeproj: xcodeproj_path,
       target_filter: "NotificationService",
-      profile: "/Users/runner/Library/MobileDevice/Provisioning Profiles/58de181b-adc5-4ac2-ae96-13139f8c72db.mobileprovision"
+      profile: ENV["sigh_io.customer.testbed.expo.apn.richpush_adhoc_profile-path"]
     )
 
     update_project_team(
@@ -82,16 +88,7 @@ platform :ios do
       workspace: "ios/ExpoTestbed.xcworkspace",
       export_method: "ad-hoc",
       configuration: "Release",
-      codesigning_identity: "Apple Distribution: Peaberry Software, Inc. (2YC97BQN3N)",
-      export_options: {
-        provisioningProfiles: {
-          "io.customer.ami" => "match AdHoc io.customer.ami",
-          "io.customer.ami.richpush" => "match AdHoc io.customer.ami.richpush"
-        },
-        signingStyle: "manual",
-        teamID: "2YC97BQN3N"
-      },
-      export_xcargs: "-allowProvisioningUpdates CODE_SIGN_IDENTITY='Apple Distribution: Peaberry Software, Inc. (2YC97BQN3N)'"
+      codesigning_identity: "Apple Distribution: Peaberry Software, Inc. (2YC97BQN3N)"
     )
 
     # function 'setup_google_bucket_access' is a re-usable function inside of apple-code-signing Fastfile that we imported.

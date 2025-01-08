@@ -90,9 +90,9 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace 'io.customer.ami'
+    namespace 'io.customer.testbed.expo'
     defaultConfig {
-        applicationId 'io.customer.ami'
+        applicationId 'io.customer.testbed.expo'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

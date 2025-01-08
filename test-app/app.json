@@ -15,7 +15,7 @@
     "ios": {
       "buildNumber": "1",
       "supportsTablet": true,
-      "bundleIdentifier": "io.customer.ami",
+      "bundleIdentifier": "io.customer.testbed.expo.apn",
       "entitlements": {
         "aps-environment": "development"
       },
@@ -33,7 +33,7 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "io.customer.ami",
+      "package": "io.customer.testbed.expo",
       "intentFilters": [
         {
           "action": "VIEW",
