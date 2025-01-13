@@ -28,22 +28,24 @@ jobs:
           java-version: "17"
       
       - name: Set Default Firebase Distribution Groups
+        shell: bash
+        env:
+          # Distribution group constants
+          ALL_BUILDS_GROUP: all-builds
+          FEATURE_BUILDS_GROUP: feature-branch
+          NEXT_BUILDS_GROUP: next
+          PUBLIC_BUILDS_GROUP: public
+          # Input variables
+          CURRENT_BRANCH: ${{ github.ref }}
         run: |
-          # Define all the possible distribution groups
-          ALL_BUILDS_GROUP="all-builds"
-          FEATURE_BUILDS_GROUP="feature-branch"
-          STABLE_BUILDS_GROUP="next"
-          
           # Initialize with the default distribution group
           distribution_groups=("$ALL_BUILDS_GROUP")
-          
-          # Determine current app type and Git context
-          current_branch="${GITHUB_REF}"
-          
-          # Append distribution groups based on branch and context
-          [[ "$current_branch" == "refs/heads/feature/"* ]] && distribution_groups+=("$FEATURE_BUILDS_GROUP")
-          [[ "$current_branch" == "refs/heads/main" ]] && distribution_groups+=("$STABLE_BUILDS_GROUP")
-          
+
+          # Determine current app type and git context
+          [[ "$CURRENT_BRANCH" == "refs/heads/feature/"* ]] && distribution_groups+=("$FEATURE_BUILDS_GROUP")
+          [[ "$CURRENT_BRANCH" == "refs/heads/main" ]] && distribution_groups+=("$NEXT_BUILDS_GROUP")
+          [[ "$CURRENT_BRANCH" == "refs/heads/main" ]] && distribution_groups+=("$PUBLIC_BUILDS_GROUP")
+
           # Export the groups as an environment variable
           echo "firebase_distribution_groups=$(IFS=','; echo "${distribution_groups[*]}")" >> $GITHUB_ENV
 
