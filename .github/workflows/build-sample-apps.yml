@@ -27,6 +27,28 @@ jobs:
           distribution: "temurin"
           java-version: "17"
       
+      - name: Set Default Firebase Distribution Groups
+        shell: bash
+        env:
+          # Distribution group constants
+          ALL_BUILDS_GROUP: all-builds
+          FEATURE_BUILDS_GROUP: feature-branch
+          NEXT_BUILDS_GROUP: next
+          PUBLIC_BUILDS_GROUP: public
+          # Input variables
+          CURRENT_BRANCH: ${{ github.ref }}
+        run: |
+          # Initialize with the default distribution group
+          distribution_groups=("$ALL_BUILDS_GROUP")
+
+          # Determine current app type and git context
+          [[ "$CURRENT_BRANCH" == "refs/heads/feature/"* ]] && distribution_groups+=("$FEATURE_BUILDS_GROUP")
+          [[ "$CURRENT_BRANCH" == "refs/heads/main" ]] && distribution_groups+=("$NEXT_BUILDS_GROUP")
+          [[ "$CURRENT_BRANCH" == "refs/heads/main" ]] && distribution_groups+=("$PUBLIC_BUILDS_GROUP")
+
+          # Export the groups as an environment variable
+          echo "firebase_distribution_groups=$(IFS=','; echo "${distribution_groups[*]}")" >> $GITHUB_ENV
+
       - name: Install tools from Gemfile (ruby language) used for building our apps with
         uses: ruby/setup-ruby@v1
         with:
@@ -63,6 +85,7 @@ jobs:
         with:
           lane: android build
           subdirectory: test-app
+          options: '{"distribution_groups": "${{ env.firebase_distribution_groups }}"}'
         env:
           FIREBASE_APP_DISTRIBUTION_SERVICE_ACCOUNT_CREDS_B64: ${{ secrets.FIREBASE_APP_DISTRIBUTION_SERVICE_ACCOUNT_CREDS_B64 }}
 
@@ -125,6 +148,7 @@ jobs:
         with:
           lane: ios build_ios
           subdirectory: test-app
+          options: '{"distribution_groups": "${{ env.firebase_distribution_groups }}"}'
         env:
           GOOGLE_CLOUD_MATCH_READONLY_SERVICE_ACCOUNT_B64: ${{ secrets.GOOGLE_CLOUD_MATCH_READONLY_SERVICE_ACCOUNT_B64 }}
           FIREBASE_APP_DISTRIBUTION_SERVICE_ACCOUNT_CREDS_B64: ${{ secrets.FIREBASE_APP_DISTRIBUTION_SERVICE_ACCOUNT_CREDS_B64 }}

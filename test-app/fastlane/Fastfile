@@ -41,7 +41,7 @@ platform :android do
       apk_path: distribution_apk_path,
       app: firebase_app_id,
       service_credentials_file: service_credentials_file_path,
-      groups: get_build_test_groups(),
+      groups: get_build_test_groups(distribution_groups: values[:distribution_groups]),
       release_notes: get_build_notes()
     )
   end
@@ -101,7 +101,7 @@ platform :ios do
 
     firebase_app_distribution(
       service_credentials_file: service_credentials_file_path,
-      groups: get_build_test_groups(),
+      groups: get_build_test_groups(distribution_groups: arguments[:distribution_groups]),
       release_notes: get_build_notes()
     )
   end
