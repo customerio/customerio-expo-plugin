@@ -9,7 +9,6 @@
     "allowUnusedLabels": false,
     "esModuleInterop": true,
     "importsNotUsedAsValues": "error",
-    "jsx": "react-native",
     "forceConsistentCasingInFileNames": true,
     "lib": ["esnext"],
     "module": "esnext",
