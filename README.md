@@ -107,13 +107,12 @@ const clearUserExample = async () => {
 
 1. Configure push notifications for iOS and Android. Update your `app.json` file with the following configuration:
 
-```json
+```js
 {
     "expo": {
     ...Other options
     "plugins": [
         ...other plugins,
-        // Expo plugins are either a string with the name of the plugin or an array with the name of the pluging as the first element and the options as the second element. Installing the plugin will add it as a string, so you need to wrap it in an array to add the push notification options.
         [ 
             "customerio-expo-plugin",
             {
@@ -125,7 +124,7 @@ const clearUserExample = async () => {
                         "useRichPush": true,
                         "env": {
                             "cdpApiKey": "<CDP API KEY>",
-                            "region": "us" // uss or eu
+                            "region": "us" // us or eu
                         }
                     }
                 }
