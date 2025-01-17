@@ -14,7 +14,7 @@ The Expo plugin takes advantage of our [React Native SDK](https://github.com/cus
 
 # Getting started
 
-You'll find our [complete SDK documentation at https://customer.io/docs/sdk/expo](https://customer.io/docs/sdk/expo/), but here's a quick start guide to get you up and running.
+You'll find our [complete SDK documentation at https://customer.io/docs/sdk/expo](https://customer.io/docs/sdk/expo/), but here's a quick start guide to get you up and running. You can also find an example project [here](/example-projects/cio-expo-sdk-getting-started).
 
 ### Table of Contents
 1. [Base Setup](#base-setup)
