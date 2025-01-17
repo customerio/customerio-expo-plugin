@@ -110,27 +110,27 @@ const clearUserExample = async () => {
 ```js
 {
     "expo": {
-    ...Other options
-    "plugins": [
-        ...other plugins,
-        [ 
-            "customerio-expo-plugin",
-            {
-                "android": {
-                    "googleServicesFile": "./files/google-services.json"
-                },
-                "ios": {
-                    "pushNotification": {
-                        "useRichPush": true,
-                        "env": {
-                            "cdpApiKey": "<CDP API KEY>",
-                            "region": "us" // us or eu
+        ...Other options
+        "plugins": [
+            ...other plugins,
+            [ 
+                "customerio-expo-plugin",
+                {
+                    "android": {
+                        "googleServicesFile": "./files/google-services.json"
+                    },
+                    "ios": {
+                        "pushNotification": {
+                            "useRichPush": true,
+                            "env": {
+                                "cdpApiKey": "<CDP API KEY>",
+                                "region": "us" // us or eu
+                            }
                         }
                     }
                 }
-            }
+            ]
         ]
-    ]
     }
 }
 ```
