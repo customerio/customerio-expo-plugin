@@ -137,8 +137,8 @@ const clearUserExample = async () => {
 ```
 
 2. Upload your push upload the needed information in the [Customer.io Dashboard](https://fly.customer.io/) in your workspace settings, under push notifications.
-* iOS - Your Apple Push Notification certificates if using Apple's Push Notification service or your server key json file for Android if using Firebase Cloud Messaging.
-* Android - Your server key json file for Android if using Firebase Cloud Messaging.
+    * iOS - Your Apple Push Notification certificates if using Apple's Push Notification service.
+    * Android - Your server key json file if using Firebase Cloud Messaging.
 
 ### In-App
 
