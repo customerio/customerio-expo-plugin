@@ -60,6 +60,9 @@ useEffect(() => {
 }, []);
 ```
 
+4. To run your application you will need to run the native app with `npx expo run:ios` or `npx expo run:android` instead of using the dev server via `npx expo start`. This is because the plugin needs to build the native files to be able to send push notifications and in-app messages.
+
+
 ### Identify and Track
 
 1. Identify a user in your app using the `identifyUser` method:
