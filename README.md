@@ -29,7 +29,7 @@ You'll find our [complete SDK documentation at https://customer.io/docs/sdk/expo
 ```bash
 npx expo install customerio-reactnative customerio-expo-plugin
 ```
-You currently must also add the push notification options to your `app.json` file to build the native files, even if you don't use push notifications in your app.
+You currently must also add the push notification options to your `app.json` file to build the native files, even if you don't use push notifications in your app. See [Push Notifications](#push-notifications) for more information.
 ```bash
 npx expo prebuild
 ```
