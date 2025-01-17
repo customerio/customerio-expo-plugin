@@ -29,6 +29,7 @@ You'll find our [complete SDK documentation at https://customer.io/docs/sdk/expo
 ```bash
 npx expo install customerio-reactnative customerio-expo-plugin
 ```
+You currently must also add the push notification options to your `app.json` file to build the native files, even if you don't use push notifications in your app.
 ```bash
 npx expo prebuild
 ```
@@ -117,16 +118,16 @@ const clearUserExample = async () => {
             "customerio-expo-plugin",
             {
                 "android": {
-                "googleServicesFile": "./files/google-services.json"
+                    "googleServicesFile": "./files/google-services.json"
                 },
                 "ios": {
-                "pushNotification": {
-                    "useRichPush": true,
-                    "env": {
-                    "cdpApiKey": "22490363f70e7d927208",
-                    "region": "us"
+                    "pushNotification": {
+                        "useRichPush": true,
+                        "env": {
+                            "cdpApiKey": "<CDP API KEY>",
+                            "region": "us" // uss or eu
+                        }
                     }
-                }
                 }
             }
         ]
