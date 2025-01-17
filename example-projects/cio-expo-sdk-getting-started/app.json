@@ -9,13 +9,15 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.anonymous.cioexposdkgettingstarted"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "package": "com.anonymous.cioexposdkgettingstarted"
     },
     "web": {
       "bundler": "metro",
@@ -31,6 +33,23 @@
           "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
+        }
+      ],
+      [
+        "customerio-expo-plugin",
+        {
+          "android": {
+            "googleServicesFile": "./files/google-services.json"
+          },
+          "ios": {
+            "pushNotification": {
+              "useRichPush": true,
+              "env": {
+                "cdpApiKey": "<CDP API KEY>",
+                "region": "us"
+              }
+            }
+          }
         }
       ]
     ],
