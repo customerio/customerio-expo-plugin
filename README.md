@@ -34,7 +34,8 @@ You currently must also add the push notification options to your `app.json` fil
 npx expo prebuild
 ```
 
-2. Add the CDP API key and site ID to your `.env` file:
+2. Add the CDP API key and site ID to your `.env` file. Login into your [Customer.io Dashboard](https://fly.customer.io/), to get your CDP API key and site ID.
+
 ```
 EXPO_PUBLIC_CDP_API_KEY=<CDP API KEY>
 EXPO_PUBLIC_SITE_ID=<SITE ID>
@@ -134,6 +135,10 @@ const clearUserExample = async () => {
     }
 }
 ```
+
+2. Upload your push upload the needed information in the [Customer.io Dashboard](https://fly.customer.io/) in your workspace settings, under push notifications.
+* iOS - Your Apple Push Notification certificates if using Apple's Push Notification service or your server key json file for Android if using Firebase Cloud Messaging.
+* Android - Your server key json file for Android if using Firebase Cloud Messaging.
 
 ### In-App
 
