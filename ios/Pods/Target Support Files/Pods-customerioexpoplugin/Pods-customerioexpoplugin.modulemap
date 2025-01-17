@@ -1,6 +1,0 @@
-module Pods_customerioexpoplugin {
-  umbrella header "Pods-customerioexpoplugin-umbrella.h"
-
-  export *
-  module * { export * }
-}
