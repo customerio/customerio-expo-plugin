@@ -27,9 +27,9 @@
     "prepare": "npm run clean && bob build",
     "postinstall": "node plugin/src/postInstall.js",
     "test": "jest",
-    "setup-tests": "bash scripts/setup-test.sh",
+    "setup-test-app": "bash scripts/setup-test-app.sh",
     "cleanup": "bash scripts/cleanup-after-tests.sh",
-    "test-plugin": "npm run setup-tests && npm run test && npm run cleanup",
+    "test-plugin": "npm run setup-test-app && npm run test && npm run cleanup",
     "cleanAll": "bash scripts/clean-all.sh",
     "buildAll": "bash scripts/build-all.sh",
     "cleanAndBuildAll": "npm run cleanAll && npm run buildAll"
