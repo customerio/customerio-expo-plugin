@@ -22,7 +22,7 @@ const BuildMetadata = {
     const siteId = resolveValidOrElse(extras.siteId, () => 'Failed to load!');
 
     return `
-      CDP API Key: ${cdpApiKey} \tSite ID: ${siteId}'
+      CDP API Key: ${cdpApiKey} \tSite ID: ${siteId}
       Plugin Version: ${this.pluginVersion}
       SDK Version: ${this.sdkVersion} \tApp Version: ${this.appVersion}
       Build Date: ${this.buildDate}
