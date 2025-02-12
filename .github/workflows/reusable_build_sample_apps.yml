@@ -101,7 +101,7 @@ jobs:
           COMMIT_HASH: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
         run: |
           APP_JSON_FILE="test-app/app.json"
-          sd "\"buildTimestamp\": .*" "buildTimestamp: $(date +%s)," "$APP_JSON_FILE"
+          sd "\"buildTimestamp\": .*" "\"buildTimestamp\": $(date +%s)," "$APP_JSON_FILE"
           sd "\"cdpApiKey\".*" "\"cdpApiKey\": \"${{ secrets.CUSTOMERIO_EXPO_WORKSPACE_CDP_API_KEY }}\"," "$APP_JSON_FILE"
           sd "\"siteId\".*" "\"siteId\": \"${{ secrets.CUSTOMERIO_EXPO_WORKSPACE_SITE_ID }}\"," "$APP_JSON_FILE"
           sd "\"workspaceName\".*" "\"workspaceName\": \"Mobile: Expo\"," "$APP_JSON_FILE"
