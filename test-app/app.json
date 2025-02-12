@@ -52,7 +52,12 @@
     },
     "extra": {
       "cdpApiKey": "@CDP_API_KEY@",
-      "siteId": "@SITE_ID@"
+      "siteId": "@SITE_ID@",
+      "workspaceName": "@WORKSPACE_NAME@",
+      "buildTimestamp": "@BUILD_TIMESTAMP@",
+      "branchName": "@BRANCH_NAME@",
+      "commitHash": "@COMMIT_HASH@",
+      "commitsAheadCount": "@COMMITS_AHEAD_COUNT@"
     },
     "plugins": [
       [
