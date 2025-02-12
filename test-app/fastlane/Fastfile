@@ -130,7 +130,7 @@ lane :update_expo_test_app_version do |values|
     UI.user_error!("app.json not found at #{app_json_path}")
   end
 
-  version_name = get_new_app_version()
+  version_name = values[:sdk_version] || get_new_app_version()
   version_code = get_new_build_version()
 
   app_json_content = File.read(app_json_path)

@@ -1,0 +1,11 @@
+name: Publish test apps for SDK release
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-sample-apps:
+    uses: ./.github/workflows/reusable_build_sample_apps.yml
+    with:
+      use_latest_sdk_version: true
+    secrets: inherit
