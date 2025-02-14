@@ -11,6 +11,7 @@ import SendEventModal from './SendEventModal';
 import DeviceAttributeModal from './DeviceAttributesModal';
 import ProfileAttributeModal from './ProfileAttributeModal';
 import { CustomerIO } from 'customerio-reactnative';
+import { BuildMetadata } from '../helpers/BuildMetadata';
 
 export default function DashboardScreen({ navigation }) {
   useEffect(() => {
@@ -24,10 +25,7 @@ export default function DashboardScreen({ navigation }) {
   const [profileAttributeModalVisible, setProfileAttributeModalVisible] =
     useState(false);
 
-  const cdpApiKey = Constants.expoConfig?.extra?.cdpApiKey || 'Failed to load!';
-  const siteId = Constants.expoConfig?.extra?.siteId || 'Failed to load!';
-  const workspaceInfo =
-    'CDP API Key: ' + cdpApiKey + '\n' + 'Site ID: ' + siteId;
+  const workspaceInfo = BuildMetadata.toString();
 
   const handleRequestPushPermissionButtonPressed = () => {
     requestPermissionForPush();
@@ -140,7 +138,7 @@ export default function DashboardScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
     alignItems: 'center',
     padding: 20,
   },

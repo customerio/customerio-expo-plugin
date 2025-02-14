@@ -96,9 +96,20 @@ jobs:
         run: npm run setup-test-app
 
       - name: Setup CIO workspace credentials in test apps config
+        env:
+          BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
+          COMMIT_HASH: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
         run: |
-          sd '@CDP_API_KEY@' "${{ secrets.CUSTOMERIO_EXPO_WORKSPACE_CDP_API_KEY }}" test-app/app.json
-          sd '@SITE_ID@' "${{ secrets.CUSTOMERIO_EXPO_WORKSPACE_SITE_ID }}" test-app/app.json
+          APP_JSON_FILE="test-app/app.json"
+          sd "\"buildTimestamp\": .*" "\"buildTimestamp\": $(date +%s)," "$APP_JSON_FILE"
+          sd "\"cdpApiKey\".*" "\"cdpApiKey\": \"${{ secrets.CUSTOMERIO_EXPO_WORKSPACE_CDP_API_KEY }}\"," "$APP_JSON_FILE"
+          sd "\"siteId\".*" "\"siteId\": \"${{ secrets.CUSTOMERIO_EXPO_WORKSPACE_SITE_ID }}\"," "$APP_JSON_FILE"
+          sd "\"workspaceName\".*" "\"workspaceName\": \"Mobile: Expo\"," "$APP_JSON_FILE"
+          sd "\"branchName\".*" "\"branchName\": \"$BRANCH_NAME\"," "$APP_JSON_FILE"
+          sd "\"commitHash\".*" "\"commitHash\": \"${COMMIT_HASH:0:7}\"," "$APP_JSON_FILE"
+          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "untagged")
+          COMMITS_AHEAD=$(git rev-list $LAST_TAG..HEAD --count 2>/dev/null || echo "untracked")
+          sd "\"commitsAheadCount\".*" "\"commitsAheadCount\": \"$COMMITS_AHEAD\"," "$APP_JSON_FILE"
 
       - name: Build Android app with fastlane
         uses: maierj/fastlane-action@v3.1.0
