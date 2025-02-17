@@ -22,13 +22,16 @@ const BuildMetadata = {
     const siteId = resolveValidOrElse(extras.siteId, () => 'Failed to load!');
 
     return `
-      CDP API Key: ${cdpApiKey} \tSite ID: ${siteId}
+      CDP API Key: ${cdpApiKey}
+      Site ID: ${siteId}
       Plugin Version: ${this.pluginVersion}
-      SDK Version: ${this.sdkVersion} \tApp Version: ${this.appVersion}
+      RN SDK Version: ${this.sdkVersion}
+      App Version: ${this.appVersion}
       Build Date: ${this.buildDate}
       Branch: ${this.gitMetadata}
       Default Workspace: ${this.defaultWorkspace}
-      Language: ${this.language} \tUI Framework: ${this.uiFramework}
+      Language: ${this.language}
+      UI Framework: ${this.uiFramework}
       SDK Integration: ${this.sdkIntegration}
     `;
   },
