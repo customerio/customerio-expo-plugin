@@ -31,6 +31,15 @@ jobs:
           distribution: "temurin"
           java-version: "17"
       
+      - name: Capture Git Context
+        shell: bash
+        id: git-context
+        run: |
+          echo "BRANCH_NAME=${{ github.head_ref || github.ref_name }}" >> $GITHUB_ENV
+          COMMIT_HASH="${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}"
+          echo "COMMIT_HASH=${COMMIT_HASH:0:7}" >> $GITHUB_ENV
+          echo "LATEST_TAG=$(git describe --tags --abbrev=0)" >> $GITHUB_ENV
+
       - name: Set Default Firebase Distribution Groups
         shell: bash
         env:
@@ -54,18 +63,11 @@ jobs:
           # Export the groups as an environment variable
           echo "firebase_distribution_groups=$(IFS=','; echo "${distribution_groups[*]}")" >> $GITHUB_ENV
 
-      - name: Get latest SDK version
-        if: ${{ inputs.use_latest_sdk_version == true }}
-        id: latest-sdk-version-step
-        run: |
-          latest_tag=$(git describe --tags --abbrev=0)
-          echo "LATEST_TAG=$latest_tag" >> "$GITHUB_OUTPUT"
-        
       - name: Setup local.env file for sample app
         if: ${{ inputs.use_latest_sdk_version == true }}
         run: |
           touch "test-app/local.env"
-          echo "sdkVersion=${{ steps.latest-sdk-version-step.outputs.LATEST_TAG }}" >> "test-app/local.env"
+          echo "sdkVersion=${{ env.LATEST_TAG }}" >> "test-app/local.env"
 
       - name: Install tools from Gemfile (ruby language) used for building our apps with
         uses: ruby/setup-ruby@v1
@@ -85,7 +87,7 @@ jobs:
         with:
           lane: update_expo_test_app_version
           subdirectory: test-app
-          options: ${{ inputs.use_latest_sdk_version == true && format('{{"sdk_version":"{0}"}}', steps.latest-sdk-version-step.outputs.LATEST_TAG) || '' }}
+          options: ${{ inputs.use_latest_sdk_version == true && format('{{"sdk_version":"{0}"}}', env.LATEST_TAG) || '' }}
 
       - name: Install plugin dependencies
         working-directory: plugin
@@ -95,22 +97,20 @@ jobs:
         run: npm run setup-test-app
 
       - name: Setup CIO workspace credentials in test apps config
-        env:
-          BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
-          COMMIT_HASH: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
         run: |
           APP_JSON_FILE="test-app/app.json"
           sd "\"buildTimestamp\": .*" "\"buildTimestamp\": $(date +%s)," "$APP_JSON_FILE"
           sd "\"cdpApiKey\".*" "\"cdpApiKey\": \"${{ secrets.CUSTOMERIO_EXPO_WORKSPACE_CDP_API_KEY }}\"," "$APP_JSON_FILE"
           sd "\"siteId\".*" "\"siteId\": \"${{ secrets.CUSTOMERIO_EXPO_WORKSPACE_SITE_ID }}\"," "$APP_JSON_FILE"
           sd "\"workspaceName\".*" "\"workspaceName\": \"Mobile: Expo\"," "$APP_JSON_FILE"
-          sd "\"branchName\".*" "\"branchName\": \"$BRANCH_NAME\"," "$APP_JSON_FILE"
-          sd "\"commitHash\".*" "\"commitHash\": \"${COMMIT_HASH:0:7}\"," "$APP_JSON_FILE"
-          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "untagged")
+          sd "\"branchName\".*" "\"branchName\": \"${{ env.BRANCH_NAME }}\"," "$APP_JSON_FILE"
+          sd "\"commitHash\".*" "\"commitHash\": \"${{ env.COMMIT_HASH }}\"," "$APP_JSON_FILE"
+          LAST_TAG="${LATEST_TAG:-untagged}"
           COMMITS_AHEAD=$(git rev-list $LAST_TAG..HEAD --count 2>/dev/null || echo "untracked")
           sd "\"commitsAheadCount\".*" "\"commitsAheadCount\": \"$COMMITS_AHEAD\"," "$APP_JSON_FILE"
 
       - name: Build Android app with fastlane
+        id: android_build
         uses: maierj/fastlane-action@v3.1.0
         with:
           lane: android build
@@ -118,6 +118,23 @@ jobs:
           options: '{"distribution_groups": "${{ env.firebase_distribution_groups }}"}'
         env:
           FIREBASE_APP_DISTRIBUTION_SERVICE_ACCOUNT_CREDS_B64: ${{ secrets.FIREBASE_APP_DISTRIBUTION_SERVICE_ACCOUNT_CREDS_B64 }}
+
+      - name: Send Slack Notification for Sample App Builds (Android)
+        if: ${{ always() }}
+        uses: customerio/mobile-ci-tools/github-actions/slack-notify-sample-app/v1
+        with:
+          build_status: ${{ steps.android_build.outcome }}
+          app_icon_emoji: ":expo:"
+          app_name: "Expo"
+          firebase_app_id: ${{ secrets.SAMPLE_APP_FIREBASE_APP_ID_ANDROID }}
+          firebase_distribution_groups: ${{ env.firebase_distribution_groups }}
+          git_context: "${{ env.BRANCH_NAME }} (${{ env.COMMIT_HASH }})"
+          icon_url: "https://logos-download.com/wp-content/uploads/2021/01/Expo_Logo.png"
+          instructions_guide_link: ${{ secrets.SAMPLE_APPS_INSTRUCTIONS_GUIDE_LINK }}
+          platform: "android"
+          sdk_name: "Expo Plugin"
+          sdk_version: ${{ env.LATEST_TAG }}
+          slack_webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
 
   build-ios-app:
     name: Build and publish iOS app
@@ -134,6 +151,15 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
+
+      - name: Capture Git Context
+        shell: bash
+        id: git-context
+        run: |
+          echo "BRANCH_NAME=${{ github.head_ref || github.ref_name }}" >> $GITHUB_ENV
+          COMMIT_HASH="${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}"
+          echo "COMMIT_HASH=${COMMIT_HASH:0:7}" >> $GITHUB_ENV
+          echo "LATEST_TAG=$(git describe --tags --abbrev=0)" >> $GITHUB_ENV
 
       - name: Set Default Firebase Distribution Groups
         shell: bash
@@ -158,18 +184,11 @@ jobs:
           # Export the groups as an environment variable
           echo "firebase_distribution_groups=$(IFS=','; echo "${distribution_groups[*]}")" >> $GITHUB_ENV
 
-      - name: Get latest SDK version
-        if: ${{ inputs.use_latest_sdk_version == true }}
-        id: latest-sdk-version-step
-        run: |
-          latest_tag=$(git describe --tags --abbrev=0)
-          echo "LATEST_TAG=$latest_tag" >> "$GITHUB_OUTPUT"
-        
       - name: Setup local.env file for sample app
         if: ${{ inputs.use_latest_sdk_version == true }}
         run: |
           touch "test-app/local.env"
-          echo "sdkVersion=${{ steps.latest-sdk-version-step.outputs.LATEST_TAG }}" >> "test-app/local.env"
+          echo "sdkVersion=${{ env.LATEST_TAG }}" >> "test-app/local.env"
 
       - name: Install XCode
         uses: maxim-lobanov/setup-xcode@v1
@@ -194,7 +213,7 @@ jobs:
         with:
           lane: update_expo_test_app_version
           subdirectory: test-app
-          options: ${{ inputs.use_latest_sdk_version == true && format('{{"sdk_version":"{0}"}}', steps.latest-sdk-version-step.outputs.LATEST_TAG) || '' }}
+          options: ${{ inputs.use_latest_sdk_version == true && format('{{"sdk_version":"{0}"}}', env.LATEST_TAG) || '' }}
 
       - name: Install plugin dependencies
         working-directory: plugin
@@ -213,9 +232,9 @@ jobs:
           sd "\"cdpApiKey\".*" "\"cdpApiKey\": \"${{ secrets.CUSTOMERIO_EXPO_WORKSPACE_CDP_API_KEY }}\"," "$APP_JSON_FILE"
           sd "\"siteId\".*" "\"siteId\": \"${{ secrets.CUSTOMERIO_EXPO_WORKSPACE_SITE_ID }}\"," "$APP_JSON_FILE"
           sd "\"workspaceName\".*" "\"workspaceName\": \"Mobile: Expo\"," "$APP_JSON_FILE"
-          sd "\"branchName\".*" "\"branchName\": \"$BRANCH_NAME\"," "$APP_JSON_FILE"
-          sd "\"commitHash\".*" "\"commitHash\": \"${COMMIT_HASH:0:7}\"," "$APP_JSON_FILE"
-          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "untagged")
+          sd "\"branchName\".*" "\"branchName\": \"${{ env.BRANCH_NAME }}\"," "$APP_JSON_FILE"
+          sd "\"commitHash\".*" "\"commitHash\": \"${{ env.COMMIT_HASH }}\"," "$APP_JSON_FILE"
+          LAST_TAG="${LATEST_TAG:-untagged}"
           COMMITS_AHEAD=$(git rev-list $LAST_TAG..HEAD --count 2>/dev/null || echo "untracked")
           sd "\"commitsAheadCount\".*" "\"commitsAheadCount\": \"$COMMITS_AHEAD\"," "$APP_JSON_FILE"
 
@@ -226,6 +245,7 @@ jobs:
           ruby scripts/add-google-service-ios.rb
 
       - name: Build iOS app with fastlane
+        id: ios_build
         uses: maierj/fastlane-action@v3.1.0
         with:
           lane: ios build_ios
@@ -234,3 +254,20 @@ jobs:
         env:
           GOOGLE_CLOUD_MATCH_READONLY_SERVICE_ACCOUNT_B64: ${{ secrets.GOOGLE_CLOUD_MATCH_READONLY_SERVICE_ACCOUNT_B64 }}
           FIREBASE_APP_DISTRIBUTION_SERVICE_ACCOUNT_CREDS_B64: ${{ secrets.FIREBASE_APP_DISTRIBUTION_SERVICE_ACCOUNT_CREDS_B64 }}
+
+      - name: Send Slack Notification for Sample App Builds (Android)
+        if: ${{ always() }}
+        uses: customerio/mobile-ci-tools/github-actions/slack-notify-sample-app/v1
+        with:
+          build_status: ${{ steps.ios_build.outcome }}
+          app_icon_emoji: ":expo:"
+          app_name: "Expo"
+          firebase_app_id: ${{ secrets.SAMPLE_APP_FIREBASE_APP_ID_IOS }}
+          firebase_distribution_groups: ${{ env.firebase_distribution_groups }}
+          git_context: "${{ env.BRANCH_NAME }} (${{ env.COMMIT_HASH }})"
+          icon_url: "https://logos-download.com/wp-content/uploads/2021/01/Expo_Logo.png"
+          instructions_guide_link: ${{ secrets.SAMPLE_APPS_INSTRUCTIONS_GUIDE_LINK }}
+          platform: "ios"
+          sdk_name: "Expo Plugin"
+          sdk_version: ${{ env.LATEST_TAG }}
+          slack_webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
