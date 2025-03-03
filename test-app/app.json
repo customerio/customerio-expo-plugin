@@ -57,7 +57,10 @@
       "buildTimestamp": "@BUILD_TIMESTAMP@",
       "branchName": "@BRANCH_NAME@",
       "commitHash": "@COMMIT_HASH@",
-      "commitsAheadCount": "@COMMITS_AHEAD_COUNT@"
+      "commitsAheadCount": "@COMMITS_AHEAD_COUNT@",
+      "eas": {
+        "projectId": "285dc954-fcc2-4f49-a899-3492a5eb73cd"
+      }
     },
     "plugins": [
       [
@@ -65,7 +68,7 @@
         {
           "android": {
             "googleServicesFile": "./files/google-services.json",
-            "setHighPriorityPushHandler": true
+            "setHighPriorityPushHandler": false
           },
           "ios": {
             "pushNotification": {
