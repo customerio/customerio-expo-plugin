@@ -229,8 +229,8 @@ jobs:
         run: |
           APP_JSON_FILE="test-app/app.json"
           sd "\"buildTimestamp\": .*" "\"buildTimestamp\": $(date +%s)," "$APP_JSON_FILE"
-          sd "\"cdpApiKey\".*" "\"cdpApiKey\": \"${{ secrets.CUSTOMERIO_EXPO_WORKSPACE_CDP_API_KEY }}\"," "$APP_JSON_FILE"
-          sd "\"siteId\".*" "\"siteId\": \"${{ secrets.CUSTOMERIO_EXPO_WORKSPACE_SITE_ID }}\"," "$APP_JSON_FILE"
+          sd "\"cdpApiKey\".*" "\"cdpApiKey\": \"${{ secrets.TMP_CUSTOMERIO_EXPO_FCM_WORKSPACE_CDP_API_KEY }}\"," "$APP_JSON_FILE"
+          sd "\"siteId\".*" "\"siteId\": \"${{ secrets.TMP_CUSTOMERIO_EXPO_FCM_WORKSPACE_SITE_ID }}\"," "$APP_JSON_FILE"
           sd "\"workspaceName\".*" "\"workspaceName\": \"Mobile: Expo\"," "$APP_JSON_FILE"
           sd "\"branchName\".*" "\"branchName\": \"${{ env.BRANCH_NAME }}\"," "$APP_JSON_FILE"
           sd "\"commitHash\".*" "\"commitHash\": \"${{ env.COMMIT_HASH }}\"," "$APP_JSON_FILE"

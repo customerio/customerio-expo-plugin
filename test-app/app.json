@@ -70,7 +70,8 @@
           "ios": {
             "useFrameworks": "static",
             "pushNotification": {
-              "provider": "apn",
+              "provider": "fcm",
+              "googleServicesFile": "./files/GoogleService-Info.plist",
               "useRichPush": true,
               "env": {
                 "cdpApiKey": "@CDP_API_KEY@",
