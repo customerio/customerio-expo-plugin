@@ -25,6 +25,8 @@ export type CustomerIOPluginOptionsIOS = {
   handleDeeplinkInKilledState?: boolean;
   useFrameworks?: 'static' | 'dynamic';
   pushNotification?: {
+    provider?: string;
+    googleServicesFile?: string;
     useRichPush: boolean;
     env: {
       cdpApiKey: string;

@@ -18,7 +18,7 @@ export const withCioXcodeProject: ConfigPlugin<CustomerIOPluginOptionsIOS> = (
     };
     const { iosPath } = options;
 
-    await injectCIOPodfileCode(iosPath);
+    await injectCIOPodfileCode(iosPath, cioProps?.pushNotification?.provider ?? "apn");
 
     return props;
   });

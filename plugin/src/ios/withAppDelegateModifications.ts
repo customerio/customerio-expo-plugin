@@ -138,6 +138,16 @@ const addExpoNotificationsHeaderModification = (stringContents: string) => {
   return stringContents;
 };
 
+const addFirebaseDelegateForwardDeclarationIfNeeded = (stringContents: string) => {
+  stringContents = injectCodeByLineNumber(
+    stringContents,
+    0,
+    '@protocol FIRMessagingDelegate;'
+  );
+
+  return stringContents;
+};
+
 const addAppdelegateHeaderModification = (stringContents: string) => {
   // Add UNUserNotificationCenterDelegate if needed
   stringContents = stringContents.replace(
@@ -249,6 +259,10 @@ export const withAppDelegateModifications: ConfigPlugin<
         addDidFailToRegisterForRemoteNotificationsWithError(stringContents);
       stringContents =
         addDidRegisterForRemoteNotificationsWithDeviceToken(stringContents);
+
+      if (props.pushNotification?.provider === 'fcm') {
+        stringContents = addFirebaseDelegateForwardDeclarationIfNeeded(stringContents);
+      }  
 
       stringContents = addExpoNotificationsHeaderModification(stringContents);
 
