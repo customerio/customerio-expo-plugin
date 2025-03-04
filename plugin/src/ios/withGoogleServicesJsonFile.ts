@@ -30,17 +30,17 @@ export const withGoogleServicesJsonFile: ConfigPlugin<CustomerIOPluginOptionsIOS
               addFileToXcodeProject(props.modResults, "GoogleService-Info.plist");
             } catch (e) {
               console.error(
-                `There was an error copying your google-services.json file. You can copy it manually into ${iosPath}/google-services.json`
+                `There was an error copying your GoogleService-Info.plist file. You can copy it manually into ${iosPath}/GoogleService-Info.plist`
               );
             }
           } else {
             console.error(
-              `The Google Services file provided in ${googleServicesFile} doesn't seem to exist. You can copy it manually into ${iosPath}/google-services.json`
+              `The Google Services file provided in ${googleServicesFile} doesn't seem to exist. You can copy it manually into ${iosPath}/GoogleService-Info.plist`
             );
           }
         } else {
           console.log(
-            `File already exists: ${iosPath}/google-services.json. Skipping...`
+            `File already exists: ${iosPath}/GoogleService-Info.plist. Skipping...`
           );
         }
     
