@@ -119,7 +119,9 @@ const addRichPushXcodeProj = async (
     useFrameworks,
   } = options;
 
-  await injectCIONotificationPodfileCode(iosPath, useFrameworks, options?.pushNotification?.provider ?? "apn");
+  const isFcmProvider = isFcmPushProvider(options);
+
+  await injectCIONotificationPodfileCode(iosPath, useFrameworks, isFcmProvider);
 
   // Check if `CIO_NOTIFICATION_TARGET_NAME` group already exist in the project
   // If true then skip creating a new group to avoid duplicate folders
@@ -134,7 +136,7 @@ const addRichPushXcodeProj = async (
   FileManagement.mkdir(nsePath, {
     recursive: true,
   });
-  // Maybe copy files specific to FCM based on config
+
   const files = [
     PLIST_FILENAME,
     'NotificationService.h',
@@ -145,13 +147,10 @@ const addRichPushXcodeProj = async (
 
   const getTargetFile = (filename: string) => `${nsePath}/${filename}`;
 
-  const pushProvider = options.pushNotification?.provider ?? "apn";
-  const useFcm = pushProvider === "fcm";
-
   files.forEach((filename) => {
     const targetFile = getTargetFile(filename);
     FileManagement.copyFile(
-      `${LOCAL_PATH_TO_CIO_NSE_FILES}/${useFcm ? "fcm" : "apn"}/${filename}`,
+      `${LOCAL_PATH_TO_CIO_NSE_FILES}/${isFcmProvider ? "fcm" : "apn"}/${filename}`,
       targetFile
     );
   });
@@ -325,9 +324,8 @@ async function addPushNotificationFile(
 ) {
   // Maybe copy a different file with FCM config based on config
   const { iosPath, appName } = options;
-  const pushProvider = options.pushNotification?.provider ?? "apn";
-  const useFcm = pushProvider === "fcm";
-  const sourceFile = `${useFcm ? "fcm" : "apn"}/PushService.swift`;
+  const isFcmProvider = isFcmPushProvider(options);
+  const sourceFile = `${isFcmProvider ? "fcm" : "apn"}/PushService.swift`;
   const targetFileName = 'PushService.swift';
   const appPath = `${iosPath}/${appName}`;
   const getTargetFile = (filename: string) => `${appPath}/${filename}`;
