@@ -31,6 +31,7 @@ import {
 } from '../helpers/utils/codeInjection';
 import { FileManagement } from '../helpers/utils/fileManagement';
 import type { CustomerIOPluginOptionsIOS } from '../types/cio-types';
+import { isFcmPushProvider } from './utils';
 
 const addImport = (stringContents: string, appName: string) => {
   const importRegex = /^(#import .*)\n/gm;
@@ -260,7 +261,7 @@ export const withAppDelegateModifications: ConfigPlugin<
       stringContents =
         addDidRegisterForRemoteNotificationsWithDeviceToken(stringContents);
 
-      if (props.pushNotification?.provider === 'fcm') {
+      if (isFcmPushProvider(props)) {
         stringContents = addFirebaseDelegateForwardDeclarationIfNeeded(stringContents);
       }  
 

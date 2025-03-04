@@ -2,6 +2,7 @@ import { ConfigPlugin, withXcodeProject } from '@expo/config-plugins';
 
 import { injectCIOPodfileCode } from '../helpers/utils/injectCIOPodfileCode';
 import type { CustomerIOPluginOptionsIOS } from '../types/cio-types';
+import { isFcmPushProvider } from './utils';
 
 export const withCioXcodeProject: ConfigPlugin<CustomerIOPluginOptionsIOS> = (
   config,
@@ -18,7 +19,7 @@ export const withCioXcodeProject: ConfigPlugin<CustomerIOPluginOptionsIOS> = (
     };
     const { iosPath } = options;
 
-    await injectCIOPodfileCode(iosPath, cioProps?.pushNotification?.provider ?? "apn");
+    await injectCIOPodfileCode(iosPath, isFcmPushProvider(cioProps));
 
     return props;
   });
