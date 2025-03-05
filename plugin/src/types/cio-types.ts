@@ -25,7 +25,7 @@ export type CustomerIOPluginOptionsIOS = {
   handleDeeplinkInKilledState?: boolean;
   useFrameworks?: 'static' | 'dynamic';
   pushNotification?: {
-    provider?: string;
+    provider?: 'apn' | 'fcm';
     googleServicesFile?: string;
     useRichPush: boolean;
     env: {
