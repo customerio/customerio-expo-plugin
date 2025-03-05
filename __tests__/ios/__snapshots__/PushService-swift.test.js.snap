@@ -17,6 +17,7 @@ public class CIOAppPushNotificationsHandler : NSObject {
   public func initializeCioSdk() {
     MessagingPushAPN.initialize(
       withConfig: MessagingPushConfigBuilder()
+        .autoFetchDeviceToken(true)
         .showPushAppInForeground(true)
         .autoTrackPushEvents(true)
         .build()
