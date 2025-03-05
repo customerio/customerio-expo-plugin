@@ -408,6 +408,15 @@ const updatePushFile = (
     autoTrackPushEvents.toString()
   );
 
+  const autoFetchDeviceToken = 
+    options.autoFetchDeviceToken === undefined ||
+    options.autoFetchDeviceToken === true;
+  envFileContent = replaceCodeByRegex(
+    envFileContent,
+    /\{\{AUTO_FETCH_DEVICE_TOKEN\}\}/,
+    autoFetchDeviceToken.toString()
+  );
+  
   const showPushAppInForeground =
     options.showPushAppInForeground === undefined ||
     options.showPushAppInForeground === true;

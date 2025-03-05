@@ -20,9 +20,9 @@ public class CIOAppPushNotificationsHandler : NSObject {
     
     MessagingPushFCM.initialize(
       withConfig: MessagingPushConfigBuilder()
-        .autoFetchDeviceToken(true)
-        .showPushAppInForeground(true)
-        .autoTrackPushEvents(true)
+        .autoFetchDeviceToken({{AUTO_FETCH_DEVICE_TOKEN}})
+        .showPushAppInForeground({{SHOW_PUSH_APP_IN_FOREGROUND}})
+        .autoTrackPushEvents({{AUTO_TRACK_PUSH_EVENTS}})
         .build()
     )
   }
