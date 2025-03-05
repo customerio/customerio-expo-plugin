@@ -137,20 +137,33 @@ const addRichPushXcodeProj = async (
     recursive: true,
   });
 
-  const files = [
+  const platformSpecificFiles = [
+    'NotificationService.swift',
+  ];
+
+  const commonFiles = [
     PLIST_FILENAME,
     'NotificationService.h',
-    'NotificationService.swift',
     'NotificationService.m',
     ENV_FILENAME,
   ];
 
   const getTargetFile = (filename: string) => `${nsePath}/${filename}`;
 
-  files.forEach((filename) => {
+  // Copy platform-specific files
+  platformSpecificFiles.forEach((filename) => {
     const targetFile = getTargetFile(filename);
     FileManagement.copyFile(
       `${LOCAL_PATH_TO_CIO_NSE_FILES}/${isFcmProvider ? "fcm" : "apn"}/${filename}`,
+      targetFile
+    );
+  });
+
+  // Copy common files
+  commonFiles.forEach((filename) => {
+    const targetFile = getTargetFile(filename);
+    FileManagement.copyFile(
+      `${LOCAL_PATH_TO_CIO_NSE_FILES}/common/${filename}`,
       targetFile
     );
   });
@@ -166,7 +179,7 @@ const addRichPushXcodeProj = async (
 
   // Create new PBXGroup for the extension
   const extGroup = xcodeProject.addPbxGroup(
-    files,
+    [...platformSpecificFiles, ...commonFiles], // Combine platform-specific and common files
     CIO_NOTIFICATION_TARGET_NAME,
     CIO_NOTIFICATION_TARGET_NAME
   );
@@ -325,6 +338,7 @@ async function addPushNotificationFile(
   // Maybe copy a different file with FCM config based on config
   const { iosPath, appName } = options;
   const isFcmProvider = isFcmPushProvider(options);
+  // PushService.swift is platform-specific and always lives in the platform folder
   const sourceFile = `${isFcmProvider ? "fcm" : "apn"}/PushService.swift`;
   const targetFileName = 'PushService.swift';
   const appPath = `${iosPath}/${appName}`;
