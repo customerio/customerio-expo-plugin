@@ -31,6 +31,7 @@ import {
 } from '../helpers/utils/codeInjection';
 import { FileManagement } from '../helpers/utils/fileManagement';
 import type { CustomerIOPluginOptionsIOS } from '../types/cio-types';
+import { isFcmPushProvider } from './utils';
 
 const addImport = (stringContents: string, appName: string) => {
   const importRegex = /^(#import .*)\n/gm;
@@ -133,6 +134,16 @@ const addExpoNotificationsHeaderModification = (stringContents: string) => {
 #import <EXNotifications/EXNotificationCenterDelegate.h>
 #endif
 `
+  );
+
+  return stringContents;
+};
+
+const addFirebaseDelegateForwardDeclarationIfNeeded = (stringContents: string) => {
+  stringContents = injectCodeByLineNumber(
+    stringContents,
+    0,
+    '@protocol FIRMessagingDelegate;'
   );
 
   return stringContents;
@@ -249,6 +260,10 @@ export const withAppDelegateModifications: ConfigPlugin<
         addDidFailToRegisterForRemoteNotificationsWithError(stringContents);
       stringContents =
         addDidRegisterForRemoteNotificationsWithDeviceToken(stringContents);
+
+      if (isFcmPushProvider(props)) {
+        stringContents = addFirebaseDelegateForwardDeclarationIfNeeded(stringContents);
+      }  
 
       stringContents = addExpoNotificationsHeaderModification(stringContents);
 

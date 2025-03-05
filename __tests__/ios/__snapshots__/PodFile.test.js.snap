@@ -72,7 +72,7 @@ target 'ExpoTestbed' do
 end
 # --- CustomerIO Notification START ---
 target 'NotificationService' do
-  
+  use_frameworks! :linkage => :static
   pod 'customerio-reactnative-richpush/apn', :path => '../node_modules/customerio-reactnative'
 end
 # --- CustomerIO Notification END ---"

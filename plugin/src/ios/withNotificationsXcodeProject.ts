@@ -14,6 +14,7 @@ import { replaceCodeByRegex } from '../helpers/utils/codeInjection';
 import { injectCIONotificationPodfileCode } from '../helpers/utils/injectCIOPodfileCode';
 import type { CustomerIOPluginOptionsIOS } from '../types/cio-types';
 import { FileManagement } from './../helpers/utils/fileManagement';
+import { isFcmPushProvider } from './utils';
 
 const PLIST_FILENAME = `${CIO_NOTIFICATION_TARGET_NAME}-Info.plist`;
 const ENV_FILENAME = 'Env.swift';
@@ -118,7 +119,9 @@ const addRichPushXcodeProj = async (
     useFrameworks,
   } = options;
 
-  await injectCIONotificationPodfileCode(iosPath, useFrameworks);
+  const isFcmProvider = isFcmPushProvider(options);
+
+  await injectCIONotificationPodfileCode(iosPath, useFrameworks, isFcmProvider);
 
   // Check if `CIO_NOTIFICATION_TARGET_NAME` group already exist in the project
   // If true then skip creating a new group to avoid duplicate folders
@@ -147,7 +150,7 @@ const addRichPushXcodeProj = async (
   files.forEach((filename) => {
     const targetFile = getTargetFile(filename);
     FileManagement.copyFile(
-      `${LOCAL_PATH_TO_CIO_NSE_FILES}/${filename}`,
+      `${LOCAL_PATH_TO_CIO_NSE_FILES}/${isFcmProvider ? "fcm" : "apn"}/${filename}`,
       targetFile
     );
   });
@@ -319,25 +322,28 @@ async function addPushNotificationFile(
   options: CustomerIOPluginOptionsIOS,
   xcodeProject: any
 ) {
+  // Maybe copy a different file with FCM config based on config
   const { iosPath, appName } = options;
-  const file = 'PushService.swift';
+  const isFcmProvider = isFcmPushProvider(options);
+  const sourceFile = `${isFcmProvider ? "fcm" : "apn"}/PushService.swift`;
+  const targetFileName = 'PushService.swift';
   const appPath = `${iosPath}/${appName}`;
   const getTargetFile = (filename: string) => `${appPath}/${filename}`;
-  const targetFile = getTargetFile(file);
+  const targetFile = getTargetFile(targetFileName);
 
   // Check whether {file} exists in the project. If false, then add the file
   // If {file} exists then skip and return
-  if (!FileManagement.exists(getTargetFile(file))) {
+  if (!FileManagement.exists(getTargetFile(targetFileName))) {
     FileManagement.mkdir(appPath, {
       recursive: true,
     });
 
     FileManagement.copyFile(
-      `${LOCAL_PATH_TO_CIO_NSE_FILES}/${file}`,
+      `${LOCAL_PATH_TO_CIO_NSE_FILES}/${sourceFile}`,
       targetFile
     );
   } else {
-    console.log(`${getTargetFile(file)} already exists. Skipping...`);
+    console.log(`${getTargetFile(targetFileName)} already exists. Skipping...`);
     return;
   }
 
@@ -347,7 +353,7 @@ async function addPushNotificationFile(
   const classesKey = xcodeProject.findPBXGroupKey({ name: `${appName}` });
   xcodeProject.addToPbxGroup(group, classesKey);
 
-  xcodeProject.addSourceFile(`${appName}/${file}`, null, group);
+  xcodeProject.addSourceFile(`${appName}/${targetFileName}`, null, group);
 }
 
 const updatePushFile = (

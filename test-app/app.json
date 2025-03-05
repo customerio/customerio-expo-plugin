@@ -68,13 +68,23 @@
             "setHighPriorityPushHandler": true
           },
           "ios": {
+            "useFrameworks": "static",
             "pushNotification": {
+              "provider": "apn",
               "useRichPush": true,
               "env": {
                 "cdpApiKey": "@CDP_API_KEY@",
                 "region": "us"
               }
             }
+          }
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "useFrameworks": "static"
           }
         }
       ]

@@ -3,7 +3,7 @@ import { getRelativePathToRNSDK } from '../constants/ios';
 import { injectCodeByRegex } from './codeInjection';
 import { FileManagement } from './fileManagement';
 
-export async function injectCIOPodfileCode(iosPath: string) {
+export async function injectCIOPodfileCode(iosPath: string, isFcmPushProvider: boolean) {
   const blockStart = '# --- CustomerIO Host App START ---';
   const blockEnd = '# --- CustomerIO Host App END ---';
 
@@ -19,7 +19,7 @@ export async function injectCIOPodfileCode(iosPath: string) {
 
     const snippetToInjectInPodfile = `
 ${blockStart}
-  pod 'customerio-reactnative/apn', :path => '${getRelativePathToRNSDK(
+  pod 'customerio-reactnative/${isFcmPushProvider ? "fcm" : "apn"}', :path => '${getRelativePathToRNSDK(
     iosPath
   )}'
 ${blockEnd}
@@ -40,7 +40,8 @@ ${blockEnd}
 
 export async function injectCIONotificationPodfileCode(
   iosPath: string,
-  useFrameworks: CustomerIOPluginOptionsIOS['useFrameworks']
+  useFrameworks: CustomerIOPluginOptionsIOS['useFrameworks'],
+  isFcmPushProvider: boolean
 ) {
   const filename = `${iosPath}/Podfile`;
   const podfile = await FileManagement.read(filename);
@@ -55,7 +56,7 @@ export async function injectCIONotificationPodfileCode(
 ${blockStart}
 target 'NotificationService' do
   ${useFrameworks === 'static' ? 'use_frameworks! :linkage => :static' : ''}
-  pod 'customerio-reactnative-richpush/apn', :path => '${getRelativePathToRNSDK(
+  pod 'customerio-reactnative-richpush/${isFcmPushProvider ? "fcm" : "apn"}', :path => '${getRelativePathToRNSDK(
     iosPath
   )}'
 end
