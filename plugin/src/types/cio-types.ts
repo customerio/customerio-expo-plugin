@@ -22,6 +22,7 @@ export type CustomerIOPluginOptionsIOS = {
   handleNotificationClick?: boolean;
   showPushAppInForeground?: boolean;
   autoTrackPushEvents?: boolean;
+  autoFetchDeviceToken?: boolean;
   handleDeeplinkInKilledState?: boolean;
   useFrameworks?: 'static' | 'dynamic';
   pushNotification?: {
