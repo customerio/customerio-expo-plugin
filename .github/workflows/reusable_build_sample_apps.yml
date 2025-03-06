@@ -262,7 +262,7 @@ jobs:
         with:
           lane: ios build_ios
           subdirectory: test-app
-          options: '{"distribution_groups": "${{ env.firebase_distribution_groups }}"}'
+          options: '{"distribution_groups": "${{ env.firebase_distribution_groups }}", "push_provider": "${{ matrix.push_provider }}"}'
         env:
           GOOGLE_CLOUD_MATCH_READONLY_SERVICE_ACCOUNT_B64: ${{ secrets.GOOGLE_CLOUD_MATCH_READONLY_SERVICE_ACCOUNT_B64 }}
           FIREBASE_APP_DISTRIBUTION_SERVICE_ACCOUNT_CREDS_B64: ${{ secrets.FIREBASE_APP_DISTRIBUTION_SERVICE_ACCOUNT_CREDS_B64 }}
