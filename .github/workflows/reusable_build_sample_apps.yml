@@ -139,6 +139,9 @@ jobs:
   build-ios-app:
     name: Build and publish iOS app
     runs-on: macos-14
+    strategy:
+      matrix:
+        push_provider: [fcm, apn]
     env:
       GOOGLE_CLOUD_MATCH_READONLY_SERVICE_ACCOUNT_B64: ${{ secrets.GOOGLE_CLOUD_MATCH_READONLY_SERVICE_ACCOUNT_B64 }}
       FIREBASE_APP_DISTRIBUTION_SERVICE_ACCOUNT_CREDS_B64: ${{ secrets.FIREBASE_APP_DISTRIBUTION_SERVICE_ACCOUNT_CREDS_B64 }}
@@ -185,10 +188,13 @@ jobs:
           echo "firebase_distribution_groups=$(IFS=','; echo "${distribution_groups[*]}")" >> $GITHUB_ENV
 
       - name: Setup local.env file for sample app
-        if: ${{ inputs.use_latest_sdk_version == true }}
+        shell: bash
         run: |
           touch "test-app/local.env"
-          echo "sdkVersion=${{ env.LATEST_TAG }}" >> "test-app/local.env"
+          if [ "${{ inputs.use_latest_sdk_version }}" == "true" ]; then
+            echo "sdkVersion=${{ env.LATEST_TAG }}" >> "test-app/local.env"
+          fi
+          echo "pushProvider=${{ matrix.push_provider }}" >> "test-app/local.env"
 
       - name: Install XCode
         uses: maxim-lobanov/setup-xcode@v1
@@ -229,14 +235,20 @@ jobs:
         run: |
           APP_JSON_FILE="test-app/app.json"
           sd "\"buildTimestamp\": .*" "\"buildTimestamp\": $(date +%s)," "$APP_JSON_FILE"
-          sd "\"cdpApiKey\".*" "\"cdpApiKey\": \"${{ secrets.CUSTOMERIO_EXPO_WORKSPACE_CDP_API_KEY }}\"," "$APP_JSON_FILE"
-          sd "\"siteId\".*" "\"siteId\": \"${{ secrets.CUSTOMERIO_EXPO_WORKSPACE_SITE_ID }}\"," "$APP_JSON_FILE"
           sd "\"workspaceName\".*" "\"workspaceName\": \"Mobile: Expo\"," "$APP_JSON_FILE"
           sd "\"branchName\".*" "\"branchName\": \"${{ env.BRANCH_NAME }}\"," "$APP_JSON_FILE"
           sd "\"commitHash\".*" "\"commitHash\": \"${{ env.COMMIT_HASH }}\"," "$APP_JSON_FILE"
           LAST_TAG="${LATEST_TAG:-untagged}"
           COMMITS_AHEAD=$(git rev-list $LAST_TAG..HEAD --count 2>/dev/null || echo "untracked")
           sd "\"commitsAheadCount\".*" "\"commitsAheadCount\": \"$COMMITS_AHEAD\"," "$APP_JSON_FILE"
+
+          if [ "${{ matrix.push_provider }}" == "fcm" ]; then
+            sd "\"cdpApiKey\".*" "\"cdpApiKey\": \"${{ secrets.TMP_CUSTOMERIO_EXPO_FCM_WORKSPACE_CDP_API_KEY }}\"," "$APP_JSON_FILE"
+            sd "\"siteId\".*" "\"siteId\": \"${{ secrets.TMP_CUSTOMERIO_EXPO_FCM_WORKSPACE_SITE_ID }}\"," "$APP_JSON_FILE"
+          else
+            sd "\"cdpApiKey\".*" "\"cdpApiKey\": \"${{ secrets.CUSTOMERIO_EXPO_WORKSPACE_CDP_API_KEY }}\"," "$APP_JSON_FILE"
+            sd "\"siteId\".*" "\"siteId\": \"${{ secrets.CUSTOMERIO_EXPO_WORKSPACE_SITE_ID }}\"," "$APP_JSON_FILE"
+          fi
 
       - name: Copy GoogleService-Info.plist to ios project
         run: |
