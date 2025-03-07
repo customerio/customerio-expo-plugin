@@ -243,8 +243,8 @@ jobs:
           sd "\"commitsAheadCount\".*" "\"commitsAheadCount\": \"$COMMITS_AHEAD\"," "$APP_JSON_FILE"
 
           if [ "${{ matrix.push_provider }}" == "fcm" ]; then
-            sd "\"cdpApiKey\".*" "\"cdpApiKey\": \"${{ secrets.TMP_CUSTOMERIO_EXPO_FCM_WORKSPACE_CDP_API_KEY }}\"," "$APP_JSON_FILE"
-            sd "\"siteId\".*" "\"siteId\": \"${{ secrets.TMP_CUSTOMERIO_EXPO_FCM_WORKSPACE_SITE_ID }}\"," "$APP_JSON_FILE"
+            sd "\"cdpApiKey\".*" "\"cdpApiKey\": \"${{ secrets.CUSTOMERIO_RN_FCM_WORKSPACE_CDP_API_KEY }}\"," "$APP_JSON_FILE"
+            sd "\"siteId\".*" "\"siteId\": \"${{ secrets.CUSTOMERIO_RN_FCM_WORKSPACE_SITE_ID }}\"," "$APP_JSON_FILE"
           else
             sd "\"cdpApiKey\".*" "\"cdpApiKey\": \"${{ secrets.CUSTOMERIO_EXPO_WORKSPACE_CDP_API_KEY }}\"," "$APP_JSON_FILE"
             sd "\"siteId\".*" "\"siteId\": \"${{ secrets.CUSTOMERIO_EXPO_WORKSPACE_SITE_ID }}\"," "$APP_JSON_FILE"

@@ -58,7 +58,6 @@ function updatePushProvider() {
     return;
   }
 
-  const testAppPath = '../test-app';
   const appJsonPath = `${testAppPath}/app.json`;
   const appJson = JSON.parse(fs.readFileSync(appJsonPath, 'utf8'));
 
@@ -76,7 +75,7 @@ function updatePushProvider() {
         // Update the provider value to "fcm"
         pluginConfig.ios.pushNotification.provider = 'fcm';
         pluginConfig.ios.pushNotification.googleServicesFile =
-          './files/google-services.json';
+          './files/GoogleService-Info.plist';
         console.log("Successfully updated provider to 'fcm'");
       } else {
         pluginConfig.ios.pushNotification.provider = 'apn';
