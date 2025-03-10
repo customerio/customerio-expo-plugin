@@ -17,7 +17,9 @@ public class CIOAppPushNotificationsHandler : NSObject {
 
   @objc(initializeCioSdk)
   public func initializeCioSdk() {
-    FirebaseApp.configure()
+    if (FirebaseApp.app() == nil) {
+      FirebaseApp.configure()
+    }
     Messaging.messaging().delegate = self
     UIApplication.shared.registerForRemoteNotifications()
     
