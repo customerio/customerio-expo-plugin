@@ -102,7 +102,7 @@ platform :ios do
     firebase_app_distribution(
       service_credentials_file: service_credentials_file_path,
       groups: get_build_test_groups(distribution_groups: arguments[:distribution_groups]),
-      release_notes: get_build_notes()
+      release_notes: get_build_notes() + "\nPush provider: #{arguments[:push_provider]}"
     )
   end
 
