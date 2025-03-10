@@ -1,7 +1,7 @@
 const fs = require("fs-extra");
 const path = require("path");
 
-const testProjectPath = path.join(__dirname, "../../test-app");
+const testProjectPath = path.join(__dirname, "../../../test-app");
 const iosPath = path.join(testProjectPath, "ios");
 const appDelegateImplPath = path.join(iosPath, "ExpoTestbed/AppDelegate.mm");
 

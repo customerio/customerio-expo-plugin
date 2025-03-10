@@ -24,7 +24,7 @@ jobs:
       - name: Publish test
         run: npm publish --dry-run
 
-  test-plugin:
+  test-plugin-android:
     name: Test unit tests for plugin
     runs-on: ubuntu-latest
     steps:
@@ -37,5 +37,28 @@ jobs:
         run: npm ci
 
       - name: Run plugin tests
-        run: npm run test-plugin
-        
+        run: npm run setup-test-app && npm test -- __tests__/android
+
+  test-plugin-ios:
+    name: Test unit tests for plugin
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        push_provider: [fcm, apn]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Setup local.env file for sample app
+        shell: bash
+        run: |
+          touch "test-app/local.env"
+          echo "pushProvider=${{ matrix.push_provider }}" >> "test-app/local.env"
+
+      - name: Run plugin tests
+        run: npm run setup-test-app && npm test -- __tests__/ios/common __tests__/ios/${{ matrix.push_provider }}
