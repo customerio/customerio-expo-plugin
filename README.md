@@ -12,7 +12,9 @@ This is the official Customer.io Expo plugin, supporting mobile apps.
 
 The Expo plugin takes advantage of our [React Native SDK](https://github.com/customerio/customerio-reactnative), and requires very little setup. It extends the Expo config to let you customize the pre-build phase of managed workflow builds, which means you don't need to eject to a bare workflow.
 
-After you add the plugin to your project, you'll need to install our React Native SDK and run pre-build. The plugin automatically generates and configures the necessary native code files required to make our React Native SDK to work on your project.
+After you add the plugin to your project, the plugin automatically installs our React Native SDK and configures the necessary native code files required to make it work in your project. Simply run pre-build after adding the plugin.
+
+> **Note**: The plugin automatically includes the customerio-reactnative SDK as a dependency. You do not need to add it to your project's package.json. If you already have customerio-reactnative in your dependencies, we recommend removing it to avoid version conflicts.
 
 # Getting started
 

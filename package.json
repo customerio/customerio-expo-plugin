@@ -48,9 +48,6 @@
   "publishConfig": {
     "registry": "https://registry.npmjs.org/"
   },
-  "peerDependencies": {
-    "customerio-reactnative": ">=3.4.0"
-  },
   "devDependencies": {
     "@expo/config-plugins": "^4.1.4",
     "@expo/config-types": "^44.0.0",
@@ -120,6 +117,7 @@
     ]
   },
   "dependencies": {
+    "customerio-reactnative": "4.2.2",
     "find-package-json": "^1.2.0",
     "fs-extra": "^11.2.0"
   }
