@@ -8,9 +8,6 @@ const appName = "ExpoTestbed"; // Replace with your app name if different
 const possibleLocations = [
   path.join(iosPath, "GoogleService-Info.plist"),                    // Our plugin's default location
   path.join(iosPath, appName, "GoogleService-Info.plist"),           // Where React Native Firebase typically adds it
-  path.join(iosPath, "Pods", "GoogleService-Info.plist"),            // Sometimes found in Pods
-  path.join(iosPath, appName, "Resources", "GoogleService-Info.plist"), // Alternative location in app resources
-  path.join(iosPath, "Supporting", "GoogleService-Info.plist")       // Another possible location
 ];
 
 describe("GoogleService-Info.plist File", () => {
