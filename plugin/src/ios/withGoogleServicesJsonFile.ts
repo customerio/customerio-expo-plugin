@@ -108,8 +108,8 @@ function addFileToXcodeProject(project: any, fileName: string): boolean {
 function findExistingGoogleServicesFile(iosPath: string, appName: string): string | null {
   // Define all possible locations where GoogleService-Info.plist might exist
   const possibleLocations = [
-    `${iosPath}/GoogleService-Info.plist`,
-    `${iosPath}/${appName}/GoogleService-Info.plist`
+    `${iosPath}/GoogleService-Info.plist`,                    // Our plugin's default location
+    `${iosPath}/${appName}/GoogleService-Info.plist`          // Where React Native Firebase typically adds it
   ];
   
   for (const location of possibleLocations) {
@@ -191,7 +191,8 @@ export const withGoogleServicesJsonFile: ConfigPlugin<
     const destinationPath = `${iosPath}/${fileName}`;
 
     // Check if file already exists in common locations
-    const existingFilePath = findExistingGoogleServicesFile(iosPath, appName);
+    // We know appName should be defined in the context of an Expo plugin
+    const existingFilePath = findExistingGoogleServicesFile(iosPath, appName as string);
     
     if (existingFilePath) {
       console.log(`File already exists: ${existingFilePath}. Skipping copy...`);
