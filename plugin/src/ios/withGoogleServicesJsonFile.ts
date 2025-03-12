@@ -108,11 +108,8 @@ function addFileToXcodeProject(project: any, fileName: string): boolean {
 function findExistingGoogleServicesFile(iosPath: string, appName: string): string | null {
   // Define all possible locations where GoogleService-Info.plist might exist
   const possibleLocations = [
-    `${iosPath}/GoogleService-Info.plist`,                    // Our plugin's default location
-    `${iosPath}/${appName}/GoogleService-Info.plist`,         // Where React Native Firebase typically adds it
-    `${iosPath}/Pods/GoogleService-Info.plist`,               // Sometimes found in Pods
-    `${iosPath}/${appName}/Resources/GoogleService-Info.plist`, // Alternative location in app resources
-    `${iosPath}/Supporting/GoogleService-Info.plist`          // Another possible location
+    `${iosPath}/GoogleService-Info.plist`,
+    `${iosPath}/${appName}/GoogleService-Info.plist`
   ];
   
   for (const location of possibleLocations) {
