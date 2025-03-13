@@ -22,9 +22,12 @@ export type CustomerIOPluginOptionsIOS = {
   handleNotificationClick?: boolean;
   showPushAppInForeground?: boolean;
   autoTrackPushEvents?: boolean;
+  autoFetchDeviceToken?: boolean;
   handleDeeplinkInKilledState?: boolean;
   useFrameworks?: 'static' | 'dynamic';
   pushNotification?: {
+    provider?: 'apn' | 'fcm';
+    googleServicesFile?: string;
     useRichPush: boolean;
     env: {
       cdpApiKey: string;

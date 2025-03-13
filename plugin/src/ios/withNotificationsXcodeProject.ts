@@ -14,6 +14,7 @@ import { replaceCodeByRegex } from '../helpers/utils/codeInjection';
 import { injectCIONotificationPodfileCode } from '../helpers/utils/injectCIOPodfileCode';
 import type { CustomerIOPluginOptionsIOS } from '../types/cio-types';
 import { FileManagement } from './../helpers/utils/fileManagement';
+import { isFcmPushProvider } from './utils';
 
 const PLIST_FILENAME = `${CIO_NOTIFICATION_TARGET_NAME}-Info.plist`;
 const ENV_FILENAME = 'Env.swift';
@@ -118,7 +119,9 @@ const addRichPushXcodeProj = async (
     useFrameworks,
   } = options;
 
-  await injectCIONotificationPodfileCode(iosPath, useFrameworks);
+  const isFcmProvider = isFcmPushProvider(options);
+
+  await injectCIONotificationPodfileCode(iosPath, useFrameworks, isFcmProvider);
 
   // Check if `CIO_NOTIFICATION_TARGET_NAME` group already exist in the project
   // If true then skip creating a new group to avoid duplicate folders
@@ -134,20 +137,32 @@ const addRichPushXcodeProj = async (
     recursive: true,
   });
 
-  const files = [
+  const platformSpecificFiles = [
+    'NotificationService.swift',
+  ];
+
+  const commonFiles = [
     PLIST_FILENAME,
     'NotificationService.h',
-    'NotificationService.swift',
     'NotificationService.m',
     ENV_FILENAME,
   ];
 
   const getTargetFile = (filename: string) => `${nsePath}/${filename}`;
-
-  files.forEach((filename) => {
+  // Copy platform-specific files
+  platformSpecificFiles.forEach((filename) => {
     const targetFile = getTargetFile(filename);
     FileManagement.copyFile(
-      `${LOCAL_PATH_TO_CIO_NSE_FILES}/${filename}`,
+      `${LOCAL_PATH_TO_CIO_NSE_FILES}/${isFcmProvider ? "fcm" : "apn"}/${filename}`,
+      targetFile
+    );
+  });
+
+   // Copy common files
+   commonFiles.forEach((filename) => {
+    const targetFile = getTargetFile(filename);
+    FileManagement.copyFile(
+      `${LOCAL_PATH_TO_CIO_NSE_FILES}/common/${filename}`,
       targetFile
     );
   });
@@ -163,7 +178,7 @@ const addRichPushXcodeProj = async (
 
   // Create new PBXGroup for the extension
   const extGroup = xcodeProject.addPbxGroup(
-    files,
+    [...platformSpecificFiles, ...commonFiles], // Combine platform-specific and common files,
     CIO_NOTIFICATION_TARGET_NAME,
     CIO_NOTIFICATION_TARGET_NAME
   );
@@ -319,25 +334,29 @@ async function addPushNotificationFile(
   options: CustomerIOPluginOptionsIOS,
   xcodeProject: any
 ) {
+  // Maybe copy a different file with FCM config based on config
   const { iosPath, appName } = options;
-  const file = 'PushService.swift';
+  const isFcmProvider = isFcmPushProvider(options);
+  // PushService.swift is platform-specific and always lives in the platform folder
+  const sourceFile = `${isFcmProvider ? "fcm" : "apn"}/PushService.swift`;
+  const targetFileName = 'PushService.swift';
   const appPath = `${iosPath}/${appName}`;
   const getTargetFile = (filename: string) => `${appPath}/${filename}`;
-  const targetFile = getTargetFile(file);
+  const targetFile = getTargetFile(targetFileName);
 
   // Check whether {file} exists in the project. If false, then add the file
   // If {file} exists then skip and return
-  if (!FileManagement.exists(getTargetFile(file))) {
+  if (!FileManagement.exists(getTargetFile(targetFileName))) {
     FileManagement.mkdir(appPath, {
       recursive: true,
     });
 
     FileManagement.copyFile(
-      `${LOCAL_PATH_TO_CIO_NSE_FILES}/${file}`,
+      `${LOCAL_PATH_TO_CIO_NSE_FILES}/${sourceFile}`,
       targetFile
     );
   } else {
-    console.log(`${getTargetFile(file)} already exists. Skipping...`);
+    console.log(`${getTargetFile(targetFileName)} already exists. Skipping...`);
     return;
   }
 
@@ -347,7 +366,7 @@ async function addPushNotificationFile(
   const classesKey = xcodeProject.findPBXGroupKey({ name: `${appName}` });
   xcodeProject.addToPbxGroup(group, classesKey);
 
-  xcodeProject.addSourceFile(`${appName}/${file}`, null, group);
+  xcodeProject.addSourceFile(`${appName}/${targetFileName}`, null, group);
 }
 
 const updatePushFile = (
@@ -389,6 +408,15 @@ const updatePushFile = (
     autoTrackPushEvents.toString()
   );
 
+  const autoFetchDeviceToken = 
+    options.autoFetchDeviceToken === undefined ||
+    options.autoFetchDeviceToken === true;
+  envFileContent = replaceCodeByRegex(
+    envFileContent,
+    /\{\{AUTO_FETCH_DEVICE_TOKEN\}\}/,
+    autoFetchDeviceToken.toString()
+  );
+  
   const showPushAppInForeground =
     options.showPushAppInForeground === undefined ||
     options.showPushAppInForeground === true;

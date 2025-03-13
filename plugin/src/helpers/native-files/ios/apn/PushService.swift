@@ -1,7 +1,4 @@
-// Jest Snapshot v1, https://goo.gl/fbAQLP
-
-exports[`Plugin creates expected PushService.swift 1`] = `
-"import Foundation
+import Foundation
 import CioMessagingPushAPN
 import UserNotifications
 import UIKit
@@ -11,14 +8,15 @@ public class CIOAppPushNotificationsHandler : NSObject {
 
   public override init() {}
 
-  
+  {{REGISTER_SNIPPET}}
 
   @objc(initializeCioSdk)
   public func initializeCioSdk() {
     MessagingPushAPN.initialize(
       withConfig: MessagingPushConfigBuilder()
-        .showPushAppInForeground(true)
-        .autoTrackPushEvents(true)
+        .autoFetchDeviceToken({{AUTO_FETCH_DEVICE_TOKEN}})
+        .showPushAppInForeground({{SHOW_PUSH_APP_IN_FOREGROUND}})
+        .autoTrackPushEvents({{AUTO_TRACK_PUSH_EVENTS}})
         .build()
     )
   }
@@ -33,5 +31,3 @@ public class CIOAppPushNotificationsHandler : NSObject {
     MessagingPush.shared.application(application, didFailToRegisterForRemoteNotificationsWithError: error)
   }
 }
-"
-`;
