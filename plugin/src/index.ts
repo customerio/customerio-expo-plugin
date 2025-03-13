@@ -40,18 +40,19 @@ function withCustomerIOPlugin(
 
 function validateDependencies() {
   try {
-    // Load the SDK package.json from node_modules
-    const sdkPath = path.join(process.cwd(), 'node_modules/customerio-reactnative/package.json');
-    const requiredVersion = getRequiredSDKVersion();
-    
-    if (!fs.existsSync(sdkPath)) {
+    // Use Node's own resolution algorithm instead of hardcoded paths
+    let sdkPath;
+    try {
+      sdkPath = require.resolve('customerio-reactnative/package.json');
+    } catch (e) {
       console.warn('\x1b[33m%s\x1b[0m', 
-        `Warning: customerio-reactnative is not installed! Please install version ${requiredVersion || 'specified in peer dependencies'}.`
+        `Warning: customerio-reactnative is not installed! Please install version ${getRequiredSDKVersion() || 'specified in peer dependencies'}.`
       );
       return;
     }
     
     const sdkPkg = JSON.parse(fs.readFileSync(sdkPath, 'utf8'));
+    const requiredVersion = getRequiredSDKVersion();
     
     // Compare versions
     if (requiredVersion && sdkPkg.version !== requiredVersion) {
