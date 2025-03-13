@@ -19,7 +19,7 @@ export const withGoogleServicesJsonFile: ConfigPlugin<
     }
 
     console.log(
-      'Only specify Customer IO ios.pushNotification.googleServicesFile config if you are not already including' +
+      'Only specify Customer.io ios.pushNotification.googleServicesFile config if you are not already including' +
         ' GoogleService-Info.plist as part of Firebase integration'
     );
 
@@ -49,8 +49,8 @@ export const withGoogleServicesJsonFile: ConfigPlugin<
     if (googleServicesFile && FileManagement.exists(googleServicesFile)) {
       if (config.ios?.googleServicesFile) {
         console.warn(
-          'Specifying both Expo ios.googleServicesFile and Customer IO ios.pushNotification.googleServicesFile can cause a conflict' +
-            ' duplicating GoogleService-Info.plist in the iOS project resources. Please remove Customer IO ios.pushNotification.googleServicesFile'
+          'Specifying both Expo ios.googleServicesFile and Customer.io ios.pushNotification.googleServicesFile can cause a conflict' +
+            ' duplicating GoogleService-Info.plist in the iOS project resources. Please remove Customer.io ios.pushNotification.googleServicesFile'
         );
       }
 
