@@ -1,3 +1,9 @@
+## [2.0.0-beta.2](https://github.com/customerio/customerio-expo-plugin/compare/2.0.0-beta.1...2.0.0-beta.2) (2025-03-13)
+
+### Features
+
+* Support FCM as push provider for iOS applications ([#224](https://github.com/customerio/customerio-expo-plugin/issues/224)) ([3c478e1](https://github.com/customerio/customerio-expo-plugin/commit/3c478e197a8a29b7ea72dcbe72a815c4e975dbd8))
+
 ## [2.0.0-beta.1](https://github.com/customerio/customerio-expo-plugin/compare/1.0.0-beta.19...2.0.0-beta.1) (2024-12-24)
 
 ### Features
