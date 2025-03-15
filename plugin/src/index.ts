@@ -25,7 +25,13 @@ function withCustomerIOPlugin(
   props: CustomerIOPluginOptions
 ) {
   // Validate dependency during configuration
-  validateDependencies();
+  // Even if validation fails, we continue with the configuration
+  try {
+    validateDependencies();
+  } catch (error) {
+    // If validation fails for any reason, log it but continue
+    console.warn('Version validation failed, but continuing with configuration:', error);
+  }
   
   if (props.ios) {
     config = withCIOIos(config, props.ios);
@@ -38,7 +44,7 @@ function withCustomerIOPlugin(
   return config;
 }
 
-function validateDependencies() {
+export function validateDependencies() {
   try {
     // Use Node's own resolution algorithm instead of hardcoded paths
     let sdkPath;
