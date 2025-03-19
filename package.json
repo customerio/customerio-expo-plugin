@@ -30,6 +30,7 @@
     "expo-compat:create-test-app": "node scripts/expo-compat/create-test-app.js",
     "expo-compat:setup-test-app": "node scripts/expo-compat/setup-test-app.js",
     "expo-compat:configure-plugin": "node scripts/expo-compat/configure-plugin.js",
+    "expo-compat:validate-plugin": "node scripts/expo-compat/validate-plugin.js",
     "setup-test-app": "bash scripts/setup-test-app.sh",
     "cleanup": "bash scripts/cleanup-after-tests.sh",
     "test-plugin": "npm run setup-test-app && npm run test && npm run cleanup",
