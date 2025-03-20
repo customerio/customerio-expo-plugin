@@ -6,6 +6,7 @@ const {
   logMessage,
   parseKeyValueArgs,
   runScript,
+  setNestedProperty,
 } = require("../utils/cli");
 const { CUSTOMER_IO_EXPO_PLUGIN_NAME } = require("../utils/constants");
 
@@ -32,33 +33,20 @@ const EXPO_PLUGIN_CONFIGS = Object.fromEntries(
     .map(([key, value]) => [key.replace(EXPO_PLUGIN_PREFIX, ""), value]),
 );
 
-/**
- * Updates nested properties in an object.
- * @param {Object} obj - The object to update.
- * @param {Array} keys - The keys representing the nested property.
- * @param {any} value - The value to set.
- */
-function updateNestedProperty(obj, keys, value) {
-  let current = obj;
-  for (let i = 0; i < keys.length - 1; i++) {
-    if (!current[keys[i]]) current[keys[i]] = {}; // Ensure structure exists
-    current = current[keys[i]];
-  }
-  current[keys[keys.length - 1]] = value;
-}
-
-/**
- * Finds or adds a plugin to the plugins array.
- * @param {Array} plugins - The plugins array.
- * @param {string} pluginName - The name of the plugin.
- * @param {Object} defaultConfig - The default configuration for the plugin.
- * @returns {number} - The index of the plugin in the array.
- */
+// Finds or adds a plugin to the plugins array.
 function findOrAddPlugin(plugins, pluginName, defaultConfig = {}) {
   const index = plugins.findIndex((plugin) => Array.isArray(plugin) && plugin[0] === pluginName);
   if (index !== -1) return index;
   plugins.push([pluginName, defaultConfig]);
   return plugins.length - 1;
+}
+
+// Checks if an object is empty or contains only nested empty objects.
+function isObjectEmpty(obj) {
+  return (
+    Object.keys(obj).length === 0 ||
+    Object.values(obj).every(value => typeof value === "object" && isObjectEmpty(value))
+  );
 }
 
 /**
@@ -101,7 +89,7 @@ function execute() {
 
   // Step 4: Handle iOS push provider and frameworks
   if (IOS_PUSH_PROVIDER !== "fcm") {
-    delete cioPluginConfig.ios?.googleServicesFile;
+    delete cioPluginConfig.ios?.pushNotification?.googleServicesFile;
   }
 
   if (IOS_PUSH_PROVIDER) {
@@ -116,24 +104,16 @@ function execute() {
   // Step 5: Manage expo-build-properties
   const expoBuildPropsDependency = "expo-build-properties";
   logMessage(`🔧 Managing ${expoBuildPropsDependency}...`);
-  const buildPropsIndex = appJson.expo.plugins.findIndex(
-    (plugin) => Array.isArray(plugin) && plugin[0] === expoBuildPropsDependency,
-  );
+  const buildPropsIndex = findOrAddPlugin(appJson.expo.plugins, expoBuildPropsDependency, {});
+  const buildPropsConfig = appJson.expo.plugins[buildPropsIndex][1];
 
   if (IOS_USE_FRAMEWORKS) {
-    cioPluginConfig.ios.useFrameworks = IOS_USE_FRAMEWORKS;
-    if (buildPropsIndex === -1) {
-      appJson.expo.plugins.push([
-        expoBuildPropsDependency,
-        { ios: { useFrameworks: IOS_USE_FRAMEWORKS } },
-      ]);
-    } else {
-      appJson.expo.plugins[buildPropsIndex][1].ios.useFrameworks = IOS_USE_FRAMEWORKS;
-    }
+    setNestedProperty(cioPluginConfig, "ios.useFrameworks", IOS_USE_FRAMEWORKS);
+    setNestedProperty(buildPropsConfig, "ios.useFrameworks", IOS_USE_FRAMEWORKS);
   } else if (buildPropsIndex !== -1) {
     delete cioPluginConfig.ios?.useFrameworks;
-    delete appJson.expo.plugins[buildPropsIndex][1]?.ios?.useFrameworks;
-    if (Object.keys(appJson.expo.plugins[buildPropsIndex][1].ios).length === 0) {
+    delete buildPropsConfig.ios?.useFrameworks;
+    if (isObjectEmpty(buildPropsConfig)) {
       appJson.expo.plugins.splice(buildPropsIndex, 1);
     }
   }
@@ -141,7 +121,7 @@ function execute() {
   // Step 6: Apply additional key-value arguments
   logMessage("🔧 Applying additional configurations...");
   Object.entries(EXPO_PLUGIN_CONFIGS).forEach(([key, value]) => {
-    updateNestedProperty(cioPluginConfig, key.split("."), value);
+    setNestedProperty(cioPluginConfig, key, value);
   });
 
   // Step 7: Write updated app.json back to file

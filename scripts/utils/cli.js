@@ -92,6 +92,21 @@ function parseKeyValueArgs(args) {
   return updates;
 }
 
+// Updates nested property in an object using dot notation by creating missing objects as needed
+// e.g. setNestedValue(config, "ios.build.useFrameworks", "static");
+function setNestedProperty(obj, path, value) {
+  const keys = path.split(".");
+  let current = obj;
+
+  keys.slice(0, -1).forEach((key) => {
+    current[key] = current[key] || {};
+    current = current[key];
+  });
+
+  current[keys[keys.length - 1]] = value;
+}
+
+
 module.exports = {
   logMessage,
   runCommand,
@@ -100,4 +115,5 @@ module.exports = {
   isFlagEnabled,
   parseArrayArg,
   parseKeyValueArgs,
+  setNestedProperty,
 };
