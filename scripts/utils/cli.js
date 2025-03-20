@@ -106,7 +106,6 @@ function setNestedProperty(obj, path, value) {
   current[keys[keys.length - 1]] = value;
 }
 
-
 module.exports = {
   logMessage,
   runCommand,
