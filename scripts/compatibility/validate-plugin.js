@@ -78,7 +78,7 @@ function execute() {
   if (PLATFORMS.includes("ios")) {
     for (const provider of PUSH_PROVIDERS) {
       logMessage(`🔄 Switching push provider to: ${provider}`);
-      runCommand(`npm run expo-compat:configure-plugin -- --app-path=${APP_PATH} --ios-push-provider=${provider}`);
+      runCommand(`npm run compatibility:configure-plugin -- --app-path=${APP_PATH} --ios-push-provider=${provider}`);
 
       logMessage(
         `⚙️ Running expo prebuild after modifying app.json for ios push provider: ${provider}`,

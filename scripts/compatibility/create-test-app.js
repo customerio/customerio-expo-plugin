@@ -21,7 +21,7 @@ function execute() {
   logMessage("🚀 Starting Expo test app creation...\n");
 
   // App directory path relative from script to root directory
-  const APP_DIRECTORY_PATH = path.join(__dirname, "../../", DIRECTORY_NAME);
+  const APP_DIRECTORY_PATH = path.resolve(__dirname, "../../", DIRECTORY_NAME);
   const APP_PATH = path.join(APP_DIRECTORY_PATH, APP_NAME);
 
   logMessage(`🔹 Expo Version: ${EXPO_VERSION}`);
