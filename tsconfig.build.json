@@ -1,4 +1,6 @@
 {
   "extends": "./tsconfig",
-  "exclude": []
+  "exclude": [
+    "ci-test-apps",
+  ]
 }
