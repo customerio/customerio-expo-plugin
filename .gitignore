@@ -19,4 +19,4 @@ coverage/
 .vscode/
 
 # Directory used to store test apps for validating plugin compatibility
-expo-test-apps/
+ci-test-apps/

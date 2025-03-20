@@ -1,6 +1,6 @@
 const fs = require("fs");
 const path = require("path");
-const { getArgValue, logMessage, runCommand, runScript } = require("../utils/cli");
+const { getArgValue, logMessage, runCommand, runScript, setNestedProperty } = require("../utils/cli");
 const { CUSTOMER_IO_EXPO_PLUGIN_NAME, CUSTOMER_IO_REACT_NATIVE_SDK_NAME } = require("../utils/constants");
 
 const APP_PATH = getArgValue("--app-path", { required: true });
@@ -62,14 +62,9 @@ function execute() {
   try {
     const appJson = JSON.parse(fs.readFileSync(APP_JSON_FILE_PATH, "utf8"));
 
-    if (!appJson.expo) appJson.expo = {};
-    if (!appJson.expo.android) appJson.expo.android = {};
-    if (!appJson.expo.ios) appJson.expo.ios = {};
-
-    appJson.expo.android.package = ANDROID_PACKAGE_NAME;
-
-    appJson.expo.ios.bundleIdentifier = IOS_BUNDLE_IDENTIFIER;
-    appJson.expo.ios.entitlements = { "aps-environment": "development" };
+    setNestedProperty(appJson, "expo.android.package", ANDROID_PACKAGE_NAME);
+    setNestedProperty(appJson, "expo.ios.bundleIdentifier", IOS_BUNDLE_IDENTIFIER);
+    setNestedProperty(appJson, "expo.ios.entitlements", { "aps-environment": "development" });
 
     fs.writeFileSync(APP_JSON_FILE_PATH, JSON.stringify(appJson, null, 2) + "\n");
   } catch (error) {
