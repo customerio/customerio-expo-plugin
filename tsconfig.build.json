@@ -1,6 +1,6 @@
 {
   "extends": "./tsconfig",
   "exclude": [
-    "expo-test-apps",
+    "ci-test-apps",
   ]
 }
