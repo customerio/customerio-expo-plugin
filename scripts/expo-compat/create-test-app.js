@@ -11,7 +11,7 @@ const EXPO_TEMPLATE = getArgValue("--expo-template", {
 const APP_NAME = getArgValue("--app-name", {
   default: `TestApp_Expo${EXPO_VERSION}_${EXPO_TEMPLATE}`.replace(/\./g, ""),
 });
-const DIRECTORY_NAME = getArgValue("--dir-name", { default: "expo-test-apps" });
+const DIRECTORY_NAME = getArgValue("--dir-name", { default: "ci-test-apps" });
 const CLEAN_FLAG = isFlagEnabled("--clean");
 
 /**
