@@ -11,11 +11,11 @@ const {
 
 const APP_PATH = getArgValue("--app-path", { required: true });
 const PLATFORMS = getArgValue("--platforms", { default: "android,ios" }).split(",");
-const PUSH_PROVIDERS = parseArrayArg("--push-providers", { default: "apn,fcm" });
+const IOS_PUSH_PROVIDERS = parseArrayArg("--ios-push-providers", { default: "apn,fcm" });
 const TESTS_DIRECTORY_PATH = getArgValue("--tests-dir-path", {
   default: path.join(__dirname, "../../__tests__"),
 });
-const CLEAN_FLAG = isFlagEnabled("--clean", true);
+const CLEAN_FLAG = isFlagEnabled("--clean", { default: true });
 
 let PREBUILD_CMD = `cd ${APP_PATH} && CI=1 npx expo prebuild`;
 if (CLEAN_FLAG) PREBUILD_CMD += " --clean";
@@ -76,9 +76,9 @@ function execute() {
   }
 
   if (PLATFORMS.includes("ios")) {
-    for (const provider of PUSH_PROVIDERS) {
+    for (const provider of IOS_PUSH_PROVIDERS) {
       logMessage(`🔄 Switching push provider to: ${provider}`);
-      runCommand(`npm run expo-compat:configure-plugin -- --app-path=${APP_PATH} --ios-push-provider=${provider}`);
+      runCommand(`npm run compatibility:configure-plugin -- --app-path=${APP_PATH} --ios-push-provider=${provider}`);
 
       logMessage(
         `⚙️ Running expo prebuild after modifying app.json for ios push provider: ${provider}`,
