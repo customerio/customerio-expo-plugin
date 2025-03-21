@@ -22,6 +22,7 @@ test("Plugin injects expected customerio-reactnative/apn and customerio-reactnat
     const expectedLines = [
       "# --- CustomerIO Notification START ---",
       "target 'NotificationService' do",
+      "use_frameworks! :linkage => :static",
       "pod 'customerio-reactnative-richpush/apn', :path => '../node_modules/customerio-reactnative'",
       "end",
       "# --- CustomerIO Notification END ---"
