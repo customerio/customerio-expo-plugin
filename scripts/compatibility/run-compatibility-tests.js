@@ -21,7 +21,7 @@ runCommand(`npm run compatibility:setup-test-app -- --app-path=${APP_PATH}`);
 
 // Step 3: Configure Plugin
 logMessage("\n🔹 Configuring Plugin...");
-runCommand(`npm run compatibility:configure-plugin -- --app-path=${APP_PATH}`);
+runCommand(`npm run compatibility:configure-plugin -- --app-path=${APP_PATH} --add-default-config`);
 
 // Step 4: Validate Plugin
 logMessage("\n🔹 Validating Plugin...");
