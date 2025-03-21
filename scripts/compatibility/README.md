@@ -63,7 +63,7 @@ npm run compatibility:validate-plugin -- --app-path=<path-to-app>
 | - | - | - | - |
 | `--app-path` | Path to the test app directory | - | ✅ |
 | `--platforms` | Platforms to test (`android`, `ios`) | `android,ios` | ❌ |
-| `--push-providers` | iOS push providers to test (`apn`, `fcm`) | `apn,fcm` | ❌ |
+| `--ios-push-providers` | iOS push providers to test (`apn`, `fcm`) | `apn,fcm` | ❌ |
 
 ### 5. `compatibility:run-compatibility-tests`
 
