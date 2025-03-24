@@ -6,6 +6,8 @@ const APP_NAME = getArgValue("--app-name", { default: `ExpoTest_V${EXPO_VERSION}
 const APP_DIR = getArgValue("--dir-name", { default: "ci-test-apps" });
 const CLEAN_FLAG = isFlagEnabled("--clean");
 const APP_PATH = path.resolve(__dirname, "../..", APP_DIR, APP_NAME);
+const PLATFORMS = getArgValue("--platforms", { default: "android,ios" }).split(",");
+const IOS_USE_FRAMEWORKS = getArgValue("--ios-use-frameworks");
 
 logMessage(`🚀 Starting local validation for Expo plugin (Expo ${EXPO_VERSION})...`);
 
@@ -26,12 +28,17 @@ runCommand(createAppCommand);
 logMessage("\n🔹 Setting up Test App...");
 runCommand(`npm run compatibility:setup-test-app -- --app-path=${APP_PATH}`);
 
+var iosUseFrameworksParam = "";
+if (IOS_USE_FRAMEWORKS) {
+  iosUseFrameworksParam = `--ios-use-frameworks=${IOS_USE_FRAMEWORKS}`;
+}
+
 // Step 3: Configure Plugin
 logMessage("\n🔹 Configuring Plugin...");
-runCommand(`npm run compatibility:configure-plugin -- --app-path=${APP_PATH} --add-default-config`);
+runCommand(`npm run compatibility:configure-plugin -- --app-path=${APP_PATH} --add-default-config ${iosUseFrameworksParam}`);
 
 // Step 4: Validate Plugin
 logMessage("\n🔹 Validating Plugin...");
-runCommand(`npm run compatibility:validate-plugin -- --app-path=${APP_PATH}`);
+runCommand(`npm run compatibility:validate-plugin -- --app-path=${APP_PATH} --platforms=${PLATFORMS} ${iosUseFrameworksParam}`);
 
 logMessage(`\n🎉 Expo plugin validation completed successfully! (Expo ${EXPO_VERSION})\n`, "success");

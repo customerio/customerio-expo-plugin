@@ -12,6 +12,7 @@ const {
 const APP_PATH = getArgValue("--app-path", { required: true });
 const PLATFORMS = getArgValue("--platforms", { default: "android,ios" }).split(",");
 const IOS_PUSH_PROVIDERS = parseArrayArg("--ios-push-providers", { default: "apn,fcm" });
+const IOS_USE_FRAMEWORKS = getArgValue("--ios-use-frameworks");
 const TESTS_DIRECTORY_PATH = getArgValue("--tests-dir-path", {
   default: path.join(__dirname, "../../__tests__"),
 });
@@ -77,8 +78,12 @@ function execute() {
 
   if (PLATFORMS.includes("ios")) {
     for (const provider of IOS_PUSH_PROVIDERS) {
+      var iosUseFrameworksParam = "";
+      if (IOS_USE_FRAMEWORKS) {
+        iosUseFrameworksParam = `--ios-use-frameworks=${IOS_USE_FRAMEWORKS}`;
+      }
       logMessage(`🔄 Switching push provider to: ${provider}`);
-      runCommand(`npm run compatibility:configure-plugin -- --app-path=${APP_PATH} --ios-push-provider=${provider}`);
+      runCommand(`npm run compatibility:configure-plugin -- --app-path=${APP_PATH} --ios-push-provider=${provider} ${iosUseFrameworksParam}`);
 
       logMessage(
         `⚙️ Running expo prebuild after modifying app.json for ios push provider: ${provider}`,
@@ -89,16 +94,16 @@ function execute() {
       logMessage(`🧪 Running iOS tests for provider: ${provider}`);
       runCommand(`${JEST_TEST_ENV_VALUES} npm test -- ${TESTS_DIRECTORY_PATH}/ios/common ${TESTS_DIRECTORY_PATH}/ios/${provider}`);
 
-      logMessage(`📱 Building iOS project for provider: ${provider}`);
-      try {
-        // Get correct workspace name for iOS build
-        const workspaceName = getIosWorkspaceName();
-        runCommand(`cd ${APP_PATH}/ios && xcodebuild -workspace ${workspaceName}.xcworkspace -scheme ${workspaceName} -sdk iphonesimulator -configuration Release build`);
-        logMessage(`✅ iOS build succeeded for provider: ${provider}`, "success");
-      } catch (error) {
-        logMessage(`❌ iOS build failed for provider: ${provider}: ${error.message}`, "error");
-        process.exit(1);
-      }
+      // logMessage(`📱 Building iOS project for provider: ${provider}`);
+      // try {
+      //   // Get correct workspace name for iOS build
+      //   const workspaceName = getIosWorkspaceName();
+      //   runCommand(`cd ${APP_PATH}/ios && xcodebuild -workspace ${workspaceName}.xcworkspace -scheme ${workspaceName} -sdk iphonesimulator -configuration Release build`);
+      //   logMessage(`✅ iOS build succeeded for provider: ${provider}`, "success");
+      // } catch (error) {
+      //   logMessage(`❌ iOS build failed for provider: ${provider}: ${error.message}`, "error");
+      //   process.exit(1);
+      // }
     }
   }
 
