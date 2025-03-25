@@ -38,7 +38,7 @@ function getPluginConfigFromCliPrefix(pluginName) {
     process.exit(1);
   }
 
-  const fullPrefix = `${prefix}.`; // e.g. "cio." or "bp."
+  const fullPrefix = `${prefix}.`; // e.g. "cio-plugin.", etc.
   const keyValues = parseArgsAsObject();
 
   const configEntries = Object.entries(keyValues)
