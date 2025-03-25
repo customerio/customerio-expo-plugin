@@ -20,11 +20,10 @@ test('Plugin injects CIO imports and calls into AppDelegate.mm', async () => {
     #import <EXNotifications/EXNotificationCenterDelegate.h>
     #endif
 
-    @protocol FIRMessagingDelegate;
 
     // Add swift bridge imports
     #import <ExpoModulesCore-Swift.h>
-    #import <${testAppName()}-Swift.h>
+    #import <ExpoTestbed-Swift.h>
       
     #import "AppDelegate.h"
 
