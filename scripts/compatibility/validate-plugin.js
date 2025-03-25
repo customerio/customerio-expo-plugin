@@ -1,6 +1,7 @@
 const fs = require("fs");
 const path = require("path");
 const {
+  runScriptWithArgs,
   getArgValue,
   isFlagEnabled,
   logMessage,
@@ -20,11 +21,7 @@ const CLEAN_FLAG = isFlagEnabled("--clean", { default: true });
 let PREBUILD_CMD = `cd ${APP_PATH} && CI=1 npx expo prebuild`;
 if (CLEAN_FLAG) PREBUILD_CMD += " --clean";
 
-/**
- * Retrieves the name of the iOS workspace from the app.json or fallback to scanning
- * the /ios directory for .xcworkspace files.
- * @returns {string} - The name of the workspace.
- */
+// Returns iOS workspace name by checking /ios for .xcworkspace files or falling back to app.json name
 function getIosWorkspaceName(fallback = "App") {
   // Scan the /ios directory for .xcworkspace files
   const iosPath = path.join(APP_PATH, "ios");
@@ -35,7 +32,7 @@ function getIosWorkspaceName(fallback = "App") {
     }
   }
 
-  // Try to get workspace name from app.json
+  // Fallback to reading the app.json
   const appJsonPath = path.join(APP_PATH, "app.json");
   if (fs.existsSync(appJsonPath)) {
     try {
@@ -48,7 +45,7 @@ function getIosWorkspaceName(fallback = "App") {
     }
   }
 
-  // Default fallback
+  // Fallback to default name
   return fallback;
 }
 
@@ -60,7 +57,7 @@ function execute() {
 
   if (PLATFORMS.includes("android")) {
     logMessage("⚙️ Running expo prebuild before Android...");
-    runCommand(PREBUILD_CMD);
+    runCommand(`${PREBUILD_CMD} --platform=android`);
 
     logMessage("🧪 Running Android tests...");
     runCommand(`TEST_APP_PATH=${APP_PATH} npm test -- ${TESTS_DIRECTORY_PATH}/android`);
@@ -78,12 +75,15 @@ function execute() {
   if (PLATFORMS.includes("ios")) {
     for (const provider of IOS_PUSH_PROVIDERS) {
       logMessage(`🔄 Switching push provider to: ${provider}`);
-      runCommand(`npm run compatibility:configure-plugin -- --app-path=${APP_PATH} --ios-push-provider=${provider}`);
+      runScriptWithArgs("compatibility:configure-plugin", {
+        args: {
+          "app-path": APP_PATH,
+          "ios-push-provider": provider,
+        },
+      });
 
-      logMessage(
-        `⚙️ Running expo prebuild after modifying app.json for ios push provider: ${provider}`,
-      );
-      runCommand(PREBUILD_CMD);
+      logMessage(`⚙️ Running expo prebuild after modifying app.json for ios push provider: ${provider}`);
+      runCommand(`${PREBUILD_CMD} --platform=ios`);
 
       const JEST_TEST_ENV_VALUES = `TEST_APP_PATH=${APP_PATH} TEST_APP_NAME=${getIosWorkspaceName()}`;
       logMessage(`🧪 Running iOS tests for provider: ${provider}`);
@@ -93,7 +93,11 @@ function execute() {
       try {
         // Get correct workspace name for iOS build
         const workspaceName = getIosWorkspaceName();
-        runCommand(`cd ${APP_PATH}/ios && xcodebuild -workspace ${workspaceName}.xcworkspace -scheme ${workspaceName} -sdk iphonesimulator -configuration Release build`);
+        runCommand(`cd ${APP_PATH}/ios && xcodebuild \
+          -workspace ${workspaceName}.xcworkspace \
+          -scheme ${workspaceName} \
+          -sdk iphonesimulator \
+          -configuration Release build`);
         logMessage(`✅ iOS build succeeded for provider: ${provider}`, "success");
       } catch (error) {
         logMessage(`❌ iOS build failed for provider: ${provider}: ${error.message}`, "error");

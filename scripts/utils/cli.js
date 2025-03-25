@@ -60,36 +60,50 @@ function isFlagEnabled(flag, { default: defaultValue = false } = {}) {
 }
 
 // Converts a CLI argument (`--arg=value1,value2`) into an array (`["value1", "value2"]`)
-function parseArrayArg(flag, { default: defaultValue = "" } = {}) {
-  const value = getArgValue(flag, { default: defaultValue });
+function parseArrayArg(flag, { default: defaultValue = [] } = {}) {
+  const value = getArgValue(flag);
   return value
     ? value
-      .split(",")
-      .map((v) => v.trim())
-      .filter(Boolean)
-    : [];
+        .split(",")
+        .map((v) => v.trim())
+        .filter(Boolean)
+    : defaultValue;
 }
 
 // Parses CLI arguments into an object of key-value pairs ({ key: value })
-// Supports `--key=value` format
-function parseKeyValueArgs(args) {
-  const updates = {};
+// Supports `--key=value` and standalone flags (e.g., --clean)
+function parseArgsAsObject(args = process.argv.slice(2)) {
+  const result = {};
 
   args.forEach((arg) => {
-    // Skip standalone flags (e.g., --clear)
-    if (!arg.includes("=")) {
-      return;
-    }
-
     const [key, value] = arg.split("=");
-    if (!key || value === undefined) {
-      logMessage(`❌ Invalid argument: ${arg}. Use format --key=value`, "error");
-      process.exit(1);
+    const cleanKey = key.replace(/^--/, "").trim();
+
+    if (!key) return;
+
+    if (value === undefined) {
+      result[cleanKey] = true;
+    } else {
+      result[cleanKey] = value.trim();
     }
-    updates[key.replace(/^--/, "").trim()] = value.trim();
   });
 
-  return updates;
+  return result;
+}
+
+// Runs a command with provided arguments and forwards the rest of the arguments.
+function runScriptWithArgs(script, { args = {}, exclude = [] } = {}) {
+  // Merge CLI arguments with provided arguments, giving priority to CLI arguments
+  const merged = { ...args, ...parseArgsAsObject() };
+  // Exclude only keys not already included via `args`
+  const exclusionSet = new Set(exclude.filter((key) => !(key in args)));
+  // Convert merged arguments into CLI format
+  const cliArgs = Object.entries(merged)
+    .filter(([key]) => !exclusionSet.has(key))
+    .map(([key, value]) => (value === true ? `--${key}` : `--${key}=${value}`));
+
+  const command = `npm run ${script} -- ${cliArgs.join(" ")}`.trim();
+  runCommand(command);
 }
 
 // Updates nested property in an object using dot notation by creating missing objects as needed
@@ -113,6 +127,7 @@ module.exports = {
   getArgValue,
   isFlagEnabled,
   parseArrayArg,
-  parseKeyValueArgs,
+  parseArgsAsObject,
+  runScriptWithArgs,
   setNestedProperty,
 };
