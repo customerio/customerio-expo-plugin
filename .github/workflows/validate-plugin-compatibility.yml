@@ -101,7 +101,6 @@ jobs:
           npm run compatibility:configure-plugin -- \
             --app-path=${{ env.APP_PATH }} \
             --add-default-config \
-            --ios-use-frameworks="static" \
             ${{ matrix.ios-deployment-target && format('--expo-build-props.ios.deploymentTarget={0}', matrix.ios-deployment-target) }}
 
       - name: Validate Plugin
@@ -109,4 +108,5 @@ jobs:
           npm run compatibility:validate-plugin -- \
             --app-path=${{ env.APP_PATH }} \
             --platforms=${{ matrix.platform }}\
+            --ios-use-frameworks="static" \
             ${{ matrix.ios-push-provider && format(' --ios-push-providers={0}', matrix.ios-push-provider) }}
