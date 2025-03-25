@@ -10,16 +10,22 @@ describe('APN NotificationService.swift', () => {
   test("Plugin creates NotificationService.swift with required methods", async () => {
     const content = await fs.readFile(notificationServicePath, "utf8");
     
-    // Check for required elements rather than exact snapshot
-    const requiredElements = [
+    // Core methods that must exist in the notification service
+    const requiredMethods = [
       'didReceive',
-      'withContentHandler',
-      'serviceExtensionTimeWillExpire'
+      'withContentHandler', 
+      'serviceExtensionTimeWillExpire',
+      'MessagingPush.shared.didReceive',
+      'MessagingPush.shared.serviceExtensionTimeWillExpire'
     ];
     
-    requiredElements.forEach(element => {
+    // Check for all required methods
+    requiredMethods.forEach(element => {
       expect(content).toContain(element);
     });
+    
+    // The notification service should contain initialization code
+    expect(content).toContain('initializeForExtension');
   });
   
   test("NotificationService.swift has expected APN configuration", async () => {
