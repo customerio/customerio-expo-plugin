@@ -57,7 +57,7 @@ jobs:
 
           # Determine current app type and git context
           [[ "$CURRENT_BRANCH" == "refs/heads/feature/"* ]] && distribution_groups+=("$FEATURE_BUILDS_GROUP")
-          [[ "$CURRENT_BRANCH" == "refs/heads/main" || "$CURRENT_BRANCH" == "refs/heads/beta" ]] && distribution_groups+=("$NEXT_BUILDS_GROUP")
+          [[ "$CURRENT_BRANCH" == "refs/heads/master" || "$CURRENT_BRANCH" == "refs/heads/beta" ]] && distribution_groups+=("$NEXT_BUILDS_GROUP")
           [[ "$USE_LATEST_SDK_VERSION" == "true" ]] && distribution_groups+=("$PUBLIC_BUILDS_GROUP")
 
           # Export the groups as an environment variable
@@ -181,7 +181,7 @@ jobs:
 
           # Determine current app type and git context
           [[ "$CURRENT_BRANCH" == "refs/heads/feature/"* ]] && distribution_groups+=("$FEATURE_BUILDS_GROUP")
-          [[ "$CURRENT_BRANCH" == "refs/heads/main" || "$CURRENT_BRANCH" == "refs/heads/beta" ]] && distribution_groups+=("$NEXT_BUILDS_GROUP")
+          [[ "$CURRENT_BRANCH" == "refs/heads/master" || "$CURRENT_BRANCH" == "refs/heads/beta" ]] && distribution_groups+=("$NEXT_BUILDS_GROUP")
           
           if [[ ${{ matrix.push_provider }} == "apn" && "$USE_LATEST_SDK_VERSION" == "true" ]]; then
             distribution_groups+=("$PUBLIC_BUILDS_GROUP")

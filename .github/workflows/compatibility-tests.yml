@@ -1,0 +1,43 @@
+name: Run Expo compatibility tests
+
+on:
+  pull_request:
+  push:
+    branches: [ master, beta, feature/* ]
+
+jobs:
+  test-expo-compat-android:
+    name: Runs compatibility tests for Expo versions on Android
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        expo_version: [51, 52]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run compat tests
+        run: npm run compatibility:run-compatibility-tests -- --expo-version=${{ matrix.expo_version }} --platforms=android
+
+  test-expo-compat-ios:
+    name: Runs compatibility tests for Expo versions on iOS
+    runs-on: macos-14
+    strategy:
+      matrix:
+        expo_version: [51, 52]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run compat tests
+        run: npm run compatibility:run-compatibility-tests -- --expo-version=${{ matrix.expo_version }} --platforms=ios --ios-use-frameworks=static
