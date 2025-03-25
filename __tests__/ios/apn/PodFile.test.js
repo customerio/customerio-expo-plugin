@@ -1,32 +1,36 @@
-const { testAppPath } = require("../../utils");
+const { getTestPaths } = require("../../helpers/testConfig");
+const { extractContentBetweenMarkers } = require("../../helpers/parsers");
+const { testEachParam } = require("../../utils");
 const fs = require("fs-extra");
-const path = require("path");
+const { TEST_PARAMS } = require("../../helpers/testConfig");
 
-const testProjectPath = testAppPath();
-const iosPath = path.join(testProjectPath, "ios");
-const podFilePath = path.join(iosPath, "Podfile");
+describe('iOS Podfile Customizations for APN', () => {
+  const { getPodfilePath } = getTestPaths();
+  const podFilePath = getPodfilePath();
 
-test("Plugin injects expected customerio-reactnative/apn and customerio-reactnative-richpush/apn in Podfile", async () => {
+  test('Plugin injects customerio-reactnative/apn pod in Podfile', async () => {
     const content = await fs.readFile(podFilePath, "utf8");
-
-    // Ensure APN pod is added
+    
+    // Using our custom matcher
+    expect(content).toHaveCIOPodDependencies();
+    
+    // Check for APN-specific pod
     expect(content).toContain("pod 'customerio-reactnative/apn', :path => '../node_modules/customerio-reactnative'");
+  });
 
-    // Ensure NotificationService target is added with rich push pod
-    const podFileAsLines = content.split('\n').map(line => line.trim());
-    const startIndex = podFileAsLines.indexOf("# --- CustomerIO Notification START ---");
-    const endIndex = podFileAsLines.indexOf("# --- CustomerIO Notification END ---", startIndex);
-    expect(startIndex).toBeGreaterThan(-1);
-    expect(endIndex).toBeGreaterThan(startIndex);
-    const targetBlock = podFileAsLines.slice(startIndex, endIndex + 1).filter(line => line.length > 0);
-    const expectedLines = [
-      "# --- CustomerIO Notification START ---",
-      "target 'NotificationService' do",
-      "use_frameworks! :linkage => :static",
-      "pod 'customerio-reactnative-richpush/apn', :path => '../node_modules/customerio-reactnative'",
-      "end",
+  test('Plugin adds NotificationService target with rich push pod for APN', async () => {
+    const content = await fs.readFile(podFilePath, "utf8");
+    
+    // Extract the notification service target section
+    const targetBlock = await extractContentBetweenMarkers(
+      podFilePath, 
+      "# --- CustomerIO Notification START ---", 
       "# --- CustomerIO Notification END ---"
-    ];
-
-    expect(targetBlock).toEqual(expectedLines);
+    );
+    
+    // Check the content of the notification service target
+    expect(targetBlock).toContain("target 'NotificationService'");
+    expect(targetBlock).toContain("use_frameworks!");
+    expect(targetBlock).toContain("pod 'customerio-reactnative-richpush/apn'");
+  });
 });

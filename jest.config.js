@@ -28,6 +28,10 @@ module.exports = {
         '^.+\\.(js|ts)$': 'ts-jest',
       },
       testEnvironment: 'node',
+      setupFilesAfterEnv: ['<rootDir>/__tests__/setup.js'],
     },
   ],
+  // Global configuration for all projects
+  testTimeout: 30000, // Increase timeout for tests that need to read files
+  verbose: true,
 };

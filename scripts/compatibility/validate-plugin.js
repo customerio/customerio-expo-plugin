@@ -16,9 +16,25 @@ const TESTS_DIRECTORY_PATH = getArgValue("--tests-dir-path", {
   default: path.join(__dirname, "../../__tests__"),
 });
 const CLEAN_FLAG = isFlagEnabled("--clean", { default: true });
+const RUN_CONTRACT_TESTS = isFlagEnabled("--contract-tests", { default: true });
 
 let PREBUILD_CMD = `cd ${APP_PATH} && CI=1 npx expo prebuild`;
 if (CLEAN_FLAG) PREBUILD_CMD += " --clean";
+
+/**
+ * Gets the Expo SDK version from package.json
+ * @returns {string} Expo SDK version
+ */
+function getExpoVersion() {
+  try {
+    const packageJsonPath = path.join(APP_PATH, "package.json");
+    const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, "utf8"));
+    return packageJson.dependencies.expo.replace('^', '').replace('~', '');
+  } catch (error) {
+    logMessage(`⚠️ Warning: Failed to determine Expo version - ${error.message}`, "warning");
+    return "unknown";
+  }
+}
 
 /**
  * Retrieves the name of the iOS workspace from the app.json or fallback to scanning
@@ -56,14 +72,24 @@ function getIosWorkspaceName(fallback = "App") {
  * Main entry point for the script to handle the execution logic.
  */
 function execute() {
-  logMessage("🚀 Starting test and build validation for Expo plugin...\n");
+  const expoVersion = getExpoVersion();
+  const appName = getIosWorkspaceName();
+  
+  logMessage(`🚀 Starting test and build validation for Expo plugin (Expo SDK ${expoVersion})...\n`);
+  logMessage(`📱 App name: ${appName}`);
 
   if (PLATFORMS.includes("android")) {
     logMessage("⚙️ Running expo prebuild before Android...");
     runCommand(PREBUILD_CMD);
 
     logMessage("🧪 Running Android tests...");
-    runCommand(`TEST_APP_PATH=${APP_PATH} npm test -- ${TESTS_DIRECTORY_PATH}/android`);
+    runCommand(`TEST_APP_PATH=${APP_PATH} TEST_APP_NAME=${appName} TEST_EXPO_VERSION=${expoVersion} npm test -- ${TESTS_DIRECTORY_PATH}/android`);
+
+    // Run contract tests for Android if enabled
+    if (RUN_CONTRACT_TESTS) {
+      logMessage("📝 Running Android contract tests...");
+      runCommand(`TEST_APP_PATH=${APP_PATH} TEST_APP_NAME=${appName} TEST_EXPO_VERSION=${expoVersion} npm test -- ${TESTS_DIRECTORY_PATH}/contracts.test.js`);
+    }
 
     logMessage("🤖 Building Android project...");
     try {
@@ -85,15 +111,19 @@ function execute() {
       );
       runCommand(PREBUILD_CMD);
 
-      const JEST_TEST_ENV_VALUES = `TEST_APP_PATH=${APP_PATH} TEST_APP_NAME=${getIosWorkspaceName()}`;
+      const JEST_TEST_ENV_VALUES = `TEST_APP_PATH=${APP_PATH} TEST_APP_NAME=${appName} TEST_EXPO_VERSION=${expoVersion}`;
       logMessage(`🧪 Running iOS tests for provider: ${provider}`);
       runCommand(`${JEST_TEST_ENV_VALUES} npm test -- ${TESTS_DIRECTORY_PATH}/ios/common ${TESTS_DIRECTORY_PATH}/ios/${provider}`);
 
+      // Run contract tests for current iOS provider if enabled
+      if (RUN_CONTRACT_TESTS) {
+        logMessage(`📝 Running iOS contract tests for provider: ${provider}...`);
+        runCommand(`${JEST_TEST_ENV_VALUES} IOS_PUSH_PROVIDER=${provider} npm test -- ${TESTS_DIRECTORY_PATH}/contracts.test.js`);
+      }
+
       logMessage(`📱 Building iOS project for provider: ${provider}`);
       try {
-        // Get correct workspace name for iOS build
-        const workspaceName = getIosWorkspaceName();
-        runCommand(`cd ${APP_PATH}/ios && xcodebuild -workspace ${workspaceName}.xcworkspace -scheme ${workspaceName} -sdk iphonesimulator -configuration Release build`);
+        runCommand(`cd ${APP_PATH}/ios && xcodebuild -workspace ${appName}.xcworkspace -scheme ${appName} -sdk iphonesimulator -configuration Release build`);
         logMessage(`✅ iOS build succeeded for provider: ${provider}`, "success");
       } catch (error) {
         logMessage(`❌ iOS build failed for provider: ${provider}: ${error.message}`, "error");
