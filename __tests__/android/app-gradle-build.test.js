@@ -1,12 +1,14 @@
-const fs = require("fs-extra");
+const { testAppPath } = require("../utils");
 const path = require("path");
+const g2js = require('gradle-to-js/lib/parser');
 
-const testProjectPath = path.join(__dirname, "../../test-app");
+const testProjectPath = testAppPath();
 const androidPath = path.join(testProjectPath, "android");
 const appBuildGradlePath = path.join(androidPath, "app/build.gradle");
 
 test("Plugin applies Google Services plugin in the app Gradle build file", async () => {
-  const content = await fs.readFile(appBuildGradlePath, "utf8");
+  const gradleFileAsJson = await g2js.parseFile(appBuildGradlePath);
 
-  expect(content).toMatchSnapshot();
+  const hasPlugin = gradleFileAsJson.apply.some(plugin => plugin.includes('com.google.gms.google-services'));
+  expect(hasPlugin).toBe(true);
 });

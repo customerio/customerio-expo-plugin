@@ -26,6 +26,15 @@ if (CLEAN_FLAG) PREBUILD_CMD += " --clean";
  * @returns {string} - The name of the workspace.
  */
 function getIosWorkspaceName(fallback = "App") {
+  // Scan the /ios directory for .xcworkspace files
+  const iosPath = path.join(APP_PATH, "ios");
+  if (fs.existsSync(iosPath)) {
+    const workspaces = fs.readdirSync(iosPath).filter((file) => file.endsWith(".xcworkspace"));
+    if (workspaces.length > 0) {
+      return path.basename(workspaces[0], ".xcworkspace");
+    }
+  }
+
   // Try to get workspace name from app.json
   const appJsonPath = path.join(APP_PATH, "app.json");
   if (fs.existsSync(appJsonPath)) {
@@ -36,15 +45,6 @@ function getIosWorkspaceName(fallback = "App") {
       }
     } catch (error) {
       logMessage(`⚠️ Warning: Failed to read app.json - ${error.message}`, "warning");
-    }
-  }
-
-  // Scan the /ios directory for .xcworkspace files
-  const iosPath = path.join(APP_PATH, "ios");
-  if (fs.existsSync(iosPath)) {
-    const workspaces = fs.readdirSync(iosPath).filter((file) => file.endsWith(".xcworkspace"));
-    if (workspaces.length > 0) {
-      return path.basename(workspaces[0], ".xcworkspace");
     }
   }
 
@@ -63,7 +63,7 @@ function execute() {
     runCommand(PREBUILD_CMD);
 
     logMessage("🧪 Running Android tests...");
-    runCommand(`npm test -- ${TESTS_DIRECTORY_PATH}/android`);
+    runCommand(`TEST_APP_PATH=${APP_PATH} npm test -- ${TESTS_DIRECTORY_PATH}/android`);
 
     logMessage("🤖 Building Android project...");
     try {
@@ -85,8 +85,9 @@ function execute() {
       );
       runCommand(PREBUILD_CMD);
 
+      const JEST_TEST_ENV_VALUES = `TEST_APP_PATH=${APP_PATH} TEST_APP_NAME=${getIosWorkspaceName()}`;
       logMessage(`🧪 Running iOS tests for provider: ${provider}`);
-      runCommand(`npm test -- ${TESTS_DIRECTORY_PATH}/ios/common ${TESTS_DIRECTORY_PATH}/ios/${provider}`);
+      runCommand(`${JEST_TEST_ENV_VALUES} npm test -- ${TESTS_DIRECTORY_PATH}/ios/common ${TESTS_DIRECTORY_PATH}/ios/${provider}`);
 
       logMessage(`📱 Building iOS project for provider: ${provider}`);
       try {
