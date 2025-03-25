@@ -1,0 +1,6 @@
+app_identifier([
+  "io.customer.testbed.expo.apn",
+  "io.customer.testbed.expo.apn.richpush",
+])
+
+package_name("io.customer.testbed.expo")

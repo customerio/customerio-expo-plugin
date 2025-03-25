@@ -1,3 +1,133 @@
+## [2.0.0-beta.2](https://github.com/customerio/customerio-expo-plugin/compare/2.0.0-beta.1...2.0.0-beta.2) (2025-03-13)
+
+### Features
+
+* Support FCM as push provider for iOS applications ([#224](https://github.com/customerio/customerio-expo-plugin/issues/224)) ([3c478e1](https://github.com/customerio/customerio-expo-plugin/commit/3c478e197a8a29b7ea72dcbe72a815c4e975dbd8))
+
+## [2.0.0-beta.1](https://github.com/customerio/customerio-expo-plugin/compare/1.0.0-beta.19...2.0.0-beta.1) (2024-12-24)
+
+### Features
+
+* Commit to trigger a new release ([15cb79d](https://github.com/customerio/customerio-expo-plugin/commit/15cb79ddaecf640f1a4401b89e6a3878250d92a8))
+
+## [1.0.0-beta.19](https://github.com/customerio/customerio-expo-plugin/compare/1.0.0-beta.18...1.0.0-beta.19) (2024-12-24)
+
+### ⚠ BREAKING CHANGES
+
+* Data pipeline support
+
+* BREAKING CHANGE: Bump SDK version ([#192](https://github.com/customerio/customerio-expo-plugin/issues/192)) ([59a019c](https://github.com/customerio/customerio-expo-plugin/commit/59a019c286e4f08fdace36b4b1264bfc8b781ada))
+
+## [1.0.0-beta.18](https://github.com/customerio/customerio-expo-plugin/compare/1.0.0-beta.17...1.0.0-beta.18) (2024-12-24)
+
+### ⚠ BREAKING CHANGES
+
+* Expo as a source for Data pipelines (#190)
+
+### Features
+
+* Expo as a source for Data pipelines ([#190](https://github.com/customerio/customerio-expo-plugin/issues/190)) ([be4738d](https://github.com/customerio/customerio-expo-plugin/commit/be4738d6790edb603fe94d56d9cd4d908b81acaa))
+
+## [1.0.0-beta.17](https://github.com/customerio/customerio-expo-plugin/compare/1.0.0-beta.16...1.0.0-beta.17) (2024-11-21)
+
+### Features
+
+* bumped iOS deployment target for compatibility with Expo SDK 52 ([#156](https://github.com/customerio/customerio-expo-plugin/issues/156)) ([086b336](https://github.com/customerio/customerio-expo-plugin/commit/086b33679fc49978cc1256a91e66de6da582c9b0))
+
+## [1.0.0-beta.16](https://github.com/customerio/customerio-expo-plugin/compare/1.0.0-beta.15...1.0.0-beta.16) (2024-10-25)
+
+### Bug Fixes
+
+* expo-doctor plugin error ([#154](https://github.com/customerio/customerio-expo-plugin/issues/154)) ([5b2adb3](https://github.com/customerio/customerio-expo-plugin/commit/5b2adb3ed251bc1c68328f504753df945c3b1d72))
+
+## [1.0.0-beta.15](https://github.com/customerio/customerio-expo-plugin/compare/1.0.0-beta.14...1.0.0-beta.15) (2024-02-21)
+
+
+### Features
+
+* expo 50 upgrade ([#127](https://github.com/customerio/customerio-expo-plugin/issues/127)) ([cea103b](https://github.com/customerio/customerio-expo-plugin/commit/cea103bfd18dc62b256859a8b8544bb582415448))
+
+## [1.0.0-beta.14](https://github.com/customerio/customerio-expo-plugin/compare/1.0.0-beta.13...1.0.0-beta.14) (2024-02-12)
+
+
+### Features
+
+* automatically handle push click events and increase compatibility with 3rd party push modules ([#112](https://github.com/customerio/customerio-expo-plugin/issues/112)) ([a67e345](https://github.com/customerio/customerio-expo-plugin/commit/a67e3454bd5510dea122c8e027b87707af4d5104))
+
+## [1.0.0-beta.13](https://github.com/customerio/customerio-expo-plugin/compare/1.0.0-beta.12...1.0.0-beta.13) (2023-08-07)
+
+
+### Bug Fixes
+
+* modified regex for Expo 48 and added UNUserNotificationCenter snippet ([#82](https://github.com/customerio/customerio-expo-plugin/issues/82)) ([e5cbc77](https://github.com/customerio/customerio-expo-plugin/commit/e5cbc77b3e3f12801dc27845abeb982a335d7572))
+
+## [1.0.0-beta.12](https://github.com/customerio/customerio-expo-plugin/compare/1.0.0-beta.11...1.0.0-beta.12) (2023-07-06)
+
+
+### Bug Fixes
+
+* path fix for monorepo support ([#91](https://github.com/customerio/customerio-expo-plugin/issues/91)) ([8f551d3](https://github.com/customerio/customerio-expo-plugin/commit/8f551d3948cf33267220b58d5c6271b97db15594))
+
+## [1.0.0-beta.11](https://github.com/customerio/customerio-expo-plugin/compare/1.0.0-beta.10...1.0.0-beta.11) (2023-07-03)
+
+
+### ⚠ BREAKING CHANGES
+
+* auto-update native SDK and easier rich push install (#81)
+
+### Bug Fixes
+
+* auto-update native SDK and easier rich push install ([#81](https://github.com/customerio/customerio-expo-plugin/issues/81)) ([793e927](https://github.com/customerio/customerio-expo-plugin/commit/793e9274cf83cfbea6334957a1df2a96ccb80f2d))
+
+## [1.0.0-beta.10](https://github.com/customerio/customerio-expo-plugin/compare/1.0.0-beta.9...1.0.0-beta.10) (2023-06-01)
+
+
+### Bug Fixes
+
+* xcode race condition fix ([#76](https://github.com/customerio/customerio-expo-plugin/issues/76)) ([ff136ba](https://github.com/customerio/customerio-expo-plugin/commit/ff136ba21e08c4b63a17ad298c8fd71934108efc))
+
+## [1.0.0-beta.9](https://github.com/customerio/customerio-expo-plugin/compare/1.0.0-beta.8...1.0.0-beta.9) (2023-05-17)
+
+
+### Bug Fixes
+
+* compatibility for monorepos ([#67](https://github.com/customerio/customerio-expo-plugin/issues/67)) ([14fa86c](https://github.com/customerio/customerio-expo-plugin/commit/14fa86cab7b2c3465f7d1afe2906aef70c59af3b))
+
+## [1.0.0-beta.8](https://github.com/customerio/customerio-expo-plugin/compare/1.0.0-beta.7...1.0.0-beta.8) (2023-05-11)
+
+
+### Bug Fixes
+
+* expo-notifications compatibility with customerio-expo-plugin ([#70](https://github.com/customerio/customerio-expo-plugin/issues/70)) ([fe5cd0f](https://github.com/customerio/customerio-expo-plugin/commit/fe5cd0f5d0dd715e76b8bbfd656b4667eaf63dbf))
+
+## [1.0.0-beta.7](https://github.com/customerio/customerio-expo-plugin/compare/1.0.0-beta.6...1.0.0-beta.7) (2023-03-06)
+
+
+### Features
+
+* support for React Native and iOS SDK v2 ([#51](https://github.com/customerio/customerio-expo-plugin/issues/51)) ([65a76d9](https://github.com/customerio/customerio-expo-plugin/commit/65a76d98da8c1d012c0ff9f6bb697aea47d3b74f))
+
+## [1.0.0-beta.6](https://github.com/customerio/customerio-expo-plugin/compare/1.0.0-beta.5...1.0.0-beta.6) (2023-02-27)
+
+
+### Bug Fixes
+
+* github ref in npm publish step of deploy action ([#47](https://github.com/customerio/customerio-expo-plugin/issues/47)) ([59fb7f0](https://github.com/customerio/customerio-expo-plugin/commit/59fb7f0ad5ff05adb828166f4d62d96d18b08f9c))
+
+## [1.0.0-beta.5](https://github.com/customerio/customerio-expo-plugin/compare/1.0.0-beta.4...1.0.0-beta.5) (2023-02-27)
+
+
+### Bug Fixes
+
+* added dependencies ([#46](https://github.com/customerio/customerio-expo-plugin/issues/46)) ([5a2b643](https://github.com/customerio/customerio-expo-plugin/commit/5a2b643828e080a771fbd24795e818bada1c0e2f))
+
+## [1.0.0-beta.4](https://github.com/customerio/customerio-expo-plugin/compare/1.0.0-beta.3...1.0.0-beta.4) (2023-02-27)
+
+
+### Features
+
+* flexible notification request handling ([#40](https://github.com/customerio/customerio-expo-plugin/issues/40)) ([447a7c2](https://github.com/customerio/customerio-expo-plugin/commit/447a7c271d2da8d64ad12c5b16207c2c0500a45e))
+
 ## [1.0.0-beta.3](https://github.com/customerio/customerio-expo-plugin/compare/1.0.0-beta.2...1.0.0-beta.3) (2023-02-20)
 
 

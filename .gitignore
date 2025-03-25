@@ -1,12 +1,10 @@
-build
-lib
-
 # Node / Yarn
 node_modules
 *.log
 .nvm
 npm-debug.log
 yarn-error.log
+*.tgz
 
 # OS X
 .DS_Store
@@ -19,3 +17,6 @@ coverage/
 
 # VSCode
 .vscode/
+
+# Directory used to store test apps for validating plugin compatibility
+ci-test-apps/

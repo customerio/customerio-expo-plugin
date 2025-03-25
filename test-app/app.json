@@ -1,0 +1,93 @@
+{
+  "expo": {
+    "name": "Expo Testbed",
+    "slug": "expo-test-app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "buildNumber": "1",
+      "supportsTablet": true,
+      "bundleIdentifier": "io.customer.testbed.expo.apn",
+      "entitlements": {
+        "aps-environment": "development"
+      },
+      "infoPlist": {
+        "CFBundleURLTypes": [
+          {
+            "CFBundleURLSchemes": ["expo-test-app"]
+          }
+        ]
+      }
+    },
+    "android": {
+      "versionCode": 1,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "package": "io.customer.testbed.expo",
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "data": [
+            {
+              "scheme": "expo-test-app",
+              "host": "nav-test"
+            }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "cdpApiKey": "@CDP_API_KEY@",
+      "siteId": "@SITE_ID@",
+      "workspaceName": "@WORKSPACE_NAME@",
+      "buildTimestamp": "@BUILD_TIMESTAMP@",
+      "branchName": "@BRANCH_NAME@",
+      "commitHash": "@COMMIT_HASH@",
+      "commitsAheadCount": "@COMMITS_AHEAD_COUNT@"
+    },
+    "plugins": [
+      [
+        "customerio-expo-plugin",
+        {
+          "android": {
+            "googleServicesFile": "./files/google-services.json",
+            "setHighPriorityPushHandler": true
+          },
+          "ios": {
+            "useFrameworks": "static",
+            "pushNotification": {
+              "provider": "apn",
+              "useRichPush": true,
+              "env": {
+                "cdpApiKey": "@CDP_API_KEY@",
+                "region": "us"
+              }
+            }
+          }
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "useFrameworks": "static"
+          }
+        }
+      ]
+    ]
+  }
+}
