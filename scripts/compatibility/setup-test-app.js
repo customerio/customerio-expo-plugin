@@ -1,7 +1,11 @@
 const fs = require("fs");
 const path = require("path");
-const { getArgValue, logMessage, runCommand, runScript, setNestedProperty } = require("../utils/cli");
-const { CUSTOMER_IO_EXPO_PLUGIN_NAME, CUSTOMER_IO_REACT_NATIVE_SDK_NAME } = require("../utils/constants");
+const { getArgValue, logMessage, parseArrayArg, runCommand, runScript, setNestedProperty } = require("../utils/cli");
+const {
+  CUSTOMER_IO_EXPO_PLUGIN_NAME,
+  CUSTOMER_IO_REACT_NATIVE_SDK_NAME,
+  EXPO_BUILD_PROPERTIES_PLUGIN,
+} = require("../utils/constants");
 
 const APP_PATH = getArgValue("--app-path", { required: true });
 
@@ -15,6 +19,9 @@ const APP_JSON_FILE_PATH = path.join(APP_PATH, "app.json");
 
 const APP_ARTIFACTS_DIR_NAME = getArgValue("--artifacts-dir-name", { default: "cio-artifacts" });
 const APP_ARTIFACTS_DIR_PATH = path.join(APP_PATH, APP_ARTIFACTS_DIR_NAME);
+
+// Get additional dependencies to install
+const ADDITIONAL_DEPENDENCIES = parseArrayArg("--dependencies");
 
 /**
  * Main entry point for the script to handle the execution logic.
@@ -36,22 +43,18 @@ function execute() {
   logMessage(`📦 Generating latest plugin tarball: ${PLUGIN_TGZ_DEPENDENCY_NAME}`);
   runCommand(`./scripts/create-plugin-tarball.sh .`);
 
-  logMessage(
-    `📦 Copying plugin package: ${PLUGIN_TGZ_DEPENDENCY_NAME} to ${APP_ARTIFACTS_DIR_PATH}`,
-  );
+  logMessage(`📦 Copying plugin package: ${PLUGIN_TGZ_DEPENDENCY_NAME} to ${APP_ARTIFACTS_DIR_PATH}`);
   runCommand(`cp ${PLUGIN_TGZ_DEPENDENCY_NAME} ${APP_ARTIFACTS_DIR_PATH}`);
 
   // Define dependencies including the local plugin package
-  const DEFAULT_DEPENDENCIES = [
-    "expo-build-properties",
-    PLUGIN_TGZ_DEPENDENCY,
-    CUSTOMER_IO_REACT_NATIVE_SDK_NAME,
-  ];
+  const DEFAULT_DEPENDENCIES = [EXPO_BUILD_PROPERTIES_PLUGIN, PLUGIN_TGZ_DEPENDENCY, CUSTOMER_IO_REACT_NATIVE_SDK_NAME];
 
   // Step 3: Install required dependencies
   logMessage("📦 Installing default dependencies...");
   try {
-    runCommand(`cd ${APP_PATH} && npm install ${DEFAULT_DEPENDENCIES.join(" ")}`);
+    // Install default dependencies and any additional dependencies
+    const dependencies = [...DEFAULT_DEPENDENCIES, ...ADDITIONAL_DEPENDENCIES];
+    runCommand(`cd ${APP_PATH} && npm install ${dependencies.join(" ")}`);
   } catch (error) {
     logMessage(`❌ Error installing default dependencies: ${error.message}`, "error");
     process.exit(1);

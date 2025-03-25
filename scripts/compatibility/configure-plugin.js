@@ -4,11 +4,11 @@ const {
   getArgValue,
   isFlagEnabled,
   logMessage,
-  parseKeyValueArgs,
+  parseArgsAsObject,
   runScript,
   setNestedProperty,
 } = require("../utils/cli");
-const { CUSTOMER_IO_EXPO_PLUGIN_NAME } = require("../utils/constants");
+const { CUSTOMER_IO_EXPO_PLUGIN_NAME, EXPO_BUILD_PROPERTIES_PLUGIN } = require("../utils/constants");
 
 const APP_PATH = getArgValue("--app-path", { required: true });
 const ANDROID_GOOGLE_SERVICES_FILE_PATH = getArgValue("--android-google-services", {
@@ -24,14 +24,29 @@ const IOS_USE_FRAMEWORKS = getArgValue("--ios-use-frameworks", {
 });
 const APP_JSON_FILE_PATH = path.join(APP_PATH, "app.json");
 
+const PLUGIN_ABBREVIATIONS = {
+  [CUSTOMER_IO_EXPO_PLUGIN_NAME]: "cio-plugin",
+  [EXPO_BUILD_PROPERTIES_PLUGIN]: "expo-build-props",
+};
+
 // Parse additional configurations for plugin using special prefix to avoid conflicts with other Expo plugins
-// e.g. --cio-config.android.setHighPriorityPushHandler=true --cio-config.ios.pushNotification.env.cdpApiKey=123
-const EXPO_PLUGIN_PREFIX = "cio-config.";
-const EXPO_PLUGIN_CONFIGS = Object.fromEntries(
-  Object.entries(parseKeyValueArgs(process.argv.slice(2)))
-    .filter(([key]) => key.startsWith(EXPO_PLUGIN_PREFIX))
-    .map(([key, value]) => [key.replace(EXPO_PLUGIN_PREFIX, ""), value]),
-);
+// e.g. --cio-plugin.android.setHighPriorityPushHandler=true --expo-build-props.ios.deploymentTarget=15.1
+function getPluginConfigFromCliPrefix(pluginName) {
+  const prefix = PLUGIN_ABBREVIATIONS[pluginName];
+  if (!prefix) {
+    logMessage(`❌ Missing CLI prefix for plugin: ${pluginName}`, "error");
+    process.exit(1);
+  }
+
+  const fullPrefix = `${prefix}.`; // e.g. "cio." or "bp."
+  const keyValues = parseArgsAsObject();
+
+  const configEntries = Object.entries(keyValues)
+    .filter(([key]) => key.startsWith(fullPrefix))
+    .map(([key, value]) => [key.replace(fullPrefix, ""), value]);
+
+  return Object.fromEntries(configEntries);
+}
 
 // Finds or adds a plugin to the plugins array.
 function findOrAddPlugin(plugins, pluginName, defaultConfig = {}) {
@@ -106,20 +121,15 @@ function execute() {
   if (IOS_PUSH_PROVIDER) {
     setNestedProperty(cioPluginConfig, "ios.pushNotification.provider", IOS_PUSH_PROVIDER);
     if (IOS_PUSH_PROVIDER === "fcm") {
-      setNestedProperty(
-        cioPluginConfig,
-        "ios.pushNotification.googleServicesFile",
-        IOS_GOOGLE_SERVICES_FILE_PATH,
-      );
+      setNestedProperty(cioPluginConfig, "ios.pushNotification.googleServicesFile", IOS_GOOGLE_SERVICES_FILE_PATH);
     }
   } else {
     delete cioPluginConfig.ios?.pushNotification?.provider;
   }
 
   // Step 5: Manage expo-build-properties
-  const EXPO_BUILD_PROPERTIES = "expo-build-properties";
-  logMessage(`🔧 Managing ${EXPO_BUILD_PROPERTIES}...`);
-  const buildPropsIndex = findOrAddPlugin(appJson.expo.plugins, EXPO_BUILD_PROPERTIES, {});
+  logMessage(`🔧 Managing ${EXPO_BUILD_PROPERTIES_PLUGIN}...`);
+  const buildPropsIndex = findOrAddPlugin(appJson.expo.plugins, EXPO_BUILD_PROPERTIES_PLUGIN, {});
   const buildPropsConfig = appJson.expo.plugins[buildPropsIndex][1];
 
   if (IOS_USE_FRAMEWORKS) {
@@ -130,20 +140,25 @@ function execute() {
     delete buildPropsConfig.ios?.useFrameworks;
   }
 
+  // Step 6: Apply additional plugin-specific configurations
+  logMessage("🔧 Applying additional configurations...");
+  const cioAdditionalConfig = getPluginConfigFromCliPrefix(CUSTOMER_IO_EXPO_PLUGIN_NAME);
+  Object.entries(cioAdditionalConfig).forEach(([key, value]) => {
+    setNestedProperty(cioConfig, key, value);
+  });
+  const buildPropsAdditionalConfig = getPluginConfigFromCliPrefix(EXPO_BUILD_PROPERTIES_PLUGIN);
+  Object.entries(buildPropsAdditionalConfig).forEach(([key, value]) => {
+    setNestedProperty(buildPropsConfig, key, value);
+  });
+
   // If buildPropsConfig is empty after updates, revert it to a string entry
   if (isObjectEmpty(buildPropsConfig)) {
     logMessage(
-      `🗑️ Reverting ${EXPO_BUILD_PROPERTIES} plugin to a string entry as configuration is empty.`,
+      `🗑️ Reverting ${EXPO_BUILD_PROPERTIES_PLUGIN} plugin to a string entry as configuration is empty.`,
       "warning",
     );
-    appJson.expo.plugins[buildPropsIndex] = EXPO_BUILD_PROPERTIES; // Convert back to a string
+    appJson.expo.plugins[buildPropsIndex] = EXPO_BUILD_PROPERTIES_PLUGIN; // Convert back to a string
   }
-
-  // Step 6: Apply additional plugin-specific configurations
-  logMessage("🔧 Applying additional configurations...");
-  Object.entries(EXPO_PLUGIN_CONFIGS).forEach(([key, value]) => {
-    setNestedProperty(cioPluginConfig, key, value);
-  });
 
   // Step 7: Write updated app.json back to file
   fs.writeFileSync(APP_JSON_FILE_PATH, JSON.stringify(appJson, null, 2) + "\n");
