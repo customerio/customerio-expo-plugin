@@ -1,3 +1,13 @@
+## [2.0.0](https://github.com/customerio/customerio-expo-plugin/compare/1.0.0...2.0.0) (2025-03-26)
+
+### ⚠ BREAKING CHANGES
+
+* Commit to trigger release 2.0.0
+
+### Features
+
+* Revert "chore: prepare for 1.0.0" ([#241](https://github.com/customerio/customerio-expo-plugin/issues/241)) ([52adc77](https://github.com/customerio/customerio-expo-plugin/commit/52adc77ebcecffac1fbcd39bd040304ea32496f5))
+
 ## [2.0.0-beta.2](https://github.com/customerio/customerio-expo-plugin/compare/2.0.0-beta.1...2.0.0-beta.2) (2025-03-13)
 
 ### Features
