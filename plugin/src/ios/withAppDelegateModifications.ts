@@ -241,8 +241,8 @@ export const withAppDelegateModifications: ConfigPlugin<
 
       // any other value would be treated as true, it has to be explicitly false to disable
       if (
-        props.disableNotificationRegistration !== undefined &&
-        props.disableNotificationRegistration === false
+        props.pushNotification?.disableNotificationRegistration !== undefined &&
+        props.pushNotification?.disableNotificationRegistration === false
       ) {
         stringContents = addNotificationConfiguration(stringContents);
       }
@@ -250,8 +250,8 @@ export const withAppDelegateModifications: ConfigPlugin<
       stringContents = addInitializeNativeCioSdk(stringContents);
 
       if (
-        props.handleDeeplinkInKilledState !== undefined &&
-        props.handleDeeplinkInKilledState === true
+        props.pushNotification?.handleDeeplinkInKilledState !== undefined &&
+        props.pushNotification?.handleDeeplinkInKilledState === true
       ) {
         stringContents = addHandleDeeplinkInKilledState(stringContents);
       }
@@ -263,7 +263,7 @@ export const withAppDelegateModifications: ConfigPlugin<
 
       if (isFcmPushProvider(props)) {
         stringContents = addFirebaseDelegateForwardDeclarationIfNeeded(stringContents);
-      }  
+      }
 
       stringContents = addExpoNotificationsHeaderModification(stringContents);
 
