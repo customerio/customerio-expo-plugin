@@ -1,3 +1,9 @@
+## [2.0.1](https://github.com/customerio/customerio-expo-plugin/compare/2.0.0...2.0.1) (2025-04-03)
+
+### Bug Fixes
+
+* CIO-ReactNative version update ([#245](https://github.com/customerio/customerio-expo-plugin/issues/245)) ([c4981d9](https://github.com/customerio/customerio-expo-plugin/commit/c4981d94738a8bf834dd6236d5e10c75e7546fdd))
+
 ## [2.0.0](https://github.com/customerio/customerio-expo-plugin/compare/1.0.0...2.0.0) (2025-03-26)
 
 ### ⚠ BREAKING CHANGES
