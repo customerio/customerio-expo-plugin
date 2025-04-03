@@ -30,7 +30,7 @@ const addNotificationServiceExtension = async (
       await addPushNotificationFile(options, xcodeProject);
     }
 
-    if (options.pushNotification?.useRichPush) {
+    if (options.pushNotification?.useRichPush === true) {
       await addRichPushXcodeProj(options, xcodeProject);
     }
     return xcodeProject;
@@ -45,12 +45,7 @@ export const withCioNotificationsXcodeProject: ConfigPlugin<
 > = (configOuter, props) => {
   return withXcodeProject(configOuter, async (config) => {
     const { modRequest, ios, version: bundleShortVersion } = config;
-    const {
-      appleTeamId,
-      iosDeploymentTarget,
-      pushNotification,
-      useFrameworks,
-    } = props;
+    const { appleTeamId, iosDeploymentTarget, useFrameworks } = props;
 
     if (ios === undefined)
       throw new Error(
@@ -89,8 +84,7 @@ export const withCioNotificationsXcodeProject: ConfigPlugin<
       appName: projectName,
       useFrameworks,
       iosDeploymentTarget,
-      pushNotification,
-    };
+    } satisfies CustomerIOPluginOptionsIOS;
 
     const modifiedProjectFile = await addNotificationServiceExtension(
       options,
@@ -137,9 +131,7 @@ const addRichPushXcodeProj = async (
     recursive: true,
   });
 
-  const platformSpecificFiles = [
-    'NotificationService.swift',
-  ];
+  const platformSpecificFiles = ['NotificationService.swift'];
 
   const commonFiles = [
     PLIST_FILENAME,
@@ -153,13 +145,15 @@ const addRichPushXcodeProj = async (
   platformSpecificFiles.forEach((filename) => {
     const targetFile = getTargetFile(filename);
     FileManagement.copyFile(
-      `${LOCAL_PATH_TO_CIO_NSE_FILES}/${isFcmProvider ? "fcm" : "apn"}/${filename}`,
+      `${LOCAL_PATH_TO_CIO_NSE_FILES}/${
+        isFcmProvider ? 'fcm' : 'apn'
+      }/${filename}`,
       targetFile
     );
   });
 
-   // Copy common files
-   commonFiles.forEach((filename) => {
+  // Copy common files
+  commonFiles.forEach((filename) => {
     const targetFile = getTargetFile(filename);
     FileManagement.copyFile(
       `${LOCAL_PATH_TO_CIO_NSE_FILES}/common/${filename}`,
@@ -299,24 +293,24 @@ const updateNseEnv = (
 
   let envFileContent = FileManagement.readFile(envFileName);
 
-  if (options.pushNotification?.env?.cdpApiKey) {
+  if (options.env?.cdpApiKey) {
     envFileContent = replaceCodeByRegex(
       envFileContent,
       CDP_API_KEY_RE,
-      options.pushNotification?.env?.cdpApiKey
+      options.env?.cdpApiKey
     );
   }
 
-  if (options.pushNotification?.env?.region) {
+  if (options.env?.region) {
     const regionMap = {
       us: 'Region.US',
       eu: 'Region.EU',
     };
-    const region = options.pushNotification?.env?.region?.toLowerCase();
+    const region = options.env?.region?.toLowerCase();
     const mappedRegion = (regionMap as any)[region] || '';
     if (!mappedRegion) {
       console.warn(
-        `${options.pushNotification?.env?.region} is an invalid region. Please use the values from the docs: https://customer.io/docs/sdk/expo/getting-started/#configure-the-plugin`
+        `${options.env?.region} is an invalid region. Please use the values from the docs: https://customer.io/docs/sdk/expo/getting-started/#configure-the-plugin`
       );
     } else {
       envFileContent = replaceCodeByRegex(
@@ -338,7 +332,7 @@ async function addPushNotificationFile(
   const { iosPath, appName } = options;
   const isFcmProvider = isFcmPushProvider(options);
   // PushService.swift is platform-specific and always lives in the platform folder
-  const sourceFile = `${isFcmProvider ? "fcm" : "apn"}/PushService.swift`;
+  const sourceFile = `${isFcmProvider ? 'fcm' : 'apn'}/PushService.swift`;
   const targetFileName = 'PushService.swift';
   const appPath = `${iosPath}/${appName}`;
   const getTargetFile = (filename: string) => `${appPath}/${filename}`;
@@ -379,47 +373,50 @@ const updatePushFile = (
 
   let snippet = '';
   if (
-    options.disableNotificationRegistration !== undefined &&
-    options.disableNotificationRegistration === false
+    options.pushNotification?.disableNotificationRegistration !== undefined &&
+    options.pushNotification?.disableNotificationRegistration === false
   ) {
     snippet = CIO_REGISTER_PUSHNOTIFICATION_SNIPPET;
   }
   envFileContent = replaceCodeByRegex(envFileContent, REGISTER_RE, snippet);
 
-  if (options.pushNotification) {
+  if (options.env?.cdpApiKey) {
     envFileContent = replaceCodeByRegex(
       envFileContent,
       /\{\{CDP_API_KEY\}\}/,
-      options.pushNotification.env.cdpApiKey
+      options.env.cdpApiKey
     );
+  }
+
+  if (options.env?.region) {
     envFileContent = replaceCodeByRegex(
       envFileContent,
       /\{\{REGION\}\}/,
-      options.pushNotification.env.region.toUpperCase()
+      options.env.region.toUpperCase()
     );
   }
 
   const autoTrackPushEvents =
-    options.autoTrackPushEvents === undefined ||
-    options.autoTrackPushEvents === true;
+    options.pushNotification?.autoTrackPushEvents === undefined ||
+    options.pushNotification?.autoTrackPushEvents === true;
   envFileContent = replaceCodeByRegex(
     envFileContent,
     /\{\{AUTO_TRACK_PUSH_EVENTS\}\}/,
     autoTrackPushEvents.toString()
   );
 
-  const autoFetchDeviceToken = 
-    options.autoFetchDeviceToken === undefined ||
-    options.autoFetchDeviceToken === true;
+  const autoFetchDeviceToken =
+    options.pushNotification?.autoFetchDeviceToken === undefined ||
+    options.pushNotification?.autoFetchDeviceToken === true;
   envFileContent = replaceCodeByRegex(
     envFileContent,
     /\{\{AUTO_FETCH_DEVICE_TOKEN\}\}/,
     autoFetchDeviceToken.toString()
   );
-  
+
   const showPushAppInForeground =
-    options.showPushAppInForeground === undefined ||
-    options.showPushAppInForeground === true;
+    options.pushNotification?.showPushAppInForeground === undefined ||
+    options.pushNotification?.showPushAppInForeground === true;
   envFileContent = replaceCodeByRegex(
     envFileContent,
     /\{\{SHOW_PUSH_APP_IN_FOREGROUND\}\}/,
