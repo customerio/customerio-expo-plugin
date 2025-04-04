@@ -240,19 +240,13 @@ export const withAppDelegateModifications: ConfigPlugin<
       stringContents = addNotificationHandlerDeclaration(stringContents);
 
       // any other value would be treated as true, it has to be explicitly false to disable
-      if (
-        props.pushNotification?.disableNotificationRegistration !== undefined &&
-        props.pushNotification?.disableNotificationRegistration === false
-      ) {
+      if (props.pushNotification?.disableNotificationRegistration === false) {
         stringContents = addNotificationConfiguration(stringContents);
       }
 
       stringContents = addInitializeNativeCioSdk(stringContents);
 
-      if (
-        props.pushNotification?.handleDeeplinkInKilledState !== undefined &&
-        props.pushNotification?.handleDeeplinkInKilledState === true
-      ) {
+      if (props.pushNotification?.handleDeeplinkInKilledState === true) {
         stringContents = addHandleDeeplinkInKilledState(stringContents);
       }
 
