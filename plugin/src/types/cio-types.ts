@@ -31,6 +31,11 @@ export type CustomerIOPluginOptionsIOS = {
   pushNotification?: CustomerIOPluginPushNotificationOptions;
 
   /**
+   * @deprecated Property will be removed in the future. Use ios.pushNotification.autoFetchDeviceToken instead
+   */
+  autoFetchDeviceToken?: boolean;
+
+  /**
    * @deprecated Property will be removed in the future. Use ios.pushNotification.showPushAppInForeground instead
    */
   showPushAppInForeground?: boolean;

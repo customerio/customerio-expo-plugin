@@ -32,13 +32,14 @@ const mergeDeprecatedPropertiesAndLogWarnings = (
     autoTrackPushEvents: props.autoTrackPushEvents,
     handleDeeplinkInKilledState: props.handleDeeplinkInKilledState,
     disableNotificationRegistration: props.disableNotificationRegistration,
+    autoFetchDeviceToken: props.autoFetchDeviceToken,
   };
 
   // loop over all the deprecated properties and log a warning if they are set
   Object.entries(deprecatedTopLevelProperties).forEach(([key, value]) => {
     if (value !== undefined) {
       console.warn(
-        `The ios.${key} property is deprecated. Use ios.pushNotification.${key} instead.`
+        `The ios.${key} property is deprecated. Please use ios.pushNotification.${key} instead.`
       );
 
       if (props.pushNotification === undefined) {
@@ -63,8 +64,8 @@ const mergeDeprecatedPropertiesAndLogWarnings = (
       'The ios.pushNotification.env property is deprecated. Use ios.nv instead.'
     );
     if (props.env === undefined) {
-      props.env = props.pushNotification
-        ?.env as unknown as CustomerIOPluginOptionsIOS['env'];
+      props.env = (props.pushNotification?.env ||
+        {}) as unknown as CustomerIOPluginOptionsIOS['env'];
     }
     if (
       props.pushNotification?.env.cdpApiKey !== undefined &&

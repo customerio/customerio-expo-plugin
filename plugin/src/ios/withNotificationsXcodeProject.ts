@@ -372,10 +372,7 @@ const updatePushFile = (
   let envFileContent = FileManagement.readFile(envFileName);
 
   let snippet = '';
-  if (
-    options.pushNotification?.disableNotificationRegistration !== undefined &&
-    options.pushNotification?.disableNotificationRegistration === false
-  ) {
+  if (options.pushNotification?.disableNotificationRegistration === false) {
     snippet = CIO_REGISTER_PUSHNOTIFICATION_SNIPPET;
   }
   envFileContent = replaceCodeByRegex(envFileContent, REGISTER_RE, snippet);
@@ -397,7 +394,6 @@ const updatePushFile = (
   }
 
   const autoTrackPushEvents =
-    options.pushNotification?.autoTrackPushEvents === undefined ||
     options.pushNotification?.autoTrackPushEvents === true;
   envFileContent = replaceCodeByRegex(
     envFileContent,
@@ -406,7 +402,6 @@ const updatePushFile = (
   );
 
   const autoFetchDeviceToken =
-    options.pushNotification?.autoFetchDeviceToken === undefined ||
     options.pushNotification?.autoFetchDeviceToken === true;
   envFileContent = replaceCodeByRegex(
     envFileContent,
@@ -415,7 +410,6 @@ const updatePushFile = (
   );
 
   const showPushAppInForeground =
-    options.pushNotification?.showPushAppInForeground === undefined ||
     options.pushNotification?.showPushAppInForeground === true;
   envFileContent = replaceCodeByRegex(
     envFileContent,
