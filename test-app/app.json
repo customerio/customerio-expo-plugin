@@ -68,14 +68,14 @@
             "setHighPriorityPushHandler": true
           },
           "ios": {
+            "env": {
+              "cdpApiKey": "@CDP_API_KEY@",
+              "region": "us"
+            },
             "useFrameworks": "static",
             "pushNotification": {
               "provider": "apn",
-              "useRichPush": true,
-              "env": {
-                "cdpApiKey": "@CDP_API_KEY@",
-                "region": "us"
-              }
+              "useRichPush": true
             }
           }
         }
