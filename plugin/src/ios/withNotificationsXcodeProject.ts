@@ -292,25 +292,31 @@ const updateNseEnv = (
   const REGION_RE = /\{\{REGION\}\}/;
 
   let envFileContent = FileManagement.readFile(envFileName);
+  const { cdpApiKey, region } = options.pushNotification?.env || {
+    cdpApiKey: undefined,
+    region: undefined,
+  };
 
-  if (options.env?.cdpApiKey) {
-    envFileContent = replaceCodeByRegex(
-      envFileContent,
-      CDP_API_KEY_RE,
-      options.env?.cdpApiKey
+  if (!cdpApiKey) {
+    throw new Error(
+      'Adding NotificationServiceExtension failed: ios.pushNotification.env.cdpApiKey is missing from app.config.js or app.json.'
     );
   }
+  envFileContent = replaceCodeByRegex(
+    envFileContent,
+    CDP_API_KEY_RE,
+    cdpApiKey
+  );
 
-  if (options.env?.region) {
+  if (region) {
     const regionMap = {
       us: 'Region.US',
       eu: 'Region.EU',
     };
-    const region = options.env?.region?.toLowerCase();
-    const mappedRegion = (regionMap as any)[region] || '';
+    const mappedRegion = (regionMap as any)[region.toLowerCase()] || '';
     if (!mappedRegion) {
       console.warn(
-        `${options.env?.region} is an invalid region. Please use the values from the docs: https://customer.io/docs/sdk/expo/getting-started/#configure-the-plugin`
+        `${region} is an invalid region. Please use the values from the docs: https://customer.io/docs/sdk/expo/getting-started/#configure-the-plugin`
       );
     } else {
       envFileContent = replaceCodeByRegex(
@@ -370,31 +376,42 @@ const updatePushFile = (
   const REGISTER_RE = /\{\{REGISTER_SNIPPET\}\}/;
 
   let envFileContent = FileManagement.readFile(envFileName);
+  const disableNotificationRegistration =
+    options.pushNotification?.disableNotificationRegistration;
+  const { cdpApiKey, region } = options.pushNotification?.env || {
+    cdpApiKey: undefined,
+    region: undefined,
+  };
+  if (!cdpApiKey) {
+    throw new Error(
+      'Adding NotificationServiceExtension failed: ios.pushNotification.env.cdpApiKey is missing from app.config.js or app.json.'
+    );
+  }
 
   let snippet = '';
-  if (options.pushNotification?.disableNotificationRegistration === false) {
+  // unless this property is explicity set to true, push notification
+  // registration will be added to the AppDelegate
+  if (disableNotificationRegistration !== true) {
     snippet = CIO_REGISTER_PUSHNOTIFICATION_SNIPPET;
   }
   envFileContent = replaceCodeByRegex(envFileContent, REGISTER_RE, snippet);
 
-  if (options.env?.cdpApiKey) {
-    envFileContent = replaceCodeByRegex(
-      envFileContent,
-      /\{\{CDP_API_KEY\}\}/,
-      options.env.cdpApiKey
-    );
-  }
+  envFileContent = replaceCodeByRegex(
+    envFileContent,
+    /\{\{CDP_API_KEY\}\}/,
+    cdpApiKey
+  );
 
-  if (options.env?.region) {
+  if (region) {
     envFileContent = replaceCodeByRegex(
       envFileContent,
       /\{\{REGION\}\}/,
-      options.env.region.toUpperCase()
+      region.toUpperCase()
     );
   }
 
   const autoTrackPushEvents =
-    options.pushNotification?.autoTrackPushEvents === true;
+    options.pushNotification?.autoTrackPushEvents !== false;
   envFileContent = replaceCodeByRegex(
     envFileContent,
     /\{\{AUTO_TRACK_PUSH_EVENTS\}\}/,
@@ -402,7 +419,7 @@ const updatePushFile = (
   );
 
   const autoFetchDeviceToken =
-    options.pushNotification?.autoFetchDeviceToken === true;
+    options.pushNotification?.autoFetchDeviceToken !== false;
   envFileContent = replaceCodeByRegex(
     envFileContent,
     /\{\{AUTO_FETCH_DEVICE_TOKEN\}\}/,
@@ -410,7 +427,7 @@ const updatePushFile = (
   );
 
   const showPushAppInForeground =
-    options.pushNotification?.showPushAppInForeground === true;
+    options.pushNotification?.showPushAppInForeground !== false;
   envFileContent = replaceCodeByRegex(
     envFileContent,
     /\{\{SHOW_PUSH_APP_IN_FOREGROUND\}\}/,

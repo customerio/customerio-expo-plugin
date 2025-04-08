@@ -1,13 +1,10 @@
 import type { ExpoConfig } from '@expo/config-types';
 
-import type {
-  CustomerIOPluginOptionsIOS,
-  CustomerIOPluginPushNotificationOptions,
-} from '../types/cio-types';
+import type { CustomerIOPluginOptionsIOS } from '../types/cio-types';
 import { withAppDelegateModifications } from './withAppDelegateModifications';
-import { withGoogleServicesJsonFile } from './withGoogleServicesJsonFile';
 import { withCioNotificationsXcodeProject } from './withNotificationsXcodeProject';
 import { withCioXcodeProject } from './withXcodeProject';
+import { withGoogleServicesJsonFile } from './withGoogleServicesJsonFile';
 
 export function withCIOIos(
   config: ExpoConfig,
@@ -24,9 +21,21 @@ export function withCIOIos(
   return config;
 }
 
+/**  The basic purpose of this function is to centralize where we handle the deprecation
+  by merging the deprecated properties into the new ios.pushNotification.* properties
+  and logging a warning if they are set. This way, we can remove the deprecated properties
+  from the top level of the ios object in the future, and update this function
+  while the rest of the plugin code remains unchanged.
+*/
 const mergeDeprecatedPropertiesAndLogWarnings = (
   props: CustomerIOPluginOptionsIOS
 ) => {
+  // The deprecatedTopLevelProperties maps the top level properties
+  // that are deprecated to the new ios.pushNotification.* properties
+  // that should be used instead. The deprecated properties are
+  // still available for backwards compatibility, but they will
+  // be removed in the future.
+
   const deprecatedTopLevelProperties = {
     showPushAppInForeground: props.showPushAppInForeground,
     autoTrackPushEvents: props.autoTrackPushEvents,
@@ -43,7 +52,7 @@ const mergeDeprecatedPropertiesAndLogWarnings = (
       );
 
       if (props.pushNotification === undefined) {
-        props.pushNotification = {};
+        props.pushNotification = {} as CustomerIOPluginPushNotificationOptions;
       }
       const propKey = key as keyof CustomerIOPluginPushNotificationOptions;
       if (props.pushNotification[propKey] === undefined) {
@@ -58,29 +67,6 @@ const mergeDeprecatedPropertiesAndLogWarnings = (
       }
     }
   });
-
-  if (props.pushNotification?.env !== undefined) {
-    console.warn(
-      'The ios.pushNotification.env property is deprecated. Use ios.nv instead.'
-    );
-    if (props.env === undefined) {
-      props.env = (props.pushNotification?.env ||
-        {}) as unknown as CustomerIOPluginOptionsIOS['env'];
-    }
-    if (
-      props.pushNotification?.env.cdpApiKey !== undefined &&
-      props.env.cdpApiKey === undefined
-    ) {
-      props.env.cdpApiKey = props.pushNotification.env.cdpApiKey;
-    }
-
-    if (
-      props.pushNotification?.env.region !== undefined &&
-      props.env.region === undefined
-    ) {
-      props.env.region = props.pushNotification.env.region;
-    }
-  }
 
   return props;
 };

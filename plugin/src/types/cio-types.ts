@@ -16,19 +16,14 @@ export type CustomerIOPluginOptionsIOS = {
   appleTeamId?: string;
   appName?: string;
 
+  useFrameworks?: 'static' | 'dynamic';
+
+  pushNotification?: CustomerIOPluginPushNotificationOptions;
+
   /**
    * @deprecated No longer has any effect. Use autoTrackPushEvents to control if push metrics should be automatically tracked by SDK.
    */
   handleNotificationClick?: boolean;
-
-  useFrameworks?: 'static' | 'dynamic';
-
-  env: {
-    cdpApiKey: string;
-    region: string;
-  };
-
-  pushNotification?: CustomerIOPluginPushNotificationOptions;
 
   /**
    * @deprecated Property will be removed in the future. Use ios.pushNotification.autoFetchDeviceToken instead
@@ -78,9 +73,10 @@ export type CustomerIOPluginPushNotificationOptions = {
   handleDeeplinkInKilledState?: boolean;
 
   /**
-   * @deprecated Property will be removed in the future. Use ios.env instead of ios.pushNotification.env.
+   * These values will be used to initialize the Notification Service Extension (NSE) on the native side.
+   * They should match the values you use to initialize the SDK in your app
    */
-  env?: {
+  env: {
     cdpApiKey: string;
     region: string;
   };
