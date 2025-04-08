@@ -1,6 +1,6 @@
 import type { ExpoConfig } from '@expo/config-types';
 
-import type { CustomerIOPluginOptionsIOS } from '../types/cio-types';
+import type { CustomerIOPluginOptionsIOS, CustomerIOPluginPushNotificationOptions } from '../types/cio-types';
 import { withAppDelegateModifications } from './withAppDelegateModifications';
 import { withCioNotificationsXcodeProject } from './withNotificationsXcodeProject';
 import { withCioXcodeProject } from './withXcodeProject';
