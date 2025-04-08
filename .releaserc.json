@@ -1,7 +1,7 @@
 {
   "tagFormat": "${version}",
   "branches": [
-    "master",
+    "main",
     { "name": "beta", "prerelease": true }
   ],
   "plugins": [
