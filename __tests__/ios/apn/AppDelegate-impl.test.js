@@ -41,6 +41,10 @@ test('Plugin injects CIO imports and calls into AppDelegate.mm', async () => {
       // They will be passed down to the ViewController used by React Native.
       self.initialProps = @{};
 
+
+      // Register for push notifications
+      [pnHandlerObj registerPushNotification];
+
       
       [pnHandlerObj initializeCioSdk];
 

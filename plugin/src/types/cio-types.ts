@@ -15,25 +15,40 @@ export type CustomerIOPluginOptionsIOS = {
   iosDeploymentTarget?: string;
   appleTeamId?: string;
   appName?: string;
-  disableNotificationRegistration?: boolean;
+
+  useFrameworks?: 'static' | 'dynamic';
+
+  pushNotification?: CustomerIOPluginPushNotificationOptions;
+
   /**
    * @deprecated No longer has any effect. Use autoTrackPushEvents to control if push metrics should be automatically tracked by SDK.
    */
   handleNotificationClick?: boolean;
-  showPushAppInForeground?: boolean;
-  autoTrackPushEvents?: boolean;
+
+  /**
+   * @deprecated Property will be removed in the future. Use ios.pushNotification.autoFetchDeviceToken instead
+   */
   autoFetchDeviceToken?: boolean;
+
+  /**
+   * @deprecated Property will be removed in the future. Use ios.pushNotification.showPushAppInForeground instead
+   */
+  showPushAppInForeground?: boolean;
+
+  /**
+   * @deprecated Property will be removed in the future. Use ios.pushNotification.autoTrackPushEvents instead
+   */
+  autoTrackPushEvents?: boolean;
+
+  /**
+   * @deprecated Property will be removed in the future. Use ios.pushNotification.handleDeeplinkInKilledState instead
+   */
   handleDeeplinkInKilledState?: boolean;
-  useFrameworks?: 'static' | 'dynamic';
-  pushNotification?: {
-    provider?: 'apn' | 'fcm';
-    googleServicesFile?: string;
-    useRichPush: boolean;
-    env: {
-      cdpApiKey: string;
-      region: string;
-    };
-  };
+
+  /**
+   * @deprecated Property will be removed in the future. Use ios.pushNotification.disableNotificationRegistration instead
+   */
+  disableNotificationRegistration?: boolean;
 };
 
 export type CustomerIOPluginOptionsAndroid = {
@@ -45,4 +60,24 @@ export type CustomerIOPluginOptionsAndroid = {
 export type CustomerIOPluginOptions = {
   android: CustomerIOPluginOptionsAndroid;
   ios: CustomerIOPluginOptionsIOS;
+};
+
+export type CustomerIOPluginPushNotificationOptions = {
+  provider?: 'apn' | 'fcm';
+  googleServicesFile?: string;
+  useRichPush?: boolean;
+  autoFetchDeviceToken?: boolean;
+  autoTrackPushEvents?: boolean;
+  showPushAppInForeground?: boolean;
+  disableNotificationRegistration?: boolean;
+  handleDeeplinkInKilledState?: boolean;
+
+  /**
+   * These values will be used to initialize the Notification Service Extension (NSE) on the native side.
+   * They should match the values you use to initialize the SDK in your app
+   */
+  env: {
+    cdpApiKey: string;
+    region: string;
+  };
 };
