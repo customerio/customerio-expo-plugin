@@ -21,7 +21,7 @@ test('Plugin injects CIO imports and calls into AppDelegate.mm', async () => {
 
     // Add swift bridge imports
     #import <ExpoModulesCore-Swift.h>
-    #import <ExpoTestbed-Swift.h>
+    #import <${testAppName()}-Swift.h>
       
     #import "AppDelegate.h"
 
@@ -40,6 +40,10 @@ test('Plugin injects CIO imports and calls into AppDelegate.mm', async () => {
       // You can add your custom initial props in the dictionary below.
       // They will be passed down to the ViewController used by React Native.
       self.initialProps = @{};
+
+
+      // Register for push notifications
+      [pnHandlerObj registerPushNotification];
 
       
       [pnHandlerObj initializeCioSdk];
