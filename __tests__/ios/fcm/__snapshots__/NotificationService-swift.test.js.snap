@@ -3,7 +3,7 @@
 exports[`Plugin creates expected NotificationService.swift 1`] = `
 "import Foundation
 import UserNotifications
-import CioMessagingPushFCM
+import CioMessagingPushAPN
 
 @objc
 public class NotificationServiceCioManager : NSObject {
@@ -12,7 +12,7 @@ public class NotificationServiceCioManager : NSObject {
   
   @objc(didReceive:withContentHandler:)
   public func didReceive(_ request: UNNotificationRequest, withContentHandler contentHandler: @escaping (UNNotificationContent) -> Void) {
-    MessagingPushFCM.initializeForExtension(
+    MessagingPushAPN.initializeForExtension(
       withConfig: MessagingPushConfigBuilder(cdpApiKey: Env.customerIOCdpApiKey)
         .region(Env.customerIORegion)
         .build()
