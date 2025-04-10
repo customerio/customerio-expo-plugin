@@ -1,9 +1,3 @@
-## [2.0.2](https://github.com/customerio/customerio-expo-plugin/compare/2.0.1...2.0.2) (2025-04-10)
-
-### Bug Fixes
-
-* CustomerIOPluginOptionsIOS structure revised for clarity ([#249](https://github.com/customerio/customerio-expo-plugin/issues/249)) ([711aa07](https://github.com/customerio/customerio-expo-plugin/commit/711aa07b7d902d5b81a9061903125ccb79558c7b))
-
 ## [2.0.1](https://github.com/customerio/customerio-expo-plugin/compare/2.0.0...2.0.1) (2025-04-03)
 
 ### Bug Fixes
