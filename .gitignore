@@ -22,3 +22,5 @@ coverage/
 
 # Directory used to store test apps for validating plugin compatibility
 ci-test-apps/
+
+test-app/local.env

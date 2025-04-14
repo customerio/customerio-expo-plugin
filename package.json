@@ -33,8 +33,7 @@
     "compatibility:validate-plugin": "node scripts/compatibility/validate-plugin.js",
     "compatibility:run-compatibility-tests": "node scripts/compatibility/run-compatibility-tests.js",
     "setup-test-app": "bash scripts/setup-test-app.sh",
-    "cleanup": "bash scripts/cleanup-after-tests.sh",
-    "test-plugin": "npm run setup-test-app && npm run test && npm run cleanup",
+    "test-plugin": "bash scripts/test-plugin.sh",
     "cleanAll": "bash scripts/clean-all.sh",
     "buildAll": "bash scripts/build-all.sh",
     "cleanAndBuildAll": "npm run cleanAll && npm run buildAll"
