@@ -2,6 +2,7 @@ name: Publish test apps for SDK release
 
 on:
   workflow_dispatch:
+  workflow_call:
 
 jobs:
   build-sample-apps:
