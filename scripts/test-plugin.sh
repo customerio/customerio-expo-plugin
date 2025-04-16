@@ -11,7 +11,7 @@ fi
 
 sh ./scripts/clean-all.sh
 
-# Generate local.env file with correct pushProvider
+# Extract push provider from params
 case "$1" in
   apn)
     pushProviderValue="apn"
@@ -26,21 +26,14 @@ case "$1" in
     ;;
 esac
 
+# Generate local.env file with correct pushProvider
 rm -f test-app/local.env
 touch "test-app/local.env"
 echo "pushProvider=$pushProviderValue" >> "test-app/local.env"
 
-# echo "Setting up the test project..."
-
-# cd test-app
-
-# echo "Installing dependencies..."
-# npm run preinstall
-# npm install
-
-# echo "Running expo prebuild..."
-# npx expo prebuild
+# Build plugin and sample app native projects
 sh ./scripts/build-all.sh
 
+# Run tests
 npm test -- __tests__/android
 npm test -- __tests__/ios/common __tests__/ios/$pushProviderValue
