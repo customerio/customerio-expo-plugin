@@ -66,3 +66,21 @@ A shorthand to clean up everything and rebuild, run the following command:
 ```bash
 npm run cleanAndBuildAll
 ```
+
+## Running unit tests locally
+
+We have a convenience script that allows you to run tests locally without having to manually setup the test app.
+
+You can run the following script and you need to provide an argument `apn or fcm` for which iOS push provider tests you want to run:
+
+APN:
+
+```bash
+npm run test-plugin apn
+```
+
+FCM:
+
+```bash
+npm run test-plugin fcm
+```
