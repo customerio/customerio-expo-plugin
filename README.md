@@ -96,17 +96,6 @@ const trackCustomEventExample = async () => {
 };
 ```
 
-3. Clear user data (log out) using the `clearUser` method:
-
-```typescript
-import { clearUser } from "./services/customerIO";
-
-const clearUserExample = async () => {
-    await clearUser();
-    console.log('User cleared successfully');
-};
-```
-
 ### Push Notifications
 
 1. Configure push notifications for iOS and Android. Update your `app.json` file with the following configuration:
