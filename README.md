@@ -118,7 +118,6 @@ const trackCustomEventExample = async () => {
           },
           "ios": {
             "pushNotification": {
-              "provider": "apn",
               "useRichPush": true,
               "env": {
                 "cdpApiKey": "<CDP API KEY>",
