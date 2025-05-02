@@ -4,6 +4,8 @@
   </a>
 </p>
 
+[![npm version](https://img.shields.io/npm/v/customerio-expo-plugin.svg)](https://www.npmjs.com/package/customerio-expo-plugin)
+[![npm downloads](https://img.shields.io/npm/dm/customerio-expo-plugin)](https://www.npmjs.com/package/customerio-expo-plugin)
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.0-4baaaa.svg)](CODE_OF_CONDUCT.md)
 
 # Customer.io Expo Plugin
@@ -43,20 +45,20 @@ EXPO_PUBLIC_SITE_ID=<SITE ID>
 
 3. Ensure the SDK is initialized in your app. You can call the `initialize` method from your components or services. We recommend initializing the SDK in the `useEffect` hook of your main component or layout file.
 ```typescript
-import { CustomerIO, CioConfig, CioRegion } from "customerio-reactnative";
+import { CioConfig, CustomerIO } from "customerio-reactnative";
 
 useEffect(() => {
-    const initializeCustomerIO = async () => {
-        const config: CioConfig = {
-            cdpApiKey: process.env.EXPO_PUBLIC_CDP_API_KEY,
-            // Optionally, you can enable in-app messaging by adding the site ID
-            inApp: {
-                siteId: process.env.EXPO_PUBLIC_SITE_ID,
-            }
-        };
-        await CustomerIO.initialize(config);
+  const initializeCustomerIO = async () => {
+    const config: CioConfig = {
+      cdpApiKey: process.env.EXPO_PUBLIC_CDP_API_KEY ?? '',
+      // Optionally, you can enable in-app messaging by adding the site ID
+      inApp: {
+        siteId: process.env.EXPO_PUBLIC_SITE_ID ?? '',
+      }
     };
-    initializeCustomerIO();
+    await CustomerIO.initialize(config);
+  };
+  initializeCustomerIO();
 }, []);
 ```
 
@@ -65,34 +67,37 @@ useEffect(() => {
 
 ### Identify and Track
 
-1. Identify a user in your app using the `identifyUser` method:
+1. Identify a user in your app using the `CustomerIO.identify` method:
 
 ```typescript
-import { identifyUser } from "./services/customerIO";
+import { CustomerIO } from "customerio-reactnative";
 
 const identifyUserExample = async () => {
-    await identifyUser('expo-test-user@example.com', {
-    firstName: 'John',
-    lastName: 'Doe',
-    email: 'expo-test-user@example.com',
-    subscriptionStatus: 'active',
-    });
-    console.log('User identified successfully');
+  await CustomerIO.identify({
+    userId: 'expo-test-user@example.com',
+    traits: {
+      firstName: 'John',
+      lastName: 'Doe',
+      email: 'expo-test-user@example.com',
+      subscriptionStatus: 'active',
+    },
+  });
+  console.log('User identified successfully');
 };
-   ```
+```
 
-2. Track a custom event using the `trackEvent` method:
+2. Track a custom event using the `CustomerIO.track` method:
 
 ```typescript
-import { trackEvent } from "./services/customerIO";
+import { CustomerIO } from "customerio-reactnative";
 
 const trackCustomEventExample = async () => {
-    await trackEvent('purchased_item', {
+  await CustomerIO.track('purchased_item', {
     product: 'Premium Subscription',
     price: 99.99,
     currency: 'USD'
-    });
-    console.log('Custom event tracked successfully');
+  });
+  console.log('Custom event tracked successfully');
 };
 ```
 
@@ -100,31 +105,31 @@ const trackCustomEventExample = async () => {
 
 1. Configure push notifications for iOS and Android. Update your `app.json` file with the following configuration:
 
-```js
+```json
 {
-    "expo": {
-        ...Other options
-        "plugins": [
-            ...other plugins,
-            [ 
-                "customerio-expo-plugin",
-                {
-                    "android": {
-                        "googleServicesFile": "./files/google-services.json"
-                    },
-                    "ios": {
-                        "pushNotification": {
-                            "useRichPush": true,
-                            "env": {
-                                "cdpApiKey": "<CDP API KEY>",
-                                "region": "us" // us or eu
-                            }
-                        }
-                    }
-                }
-            ]
-        ]
-    }
+  "expo": {
+    ...Other options
+    "plugins": [
+      [
+        "customerio-expo-plugin",
+        {
+          "android": {
+            "googleServicesFile": "./files/google-services.json"
+          },
+          "ios": {
+            "pushNotification": {
+              "provider": "apn",
+              "useRichPush": true,
+              "env": {
+                "cdpApiKey": "<CDP API KEY>",
+                "region": "us" // us or eu
+              }
+            }
+          }
+        }
+      ]
+    ]
+  }
 }
 ```
 
@@ -139,20 +144,21 @@ const trackCustomEventExample = async () => {
 2. Ensure the SDK is initialized with the site ID in your app. You can call the `initialize` method from your components or services:
 
 ```typescript
-import { CustomerIO, CioConfig, CioRegion } from "customerio-reactnative";
+import { CioConfig, CustomerIO } from "customerio-reactnative";
+import { useEffect } from "react";
 
 useEffect(() => {
-    const initializeCustomerIO = async () => {
-        const config: CioConfig = {
-            cdpApiKey: process.env.EXPO_PUBLIC_CDP_API_KEY,
-            inApp: {
-                siteId: process.env.EXPO_PUBLIC_SITE_ID,
-            }
-        };
-
-        await CustomerIO.initialize(config);
+  const initializeCustomerIO = async () => {
+    const config: CioConfig = {
+      cdpApiKey: process.env.EXPO_PUBLIC_CDP_API_KEY,
+      inApp: {
+        siteId: process.env.EXPO_PUBLIC_SITE_ID,
+      }
     };
-    initializeCustomerIO();
+
+    await CustomerIO.initialize(config);
+  };
+  initializeCustomerIO();
 }, []);
 ```
 
