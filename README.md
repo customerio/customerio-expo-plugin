@@ -50,10 +50,10 @@ import { CioConfig, CustomerIO } from "customerio-reactnative";
 useEffect(() => {
   const initializeCustomerIO = async () => {
     const config: CioConfig = {
-      cdpApiKey: process.env.EXPO_PUBLIC_CDP_API_KEY ?? '',
+      cdpApiKey: process.env.EXPO_PUBLIC_CDP_API_KEY,
       // Optionally, you can enable in-app messaging by adding the site ID
       inApp: {
-        siteId: process.env.EXPO_PUBLIC_SITE_ID ?? '',
+        siteId: process.env.EXPO_PUBLIC_SITE_ID,
       }
     };
     await CustomerIO.initialize(config);
