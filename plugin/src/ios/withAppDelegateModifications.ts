@@ -224,18 +224,60 @@ export const withAppDelegateModifications: ConfigPlugin<
 > = (configOuter, props) => {
   return withAppDelegate(configOuter, async (config) => {
     let stringContents = config.modResults.contents;
+
+    // Check if this is a Swift-based AppDelegate (Expo 53+)
+    const isSwiftAppDelegate = stringContents.includes('import Expo') && 
+                              (stringContents.includes('class AppDelegate: ExpoAppDelegate') || 
+                               stringContents.includes('public class AppDelegate: ExpoAppDelegate'));
+    
+    if (isSwiftAppDelegate) {
+      console.log('Detected Swift-based AppDelegate (Expo 53+). Skipping Objective-C modifications.');
+      // TODO: Add Swift-specific modifications if needed in the future
+      return config;
+    }
+    
+    // For Objective-C AppDelegate (prior to Expo 53)
     const regex = new RegExp(
       `#import <${config.modRequest.projectName}-Swift.h>`
     );
     const match = stringContents.match(regex);
 
     if (!match) {
-      const headerPath = getAppDelegateHeaderFilePath(
-        config.modRequest.projectRoot
-      );
-      let headerContent = await FileManagement.read(headerPath);
-      headerContent = addAppdelegateHeaderModification(headerContent);
-      FileManagement.write(headerPath, headerContent);
+      let headerPath;
+      try {
+        headerPath = getAppDelegateHeaderFilePath(
+          config.modRequest.projectRoot
+        );
+      } catch (error) {
+        // Try fallback paths for older Expo versions
+        console.log('Trying fallback paths for AppDelegate.h');
+        const possibleHeaderPaths = [
+          `${config.modRequest.projectRoot}/ios/${config.modRequest.projectName}/AppDelegate.h`,
+          `${config.modRequest.projectRoot}/ios/AppDelegate.h`
+        ];
+        
+        for (const path of possibleHeaderPaths) {
+          try {
+            if (FileManagement.exists(path)) {
+              headerPath = path;
+              console.log(`Found AppDelegate.h at: ${path}`);
+              break;
+            }
+          } catch (e) {
+            // Continue trying other paths
+          }
+        }
+        
+        if (!headerPath) {
+          console.warn("Could not find AppDelegate.h file. Skipping header modifications.");
+        }
+      }
+      
+      if (headerPath) {
+        let headerContent = await FileManagement.read(headerPath);
+        headerContent = addAppdelegateHeaderModification(headerContent);
+        FileManagement.write(headerPath, headerContent);
+      }
 
       stringContents = addImport(
         stringContents,
