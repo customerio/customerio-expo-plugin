@@ -133,6 +133,10 @@ const addExpoNotificationsHeaderModification = (stringContents: string) => {
 #if __has_include(<EXNotifications/EXNotificationCenterDelegate.h>)
 #import <EXNotifications/EXNotificationCenterDelegate.h>
 #endif
+
+#if __has_include(<ExpoModulesCore/EXModulesProvidersRegistry.h>)
+#import <ExpoModulesCore/EXModulesProvidersRegistry.h>
+#endif
 `
   );
 
@@ -273,7 +277,11 @@ export const withAppDelegateModifications: ConfigPlugin<
 function getImportSnippet(appName: string) {
   return `
 // Add swift bridge imports
+#if __has_include(<ExpoModulesCore-Swift.h>)
 #import <ExpoModulesCore-Swift.h>
+#endif
+#if __has_include(<${appName}-Swift.h>)
 #import <${appName}-Swift.h>
+#endif
   `;
 }

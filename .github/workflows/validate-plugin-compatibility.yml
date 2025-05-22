@@ -45,6 +45,15 @@ jobs:
           - expo-version: 52
             platform: ios
             ios-push-provider: fcm
+            
+          - expo-version: 53
+            platform: android
+          - expo-version: 53
+            platform: ios
+            ios-push-provider: apn
+          - expo-version: 53
+            platform: ios
+            ios-push-provider: fcm
 
           # Running on latest version helps to catch issues early for new versions not listed above
           - expo-version: latest
