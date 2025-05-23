@@ -1,3 +1,9 @@
+## [2.0.3](https://github.com/customerio/customerio-expo-plugin/compare/2.0.2...2.0.3) (2025-05-23)
+
+### Bug Fixes
+
+* sample apps workflows to run with xcode 16.2 ([#261](https://github.com/customerio/customerio-expo-plugin/issues/261)) ([7f17c03](https://github.com/customerio/customerio-expo-plugin/commit/7f17c0361d0925fcd18792b1de7e4db370130d9d))
+
 ## [2.0.2](https://github.com/customerio/customerio-expo-plugin/compare/2.0.1...2.0.2) (2025-04-10)
 
 ### Bug Fixes
