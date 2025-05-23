@@ -202,7 +202,7 @@ jobs:
       - name: Install XCode
         uses: maxim-lobanov/setup-xcode@60606e260d2fc5762a71e64e74b2174e8ea3c8bd # v1.6.0
         with:
-          xcode-version: "15.3"
+          xcode-version: "16.2"
       
       - name: Install tools from Gemfile (ruby language) used for building our apps with
         uses: ruby/setup-ruby@354a1ad156761f5ee2b7b13fa8e09943a5e8d252 # v1.229.0
