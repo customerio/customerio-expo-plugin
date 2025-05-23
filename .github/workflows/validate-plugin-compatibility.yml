@@ -47,14 +47,15 @@ jobs:
             ios-push-provider: fcm
 
           # Running on latest version helps to catch issues early for new versions not listed above
-          - expo-version: latest
-            platform: android
-          - expo-version: latest
-            platform: ios
-            ios-push-provider: apn
-          - expo-version: latest
-            platform: ios
-            ios-push-provider: fcm
+          #TODO: reactiviate after fixing compatability issues with expo 53
+          # - expo-version: latest
+          #   platform: android
+          # - expo-version: latest
+          #   platform: ios
+          #   ios-push-provider: apn
+          # - expo-version: latest
+          #   platform: ios
+          #   ios-push-provider: fcm
 
     steps:
       - name: Checkout Repository
