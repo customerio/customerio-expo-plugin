@@ -44,11 +44,26 @@ function execute() {
 
   // Step 3: Create a new Expo app
   logMessage(`\n🔧 Creating new Expo app: ${APP_NAME} (Expo ${EXPO_VERSION})`);
-  const RESOLVED_EXPO_TEMPLATE =
-    EXPO_VERSION === "latest" ? EXPO_TEMPLATE : `${EXPO_TEMPLATE}@sdk-${EXPO_VERSION}`;
-  runCommand(
-    `cd ${APP_DIRECTORY_PATH} && npx create-expo-app '${APP_NAME}' --template ${RESOLVED_EXPO_TEMPLATE}`,
-  );
+  let RESOLVED_EXPO_TEMPLATE;
+  
+  // Handle Expo 53 specially as it might have different template requirements
+  if (EXPO_VERSION === "53") {
+    RESOLVED_EXPO_TEMPLATE = EXPO_TEMPLATE;
+    runCommand(
+      `cd ${APP_DIRECTORY_PATH} && npx create-expo-app@latest '${APP_NAME}' --template ${RESOLVED_EXPO_TEMPLATE}`,
+    );
+    // Install Expo 53 SDK explicitly
+    runCommand(
+      `cd ${APP_DIRECTORY_PATH}/${APP_NAME} && npx expo install expo@~53.0.0`,
+    );
+  } else {
+    RESOLVED_EXPO_TEMPLATE =
+      EXPO_VERSION === "latest" ? EXPO_TEMPLATE : `${EXPO_TEMPLATE}@sdk-${EXPO_VERSION}`;
+    runCommand(
+      `cd ${APP_DIRECTORY_PATH} && npx create-expo-app '${APP_NAME}' --template ${RESOLVED_EXPO_TEMPLATE}`,
+    );
+  }
+  
   logMessage("✅ Expo app created successfully!", "success");
 }
 

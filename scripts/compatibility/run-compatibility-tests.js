@@ -6,6 +6,7 @@ const APP_NAME = getArgValue("--app-name", {
   default: `ExpoTest_V${EXPO_VERSION}`.replace(/\./g, ""),
 });
 const APP_DIR = getArgValue("--dir-name", { default: "ci-test-apps" });
+const CLEAN_FLAG = process.argv.includes("--clean");
 const APP_PATH = path.resolve(__dirname, "../..", APP_DIR, APP_NAME);
 
 logMessage(`🚀 Starting local validation for Expo plugin (Expo ${EXPO_VERSION})...`);
@@ -18,6 +19,7 @@ runScriptWithArgs("compatibility:create-test-app", {
     "expo-version": EXPO_VERSION,
     "app-name": APP_NAME,
     "dir-name": APP_DIR,
+    ...(CLEAN_FLAG ? { "clean": true } : {}),
   },
   exclude: EXCLUDED_FORWARD_ARGS,
 });
