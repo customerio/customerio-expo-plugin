@@ -1,6 +1,6 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`Plugin creates expected PushService.swift 1`] = `
+exports[`Pre-Expo 53 FCM PushService tests Plugin creates expected PushService.swift 1`] = `
 "import Foundation
 import CioMessagingPushFCM
 import FirebaseCore
