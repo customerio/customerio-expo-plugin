@@ -51,8 +51,8 @@
       "favicon": "./assets/favicon.png"
     },
     "extra": {
-      "cdpApiKey": "@CDP_API_KEY@",
-      "siteId": "@SITE_ID@",
+      "cdpApiKey": "22490363f70e7d927208",
+      "siteId": "04423b1029414aee7868",
       "workspaceName": "@WORKSPACE_NAME@",
       "buildTimestamp": "@BUILD_TIMESTAMP@",
       "branchName": "@BRANCH_NAME@",
@@ -68,12 +68,16 @@
             "setHighPriorityPushHandler": true
           },
           "ios": {
-            "useFrameworks": "static",
+            "useFrameworks": "static",  
             "pushNotification": {
               "provider": "apn",
               "useRichPush": true,
+              "disableNotificationRegistration": false,
+              "autoTrackPushEvents": false,
+              "showPushAppInForeground": false,
+              "autoFetchDeviceToken": false,
               "env": {
-                "cdpApiKey": "@CDP_API_KEY@",
+                "cdpApiKey": "22490363f70e7d927208",
                 "region": "us"
               }
             }

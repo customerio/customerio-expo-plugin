@@ -1,4 +1,4 @@
-const { testAppPath } = require("../../utils");
+const { testAppPath, isExpoVersion53OrHigher } = require("../../utils");
 const fs = require("fs-extra");
 const path = require("path");
 
