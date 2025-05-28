@@ -35,7 +35,7 @@ public class CioSdkAppDelegateHandler: NSObject {
     // Note: Initialize the native iOS SDK and setup SDK push click handling before running this code.
     #if canImport(EXNotifications)
       // Getting the singleton reference from Expo
-      if let notificationCenterDelegate = EXModuleRegistryProvider.getSingletonModule(forClass: EXNotificationCenterDelegate.self) as? UNUserNotificationCenterDelegate {
+    if let notificationCenterDelegate = ModuleRegistryProvider.getSingletonModule(for: NotificationCenterManager.self) as? UNUserNotificationCenterDelegate {
         let center = UNUserNotificationCenter.current()
         center.delegate = notificationCenterDelegate
       }
