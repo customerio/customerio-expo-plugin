@@ -7,7 +7,7 @@ import ReactAppDependencyProvider
 
 @UIApplicationMain
 public class AppDelegate: ExpoAppDelegate {
-    let cioSdkHandler = CioSdkAppDelegateHandler()
+  let cioSdkHandler = CioSdkAppDelegateHandler()
 
   var window: UIWindow?
 
@@ -34,7 +34,7 @@ public class AppDelegate: ExpoAppDelegate {
       launchOptions: launchOptions)
 #endif
 
-        cioSdkHandler.application(application, didFinishLaunchingWithOptions: launchOptions)
+      cioSdkHandler.application(application, didFinishLaunchingWithOptions: launchOptions)
 
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }

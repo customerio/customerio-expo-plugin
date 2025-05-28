@@ -1,4 +1,5 @@
 const path = require('path');
+const semver = require('semver');
 
 function testAppPath() {
   const appPath = process.env.TEST_APP_PATH;
