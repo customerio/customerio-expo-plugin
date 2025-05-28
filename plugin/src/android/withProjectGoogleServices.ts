@@ -1,4 +1,5 @@
-import { ConfigPlugin, withProjectBuildGradle } from '@expo/config-plugins';
+import type { ConfigPlugin } from '@expo/config-plugins';
+import { withProjectBuildGradle } from '@expo/config-plugins';
 
 import {
   CIO_PROJECT_BUILDSCRIPTS_REGEX,

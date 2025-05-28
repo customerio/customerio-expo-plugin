@@ -1,4 +1,5 @@
-import { ConfigPlugin, withAndroidManifest } from '@expo/config-plugins';
+import type { ConfigPlugin } from '@expo/config-plugins';
+import { withAndroidManifest } from '@expo/config-plugins';
 import type { ManifestApplication } from '@expo/config-plugins/build/android/Manifest';
 
 import type { CustomerIOPluginOptionsAndroid } from '../types/cio-types';

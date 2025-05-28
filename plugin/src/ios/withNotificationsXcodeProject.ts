@@ -1,8 +1,5 @@
-import {
-  ConfigPlugin,
-  XcodeProject,
-  withXcodeProject,
-} from '@expo/config-plugins';
+import type { ConfigPlugin, XcodeProject } from '@expo/config-plugins';
+import { withXcodeProject } from '@expo/config-plugins';
 
 import {
   CIO_NOTIFICATION_TARGET_NAME,
@@ -27,6 +24,7 @@ const addNotificationServiceExtension = async (
   isExpoVersion53OrHigher: boolean
 ) => {
   try {
+    // PushService file is only needed for pre-Expo 53 code generation
     if (options.pushNotification && !isExpoVersion53OrHigher) {
       await addPushNotificationFile(options, xcodeProject);
     }

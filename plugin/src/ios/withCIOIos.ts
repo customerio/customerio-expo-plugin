@@ -16,14 +16,12 @@ export function withCIOIos(
   props: CustomerIOPluginOptionsIOS
 ) {
   const cioProps = mergeDeprecatedPropertiesAndLogWarnings(props);
-  const isSwiftProject = isExpoVersion53OrHigher(config)
+  const isSwiftProject = isExpoVersion53OrHigher(config);
 
   if (cioProps.pushNotification) {
     if (isSwiftProject) {
       config = withCIOIosSwift(config, cioProps);
-      console.log('Applying Swift AppDelegate modifications for Expo 53+');
     } else {
-      console.log('Applying Objective-C AppDelegate modifications for Expo 52 and lower');
       config = withAppDelegateModifications(config, cioProps);
     }
 

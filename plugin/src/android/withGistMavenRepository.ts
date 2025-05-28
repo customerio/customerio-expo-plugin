@@ -1,4 +1,5 @@
-import { withProjectBuildGradle, ConfigPlugin } from '@expo/config-plugins';
+import { withProjectBuildGradle } from '@expo/config-plugins';
+import type { ConfigPlugin } from '@expo/config-plugins';
 
 import {
   CIO_GIST_MAVEN_REGEX,

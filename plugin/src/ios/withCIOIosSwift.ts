@@ -1,5 +1,5 @@
+import type { ConfigPlugin } from '@expo/config-plugins';
 import {
-  ConfigPlugin,
   withAppDelegate,
   withXcodeProject,
 } from '@expo/config-plugins';
@@ -14,6 +14,10 @@ import {
 } from '../helpers/constants/ios';
 import { replaceCodeByRegex } from '../helpers/utils/codeInjection';
 import { isFcmPushProvider } from './utils';
+
+// Constants
+const CIO_SDK_APP_DELEGATE_HANDLER_CLASS = 'CioSdkAppDelegateHandler';
+const CIO_SDK_APP_DELEGATE_HANDLER_FILENAME = `${CIO_SDK_APP_DELEGATE_HANDLER_CLASS}.swift`;
 
 /**
  * Copy and configure the CioSdkAppDelegateHandler.swift file
@@ -30,7 +34,7 @@ const copyAndConfigureAppDelegateHandler = (
   const handlerSourcePath = path.join(
     LOCAL_PATH_TO_CIO_NSE_FILES,
     useFcm ? 'fcm' : 'apn',
-    'CioSdkAppDelegateHandler.swift'
+    CIO_SDK_APP_DELEGATE_HANDLER_FILENAME
   );
 
   // Destination path in the iOS project
@@ -45,10 +49,9 @@ const copyAndConfigureAppDelegateHandler = (
   const handlerDestPath = path.join(
     iosProjectRoot,
     projectName,
-    'CioSdkAppDelegateHandler.swift'
+    CIO_SDK_APP_DELEGATE_HANDLER_FILENAME
   );
 
-  console.log(`Copying CioSdkAppDelegateHandler.swift to iOS project...`);
   FileManagement.copyFile(handlerSourcePath, handlerDestPath);
 
   // Add the file to the Xcode project
@@ -67,7 +70,7 @@ const copyAndConfigureAppDelegateHandler = (
 
   // Add the file to the Xcode project
   xcodeProject.addSourceFile(
-    `${projectName}/CioSdkAppDelegateHandler.swift`,
+    `${projectName}/${CIO_SDK_APP_DELEGATE_HANDLER_FILENAME}`,
     null,
     group
   );
@@ -121,7 +124,6 @@ export const withCIOIosSwift: ConfigPlugin<CustomerIOPluginOptionsIOS> = (
   configOuter,
   props
 ) => {
-  console.log(`props: ${JSON.stringify(props)}`);
   // First, copy the CioSdkAppDelegateHandler.swift file to the iOS project and add it to Xcode project
   configOuter = withXcodeProject(configOuter, async (config) => {
     return copyAndConfigureAppDelegateHandler(config, props);
@@ -143,7 +145,7 @@ const modifyAppDelegate = (
   const appDelegateContent = config.modResults.contents;
 
   // Check if modifications have already been applied
-  if (appDelegateContent.includes('CioSdkAppDelegateHandler')) {
+  if (appDelegateContent.includes(CIO_SDK_APP_DELEGATE_HANDLER_CLASS)) {
     console.log(
       'CustomerIO Swift AppDelegate changes already exist. Skipping...'
     );
@@ -204,7 +206,7 @@ const addHandlerPropertyDeclaration = (content: string): string => {
   const position = match.index! + match[0].length;
   return (
     content.substring(0, position) +
-    '\n    let cioSdkHandler = CioSdkAppDelegateHandler()\n' +
+    `\n  let cioSdkHandler = ${CIO_SDK_APP_DELEGATE_HANDLER_CLASS}()\n` +
     content.substring(position)
   );
 };
@@ -229,7 +231,7 @@ const modifyDidFinishLaunchingWithOptions = (content: string): string => {
 
   // Add handler call before the return statement
   const insertPosition = returnStatementMatch.index!;
-  const handlerCallCode = `    cioSdkHandler.application(application, didFinishLaunchingWithOptions: launchOptions)\n\n    `;
+  const handlerCallCode = `  cioSdkHandler.application(application, didFinishLaunchingWithOptions: launchOptions)\n\n    `;
   
   return (
     content.substring(0, insertPosition) +

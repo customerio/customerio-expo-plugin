@@ -1,4 +1,5 @@
-import { ConfigPlugin, withStringsXml } from '@expo/config-plugins';
+import type { ConfigPlugin } from '@expo/config-plugins';
+import { withStringsXml } from '@expo/config-plugins';
 import { getPluginVersion } from '../helpers/utils/pluginUtils';
 
 /**

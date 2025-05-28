@@ -1,4 +1,5 @@
-import { ConfigPlugin, withAppDelegate } from '@expo/config-plugins';
+import type { ConfigPlugin } from '@expo/config-plugins';
+import { withAppDelegate } from '@expo/config-plugins';
 import { getAppDelegateHeaderFilePath } from '@expo/config-plugins/build/ios/Paths';
 
 import {
