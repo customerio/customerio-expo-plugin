@@ -129,6 +129,23 @@ NSMutableDictionary *modifiedLaunchOptions = [NSMutableDictionary dictionaryWith
 //Deep link workaround for app killed state ends
 `;
 
+export const CIO_CONFIGUREDEEPLINK_KILLEDSTATE_SWIFT_SNIPPET = `
+    // Deep link workaround for app killed state start
+    var modifiedLaunchOptions = launchOptions
+    if let launchOptions = launchOptions,
+       let pushContent = launchOptions[UIApplication.LaunchOptionsKey.remoteNotification] as? [AnyHashable: Any],
+       let cio = pushContent["CIO"] as? [String: Any],
+       let push = cio["push"] as? [String: Any],
+       let link = push["link"] as? String,
+       !launchOptions.keys.contains(UIApplication.LaunchOptionsKey.url) {
+        
+        var mutableLaunchOptions = launchOptions
+        mutableLaunchOptions[UIApplication.LaunchOptionsKey.url] = URL(string: link)
+        modifiedLaunchOptions = mutableLaunchOptions
+    }
+    // Deep link workaround for app killed state ends
+`;
+
 export const CIO_REGISTER_PUSHNOTIFICATION_SNIPPET = `
 @objc(registerPushNotification)
   public func registerPushNotification() {
@@ -142,3 +159,15 @@ export const CIO_REGISTER_PUSHNOTIFICATION_SNIPPET = `
       }
     }
   }`;
+
+export const CIO_REGISTER_PUSHNOTIFICATION_SNIPPET_v2 = `
+    let center  = UNUserNotificationCenter.current()
+    center.requestAuthorization(options: [.sound, .alert, .badge]) { (granted, error) in
+      if error == nil{
+        DispatchQueue.main.async {
+          UIApplication.shared.registerForRemoteNotifications()
+        }
+      }
+    }`;
+
+export const CIO_REGISTER_PUSH_NOTIFICATION_PLACEHOLDER = /\{\{REGISTER_SNIPPET\}\}/;
