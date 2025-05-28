@@ -26,36 +26,35 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - expo-version: 51
+          - expo-version: 52
             platform: android
-          - expo-version: 51
+          - expo-version: 52
             platform: ios
             ios-push-provider: apn
             ios-deployment-target: "15.1"
-          - expo-version: 51
+          - expo-version: 52
             platform: ios
             ios-push-provider: fcm
             ios-deployment-target: "15.1"
 
-          - expo-version: 52
+          - expo-version: 53
             platform: android
-          - expo-version: 52
+          - expo-version: 53
             platform: ios
             ios-push-provider: apn
-          - expo-version: 52
+          - expo-version: 53
             platform: ios
             ios-push-provider: fcm
 
           # Running on latest version helps to catch issues early for new versions not listed above
-          #TODO: reactiviate after fixing compatability issues with expo 53
-          # - expo-version: latest
-          #   platform: android
-          # - expo-version: latest
-          #   platform: ios
-          #   ios-push-provider: apn
-          # - expo-version: latest
-          #   platform: ios
-          #   ios-push-provider: fcm
+          - expo-version: latest
+            platform: android
+          - expo-version: latest
+            platform: ios
+            ios-push-provider: apn
+          - expo-version: latest
+            platform: ios
+            ios-push-provider: fcm
 
     steps:
       - name: Checkout Repository
@@ -110,4 +109,5 @@ jobs:
             --app-path=${{ env.APP_PATH }} \
             --platforms=${{ matrix.platform }}\
             --ios-use-frameworks="static" \
-            ${{ matrix.ios-push-provider && format(' --ios-push-providers={0}', matrix.ios-push-provider) }}
+            ${{ matrix.ios-push-provider && format(' --ios-push-providers={0}', matrix.ios-push-provider) }} \
+            ${{ matrix.expo-version < 53 && format(' --expo-version={0}', matrix.expo-version) }}

@@ -11,6 +11,7 @@ const {
 } = require("../utils/cli");
 
 const APP_PATH = getArgValue("--app-path", { required: true });
+const EXPO_VERSION = getArgValue("--expo-version", { default: 53 })
 const PLATFORMS = getArgValue("--platforms", { default: "android,ios" }).split(",");
 const IOS_PUSH_PROVIDERS = parseArrayArg("--ios-push-providers", { default: "apn,fcm" });
 const TESTS_DIRECTORY_PATH = getArgValue("--tests-dir-path", {
@@ -60,7 +61,7 @@ function execute() {
     runCommand(`${PREBUILD_CMD} --platform=android`);
 
     logMessage("🧪 Running Android tests...");
-    runCommand(`TEST_APP_PATH=${APP_PATH} npm test -- ${TESTS_DIRECTORY_PATH}/android`);
+    runCommand(`TEST_APP_PATH=${APP_PATH} EXPO_VERSION=${EXPO_VERSION} npm test -- ${TESTS_DIRECTORY_PATH}/android`);
 
     logMessage("🤖 Building Android project...");
     try {
@@ -85,7 +86,7 @@ function execute() {
       logMessage(`⚙️ Running expo prebuild after modifying app.json for ios push provider: ${provider}`);
       runCommand(`${PREBUILD_CMD} --platform=ios`);
 
-      const JEST_TEST_ENV_VALUES = `TEST_APP_PATH=${APP_PATH} TEST_APP_NAME=${getIosWorkspaceName()}`;
+      const JEST_TEST_ENV_VALUES = `TEST_APP_PATH=${APP_PATH} TEST_APP_NAME=${getIosWorkspaceName()} EXPO_VERSION=${EXPO_VERSION}`;
       logMessage(`🧪 Running iOS tests for provider: ${provider}`);
       runCommand(`${JEST_TEST_ENV_VALUES} npm test -- ${TESTS_DIRECTORY_PATH}/ios/common ${TESTS_DIRECTORY_PATH}/ios/${provider}`);
 
