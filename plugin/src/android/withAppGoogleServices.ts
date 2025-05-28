@@ -1,4 +1,5 @@
-import { ConfigPlugin, withAppBuildGradle } from '@expo/config-plugins';
+import type { ConfigPlugin } from '@expo/config-plugins';
+import { withAppBuildGradle } from '@expo/config-plugins';
 
 import {
   CIO_APP_APPLY_REGEX,

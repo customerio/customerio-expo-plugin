@@ -1,4 +1,5 @@
-import { ConfigPlugin, withXcodeProject } from '@expo/config-plugins';
+import type { ConfigPlugin } from '@expo/config-plugins';
+import { withXcodeProject } from '@expo/config-plugins';
 
 import { isFcmPushProvider } from './utils';
 import { injectCIOPodfileCode } from '../helpers/utils/injectCIOPodfileCode';

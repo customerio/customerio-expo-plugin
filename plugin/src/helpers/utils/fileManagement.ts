@@ -7,8 +7,8 @@ import {
   mkdirSync,
   writeFileSync,
   readFileSync,
-  MakeDirectoryOptions,
 } from 'fs';
+import type { MakeDirectoryOptions } from 'fs';
 
 export class FileManagement {
   static async read(path: string): Promise<string> {
