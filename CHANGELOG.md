@@ -1,3 +1,9 @@
+## [2.1.0](https://github.com/customerio/customerio-expo-plugin/compare/2.0.3...2.1.0) (2025-05-29)
+
+### Features
+
+* Expo 53 support ([#268](https://github.com/customerio/customerio-expo-plugin/issues/268)) ([fba26e3](https://github.com/customerio/customerio-expo-plugin/commit/fba26e326b796b1783fffcfb4d974bdf93a96d98))
+
 ## [2.0.3](https://github.com/customerio/customerio-expo-plugin/compare/2.0.2...2.0.3) (2025-05-23)
 
 ### Bug Fixes
