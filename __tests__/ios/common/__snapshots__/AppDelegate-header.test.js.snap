@@ -1,6 +1,6 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`Plugin injects CIO imports and calls into AppDelegate.h 1`] = `
+exports[`Pre-Expo 53 - AppDelegate.h Plugin injects CIO imports and calls into AppDelegate.h 1`] = `
 "#import <RCTAppDelegate.h>
 #import <UIKit/UIKit.h>
 #import <Expo/Expo.h>

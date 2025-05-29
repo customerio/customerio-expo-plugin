@@ -1,8 +1,8 @@
 import {
   withXcodeProject,
   IOSConfig,
-  ConfigPlugin,
 } from '@expo/config-plugins';
+import type { ConfigPlugin } from '@expo/config-plugins';
 
 import { FileManagement } from './../helpers/utils/fileManagement';
 import type { CustomerIOPluginOptionsIOS } from '../types/cio-types';

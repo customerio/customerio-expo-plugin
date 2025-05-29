@@ -1,4 +1,5 @@
-import { withProjectBuildGradle, ConfigPlugin } from '@expo/config-plugins';
+import { withProjectBuildGradle } from '@expo/config-plugins';
+import type { ConfigPlugin } from '@expo/config-plugins';
 
 import { FileManagement } from './../helpers/utils/fileManagement';
 import type { CustomerIOPluginOptionsAndroid } from './../types/cio-types';

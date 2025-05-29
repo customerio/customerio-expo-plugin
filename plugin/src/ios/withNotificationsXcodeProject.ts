@@ -1,8 +1,5 @@
-import {
-  ConfigPlugin,
-  XcodeProject,
-  withXcodeProject,
-} from '@expo/config-plugins';
+import type { ConfigPlugin, XcodeProject } from '@expo/config-plugins';
+import { withXcodeProject } from '@expo/config-plugins';
 
 import {
   CIO_NOTIFICATION_TARGET_NAME,
@@ -14,7 +11,7 @@ import { replaceCodeByRegex } from '../helpers/utils/codeInjection';
 import { injectCIONotificationPodfileCode } from '../helpers/utils/injectCIOPodfileCode';
 import type { CustomerIOPluginOptionsIOS } from '../types/cio-types';
 import { FileManagement } from './../helpers/utils/fileManagement';
-import { isFcmPushProvider } from './utils';
+import { isExpoVersion53OrHigher, isFcmPushProvider } from './utils';
 
 const PLIST_FILENAME = `${CIO_NOTIFICATION_TARGET_NAME}-Info.plist`;
 const ENV_FILENAME = 'Env.swift';
@@ -23,10 +20,12 @@ const TARGETED_DEVICE_FAMILY = `"1,2"`;
 
 const addNotificationServiceExtension = async (
   options: CustomerIOPluginOptionsIOS,
-  xcodeProject: XcodeProject
+  xcodeProject: XcodeProject,
+  isExpoVersion53OrHigher: boolean
 ) => {
   try {
-    if (options.pushNotification) {
+    // PushService file is only needed for pre-Expo 53 code generation
+    if (options.pushNotification && !isExpoVersion53OrHigher) {
       await addPushNotificationFile(options, xcodeProject);
     }
 
@@ -88,7 +87,8 @@ export const withCioNotificationsXcodeProject: ConfigPlugin<
 
     const modifiedProjectFile = await addNotificationServiceExtension(
       options,
-      config.modResults
+      config.modResults,
+      isExpoVersion53OrHigher(configOuter)
     );
 
     if (modifiedProjectFile) {
