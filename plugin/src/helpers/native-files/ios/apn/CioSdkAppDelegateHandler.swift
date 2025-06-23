@@ -7,7 +7,11 @@ import EXNotifications
 import ExpoModulesCore
 #endif
 
+class DummyAppDelegate: NSObject, UIApplicationDelegate {}
+
 public class CioSdkAppDelegateHandler: NSObject {
+
+  let cioAppDelegate = CioAppDelegateWrapper<DummyAppDelegate>()
     
   public func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) {
 
@@ -40,13 +44,15 @@ public class CioSdkAppDelegateHandler: NSObject {
         center.delegate = notificationCenterDelegate
       }
     #endif
+
+    _ = cioAppDelegate.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
 
   public func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
-    MessagingPush.shared.application(application, didRegisterForRemoteNotificationsWithDeviceToken: deviceToken)
+    cioAppDelegate.application(application, didRegisterForRemoteNotificationsWithDeviceToken: deviceToken)
   }
     
   public func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
-    MessagingPush.shared.application(application, didFailToRegisterForRemoteNotificationsWithError: error)
+    cioAppDelegate.application(application, didFailToRegisterForRemoteNotificationsWithError: error)
   }
 }

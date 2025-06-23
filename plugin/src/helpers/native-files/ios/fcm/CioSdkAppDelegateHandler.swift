@@ -9,7 +9,11 @@ import EXNotifications
 import ExpoModulesCore
 #endif
 
+class DummyAppDelegate: NSObject, UIApplicationDelegate {}
+
 public class CioSdkAppDelegateHandler: NSObject {
+
+  let cioAppDelegate = CioAppDelegateWrapper<DummyAppDelegate>()
     
   public func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) {
 
@@ -18,7 +22,6 @@ public class CioSdkAppDelegateHandler: NSObject {
     if (FirebaseApp.app() == nil) {
       FirebaseApp.configure()
     }
-    Messaging.messaging().delegate = self
     UIApplication.shared.registerForRemoteNotifications()
     
     MessagingPushFCM.initialize(
@@ -48,6 +51,8 @@ public class CioSdkAppDelegateHandler: NSObject {
         center.delegate = notificationCenterDelegate
       }
     #endif
+
+    _ = cioAppDelegate.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
 
   public func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
@@ -56,19 +61,5 @@ public class CioSdkAppDelegateHandler: NSObject {
     
   public func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
     
-  }
-}
-
-extension CioSdkAppDelegateHandler: MessagingDelegate {
-  public func messaging(_ messaging: Messaging, didReceiveRegistrationToken fcmToken: String?) {
-    MessagingPush.shared.messaging(messaging, didReceiveRegistrationToken: fcmToken)
-  }
-
-  func userNotificationCenter(
-    _ center: UNUserNotificationCenter,
-    willPresent notification: UNNotification,
-    withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
-  ) {
-    completionHandler([.list, .banner, .badge, .sound])
   }
 }
