@@ -24,14 +24,6 @@ public class CioSdkAppDelegateHandler: NSObject {
     }
     UIApplication.shared.registerForRemoteNotifications()
     
-    MessagingPushFCM.initialize(
-      withConfig: MessagingPushConfigBuilder()
-        .autoFetchDeviceToken({{AUTO_FETCH_DEVICE_TOKEN}})
-        .showPushAppInForeground({{SHOW_PUSH_APP_IN_FOREGROUND}})
-        .autoTrackPushEvents({{AUTO_TRACK_PUSH_EVENTS}})
-        .build()
-    )
-    
     // Code to make the CIO SDK compatible with expo-notifications package.
     //
     // The CIO SDK and expo-notifications both need to handle when a push gets clicked. However, iOS only allows one click handler to be set per app.
@@ -53,6 +45,14 @@ public class CioSdkAppDelegateHandler: NSObject {
     #endif
 
     _ = cioAppDelegate.application(application, didFinishLaunchingWithOptions: launchOptions)
+
+    MessagingPushFCM.initialize(
+      withConfig: MessagingPushConfigBuilder()
+        .autoFetchDeviceToken({{AUTO_FETCH_DEVICE_TOKEN}})
+        .showPushAppInForeground({{SHOW_PUSH_APP_IN_FOREGROUND}})
+        .autoTrackPushEvents({{AUTO_TRACK_PUSH_EVENTS}})
+        .build()
+    )
   }
 
   public func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {

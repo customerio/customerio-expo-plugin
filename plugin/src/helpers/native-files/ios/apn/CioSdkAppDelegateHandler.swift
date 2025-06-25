@@ -16,14 +16,6 @@ public class CioSdkAppDelegateHandler: NSObject {
   public func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) {
 
     {{REGISTER_SNIPPET}}
-
-    MessagingPushAPN.initialize(
-      withConfig: MessagingPushConfigBuilder()
-        .autoFetchDeviceToken({{AUTO_FETCH_DEVICE_TOKEN}})
-        .showPushAppInForeground({{SHOW_PUSH_APP_IN_FOREGROUND}})
-        .autoTrackPushEvents({{AUTO_TRACK_PUSH_EVENTS}})
-        .build()
-    )
     
     // Code to make the CIO SDK compatible with expo-notifications package.
     //
@@ -46,6 +38,14 @@ public class CioSdkAppDelegateHandler: NSObject {
     #endif
 
     _ = cioAppDelegate.application(application, didFinishLaunchingWithOptions: launchOptions)
+
+    MessagingPushAPN.initialize(
+      withConfig: MessagingPushConfigBuilder()
+        .autoFetchDeviceToken({{AUTO_FETCH_DEVICE_TOKEN}})
+        .showPushAppInForeground({{SHOW_PUSH_APP_IN_FOREGROUND}})
+        .autoTrackPushEvents({{AUTO_TRACK_PUSH_EVENTS}})
+        .build()
+    )
   }
 
   public func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
