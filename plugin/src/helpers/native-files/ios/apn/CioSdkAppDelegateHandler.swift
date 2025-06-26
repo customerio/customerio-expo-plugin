@@ -7,11 +7,11 @@ import EXNotifications
 import ExpoModulesCore
 #endif
 
-class DummyAppDelegate: NSObject, UIApplicationDelegate {}
+private class DummyAppDelegate: NSObject, UIApplicationDelegate {}
 
 public class CioSdkAppDelegateHandler: NSObject {
 
-  let cioAppDelegate = CioAppDelegateWrapper<DummyAppDelegate>()
+  private let cioAppDelegate = CioAppDelegateWrapper<DummyAppDelegate>()
     
   public func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) {
 

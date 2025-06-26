@@ -10,11 +10,11 @@ import EXNotifications
 import ExpoModulesCore
 #endif
 
-class DummyAppDelegate: NSObject, UIApplicationDelegate {}
+private class DummyAppDelegate: NSObject, UIApplicationDelegate {}
 
 public class CioSdkAppDelegateHandler: NSObject {
 
-  let cioAppDelegate = CioAppDelegateWrapper<DummyAppDelegate>()
+  private let cioAppDelegate = CioAppDelegateWrapper<DummyAppDelegate>()
     
   public func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) {
 
@@ -27,14 +27,6 @@ public class CioSdkAppDelegateHandler: NSObject {
         }
       }
     }
-
-    MessagingPushAPN.initialize(
-      withConfig: MessagingPushConfigBuilder()
-        .autoFetchDeviceToken(true)
-        .showPushAppInForeground(true)
-        .autoTrackPushEvents(true)
-        .build()
-    )
     
     // Code to make the CIO SDK compatible with expo-notifications package.
     //
@@ -57,6 +49,14 @@ public class CioSdkAppDelegateHandler: NSObject {
     #endif
 
     _ = cioAppDelegate.application(application, didFinishLaunchingWithOptions: launchOptions)
+
+    MessagingPushAPN.initialize(
+      withConfig: MessagingPushConfigBuilder()
+        .autoFetchDeviceToken(true)
+        .showPushAppInForeground(true)
+        .autoTrackPushEvents(true)
+        .build()
+    )
   }
 
   public func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {

@@ -9,20 +9,17 @@ import EXNotifications
 import ExpoModulesCore
 #endif
 
-class DummyAppDelegate: NSObject, UIApplicationDelegate {}
+private class DummyAppDelegate: NSObject, UIApplicationDelegate, MessagingDelegate {
+  func messaging(_ messaging: Messaging, didReceiveRegistrationToken fcmToken: String?) {}
+}
 
 public class CioSdkAppDelegateHandler: NSObject {
 
-  let cioAppDelegate = CioAppDelegateWrapper<DummyAppDelegate>()
+  private let cioAppDelegate = CioAppDelegateWrapper<DummyAppDelegate>()
     
   public func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) {
 
     {{REGISTER_SNIPPET}}
-
-    if (FirebaseApp.app() == nil) {
-      FirebaseApp.configure()
-    }
-    UIApplication.shared.registerForRemoteNotifications()
     
     // Code to make the CIO SDK compatible with expo-notifications package.
     //
@@ -44,13 +41,17 @@ public class CioSdkAppDelegateHandler: NSObject {
       }
     #endif
 
+    if (FirebaseApp.app() == nil) {
+      FirebaseApp.configure()
+    }
     _ = cioAppDelegate.application(application, didFinishLaunchingWithOptions: launchOptions)
+    UIApplication.shared.registerForRemoteNotifications()
 
     MessagingPushFCM.initialize(
       withConfig: MessagingPushConfigBuilder()
-        .autoFetchDeviceToken({{AUTO_FETCH_DEVICE_TOKEN}})
-        .showPushAppInForeground({{SHOW_PUSH_APP_IN_FOREGROUND}})
-        .autoTrackPushEvents({{AUTO_TRACK_PUSH_EVENTS}})
+        .autoFetchDeviceToken(true)
+        .showPushAppInForeground(true)
+        .autoTrackPushEvents(true)
         .build()
     )
   }
