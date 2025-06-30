@@ -22,9 +22,7 @@
       "infoPlist": {
         "CFBundleURLTypes": [
           {
-            "CFBundleURLSchemes": [
-              "expo-test-app"
-            ]
+            "CFBundleURLSchemes": ["expo-test-app"]
           }
         ]
       }
@@ -45,10 +43,7 @@
               "host": "nav-test"
             }
           ],
-          "category": [
-            "BROWSABLE",
-            "DEFAULT"
-          ]
+          "category": ["BROWSABLE", "DEFAULT"]
         }
       ]
     },
@@ -75,13 +70,12 @@
           "ios": {
             "useFrameworks": "static",
             "pushNotification": {
-              "provider": "fcm",
+              "provider": "apn",
               "useRichPush": true,
               "env": {
                 "cdpApiKey": "@CDP_API_KEY@",
                 "region": "us"
-              },
-              "googleServicesFile": "./files/GoogleService-Info.plist"
+              }
             }
           }
         }
