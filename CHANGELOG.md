@@ -1,3 +1,9 @@
+## [2.2.0](https://github.com/customerio/customerio-expo-plugin/compare/2.1.0...2.2.0) (2025-06-30)
+
+### Features
+
+* add inline message support and example ([#274](https://github.com/customerio/customerio-expo-plugin/issues/274)) ([8133e7d](https://github.com/customerio/customerio-expo-plugin/commit/8133e7d94c0d425f56edf73525b965c8b87da3c6))
+
 ## [2.1.0](https://github.com/customerio/customerio-expo-plugin/compare/2.0.3...2.1.0) (2025-05-29)
 
 ### Features
