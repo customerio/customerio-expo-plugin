@@ -43,6 +43,10 @@ export default function DashboardScreen({ navigation }) {
       });
   };
 
+  const handleNavigateToInlineExamplesButtonPressed = () => {
+    navigation.navigate('InlineExamples');
+  };
+
   const handleLogoutButtonPressed = () => {
     CustomerIO.clearIdentify();
   };
@@ -103,6 +107,13 @@ export default function DashboardScreen({ navigation }) {
           <Button
             title="Deeplink to test screen"
             onPress={handleDeeplinkToTestScreenButtonPressed}
+          />
+        </View>
+
+        <View style={styles.section}>
+          <Button
+            title="Inline Examples"
+            onPress={handleNavigateToInlineExamplesButtonPressed}
           />
         </View>
 

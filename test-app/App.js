@@ -4,6 +4,7 @@ import { createStackNavigator } from '@react-navigation/stack';
 
 import DashboardScreen from "./screens/Dashboard";
 import NavigationTestScreen from "./screens/NavigationTest";
+import InlineExamplesScreen from "./screens/InlineExamples";
 
 import { initializeCioSdk } from "./helpers/SdkInit";
 
@@ -28,6 +29,7 @@ export default function App() {
       <Stack.Navigator>
         <Stack.Screen name="Dashboard" component={DashboardScreen} />
         <Stack.Screen name="NavigationTest" component={NavigationTestScreen} />
+        <Stack.Screen name="InlineExamples" component={InlineExamplesScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );
