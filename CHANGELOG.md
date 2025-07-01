@@ -1,3 +1,9 @@
+## [2.3.0](https://github.com/customerio/customerio-expo-plugin/compare/2.2.0...2.3.0) (2025-07-01)
+
+### Features
+
+* Use non-swizzling push support solution for iOS ([#273](https://github.com/customerio/customerio-expo-plugin/issues/273)) ([44fa3fc](https://github.com/customerio/customerio-expo-plugin/commit/44fa3fc1bb87be19760451d194f5449d7c093d8c))
+
 ## [2.2.0](https://github.com/customerio/customerio-expo-plugin/compare/2.1.0...2.2.0) (2025-06-30)
 
 ### Features
