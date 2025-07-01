@@ -1,4 +1,7 @@
-import Foundation
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Expo 53 CioSdkAppDelegateHandler tests Plugin creates expected CioSdkAppDelegateHandler.swift 1`] = `
+"import Foundation
 import UIKit
 import UserNotifications
 import CioMessagingPushAPN
@@ -15,7 +18,15 @@ public class CioSdkAppDelegateHandler: NSObject {
     
   public func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) {
 
-    {{REGISTER_SNIPPET}}
+    
+    let center  = UNUserNotificationCenter.current()
+    center.requestAuthorization(options: [.sound, .alert, .badge]) { (granted, error) in
+      if error == nil{
+        DispatchQueue.main.async {
+          UIApplication.shared.registerForRemoteNotifications()
+        }
+      }
+    }
     
     // Code to make the CIO SDK compatible with expo-notifications package.
     //
@@ -41,9 +52,9 @@ public class CioSdkAppDelegateHandler: NSObject {
 
     MessagingPushAPN.initialize(
       withConfig: MessagingPushConfigBuilder()
-        .autoFetchDeviceToken({{AUTO_FETCH_DEVICE_TOKEN}})
-        .showPushAppInForeground({{SHOW_PUSH_APP_IN_FOREGROUND}})
-        .autoTrackPushEvents({{AUTO_TRACK_PUSH_EVENTS}})
+        .autoFetchDeviceToken(true)
+        .showPushAppInForeground(true)
+        .autoTrackPushEvents(true)
         .build()
     )
   }
@@ -56,3 +67,5 @@ public class CioSdkAppDelegateHandler: NSObject {
     cioAppDelegate.application(application, didFailToRegisterForRemoteNotificationsWithError: error)
   }
 }
+"
+`;
