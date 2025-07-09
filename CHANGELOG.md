@@ -1,3 +1,9 @@
+## [2.3.1](https://github.com/customerio/customerio-expo-plugin/compare/2.3.0...2.3.1) (2025-07-09)
+
+### Bug Fixes
+
+* Preserve numeric types when doing sanitization for JSON ([#276](https://github.com/customerio/customerio-expo-plugin/issues/276)) ([6384279](https://github.com/customerio/customerio-expo-plugin/commit/638427994c5302f6fad5413a053b0ff965dd16ef))
+
 ## [2.3.0](https://github.com/customerio/customerio-expo-plugin/compare/2.2.0...2.3.0) (2025-07-01)
 
 ### Features
