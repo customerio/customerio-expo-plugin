@@ -100,6 +100,13 @@ function execute() {
       android: {
         googleServicesFile: ANDROID_GOOGLE_SERVICES_FILE_PATH,
         setHighPriorityPushHandler: true,
+        pushNotification: {
+          channel: {
+            id: "cio-expo-id",
+            name: "CIO Test",
+            importance: 4
+          }
+        }
       },
       ios: {
         pushNotification: {
