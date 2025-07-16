@@ -13,12 +13,10 @@ export const withNotificationChannelMetadata: ConfigPlugin<
 
     // Only proceed if channel configuration exists
     if (channel && (channel.id || channel.name || channel.importance !== undefined)) {
-      // Initialize meta-data array if it doesn't exist
       if (!application[0]['meta-data']) {
         application[0]['meta-data'] = [];
       }
 
-      // Add channel ID metadata if provided
       if (channel.id) {
         const hasChannelIdMetadata = application[0]['meta-data'].some(
           (metadata) => metadata['$']['android:name'] === 'io.customer.notification_channel_id'
@@ -31,11 +29,9 @@ export const withNotificationChannelMetadata: ConfigPlugin<
               'android:value': channel.id,
             },
           });
-          console.log('Successfully added notification channel ID metadata to AndroidManifest.xml');
         }
       }
 
-      // Add channel name metadata if provided
       if (channel.name) {
         const hasChannelNameMetadata = application[0]['meta-data'].some(
           (metadata) => metadata['$']['android:name'] === 'io.customer.notification_channel_name'
@@ -48,11 +44,9 @@ export const withNotificationChannelMetadata: ConfigPlugin<
               'android:value': channel.name,
             },
           });
-          console.log('Successfully added notification channel name metadata to AndroidManifest.xml');
         }
       }
 
-      // Add channel importance metadata if provided
       if (channel.importance !== undefined) {
         const hasChannelImportanceMetadata = application[0]['meta-data'].some(
           (metadata) => metadata['$']['android:name'] === 'io.customer.notification_channel_importance'
@@ -65,7 +59,6 @@ export const withNotificationChannelMetadata: ConfigPlugin<
               'android:value': String(channel.importance),
             },
           });
-          console.log('Successfully added notification channel importance metadata to AndroidManifest.xml');
         }
       }
     }
