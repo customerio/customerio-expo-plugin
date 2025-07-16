@@ -55,6 +55,13 @@ export type CustomerIOPluginOptionsAndroid = {
   androidPath: string;
   googleServicesFile?: string;
   setHighPriorityPushHandler?: boolean;
+  pushNotification?: {
+    channel?: {
+      id?: string;
+      name?: string;
+      importance?: number;
+    };
+  };
 };
 
 export type CustomerIOPluginOptions = {

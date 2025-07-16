@@ -65,7 +65,14 @@
         {
           "android": {
             "googleServicesFile": "./files/google-services.json",
-            "setHighPriorityPushHandler": true
+            "setHighPriorityPushHandler": true,
+            "pushNotification": {
+              "channel": {
+                "id": "cio-expo-id",
+                "name": "CIO Test",
+                "importance": 4
+              }
+            }
           },
           "ios": {
             "useFrameworks": "static",

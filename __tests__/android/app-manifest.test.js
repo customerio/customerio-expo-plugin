@@ -34,3 +34,41 @@ test("Plugin injects CustomerIOFirebaseMessagingService in the app manifest", as
     expect(hasExpectedAction).toBe(true);
   });
 });
+
+test("Plugin injects notification channel metadata in the app manifest", async () => {
+  // When pushNotification.channel config is set with id, name, and importance
+  // metadata tags should be added to the app Manifest file
+  const manifestContent = await fs.readFile(appManifestPath, "utf8");
+
+  parseString(manifestContent, (err, manifest) => {
+    if (err) throw err;
+
+    const application = manifest?.manifest?.application?.[0];
+    expect(application).toBeDefined();
+
+    const metadataList = application['meta-data'] || [];
+    
+    // Check for channel ID metadata
+    const channelIdMetadata = metadataList.find(
+      metadata => metadata['$']['android:name'] === 'io.customer.notification_channel_id'
+    );
+    expect(channelIdMetadata).toBeDefined();
+    
+    // Check for channel name metadata
+    const channelNameMetadata = metadataList.find(
+      metadata => metadata['$']['android:name'] === 'io.customer.notification_channel_name'
+    );
+    expect(channelNameMetadata).toBeDefined();
+    
+    // Check for channel importance metadata
+    const channelImportanceMetadata = metadataList.find(
+      metadata => metadata['$']['android:name'] === 'io.customer.notification_channel_importance'
+    );
+    expect(channelImportanceMetadata).toBeDefined();
+    
+    // Verify the values match what's configured in the test app (app.json)
+    expect(channelIdMetadata['$']['android:value']).toBe('cio-expo-id');
+    expect(channelNameMetadata['$']['android:value']).toBe('CIO Test');
+    expect(channelImportanceMetadata['$']['android:value']).toBe('4');
+  });
+});
