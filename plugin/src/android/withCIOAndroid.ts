@@ -5,6 +5,7 @@ import { withAndroidManifestUpdates } from './withAndroidManifestUpdates';
 import { withAppGoogleServices } from './withAppGoogleServices';
 import { withGistMavenRepository } from './withGistMavenRepository';
 import { withGoogleServicesJSON } from './withGoogleServicesJSON';
+import { withNotificationChannelMetadata } from './withNotificationChannelMetadata';
 import { withProjectGoogleServices } from './withProjectGoogleServices';
 import { withProjectStrings } from './withProjectStrings';
 
@@ -19,6 +20,9 @@ export function withCIOAndroid(
   config = withProjectStrings(config);
   if (props.setHighPriorityPushHandler) {
     config = withAndroidManifestUpdates(config, props);
+  }
+  if (props.pushNotification?.channel) {
+    config = withNotificationChannelMetadata(config, props);
   }
 
   return config;
