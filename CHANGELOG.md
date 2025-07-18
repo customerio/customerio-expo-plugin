@@ -1,3 +1,9 @@
+## [2.4.0](https://github.com/customerio/customerio-expo-plugin/compare/2.3.1...2.4.0) (2025-07-18)
+
+### Features
+
+* Add ability to configure messaging channels for local notifications ([#277](https://github.com/customerio/customerio-expo-plugin/issues/277)) ([4d7b620](https://github.com/customerio/customerio-expo-plugin/commit/4d7b620ed7979eaab85a58b0292d84f5993c0fdd))
+
 ## [2.3.1](https://github.com/customerio/customerio-expo-plugin/compare/2.3.0...2.3.1) (2025-07-09)
 
 ### Bug Fixes
