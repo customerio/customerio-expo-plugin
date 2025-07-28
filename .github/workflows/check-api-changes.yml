@@ -28,9 +28,6 @@ jobs:
       - name: Install Dependencies
         run: npm ci
 
-      - name: Build Plugin
-        run: npm run build
-
       - name: Run API Extractor (Check for API Changes)
         run: |
           echo "Running API Extractor to check for API changes..."
