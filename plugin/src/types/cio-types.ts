@@ -6,6 +6,8 @@ export type CustomerIOPluginProperties = {
   // (iOS only) Environment name and bundle identifier
   devTeam: string;
   iosDeploymentTarget: string;
+  // Test property to verify API change detection
+  testProperty?: string;
 };
 
 /**
