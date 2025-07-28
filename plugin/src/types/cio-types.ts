@@ -1,11 +1,17 @@
-// properties set by the user in their app config file (e.g: app.json or app.plugin.js)
+/**
+ * Properties set by the user in their app config file (e.g: app.json or app.plugin.js)
+ * @public
+ */
 export type CustomerIOPluginProperties = {
   // (iOS only) Environment name and bundle identifier
   devTeam: string;
   iosDeploymentTarget: string;
 };
 
-// Plugin options for pre-build
+/**
+ * Plugin options for iOS platform configuration
+ * @public
+ */
 export type CustomerIOPluginOptionsIOS = {
   iosPath: string;
   devTeam?: string;
@@ -51,6 +57,10 @@ export type CustomerIOPluginOptionsIOS = {
   disableNotificationRegistration?: boolean;
 };
 
+/**
+ * Plugin options for Android platform configuration
+ * @public
+ */
 export type CustomerIOPluginOptionsAndroid = {
   androidPath: string;
   googleServicesFile?: string;
@@ -64,11 +74,19 @@ export type CustomerIOPluginOptionsAndroid = {
   };
 };
 
+/**
+ * Combined plugin options for both iOS and Android platforms
+ * @public
+ */
 export type CustomerIOPluginOptions = {
   android: CustomerIOPluginOptionsAndroid;
   ios: CustomerIOPluginOptionsIOS;
 };
 
+/**
+ * Push notification configuration options
+ * @public
+ */
 export type CustomerIOPluginPushNotificationOptions = {
   provider?: 'apn' | 'fcm';
   googleServicesFile?: string;

@@ -36,7 +36,8 @@
     "test-plugin": "bash scripts/test-plugin.sh",
     "cleanAll": "bash scripts/clean-all.sh",
     "buildAll": "bash scripts/build-all.sh",
-    "cleanAndBuildAll": "npm run cleanAll && npm run buildAll"
+    "cleanAndBuildAll": "npm run cleanAll && npm run buildAll",
+    "generate-api-docs": "bash scripts/generate-api-docs.sh"
   },
   "keywords": [
     "react-native",
@@ -58,6 +59,7 @@
   "devDependencies": {
     "@expo/config-plugins": "^10.0.0",
     "@expo/config-types": "^53.0.0",
+    "@microsoft/api-extractor": "^7.52.9",
     "@types/jest": "^29.5.14",
     "@typescript-eslint/eslint-plugin": "^5.21.0",
     "@typescript-eslint/parser": "^5.21.0",

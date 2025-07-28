@@ -1,0 +1,41 @@
+name: Check API Changes
+
+on:
+  pull_request:
+  push:
+    branches: [main, beta, feature/*]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: "20"
+
+jobs:
+  check-api-changes:
+    name: Check for API Changes
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Build Plugin
+        run: npm run build
+
+      - name: Run API Extractor (Check for API Changes)
+        run: |
+          echo "Running API Extractor to check for API changes..."
+          echo "This will fail if the API has changed but the report hasn't been updated."
+          echo ""
+          npx api-extractor run --verbose
+          echo ""
+          echo "✅ No API changes detected - API report is up to date!" 
