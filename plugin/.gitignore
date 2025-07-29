@@ -19,3 +19,8 @@ coverage/
 
 # VSCode
 .vscode/
+
+# API Extractor - keep only the API report for change detection
+api-extractor-output/*.d.ts
+api-extractor-output/*.api.json
+api-extractor-output/temp/
