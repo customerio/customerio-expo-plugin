@@ -1,3 +1,9 @@
+## [2.5.0](https://github.com/customerio/customerio-expo-plugin/compare/2.4.0...2.5.0) (2025-07-29)
+
+### Features
+
+* update Customer.io React Native SDKs with New Arch (4.6.0) ([#278](https://github.com/customerio/customerio-expo-plugin/issues/278)) ([96e4069](https://github.com/customerio/customerio-expo-plugin/commit/96e406992aa019d61bcf4ae5f58f4c31ce3c1585))
+
 ## [2.4.0](https://github.com/customerio/customerio-expo-plugin/compare/2.3.1...2.4.0) (2025-07-18)
 
 ### Features
