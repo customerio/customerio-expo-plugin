@@ -70,13 +70,13 @@ jobs:
           echo "sdkVersion=${{ env.LATEST_TAG }}" >> "test-app/local.env"
 
       - name: Install tools from Gemfile (ruby language) used for building our apps with
-        uses: ruby/setup-ruby@354a1ad156761f5ee2b7b13fa8e09943a5e8d252 # v1.229.0
+        uses: ruby/setup-ruby@2a7b30092b0caf9c046252510f9273b4875f3db9 # v1.254.0
         with:
           ruby-version: '3.0'
           bundler-cache: true
 
       - name: Install sd CLI to use later in the workflow
-        uses: kenji-miyake/setup-sd@08c14e27d65a1c215342ef00c81583ae67f4c5ef # v2.0.0
+        uses: kenji-miyake/setup-sd@f4181660873fa5814708e1c0a640d8e9975a4ae5 # v2.0.0
 
       - name: Bundle install
         working-directory: test-app
@@ -205,7 +205,7 @@ jobs:
           xcode-version: "16.2"
       
       - name: Install tools from Gemfile (ruby language) used for building our apps with
-        uses: ruby/setup-ruby@354a1ad156761f5ee2b7b13fa8e09943a5e8d252 # v1.229.0
+        uses: ruby/setup-ruby@2a7b30092b0caf9c046252510f9273b4875f3db9 # v1.254.0
         with:
           ruby-version: '3.0'
           bundler-cache: true
