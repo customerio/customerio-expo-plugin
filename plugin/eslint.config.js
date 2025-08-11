@@ -16,12 +16,12 @@ module.exports = [
     }
   })),
   {
-    files: ['src/**/*.ts'],
+    files: ['plugin/src/**/*.ts'],
     languageOptions: {
       parser: tseslint.parser,
       parserOptions: {
-        project: '../tsconfig.json',
-        tsconfigRootDir: __dirname,
+        project: './tsconfig.json',
+        tsconfigRootDir: __dirname + '/..',
       },
     },
     plugins: {
