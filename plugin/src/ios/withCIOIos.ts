@@ -4,12 +4,12 @@ import type {
   CustomerIOPluginOptionsIOS,
   CustomerIOPluginPushNotificationOptions,
 } from '../types/cio-types';
+import { isExpoVersion53OrHigher } from './utils';
 import { withAppDelegateModifications } from './withAppDelegateModifications';
+import { withCIOIosSwift } from './withCIOIosSwift';
+import { withGoogleServicesJsonFile } from './withGoogleServicesJsonFile';
 import { withCioNotificationsXcodeProject } from './withNotificationsXcodeProject';
 import { withCioXcodeProject } from './withXcodeProject';
-import { withGoogleServicesJsonFile } from './withGoogleServicesJsonFile';
-import { withCIOIosSwift } from './withCIOIosSwift';
-import { isExpoVersion53OrHigher } from './utils';
 
 export function withCIOIos(
   config: ExpoConfig,
@@ -82,4 +82,3 @@ const mergeDeprecatedPropertiesAndLogWarnings = (
 
   return props;
 };
-

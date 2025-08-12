@@ -1,18 +1,19 @@
-import type { ConfigPlugin } from '@expo/config-plugins';
-import {
-  withAppDelegate,
-  withXcodeProject,
+import type {
+  ConfigPlugin,
+  ExportedConfigWithProps,
+  XcodeProject,
 } from '@expo/config-plugins';
+import { withAppDelegate, withXcodeProject } from '@expo/config-plugins';
 import path from 'path';
-import type { CustomerIOPluginOptionsIOS } from '../types/cio-types';
-import { FileManagement } from '../helpers/utils/fileManagement';
 import {
-  LOCAL_PATH_TO_CIO_NSE_FILES,
+  CIO_CONFIGUREDEEPLINK_KILLEDSTATE_SWIFT_SNIPPET,
   CIO_REGISTER_PUSHNOTIFICATION_SNIPPET_v2,
   CIO_REGISTER_PUSH_NOTIFICATION_PLACEHOLDER,
-  CIO_CONFIGUREDEEPLINK_KILLEDSTATE_SWIFT_SNIPPET,
+  LOCAL_PATH_TO_CIO_NSE_FILES,
 } from '../helpers/constants/ios';
 import { replaceCodeByRegex } from '../helpers/utils/codeInjection';
+import { FileManagement } from '../helpers/utils/fileManagement';
+import type { CustomerIOPluginOptionsIOS } from '../types/cio-types';
 import { isFcmPushProvider } from './utils';
 
 // Constants
@@ -23,9 +24,9 @@ const CIO_SDK_APP_DELEGATE_HANDLER_FILENAME = `${CIO_SDK_APP_DELEGATE_HANDLER_CL
  * Copy and configure the CioSdkAppDelegateHandler.swift file
  */
 const copyAndConfigureAppDelegateHandler = (
-  config: any,
+  config: ExportedConfigWithProps<XcodeProject>,
   props: CustomerIOPluginOptionsIOS
-): any => {
+): ExportedConfigWithProps<XcodeProject> => {
   const projectRoot = config.modRequest.projectRoot;
   const iosProjectRoot = path.join(projectRoot, 'ios');
   const useFcm = isFcmPushProvider(props);
@@ -139,8 +140,10 @@ export const withCIOIosSwift: ConfigPlugin<CustomerIOPluginOptionsIOS> = (
  * Modify the AppDelegate to integrate with Customer.io SDK
  */
 const modifyAppDelegate = (
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   config: any,
   props: CustomerIOPluginOptionsIOS
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): any => {
   const appDelegateContent = config.modResults.contents;
 
@@ -165,7 +168,7 @@ const modifyAppDelegate = (
   // Add didFailToRegisterForRemoteNotificationsWithError implementation
   modifiedContent =
     addDidFailToRegisterForRemoteNotificationsWithError(modifiedContent);
-    
+
   // Add deep link handling for killed state if enabled
   if (props.pushNotification?.handleDeeplinkInKilledState === true) {
     modifiedContent = addHandleDeeplinkInKilledState(modifiedContent);
@@ -203,7 +206,7 @@ const addHandlerPropertyDeclaration = (content: string): string => {
     return content;
   }
 
-  const position = match.index! + match[0].length;
+  const position = (match.index ?? 0) + match[0].length;
   return (
     content.substring(0, position) +
     `\n  let cioSdkHandler = ${CIO_SDK_APP_DELEGATE_HANDLER_CLASS}()\n` +
@@ -218,8 +221,9 @@ const addHandlerPropertyDeclaration = (content: string): string => {
 const modifyDidFinishLaunchingWithOptions = (content: string): string => {
   // Find the return statement in didFinishLaunchingWithOptions
   // Always look for launchOptions since modifiedLaunchOptions is only set later
-  const returnStatementRegex = /return\s+super\.application\s*\(\s*application\s*,\s*didFinishLaunchingWithOptions\s*:\s*launchOptions\s*\)/;
-  
+  const returnStatementRegex =
+    /return\s+super\.application\s*\(\s*application\s*,\s*didFinishLaunchingWithOptions\s*:\s*launchOptions\s*\)/;
+
   const returnStatementMatch = content.match(returnStatementRegex);
 
   if (!returnStatementMatch) {
@@ -230,9 +234,9 @@ const modifyDidFinishLaunchingWithOptions = (content: string): string => {
   }
 
   // Add handler call before the return statement
-  const insertPosition = returnStatementMatch.index!;
+  const insertPosition = returnStatementMatch.index ?? 0;
   const handlerCallCode = `  cioSdkHandler.application(application, didFinishLaunchingWithOptions: launchOptions)\n\n    `;
-  
+
   return (
     content.substring(0, insertPosition) +
     handlerCallCode +
@@ -248,8 +252,9 @@ const modifyDidFinishLaunchingWithOptions = (content: string): string => {
 const addDidRegisterForRemoteNotificationsWithDeviceToken = (
   content: string
 ): string => {
-  const methodSignature = 'func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken:';
-  
+  const methodSignature =
+    'func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken:';
+
   // Check if method already exists
   if (methodExistsInAppDelegate(content, methodSignature)) {
     // Method exists, modify it to call our handler
@@ -283,7 +288,7 @@ const addDidRegisterForRemoteNotificationsWithDeviceToken = (
     }
 
     // Insert the method inside the class
-    const position = classEndMatch.index!;
+    const position = classEndMatch.index ?? 0;
     return (
       content.substring(0, position) +
       '\n  // Handle device token registration\n' +
@@ -305,8 +310,9 @@ const addDidRegisterForRemoteNotificationsWithDeviceToken = (
 const addDidFailToRegisterForRemoteNotificationsWithError = (
   content: string
 ): string => {
-  const methodSignature = 'func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error:';
-  
+  const methodSignature =
+    'func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error:';
+
   // Check if method already exists
   if (methodExistsInAppDelegate(content, methodSignature)) {
     // Method exists, modify it to call our handler
@@ -340,7 +346,7 @@ const addDidFailToRegisterForRemoteNotificationsWithError = (
     }
 
     // Insert the method inside the class
-    const position = classEndMatch.index!;
+    const position = classEndMatch.index ?? 0;
     return (
       content.substring(0, position) +
       '\n  // Handle remote notification registration errors\n' +
@@ -361,24 +367,29 @@ const addDidFailToRegisterForRemoteNotificationsWithError = (
  */
 const addHandleDeeplinkInKilledState = (content: string): string => {
   // Check if deep link code snippet is already present
-  const deepLinkMarker = "Deep link workaround for app killed state start";
+  const deepLinkMarker = 'Deep link workaround for app killed state start';
   if (content.includes(deepLinkMarker)) {
     return content;
   }
 
   // Find the return statement with launchOptions
-  const returnStatementRegex = /return\s+super\.application\s*\(\s*application\s*,\s*didFinishLaunchingWithOptions\s*:\s*launchOptions\s*\)/;
+  const returnStatementRegex =
+    /return\s+super\.application\s*\(\s*application\s*,\s*didFinishLaunchingWithOptions\s*:\s*launchOptions\s*\)/;
   const returnStatementMatch = content.match(returnStatementRegex);
-  
+
   if (!returnStatementMatch) {
-    console.warn("Could not find return statement with launchOptions");
+    console.warn('Could not find return statement with launchOptions');
     return content;
   }
-  
+
   // Create the replacement code with deep link handling and modified return statement
-  const modifiedReturnStatement = "return super.application(application, didFinishLaunchingWithOptions: modifiedLaunchOptions)";
-  const replacementCode = CIO_CONFIGUREDEEPLINK_KILLEDSTATE_SWIFT_SNIPPET + "\n\n    " + modifiedReturnStatement;
-  
+  const modifiedReturnStatement =
+    'return super.application(application, didFinishLaunchingWithOptions: modifiedLaunchOptions)';
+  const replacementCode =
+    CIO_CONFIGUREDEEPLINK_KILLEDSTATE_SWIFT_SNIPPET +
+    '\n\n    ' +
+    modifiedReturnStatement;
+
   // Replace the return statement with deep link handling code and modified return statement
   return content.replace(returnStatementRegex, replacementCode);
 };

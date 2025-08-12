@@ -21,11 +21,11 @@ const TARGETED_DEVICE_FAMILY = `"1,2"`;
 const addNotificationServiceExtension = async (
   options: CustomerIOPluginOptionsIOS,
   xcodeProject: XcodeProject,
-  isExpoVersion53OrHigher: boolean
+  isExpo53OrHigher: boolean
 ) => {
   try {
     // PushService file is only needed for pre-Expo 53 code generation
-    if (options.pushNotification && !isExpoVersion53OrHigher) {
+    if (options.pushNotification && !isExpo53OrHigher) {
       await addPushNotificationFile(options, xcodeProject);
     }
 
@@ -33,7 +33,7 @@ const addNotificationServiceExtension = async (
       await addRichPushXcodeProj(options, xcodeProject);
     }
     return xcodeProject;
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error(error);
     return null;
   }
@@ -101,7 +101,7 @@ export const withCioNotificationsXcodeProject: ConfigPlugin<
 
 const addRichPushXcodeProj = async (
   options: CustomerIOPluginOptionsIOS,
-  xcodeProject: any
+  xcodeProject: XcodeProject
 ) => {
   const {
     appleTeamId,
@@ -145,8 +145,7 @@ const addRichPushXcodeProj = async (
   platformSpecificFiles.forEach((filename) => {
     const targetFile = getTargetFile(filename);
     FileManagement.copyFile(
-      `${LOCAL_PATH_TO_CIO_NSE_FILES}/${
-        isFcmProvider ? 'fcm' : 'apn'
+      `${LOCAL_PATH_TO_CIO_NSE_FILES}/${isFcmProvider ? 'fcm' : 'apn'
       }/${filename}`,
       targetFile
     );
@@ -179,7 +178,7 @@ const addRichPushXcodeProj = async (
 
   // Add the new PBXGroup to the top level group. This makes the
   // files / folder appear in the file explorer in Xcode.
-  const groups = xcodeProject.hash.project.objects['PBXGroup'];
+  const groups = xcodeProject.hash.project.objects.PBXGroup;
   Object.keys(groups).forEach((key) => {
     if (groups[key].name === undefined && groups[key].path === undefined) {
       xcodeProject.addToPbxGroup(extGroup.uuid, key);
@@ -191,9 +190,8 @@ const addRichPushXcodeProj = async (
   // An upstream fix should be made to the code referenced in this link:
   //   - https://github.com/apache/cordova-node-xcode/blob/8b98cabc5978359db88dc9ff2d4c015cba40f150/lib/pbxProject.js#L860
   const projObjects = xcodeProject.hash.project.objects;
-  projObjects['PBXTargetDependency'] = projObjects['PBXTargetDependency'] || {};
-  projObjects['PBXContainerItemProxy'] =
-    projObjects['PBXTargetDependency'] || {};
+  projObjects.PBXTargetDependency = projObjects.PBXTargetDependency || {};
+  projObjects.PBXContainerItemProxy = projObjects.PBXTargetDependency || {};
 
   if (xcodeProject.pbxTargetByName(CIO_NOTIFICATION_TARGET_NAME)) {
     console.warn(
@@ -238,7 +236,7 @@ const addRichPushXcodeProj = async (
     if (
       typeof configurations[key].buildSettings !== 'undefined' &&
       configurations[key].buildSettings.PRODUCT_NAME ===
-        `"${CIO_NOTIFICATION_TARGET_NAME}"`
+      `"${CIO_NOTIFICATION_TARGET_NAME}"`
     ) {
       const buildSettingsObj = configurations[key].buildSettings;
       buildSettingsObj.DEVELOPMENT_TEAM = appleTeamId;
@@ -313,7 +311,8 @@ const updateNseEnv = (
       us: 'Region.US',
       eu: 'Region.EU',
     };
-    const mappedRegion = (regionMap as any)[region.toLowerCase()] || '';
+    const mappedRegion =
+      regionMap[region.toLowerCase() as keyof typeof regionMap] || '';
     if (!mappedRegion) {
       console.warn(
         `${region} is an invalid region. Please use the values from the docs: https://customer.io/docs/sdk/expo/getting-started/#configure-the-plugin`
@@ -332,7 +331,7 @@ const updateNseEnv = (
 
 async function addPushNotificationFile(
   options: CustomerIOPluginOptionsIOS,
-  xcodeProject: any
+  xcodeProject: XcodeProject
 ) {
   // Maybe copy a different file with FCM config based on config
   const { iosPath, appName } = options;

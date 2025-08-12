@@ -13,16 +13,16 @@ export const withAndroidManifestUpdates: ConfigPlugin<
     const customerIOMessagingpush =
       'io.customer.messagingpush.CustomerIOFirebaseMessagingService';
 
-    if (!application[0]['service']) {
-      application[0]['service'] = [];
+    if (!application[0].service) {
+      application[0].service = [];
     }
 
-    const hasService = application[0]['service'].some(
-      (service) => service['$']['android:name'] === customerIOMessagingpush
+    const hasService = application[0].service.some(
+      (service) => service.$['android:name'] === customerIOMessagingpush
     );
 
     if (!hasService) {
-      application[0]['service'].push({
+      application[0].service.push({
         '$': {
           'android:name': customerIOMessagingpush,
           'android:exported': 'false',

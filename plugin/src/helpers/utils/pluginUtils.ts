@@ -6,7 +6,10 @@ import path from 'path';
  */
 export const getPluginVersion = (): string => {
   // Always resolves relative to the utility file's location
-  const packageJsonPath = path.resolve(__dirname, '../../../../../package.json');
+  const packageJsonPath = path.resolve(
+    __dirname,
+    '../../../../../package.json'
+  );
 
   if (!fs.existsSync(packageJsonPath)) {
     throw new Error(`package.json not found at ${packageJsonPath}`);
