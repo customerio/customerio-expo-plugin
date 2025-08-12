@@ -80,11 +80,11 @@ export type CustomerIOPluginOptionsAndroid = {
  */
 export type NativeSDKConfig = {
   cdpApiKey: string; // Required
-  region?: 'US' | 'EU'; // Default: 'US'
+  region?: 'US' | 'EU'; // Default: 'US'. The workspace region set for your workspace on the Customer.io dashboard
   autoTrackDeviceAttributes?: boolean; // Default: true
   trackApplicationLifecycleEvents?: boolean; // Default: true
-  screenViewUse?: 'all' | 'inapp'; // Default: 'all', transforms to ScreenView.All/ScreenView.InApp
-  logLevel?: 'none' | 'error' | 'info' | 'debug'; // Default: 'debug', transforms to CioLogLevel.NONE/ERROR/INFO/DEBUG
+  screenViewUse?: 'all' | 'inapp'; // Default: 'all'. 'all': sent to server + in-app messages, 'inapp': in-app messages only
+  logLevel?: 'none' | 'error' | 'info' | 'debug'; // Default: 'debug'. Controls SDK logging verbosity
   siteId?: string; // Optional, if only siteId defined, migrationSiteId = siteId
   migrationSiteId?: string; // Optional, if only migrationSiteId defined, siteId should be null
 };

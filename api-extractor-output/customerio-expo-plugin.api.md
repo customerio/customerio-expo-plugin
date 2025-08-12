@@ -6,6 +6,7 @@
 
 // @public
 export type CustomerIOPluginOptions = {
+    config?: NativeSDKConfig;
     android: CustomerIOPluginOptionsAndroid;
     ios: CustomerIOPluginOptionsIOS;
 };
@@ -60,10 +61,25 @@ export type CustomerIOPluginPushNotificationOptions = {
     showPushAppInForeground?: boolean;
     disableNotificationRegistration?: boolean;
     handleDeeplinkInKilledState?: boolean;
-    env: {
-        cdpApiKey: string;
-        region: string;
-    };
+    env?: RichPushConfig;
+};
+
+// @public
+export type NativeSDKConfig = {
+    cdpApiKey: string;
+    region?: 'US' | 'EU';
+    autoTrackDeviceAttributes?: boolean;
+    trackApplicationLifecycleEvents?: boolean;
+    screenViewUse?: 'all' | 'inapp';
+    logLevel?: 'none' | 'error' | 'info' | 'debug';
+    siteId?: string;
+    migrationSiteId?: string;
+};
+
+// @public
+export type RichPushConfig = {
+    cdpApiKey: string;
+    region?: string;
 };
 
 // (No @packageDocumentation comment for this package)
