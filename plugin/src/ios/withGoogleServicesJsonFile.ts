@@ -1,11 +1,8 @@
-import {
-  withXcodeProject,
-  IOSConfig,
-} from '@expo/config-plugins';
-import type { ConfigPlugin } from '@expo/config-plugins';
+import type { ConfigPlugin, XcodeProject } from '@expo/config-plugins';
+import { IOSConfig, withXcodeProject } from '@expo/config-plugins';
 
-import { FileManagement } from './../helpers/utils/fileManagement';
 import type { CustomerIOPluginOptionsIOS } from '../types/cio-types';
+import { FileManagement } from './../helpers/utils/fileManagement';
 import { isFcmPushProvider } from './utils';
 
 export const withGoogleServicesJsonFile: ConfigPlugin<
@@ -20,7 +17,7 @@ export const withGoogleServicesJsonFile: ConfigPlugin<
 
     console.log(
       'Only specify Customer.io ios.pushNotification.googleServicesFile config if you are not already including' +
-        ' GoogleService-Info.plist as part of Firebase integration'
+      ' GoogleService-Info.plist as part of Firebase integration'
     );
 
     // googleServicesFile
@@ -50,7 +47,7 @@ export const withGoogleServicesJsonFile: ConfigPlugin<
       if (config.ios?.googleServicesFile) {
         console.warn(
           'Specifying both Expo ios.googleServicesFile and Customer.io ios.pushNotification.googleServicesFile can cause a conflict' +
-            ' duplicating GoogleService-Info.plist in the iOS project resources. Please remove Customer.io ios.pushNotification.googleServicesFile'
+          ' duplicating GoogleService-Info.plist in the iOS project resources. Please remove Customer.io ios.pushNotification.googleServicesFile'
         );
       }
 
@@ -61,7 +58,7 @@ export const withGoogleServicesJsonFile: ConfigPlugin<
         );
 
         addFileToXcodeProject(props.modResults, 'GoogleService-Info.plist');
-      } catch (e) {
+      } catch {
         console.error(
           `There was an error copying your GoogleService-Info.plist file. You can copy it manually into ${iosPath}/GoogleService-Info.plist`
         );
@@ -76,7 +73,7 @@ export const withGoogleServicesJsonFile: ConfigPlugin<
   });
 };
 
-function addFileToXcodeProject(project: any, fileName: string) {
+function addFileToXcodeProject(project: XcodeProject, fileName: string) {
   const groupName = 'Resources';
   const filepath = fileName;
 

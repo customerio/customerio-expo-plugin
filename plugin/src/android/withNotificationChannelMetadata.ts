@@ -19,7 +19,7 @@ const addMetadataIfNotExists = (
 
   // Check if metadata already exists
   const hasMetadata = application['meta-data'].some(
-    (metadata) => metadata['$']['android:name'] === name
+    (metadata) => metadata.$['android:name'] === name
   );
 
   // Add metadata if it doesn't exist
@@ -37,11 +37,15 @@ export const withNotificationChannelMetadata: ConfigPlugin<
   CustomerIOPluginOptionsAndroid
 > = (config, props) => {
   return withAndroidManifest(config, (manifestProps) => {
-    const application = manifestProps.modResults.manifest.application as ManifestApplication[];
+    const application = manifestProps.modResults.manifest
+      .application as ManifestApplication[];
     const channel = props.pushNotification?.channel;
 
     // Only proceed if channel configuration exists
-    if (channel && (channel.id || channel.name || channel.importance !== undefined)) {
+    if (
+      channel &&
+      (channel.id || channel.name || channel.importance !== undefined)
+    ) {
       if (channel.id) {
         addMetadataIfNotExists(
           application[0],

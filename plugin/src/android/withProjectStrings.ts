@@ -1,12 +1,13 @@
 import type { ConfigPlugin } from '@expo/config-plugins';
 import { withStringsXml } from '@expo/config-plugins';
+import type { ResourceXML } from '@expo/config-plugins/build/android/Resources';
 import { getPluginVersion } from '../helpers/utils/pluginUtils';
 
 /**
  * Adds or updates string resources in Android's strings.xml required by the plugin
  */
-export const withProjectStrings: ConfigPlugin = (config) => {
-  return withStringsXml(config, (config) => {
+export const withProjectStrings: ConfigPlugin = (configOuter) => {
+  return withStringsXml(configOuter, (config) => {
     const stringsXml = config.modResults;
     const pluginVersion = getPluginVersion();
 
@@ -17,7 +18,10 @@ export const withProjectStrings: ConfigPlugin = (config) => {
     // can be generated correctly for Expo apps
     addStringsToXml(stringsXml, [
       { name: 'customer_io_react_native_sdk_client_source', value: 'Expo' },
-      { name: 'customer_io_react_native_sdk_client_version', value: pluginVersion },
+      {
+        name: 'customer_io_react_native_sdk_client_version',
+        value: pluginVersion,
+      },
     ]);
 
     return config;
@@ -31,25 +35,31 @@ export const withProjectStrings: ConfigPlugin = (config) => {
  * @returns Updated strings.xml object
  */
 export function addStringsToXml(
-  stringsXml: any,
-  stringResources: { name: string, value: string }[]
+  stringsXml: ResourceXML,
+  stringResources: { name: string; value: string }[]
 ) {
   // Ensure the resource exists
   if (!stringsXml.resources) {
     stringsXml.resources = { string: [] };
   }
+  // Ensure the string array exists
+  if (!stringsXml.resources.string) {
+    stringsXml.resources.string = [];
+  }
 
+  // Get a reference to the string array after ensuring it exists
+  const stringArray = stringsXml.resources.string;
   stringResources.forEach(({ name, value }) => {
-    const existingStringIndex = stringsXml.resources.string.findIndex(
-      (item: { $: { name: string } }) => item.$?.name === name
+    const existingStringIndex = stringArray.findIndex(
+      (item) => item.$?.name === name
     );
 
     if (existingStringIndex !== -1) {
       // Update the existing string
-      stringsXml.resources.string[existingStringIndex]._ = value;
+      stringArray[existingStringIndex]._ = value;
     } else {
       // Add a new string resource
-      stringsXml.resources.string.push({
+      stringArray.push({
         $: { name },
         _: value,
       });

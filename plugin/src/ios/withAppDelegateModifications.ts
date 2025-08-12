@@ -9,26 +9,26 @@ import {
   CIO_APPDELEGATEHEADER_USER_NOTIFICATION_CENTER_SNIPPET,
   CIO_CONFIGURECIOSDKPUSHNOTIFICATION_SNIPPET,
   CIO_CONFIGUREDEEPLINK_KILLEDSTATE_SNIPPET,
-  CIO_RCTBRIDGE_DEEPLINK_MODIFIEDOPTIONS_REGEX,
+  CIO_DEEPLINK_COMMENT_REGEX,
   CIO_DIDFAILTOREGISTERFORREMOTENOTIFICATIONSWITHERROR_REGEX,
   CIO_DIDFAILTOREGISTERFORREMOTENOTIFICATIONSWITHERROR_SNIPPET,
   CIO_DIDFINISHLAUNCHINGMETHOD_REGEX,
   CIO_DIDREGISTERFORREMOTENOTIFICATIONSWITHDEVICETOKEN_REGEX,
   CIO_DIDREGISTERFORREMOTENOTIFICATIONSWITHDEVICETOKEN_SNIPPET,
-  CIO_LAUNCHOPTIONS_DEEPLINK_MODIFIEDOPTIONS_REGEX,
-  CIO_PUSHNOTIFICATIONHANDLERDECLARATION_SNIPPET,
-  CIO_LAUNCHOPTIONS_MODIFIEDOPTIONS_SNIPPET,
-  CIO_RCTBRIDGE_DEEPLINK_MODIFIEDOPTIONS_SNIPPET,
-  CIO_DEEPLINK_COMMENT_REGEX,
   CIO_INITIALIZECIOSDK_SNIPPET,
+  CIO_LAUNCHOPTIONS_DEEPLINK_MODIFIEDOPTIONS_REGEX,
+  CIO_LAUNCHOPTIONS_MODIFIEDOPTIONS_SNIPPET,
+  CIO_PUSHNOTIFICATIONHANDLERDECLARATION_SNIPPET,
+  CIO_RCTBRIDGE_DEEPLINK_MODIFIEDOPTIONS_REGEX,
+  CIO_RCTBRIDGE_DEEPLINK_MODIFIEDOPTIONS_SNIPPET,
 } from '../helpers/constants/ios';
 import {
   injectCodeBeforeMultiLineRegex,
   injectCodeByLineNumber,
   injectCodeByMultiLineRegex,
   injectCodeByMultiLineRegexAndReplaceLine,
-  replaceCodeByRegex,
   matchRegexExists,
+  replaceCodeByRegex,
 } from '../helpers/utils/codeInjection';
 import { FileManagement } from '../helpers/utils/fileManagement';
 import type { CustomerIOPluginOptionsIOS } from '../types/cio-types';
@@ -140,7 +140,9 @@ const addExpoNotificationsHeaderModification = (stringContents: string) => {
   return stringContents;
 };
 
-const addFirebaseDelegateForwardDeclarationIfNeeded = (stringContents: string) => {
+const addFirebaseDelegateForwardDeclarationIfNeeded = (
+  stringContents: string
+) => {
   stringContents = injectCodeByLineNumber(
     stringContents,
     0,
@@ -187,7 +189,7 @@ const addHandleDeeplinkInKilledState = (stringContents: string) => {
   }
 
   // Check if the app delegate is using RCTBridge or LaunchOptions
-  let snippet = undefined;
+  let snippet;
   let regex = CIO_LAUNCHOPTIONS_DEEPLINK_MODIFIEDOPTIONS_REGEX;
   if (
     matchRegexExists(
@@ -258,7 +260,8 @@ export const withAppDelegateModifications: ConfigPlugin<
         addDidRegisterForRemoteNotificationsWithDeviceToken(stringContents);
 
       if (isFcmPushProvider(props)) {
-        stringContents = addFirebaseDelegateForwardDeclarationIfNeeded(stringContents);
+        stringContents =
+          addFirebaseDelegateForwardDeclarationIfNeeded(stringContents);
       }
 
       stringContents = addExpoNotificationsHeaderModification(stringContents);
