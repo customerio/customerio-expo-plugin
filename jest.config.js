@@ -25,7 +25,9 @@ module.exports = {
       rootDir: path.resolve(__dirname),
       testMatch: ['<rootDir>/__tests__/**/*.test.(js|ts)'],
       transform: {
-        '^.+\\.(js|ts)$': 'ts-jest',
+        '^.+\\.(js|ts)$': ['ts-jest', {
+          tsconfig: path.resolve(__dirname, 'tsconfig.test.json'),
+        }],
       },
       testEnvironment: 'node',
     },

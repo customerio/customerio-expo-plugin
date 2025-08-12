@@ -1,6 +1,6 @@
 import type { ExpoConfig } from '@expo/config-types';
 
-import type { CustomerIOPluginOptionsAndroid } from '../types/cio-types';
+import type { CustomerIOPluginOptionsAndroid, NativeSDKConfig } from '../types/cio-types';
 import { withAndroidManifestUpdates } from './withAndroidManifestUpdates';
 import { withAppGoogleServices } from './withAppGoogleServices';
 import { withGistMavenRepository } from './withGistMavenRepository';
@@ -11,6 +11,7 @@ import { withProjectStrings } from './withProjectStrings';
 
 export function withCIOAndroid(
   config: ExpoConfig,
+  _sdkConfig: NativeSDKConfig | undefined,
   props: CustomerIOPluginOptionsAndroid
 ): ExpoConfig {
   config = withGistMavenRepository(config, props);

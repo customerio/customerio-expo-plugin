@@ -11,6 +11,7 @@ import { initializeCioSdk } from "./helpers/SdkInit";
 const Stack = createStackNavigator();
 
 export default function App() {
+  // TODO: Remove SDK initialization once auto-initialization is fully implemented
   useEffect(() => {
     initializeCioSdk();
   }, []);

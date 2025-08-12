@@ -22,7 +22,9 @@
       "infoPlist": {
         "CFBundleURLTypes": [
           {
-            "CFBundleURLSchemes": ["expo-test-app"]
+            "CFBundleURLSchemes": [
+              "expo-test-app"
+            ]
           }
         ]
       }
@@ -43,7 +45,10 @@
               "host": "nav-test"
             }
           ],
-          "category": ["BROWSABLE", "DEFAULT"]
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
         }
       ]
     },
@@ -63,6 +68,15 @@
       [
         "customerio-expo-plugin",
         {
+          "config": {
+            "cdpApiKey": "@CDP_API_KEY@",
+            "siteId": "@SITE_ID@",
+            "region": "us",
+            "logLevel": "debug",
+            "autoTrackDeviceAttributes": true,
+            "trackApplicationLifecycleEvents": true,
+            "screenViewUse": "all"
+          },
           "android": {
             "googleServicesFile": "./files/google-services.json",
             "setHighPriorityPushHandler": true,
@@ -78,11 +92,7 @@
             "useFrameworks": "static",
             "pushNotification": {
               "provider": "apn",
-              "useRichPush": true,
-              "env": {
-                "cdpApiKey": "@CDP_API_KEY@",
-                "region": "us"
-              }
+              "useRichPush": true
             }
           }
         }

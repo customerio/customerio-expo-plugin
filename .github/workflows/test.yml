@@ -62,3 +62,18 @@ jobs:
 
       - name: Run plugin tests
         run: npm run setup-test-app && npm test -- __tests__/ios/common __tests__/ios/${{ matrix.push_provider }}
+
+  test-utils:
+    name: Test utility functions
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run utils tests
+        run: npm test -- __tests__/utils
