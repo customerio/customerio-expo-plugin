@@ -9,7 +9,7 @@ import {
 } from '../helpers/constants/ios';
 import { replaceCodeByRegex } from '../helpers/utils/codeInjection';
 import { injectCIONotificationPodfileCode } from '../helpers/utils/injectCIOPodfileCode';
-import type { CustomerIOPluginOptionsIOS } from '../types/cio-types';
+import type { CustomerIOPluginOptionsIOS, RichPushConfig } from '../types/cio-types';
 import { FileManagement } from './../helpers/utils/fileManagement';
 import { isExpoVersion53OrHigher, isFcmPushProvider } from './utils';
 
@@ -21,7 +21,8 @@ const TARGETED_DEVICE_FAMILY = `"1,2"`;
 const addNotificationServiceExtension = async (
   options: CustomerIOPluginOptionsIOS,
   xcodeProject: XcodeProject,
-  isExpo53OrHigher: boolean
+  isExpo53OrHigher: boolean,
+  richPushConfig?: RichPushConfig
 ) => {
   try {
     // PushService file is only needed for pre-Expo 53 code generation
@@ -30,7 +31,7 @@ const addNotificationServiceExtension = async (
     }
 
     if (options.pushNotification?.useRichPush === true) {
-      await addRichPushXcodeProj(options, xcodeProject);
+      await addRichPushXcodeProj(options, xcodeProject, richPushConfig);
     }
     return xcodeProject;
   } catch (error: unknown) {
@@ -40,9 +41,10 @@ const addNotificationServiceExtension = async (
 };
 
 export const withCioNotificationsXcodeProject: ConfigPlugin<
-  CustomerIOPluginOptionsIOS
-> = (configOuter, props) => {
+  CustomerIOPluginOptionsIOS & { richPushConfig?: RichPushConfig }
+> = (configOuter, propsWithConfig) => {
   return withXcodeProject(configOuter, async (config) => {
+    const { richPushConfig, ...props } = propsWithConfig;
     const { modRequest, ios, version: bundleShortVersion } = config;
     const { appleTeamId, iosDeploymentTarget, useFrameworks } = props;
 
@@ -88,7 +90,8 @@ export const withCioNotificationsXcodeProject: ConfigPlugin<
     const modifiedProjectFile = await addNotificationServiceExtension(
       options,
       config.modResults,
-      isExpoVersion53OrHigher(configOuter)
+      isExpoVersion53OrHigher(configOuter),
+      richPushConfig
     );
 
     if (modifiedProjectFile) {
@@ -101,7 +104,8 @@ export const withCioNotificationsXcodeProject: ConfigPlugin<
 
 const addRichPushXcodeProj = async (
   options: CustomerIOPluginOptionsIOS,
-  xcodeProject: XcodeProject
+  xcodeProject: XcodeProject,
+  richPushConfig?: RichPushConfig
 ) => {
   const {
     appleTeamId,
@@ -167,7 +171,7 @@ const addRichPushXcodeProj = async (
     bundleShortVersion,
     infoPlistTargetFile,
   });
-  updateNseEnv(options, getTargetFile(ENV_FILENAME));
+  updateNseEnv(getTargetFile(ENV_FILENAME), richPushConfig);
 
   // Create new PBXGroup for the extension
   const extGroup = xcodeProject.addPbxGroup(
@@ -283,21 +287,21 @@ const updateNseInfoPlist = (payload: {
 };
 
 const updateNseEnv = (
-  options: CustomerIOPluginOptionsIOS,
-  envFileName: string
+  envFileName: string,
+  richPushConfig?: RichPushConfig
 ) => {
   const CDP_API_KEY_RE = /\{\{CDP_API_KEY\}\}/;
   const REGION_RE = /\{\{REGION\}\}/;
 
   let envFileContent = FileManagement.readFile(envFileName);
-  const { cdpApiKey, region } = options.pushNotification?.env || {
-    cdpApiKey: undefined,
-    region: undefined,
-  };
+
+  // Use merged config values (config takes precedence over env)
+  const cdpApiKey = richPushConfig?.cdpApiKey;
+  const region = richPushConfig?.region;
 
   if (!cdpApiKey) {
     throw new Error(
-      'Adding NotificationServiceExtension failed: ios.pushNotification.env.cdpApiKey is missing from app.config.js or app.json.'
+      'NotificationServiceExtension failed: cdpApiKey missing. Provide in config.cdpApiKey or ios.pushNotification.env.cdpApiKey.'
     );
   }
   envFileContent = replaceCodeByRegex(
