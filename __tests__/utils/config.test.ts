@@ -68,6 +68,40 @@ describe('mergeConfigWithEnvValues - Resolves conflicts between legacy env confi
 
       consoleSpy.mockRestore();
     });
+
+    test('should allow case-insensitive region matching', () => {
+      const consoleSpy = jest.spyOn(console, 'warn').mockImplementation();
+      
+      const envWithLowerCase = {
+        cdpApiKey: 'same-api-key',
+        region: 'us',
+      };
+
+      const nativeWithUpperCase: NativeSDKConfig = {
+        cdpApiKey: 'same-api-key',
+        region: 'US',
+      };
+
+      const props: CustomerIOPluginOptionsIOS = {
+        ...mockIosProps,
+        pushNotification: {
+          env: envWithLowerCase,
+        },
+      };
+
+      const result = mergeConfigWithEnvValues(props, nativeWithUpperCase);
+
+      expect(result).toEqual({
+        cdpApiKey: 'same-api-key',
+        region: 'US', // Should return nativeConfig value
+      });
+
+      expect(consoleSpy).toHaveBeenCalledWith(
+        'Both \'config\' and \'ios.pushNotification.env\' are provided with matching values. Consider removing \'ios.pushNotification.env\' since \'config\' is already specified.'
+      );
+
+      consoleSpy.mockRestore();
+    });
   });
 
   describe('when only native config is provided', () => {
