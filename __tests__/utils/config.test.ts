@@ -1,7 +1,7 @@
 import type { CustomerIOPluginOptionsIOS, NativeSDKConfig } from '../../plugin/src/types/cio-types';
 import { mergeConfigWithEnvValues } from '../../plugin/src/utils/config';
 
-describe('mergeConfigWithEnvValues', () => {
+describe('mergeConfigWithEnvValues - Resolves conflicts between legacy env config and new native config', () => {
   const mockIosProps: CustomerIOPluginOptionsIOS = {
     iosPath: 'ios',
   };
@@ -16,8 +16,10 @@ describe('mergeConfigWithEnvValues', () => {
     region: 'US',
   };
 
-  describe('priority handling', () => {
-    test('should prioritize env config over native config', () => {
+  describe('when both environment and native configs are provided', () => {
+    test('should throw error when configs have conflicting values', () => {
+      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
+      
       const props: CustomerIOPluginOptionsIOS = {
         ...mockIosProps,
         pushNotification: {
@@ -25,42 +27,50 @@ describe('mergeConfigWithEnvValues', () => {
         },
       };
 
-      const result = mergeConfigWithEnvValues(props, mockNativeConfig);
+      expect(() => mergeConfigWithEnvValues(props, mockNativeConfig)).toThrow(
+        'Configuration conflict: \'config\' and \'ios.pushNotification.env\' values must match when both are provided.'
+      );
 
-      expect(result).toEqual({
-        cdpApiKey: 'env-api-key',
-        region: 'US',
-      });
+      expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('Configuration conflict'));
+      consoleErrorSpy.mockRestore();
     });
 
-    test('should use env config when native config is not provided', () => {
+    test('should warn and return config when both configs have matching values', () => {
+      const consoleSpy = jest.spyOn(console, 'warn').mockImplementation();
+      
+      const matchingEnvConfig = {
+        cdpApiKey: 'same-api-key',
+        region: 'EU',
+      };
+
+      const matchingNativeConfig: NativeSDKConfig = {
+        cdpApiKey: 'same-api-key',
+        region: 'EU',
+      };
+
       const props: CustomerIOPluginOptionsIOS = {
         ...mockIosProps,
         pushNotification: {
-          env: mockEnvConfig,
+          env: matchingEnvConfig,
         },
       };
 
-      const result = mergeConfigWithEnvValues(props);
+      const result = mergeConfigWithEnvValues(props, matchingNativeConfig);
 
       expect(result).toEqual({
-        cdpApiKey: 'env-api-key',
-        region: 'US',
-      });
-    });
-
-    test('should use native config when env config is not provided', () => {
-      const result = mergeConfigWithEnvValues(mockIosProps, mockNativeConfig);
-
-      expect(result).toEqual({
-        cdpApiKey: 'config-api-key',
+        cdpApiKey: 'same-api-key',
         region: 'EU',
       });
-    });
 
+      expect(consoleSpy).toHaveBeenCalledWith(
+        'Both \'config\' and \'ios.pushNotification.env\' are provided with matching values. Consider removing \'ios.pushNotification.env\' since \'config\' is already specified.'
+      );
+
+      consoleSpy.mockRestore();
+    });
   });
 
-  describe('native config scenarios', () => {
+  describe('when only native config is provided', () => {
 
     test('should return native config with undefined region when only cdpApiKey is provided', () => {
       const configWithoutRegion: NativeSDKConfig = {
@@ -87,7 +97,7 @@ describe('mergeConfigWithEnvValues', () => {
     });
   });
 
-  describe('env config scenarios', () => {
+  describe('when only environment config is provided', () => {
 
     test('should return env config with undefined region when only cdpApiKey is provided', () => {
       const envConfigWithoutRegion = {
@@ -127,20 +137,9 @@ describe('mergeConfigWithEnvValues', () => {
     });
   });
 
-  describe('no config scenarios', () => {
-    test('should return undefined when no native config and no pushNotification', () => {
+  describe('when no valid configuration is provided', () => {
+    test('should return undefined when no configs provided', () => {
       const result = mergeConfigWithEnvValues(mockIosProps);
-
-      expect(result).toBeUndefined();
-    });
-
-    test('should return undefined when no native config and no env config', () => {
-      const props: CustomerIOPluginOptionsIOS = {
-        ...mockIosProps,
-        pushNotification: {},
-      };
-
-      const result = mergeConfigWithEnvValues(props);
 
       expect(result).toBeUndefined();
     });
@@ -160,7 +159,7 @@ describe('mergeConfigWithEnvValues', () => {
     });
   });
 
-  describe('edge cases', () => {
+  describe('when handling invalid or malformed configuration data', () => {
     test('should handle undefined pushNotification gracefully', () => {
       const props: CustomerIOPluginOptionsIOS = {
         ...mockIosProps,

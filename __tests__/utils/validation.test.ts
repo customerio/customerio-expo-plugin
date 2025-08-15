@@ -1,7 +1,7 @@
 import type { NativeSDKConfig } from '../../plugin/src/types/cio-types';
 import { validateNativeSDKConfig } from '../../plugin/src/utils/validation';
 
-describe('validateNativeSDKConfig', () => {
+describe('validateNativeSDKConfig - Ensures SDK configuration meets requirements before initialization', () => {
   const validConfig: NativeSDKConfig = {
     cdpApiKey: 'test-api-key'
   };
