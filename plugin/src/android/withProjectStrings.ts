@@ -1,7 +1,7 @@
 import type { ConfigPlugin } from '@expo/config-plugins';
 import { withStringsXml } from '@expo/config-plugins';
 import type { ResourceXML } from '@expo/config-plugins/build/android/Resources';
-import { getPluginVersion } from '../helpers/utils/pluginUtils';
+import { getPluginVersion } from '../utils/plugin';
 
 /**
  * Adds or updates string resources in Android's strings.xml required by the plugin

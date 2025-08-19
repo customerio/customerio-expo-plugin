@@ -35,5 +35,6 @@ echo "pushProvider=$pushProviderValue" >> "test-app/local.env"
 sh ./scripts/build-all.sh
 
 # Run tests
+npm test -- __tests__/utils
 npm test -- __tests__/android
 npm test -- __tests__/ios/common __tests__/ios/$pushProviderValue

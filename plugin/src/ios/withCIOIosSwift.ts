@@ -9,11 +9,11 @@ import {
   CIO_CONFIGUREDEEPLINK_KILLEDSTATE_SWIFT_SNIPPET,
   CIO_REGISTER_PUSHNOTIFICATION_SNIPPET_v2,
   CIO_REGISTER_PUSH_NOTIFICATION_PLACEHOLDER,
-  LOCAL_PATH_TO_CIO_NSE_FILES,
 } from '../helpers/constants/ios';
 import { replaceCodeByRegex } from '../helpers/utils/codeInjection';
 import { FileManagement } from '../helpers/utils/fileManagement';
 import type { CustomerIOPluginOptionsIOS } from '../types/cio-types';
+import { getIosNativeFilesPath } from '../utils/plugin';
 import { isFcmPushProvider } from './utils';
 
 // Constants
@@ -33,7 +33,7 @@ const copyAndConfigureAppDelegateHandler = (
 
   // Source path for the handler file
   const handlerSourcePath = path.join(
-    LOCAL_PATH_TO_CIO_NSE_FILES,
+    getIosNativeFilesPath(),
     useFcm ? 'fcm' : 'apn',
     CIO_SDK_APP_DELEGATE_HANDLER_FILENAME
   );
