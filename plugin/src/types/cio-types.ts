@@ -71,6 +71,16 @@ export type CustomerIOPluginOptionsAndroid = {
       name?: string;
       importance?: number;
     };
+    /**
+     * Priority for Firebase messaging service intent filter.
+     * Higher numbers = higher priority. Use negative numbers to set lower priority than other services.
+     * 
+     * If this value is provided, the service will be added to the manifest regardless of setHighPriorityPushHandler.
+     * If not provided, behavior depends on setHighPriorityPushHandler:
+     * - setHighPriorityPushHandler: false -> service not added (Android SDK handles it)
+     * - setHighPriorityPushHandler: true -> service added with no priority attribute (Android default)
+     */
+    firebaseMessagingServicePriority?: number;
   };
 };
 

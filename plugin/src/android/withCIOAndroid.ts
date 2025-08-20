@@ -18,7 +18,7 @@ export function withCIOAndroid(
   config = withAppGoogleServices(config, props);
   config = withGoogleServicesJSON(config, props);
   config = withProjectStrings(config);
-  if (props.setHighPriorityPushHandler) {
+  if (props.setHighPriorityPushHandler || props.pushNotification?.firebaseMessagingServicePriority !== undefined) {
     config = withAndroidManifestUpdates(config, props);
   }
   if (props.pushNotification?.channel) {

@@ -6,7 +6,7 @@ import type { CustomerIOPluginOptionsAndroid } from '../types/cio-types';
 
 export const withAndroidManifestUpdates: ConfigPlugin<
   CustomerIOPluginOptionsAndroid
-> = (configOuter) => {
+> = (configOuter, options) => {
   return withAndroidManifest(configOuter, (props) => {
     const application = props.modResults.manifest
       .application as ManifestApplication[];
@@ -22,25 +22,36 @@ export const withAndroidManifestUpdates: ConfigPlugin<
     );
 
     if (!hasService) {
+      const priority = options?.pushNotification?.firebaseMessagingServicePriority;
+      
+      const intentFilter: any = {
+        action: [
+          {
+            $: {
+              'android:name': 'com.google.firebase.MESSAGING_EVENT',
+            },
+          },
+        ],
+      };
+
+      // Only add priority if explicitly provided
+      if (priority !== undefined) {
+        intentFilter.$ = {
+          'android:priority': priority.toString(),
+        };
+      }
+
       application[0]['service'].push({
         '$': {
           'android:name': customerIOMessagingpush,
           'android:exported': 'false',
         },
-        'intent-filter': [
-          {
-            action: [
-              {
-                $: {
-                  'android:name': 'com.google.firebase.MESSAGING_EVENT',
-                },
-              },
-            ],
-          },
-        ],
+        'intent-filter': [intentFilter],
       });
+      
+      const priorityMessage = priority !== undefined ? ` with priority ${priority}` : '';
       console.log(
-        'Successfully set CustomerIO push handler as priority in AndroidManifest.xml'
+        `Successfully set CustomerIO push handler${priorityMessage} in AndroidManifest.xml`
       );
     }
 
