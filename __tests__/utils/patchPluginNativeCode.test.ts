@@ -39,6 +39,10 @@ describe('Native SDK Configuration Patching', () => {
       path.join(__dirname, '../../plugin/src/helpers/native-files/ios/CustomerIOSDKInitializer.swift')
     );
 
+    const kotlinTemplateContent = FileManagement.readFile(
+      path.join(__dirname, '../../plugin/src/helpers/native-files/android/CustomerIOSDKInitializer.kt')
+    );
+
     test('requires platform parameter for TypeScript compilation', () => {
       // This test ensures the platform parameter is required
       expect(() => {
@@ -214,6 +218,26 @@ describe('Native SDK Configuration Patching', () => {
 
       test('iOS minimal', () => {
         const result = patchNativeSDKInitializer(swiftTemplateContent, PLATFORM.IOS, baseSdkConfig);
+        expect(result).toMatchSnapshot();
+      });
+
+      test('Android complete', () => {
+        const config = {
+          ...baseSdkConfig,
+          logLevel: 'info' as const,
+          region: 'EU' as const,
+          siteId: 'android-site-456',
+          autoTrackDeviceAttributes: false,
+          trackApplicationLifecycleEvents: true,
+          screenViewUse: 'all' as const,
+        };
+
+        const result = patchNativeSDKInitializer(kotlinTemplateContent, PLATFORM.ANDROID, config);
+        expect(result).toMatchSnapshot();
+      });
+
+      test('Android minimal', () => {
+        const result = patchNativeSDKInitializer(kotlinTemplateContent, PLATFORM.ANDROID, baseSdkConfig);
         expect(result).toMatchSnapshot();
       });
     });
