@@ -11,6 +11,7 @@ const {
 const { CUSTOMER_IO_EXPO_PLUGIN_NAME, EXPO_BUILD_PROPERTIES_PLUGIN } = require("../utils/constants");
 
 const APP_PATH = getArgValue("--app-path", { required: true });
+const USE_AUTO_INIT = isFlagEnabled("--use-auto-init", { default: true });
 const ANDROID_GOOGLE_SERVICES_FILE_PATH = getArgValue("--android-google-services", {
   default: "./cio-artifacts/google-services.json",
 });
@@ -96,28 +97,51 @@ function execute() {
   // Step 3: Add default configurations if flag is set
   if (ADD_DEFAULT_CONFIG) {
     logMessage("🔧 Adding default configurations...", "debug");
-    Object.assign(cioPluginConfig, {
-      config: {
-        cdpApiKey: "dummy-cdp-api-key",
-        region: "us",
-      },
-      android: {
-        googleServicesFile: ANDROID_GOOGLE_SERVICES_FILE_PATH,
-        setHighPriorityPushHandler: true,
-        pushNotification: {
-          channel: {
-            id: "cio-expo-id",
-            name: "CIO Test",
-            importance: 4
-          }
+
+    // Common configurations
+    const envConfig = {
+      cdpApiKey: "dummy-cdp-api-key",
+      region: "us",
+    };
+    const androidConfig = {
+      googleServicesFile: ANDROID_GOOGLE_SERVICES_FILE_PATH,
+      setHighPriorityPushHandler: true,
+      pushNotification: {
+        channel: {
+          id: "cio-expo-id",
+          name: "CIO Test",
+          importance: 4
         }
+      }
+    };
+    const baseIosConfig = {
+      pushNotification: {
+        useRichPush: true,
       },
-      ios: {
-        pushNotification: {
-          useRichPush: true,
+    };
+
+    if (USE_AUTO_INIT) {
+      delete cioPluginConfig.ios?.pushNotification?.env;
+      Object.assign(cioPluginConfig, {
+        config: {
+          ...envConfig,
         },
-      },
-    });
+        android: androidConfig,
+        ios: baseIosConfig,
+      });
+    } else {
+      delete cioPluginConfig.config;
+      Object.assign(cioPluginConfig, {
+        android: androidConfig,
+        ios: {
+          ...baseIosConfig,
+          pushNotification: {
+            ...baseIosConfig.pushNotification,
+            env: envConfig,
+          },
+        },
+      });
+    }
   }
 
   // Step 4: Handle iOS push provider and frameworks
@@ -151,7 +175,7 @@ function execute() {
   logMessage("🔧 Applying additional configurations...");
   const cioAdditionalConfig = getPluginConfigFromCliPrefix(CUSTOMER_IO_EXPO_PLUGIN_NAME);
   Object.entries(cioAdditionalConfig).forEach(([key, value]) => {
-    setNestedProperty(cioConfig, key, value);
+    setNestedProperty(cioPluginConfig, key, value);
   });
   const buildPropsAdditionalConfig = getPluginConfigFromCliPrefix(EXPO_BUILD_PROPERTIES_PLUGIN);
   Object.entries(buildPropsAdditionalConfig).forEach(([key, value]) => {

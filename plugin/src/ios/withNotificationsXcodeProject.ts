@@ -22,7 +22,6 @@ const addNotificationServiceExtension = async (
   options: CustomerIOPluginOptionsIOS,
   xcodeProject: XcodeProject,
   isExpo53OrHigher: boolean,
-  richPushConfig?: RichPushConfig
 ) => {
   try {
     // PushService file is only needed for pre-Expo 53 code generation
@@ -31,7 +30,7 @@ const addNotificationServiceExtension = async (
     }
 
     if (options.pushNotification?.useRichPush === true) {
-      await addRichPushXcodeProj(options, xcodeProject, richPushConfig);
+      await addRichPushXcodeProj(options, xcodeProject);
     }
     return xcodeProject;
   } catch (error: unknown) {
@@ -41,10 +40,9 @@ const addNotificationServiceExtension = async (
 };
 
 export const withCioNotificationsXcodeProject: ConfigPlugin<
-  CustomerIOPluginOptionsIOS & { richPushConfig?: RichPushConfig }
-> = (configOuter, propsWithConfig) => {
+  CustomerIOPluginOptionsIOS
+> = (configOuter, props) => {
   return withXcodeProject(configOuter, async (config) => {
-    const { richPushConfig, ...props } = propsWithConfig;
     const { modRequest, ios, version: bundleShortVersion } = config;
     const { appleTeamId, iosDeploymentTarget, useFrameworks } = props;
 
@@ -91,7 +89,6 @@ export const withCioNotificationsXcodeProject: ConfigPlugin<
       options,
       config.modResults,
       isExpoVersion53OrHigher(configOuter),
-      richPushConfig
     );
 
     if (modifiedProjectFile) {
@@ -105,7 +102,6 @@ export const withCioNotificationsXcodeProject: ConfigPlugin<
 const addRichPushXcodeProj = async (
   options: CustomerIOPluginOptionsIOS,
   xcodeProject: XcodeProject,
-  richPushConfig?: RichPushConfig
 ) => {
   const {
     appleTeamId,
@@ -171,7 +167,7 @@ const addRichPushXcodeProj = async (
     bundleShortVersion,
     infoPlistTargetFile,
   });
-  updateNseEnv(getTargetFile(ENV_FILENAME), richPushConfig);
+  updateNseEnv(getTargetFile(ENV_FILENAME), options.pushNotification?.env);
 
   // Create new PBXGroup for the extension
   const extGroup = xcodeProject.addPbxGroup(

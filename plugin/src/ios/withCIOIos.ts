@@ -20,7 +20,6 @@ export function withCIOIos(
 ) {
   const isSwiftProject = isExpoVersion53OrHigher(config);
   const platformConfig = mergeDeprecatedPropertiesAndLogWarnings(props);
-  const richPushConfig = mergeConfigWithEnvValues(platformConfig, sdkConfig);
 
   if (platformConfig.pushNotification) {
     if (isSwiftProject) {
@@ -31,7 +30,9 @@ export function withCIOIos(
       config = withAppDelegateModifications(config, platformConfig);
     }
 
-    config = withCioNotificationsXcodeProject(config, { ...platformConfig, richPushConfig });
+    platformConfig.pushNotification.env = platformConfig.pushNotification.env
+      || mergeConfigWithEnvValues(platformConfig, sdkConfig);
+    config = withCioNotificationsXcodeProject(config, platformConfig);
     config = withCioXcodeProject(config, platformConfig);
     config = withGoogleServicesJsonFile(config, platformConfig);
   }
