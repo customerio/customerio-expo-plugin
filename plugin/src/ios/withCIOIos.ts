@@ -24,7 +24,7 @@ export function withCIOIos(
 
   if (platformConfig.pushNotification) {
     if (isSwiftProject) {
-      config = withCIOIosSwift(config, platformConfig);
+      config = withCIOIosSwift(config, sdkConfig, platformConfig);
     } else {
       // Auto initialization is only supported in Swift projects (Expo SDK 53+)
       // Legacy Objective-C projects only support push notifications

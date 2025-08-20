@@ -50,6 +50,8 @@ public class CioSdkAppDelegateHandler: NSObject {
 
     _ = cioAppDelegate.application(application, didFinishLaunchingWithOptions: launchOptions)
 
+    // Auto Initialize Native Customer.io SDK
+    CustomerIOSDKInitializer.initialize()
     MessagingPushAPN.initialize(
       withConfig: MessagingPushConfigBuilder()
         .autoFetchDeviceToken(true)

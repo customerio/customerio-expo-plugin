@@ -1,19 +1,24 @@
 import type {
-  ConfigPlugin,
   ExportedConfigWithProps,
   XcodeProject,
 } from '@expo/config-plugins';
 import { withAppDelegate, withXcodeProject } from '@expo/config-plugins';
+import type { ExpoConfig } from '@expo/config-types';
 import path from 'path';
+import { PLATFORM } from '../helpers/constants/common';
 import {
   CIO_CONFIGUREDEEPLINK_KILLEDSTATE_SWIFT_SNIPPET,
+  CIO_MESSAGING_PUSH_APP_DELEGATE_INIT_REGEX,
+  CIO_NATIVE_SDK_INITIALIZE_SNIPPET,
   CIO_REGISTER_PUSHNOTIFICATION_SNIPPET_v2,
   CIO_REGISTER_PUSH_NOTIFICATION_PLACEHOLDER,
 } from '../helpers/constants/ios';
 import { replaceCodeByRegex } from '../helpers/utils/codeInjection';
 import { FileManagement } from '../helpers/utils/fileManagement';
-import type { CustomerIOPluginOptionsIOS } from '../types/cio-types';
+import { patchNativeSDKInitializer } from '../helpers/utils/patchPluginNativeCode';
+import type { CustomerIOPluginOptionsIOS, NativeSDKConfig } from '../types/cio-types';
 import { getIosNativeFilesPath } from '../utils/plugin';
+import { copyFileToXcode } from '../utils/xcode';
 import { isFcmPushProvider } from './utils';
 
 // Constants
@@ -25,6 +30,7 @@ const CIO_SDK_APP_DELEGATE_HANDLER_FILENAME = `${CIO_SDK_APP_DELEGATE_HANDLER_CL
  */
 const copyAndConfigureAppDelegateHandler = (
   config: ExportedConfigWithProps<XcodeProject>,
+  sdkConfig: NativeSDKConfig | undefined,
   props: CustomerIOPluginOptionsIOS
 ): ExportedConfigWithProps<XcodeProject> => {
   const projectRoot = config.modRequest.projectRoot;
@@ -116,18 +122,54 @@ const copyAndConfigureAppDelegateHandler = (
     showPushAppInForeground.toString()
   );
 
+  // Add auto initialization if sdkConfig is provided
+  if (sdkConfig) {
+    copyAndConfigureNativeSDKInitializer({ xcodeProject, group, iosProjectRoot, projectName, sdkConfig });
+
+    // Inject auto initialization call before MessagingPush initialization
+    handlerFileContent = handlerFileContent.replace(CIO_MESSAGING_PUSH_APP_DELEGATE_INIT_REGEX, CIO_NATIVE_SDK_INITIALIZE_SNIPPET + '$1');
+  }
+
   FileManagement.writeFile(handlerDestPath, handlerFileContent);
 
   return config;
 };
 
-export const withCIOIosSwift: ConfigPlugin<CustomerIOPluginOptionsIOS> = (
-  configOuter,
-  props
+const copyAndConfigureNativeSDKInitializer = ({
+  xcodeProject,
+  group,
+  iosProjectRoot,
+  projectName,
+  sdkConfig,
+}: {
+  xcodeProject: XcodeProject;
+  group: XcodeProject['pbxCreateGroup'];
+  iosProjectRoot: string;
+  projectName: string;
+  sdkConfig: NativeSDKConfig;
+}) => {
+  const filename = 'CustomerIOSDKInitializer.swift';
+  const sourcePath = path.join(getIosNativeFilesPath(), filename);
+  // Add the CustomerIOSDKInitializer.swift file to the same Xcode group as CioSdkAppDelegateHandler
+  copyFileToXcode({
+    xcodeProject,
+    iosProjectRoot,
+    projectName,
+    sourceFilePath: sourcePath,
+    targetFileName: filename,
+    transform: (content) => patchNativeSDKInitializer(content, PLATFORM.IOS, sdkConfig),
+    customerIOGroup: group,
+  });
+};
+
+export const withCIOIosSwift = (
+  configOuter: ExpoConfig,
+  sdkConfig: NativeSDKConfig | undefined,
+  props: CustomerIOPluginOptionsIOS,
 ) => {
   // First, copy the CioSdkAppDelegateHandler.swift file to the iOS project and add it to Xcode project
   configOuter = withXcodeProject(configOuter, async (config) => {
-    return copyAndConfigureAppDelegateHandler(config, props);
+    return copyAndConfigureAppDelegateHandler(config, sdkConfig, props);
   });
 
   // Then modify the AppDelegate

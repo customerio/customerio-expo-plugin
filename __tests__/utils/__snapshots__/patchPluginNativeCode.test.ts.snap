@@ -1,0 +1,117 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Native SDK Configuration Patching patchNativeSDKInitializer() snapshots iOS complete 1`] = `
+"import CioDataPipelines
+import CioInternalCommon
+import CioMessagingInApp
+import customerio_reactnative
+
+class CustomerIOSDKInitializer {
+    static func initialize() {
+        // Override SDK client info to include Expo metadata in user agent
+        let pluginVersion = "2.5.0"
+        DIGraphShared.shared.override(
+            value: CustomerIOSdkClient(source: "Expo", sdkVersion: pluginVersion),
+            forType: SdkClient.self
+        )
+
+        let cdpApiKey = "test-api-key"
+        let siteId: String? = "test-site-123"
+        let region = CioInternalCommon.Region.getRegion(from: "US")
+
+        let builder = SDKConfigBuilder(cdpApiKey: cdpApiKey)
+        setIfDefined(value: "debug", thenPassItTo: builder.logLevel, transformingBy: CioLogLevel.getLogLevel)
+        setIfDefined(value: region, thenPassItTo: builder.region)
+        setIfDefined(value: true, thenPassItTo: builder.autoTrackDeviceAttributes)
+        setIfDefined(value: false, thenPassItTo: builder.trackApplicationLifecycleEvents)
+        setIfDefined(value: "inapp", thenPassItTo: builder.screenViewUse) { ScreenView.getScreenView($0) }
+        setIfDefined(value: "test-site-123", thenPassItTo: builder.migrationSiteId)
+
+        CustomerIO.initialize(withConfig: builder.build())
+
+        if let siteId = siteId {
+          let inAppConfig = MessagingInAppConfigBuilder(siteId: siteId, region: region).build()
+          MessagingInApp.initialize(withConfig: inAppConfig)
+          MessagingInApp.shared.setEventListener(ReactInAppEventListener.shared)
+        }
+    }
+
+    /// Apply a value to a setter only if it's non-nil
+    private static func setIfDefined<Raw>(
+        value rawValue: Raw?,
+        thenPassItTo handler: (Raw) -> Any
+    ) {
+        setIfDefined(value: rawValue, thenPassItTo: handler) { $0 }
+    }
+
+    /// Apply a value after transforming it, only if both the original and transformed values are non-nil
+    private static func setIfDefined<Raw, Transformed>(
+        value rawValue: Raw?,
+        thenPassItTo handler: (Transformed) -> Any,
+        transformingBy transform: (Raw) -> Transformed?
+    ) {
+        if let value = rawValue, let result = transform(value) {
+            _ = handler(result)
+        }
+    }
+}
+"
+`;
+
+exports[`Native SDK Configuration Patching patchNativeSDKInitializer() snapshots iOS minimal 1`] = `
+"import CioDataPipelines
+import CioInternalCommon
+import CioMessagingInApp
+import customerio_reactnative
+
+class CustomerIOSDKInitializer {
+    static func initialize() {
+        // Override SDK client info to include Expo metadata in user agent
+        let pluginVersion = "2.5.0"
+        DIGraphShared.shared.override(
+            value: CustomerIOSdkClient(source: "Expo", sdkVersion: pluginVersion),
+            forType: SdkClient.self
+        )
+
+        let cdpApiKey = "test-api-key"
+        let siteId: String? = nil
+        let region = CioInternalCommon.Region.getRegion(from: "")
+
+        let builder = SDKConfigBuilder(cdpApiKey: cdpApiKey)
+        setIfDefined(value: nil, thenPassItTo: builder.logLevel, transformingBy: CioLogLevel.getLogLevel)
+        setIfDefined(value: region, thenPassItTo: builder.region)
+        setIfDefined(value: nil, thenPassItTo: builder.autoTrackDeviceAttributes)
+        setIfDefined(value: nil, thenPassItTo: builder.trackApplicationLifecycleEvents)
+        setIfDefined(value: nil, thenPassItTo: builder.screenViewUse) { ScreenView.getScreenView($0) }
+        setIfDefined(value: nil, thenPassItTo: builder.migrationSiteId)
+
+        CustomerIO.initialize(withConfig: builder.build())
+
+        if let siteId = siteId {
+          let inAppConfig = MessagingInAppConfigBuilder(siteId: siteId, region: region).build()
+          MessagingInApp.initialize(withConfig: inAppConfig)
+          MessagingInApp.shared.setEventListener(ReactInAppEventListener.shared)
+        }
+    }
+
+    /// Apply a value to a setter only if it's non-nil
+    private static func setIfDefined<Raw>(
+        value rawValue: Raw?,
+        thenPassItTo handler: (Raw) -> Any
+    ) {
+        setIfDefined(value: rawValue, thenPassItTo: handler) { $0 }
+    }
+
+    /// Apply a value after transforming it, only if both the original and transformed values are non-nil
+    private static func setIfDefined<Raw, Transformed>(
+        value rawValue: Raw?,
+        thenPassItTo handler: (Transformed) -> Any,
+        transformingBy transform: (Raw) -> Transformed?
+    ) {
+        if let value = rawValue, let result = transform(value) {
+            _ = handler(result)
+        }
+    }
+}
+"
+`;
