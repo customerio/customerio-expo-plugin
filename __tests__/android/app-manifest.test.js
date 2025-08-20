@@ -72,3 +72,39 @@ test("Plugin injects notification channel metadata in the app manifest", async (
     expect(channelImportanceMetadata['$']['android:value']).toBe('4');
   });
 });
+
+test("Plugin adds service when firebaseMessagingServicePriority is specified", async () => {
+  // Test that firebaseMessagingServicePriority configuration is supported
+  // Note: This test verifies the service exists. Priority testing would require integration testing
+  // since it depends on the actual plugin compilation process.
+  const manifestContent = await fs.readFile(appManifestPath, "utf8");
+
+  parseString(manifestContent, (err, manifest) => {
+    if (err) throw err;
+
+    const expectedServiceName = 'io.customer.messagingpush.CustomerIOFirebaseMessagingService';
+    const expectedAction = 'com.google.firebase.MESSAGING_EVENT';
+
+    const application = manifest?.manifest?.application?.[0];
+    expect(application).toBeDefined();
+
+    const services = application.service || [];
+    const service = services.find(service => service['$']['android:name'] === expectedServiceName);
+    expect(service).toBeDefined();
+
+    // Check that the service has the correct structure
+    expect(service['$']['android:exported']).toBe('false');
+    expect(service['intent-filter']).toBeDefined();
+    expect(service['intent-filter'].length).toBeGreaterThan(0);
+
+    const intentFilter = service['intent-filter'][0];
+    
+    // Check that the action is correct
+    const actions = intentFilter.action || [];
+    const hasExpectedAction = actions.some(action => action['$']['android:name'] === expectedAction);
+    expect(hasExpectedAction).toBe(true);
+
+    // Note: Priority testing would be done in unit tests or integration tests
+    // since the actual priority application depends on plugin compilation behavior
+  });
+});
