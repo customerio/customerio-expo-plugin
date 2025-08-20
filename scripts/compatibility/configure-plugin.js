@@ -97,6 +97,10 @@ function execute() {
   if (ADD_DEFAULT_CONFIG) {
     logMessage("🔧 Adding default configurations...", "debug");
     Object.assign(cioPluginConfig, {
+      config: {
+        cdpApiKey: "dummy-cdp-api-key",
+        region: "us",
+      },
       android: {
         googleServicesFile: ANDROID_GOOGLE_SERVICES_FILE_PATH,
         setHighPriorityPushHandler: true,
@@ -111,10 +115,6 @@ function execute() {
       ios: {
         pushNotification: {
           useRichPush: true,
-          env: {
-            cdpApiKey: "dummy-cdp-api-key",
-            region: "us",
-          },
         },
       },
     });
