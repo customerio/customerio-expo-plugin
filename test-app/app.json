@@ -71,7 +71,8 @@
                 "id": "cio-expo-id",
                 "name": "CIO Test",
                 "importance": 4
-              }
+              },
+              "firebaseMessagingServicePriority": -2
             }
           },
           "ios": {
