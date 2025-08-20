@@ -1,14 +1,16 @@
-const { testAppPath } = require('../utils');
+const { testAppPath, getTestAppAndroidJavaSourcePath, isExpoVersion53OrHigher } = require('../utils');
 const fs = require('fs-extra');
 const path = require('path');
 
 const testProjectPath = testAppPath();
 const androidPath = path.join(testProjectPath, 'android');
 
-describe('Expo 53+ MainApplication tests', () => {
+// Tests for Expo 53+ (Auto-init only - Expo 52 doesn't modify MainApplication)
+(isExpoVersion53OrHigher() ? describe : describe.skip)('Expo 53+ MainApplication tests', () => {
   const mainApplicationPath = path.join(
     androidPath,
-    'app/src/main/java/io/customer/testbed/expo/MainApplication.kt'
+    getTestAppAndroidJavaSourcePath(),
+    'MainApplication.kt'
   );
 
   test('Plugin injects CIO initializer into MainApplication.kt', async () => {
