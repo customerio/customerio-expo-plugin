@@ -1,16 +1,5 @@
-const finder = require('find-package-json');
 const path = require('path');
 const resolveFrom = require('resolve-from');
-
-const f = finder(__dirname);
-let pluginPackageRoot = f.next().filename;
-// This is the path to the root of the customerio-expo-plugin package
-pluginPackageRoot = path.dirname(pluginPackageRoot);
-
-export const LOCAL_PATH_TO_CIO_NSE_FILES = path.join(
-  pluginPackageRoot,
-  'plugin/src/helpers/native-files/ios'
-);
 
 export function getRelativePathToRNSDK(iosPath: string) {
   // Root path of the Expo project

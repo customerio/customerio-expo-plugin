@@ -5,11 +5,11 @@ import {
   CIO_NOTIFICATION_TARGET_NAME,
   CIO_REGISTER_PUSHNOTIFICATION_SNIPPET,
   DEFAULT_BUNDLE_VERSION,
-  LOCAL_PATH_TO_CIO_NSE_FILES,
 } from '../helpers/constants/ios';
 import { replaceCodeByRegex } from '../helpers/utils/codeInjection';
 import { injectCIONotificationPodfileCode } from '../helpers/utils/injectCIOPodfileCode';
 import type { CustomerIOPluginOptionsIOS, RichPushConfig } from '../types/cio-types';
+import { getIosNativeFilesPath } from '../utils/plugin';
 import { FileManagement } from './../helpers/utils/fileManagement';
 import { isExpoVersion53OrHigher, isFcmPushProvider } from './utils';
 
@@ -149,7 +149,7 @@ const addRichPushXcodeProj = async (
   platformSpecificFiles.forEach((filename) => {
     const targetFile = getTargetFile(filename);
     FileManagement.copyFile(
-      `${LOCAL_PATH_TO_CIO_NSE_FILES}/${isFcmProvider ? 'fcm' : 'apn'
+      `${getIosNativeFilesPath()}/${isFcmProvider ? 'fcm' : 'apn'
       }/${filename}`,
       targetFile
     );
@@ -159,7 +159,7 @@ const addRichPushXcodeProj = async (
   commonFiles.forEach((filename) => {
     const targetFile = getTargetFile(filename);
     FileManagement.copyFile(
-      `${LOCAL_PATH_TO_CIO_NSE_FILES}/common/${filename}`,
+      `${getIosNativeFilesPath()}/common/${filename}`,
       targetFile
     );
   });
@@ -355,7 +355,7 @@ async function addPushNotificationFile(
     });
 
     FileManagement.copyFile(
-      `${LOCAL_PATH_TO_CIO_NSE_FILES}/${sourceFile}`,
+      `${getIosNativeFilesPath()}/${sourceFile}`,
       targetFile
     );
   } else {
