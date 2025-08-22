@@ -17,6 +17,5 @@ export const CIO_MAINAPPLICATION_ONCREATE_REGEX = /override\s+fun\s+onCreate\s*\
 // Actual method call, also used to detect if Customer.io auto initialization is already present
 export const CIO_NATIVE_SDK_INITIALIZE_CALL = 'CustomerIOSDKInitializer.initialize(this)';
 // Complete code snippet to inject into MainActivity.onCreate()
-export const CIO_NATIVE_SDK_INITIALIZE_SNIPPET = `
-    // Auto Initialize Native Customer.io SDK
+export const CIO_NATIVE_SDK_INITIALIZE_SNIPPET = `// Auto Initialize Native Customer.io SDK
     ${CIO_NATIVE_SDK_INITIALIZE_CALL}`;

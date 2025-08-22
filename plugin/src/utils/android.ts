@@ -67,8 +67,25 @@ export const addCodeToMethod = (content: string, methodRegex: RegExp, codeToAdd:
   const closeBracePos = findMatchingBracketPosition(content, '{', absoluteOpenBracePos);
   if (closeBracePos === -1) return content;
 
-  // Insert code just before the closing brace
-  return content.substring(0, closeBracePos) + codeToAdd + '\n  ' + content.substring(closeBracePos);
+  // Detect indentation of the method's opening brace line
+  const linesUpToOpenBrace = content.substring(0, absoluteOpenBracePos).split('\n');
+  const braceLine = linesUpToOpenBrace[linesUpToOpenBrace.length - 1];
+  const methodIndentMatch = braceLine.match(/^(\s*)/);
+  const methodIndent = methodIndentMatch ? methodIndentMatch[1] : '';
+  // Assume one indentation level is two spaces if not detected from next line
+  let indentLevel = '  ';
+  // Try to detect indentation from the next line after the opening brace
+  const afterBrace = content.substring(absoluteOpenBracePos + 1, closeBracePos);
+  const afterBraceLines = afterBrace.split('\n').filter(l => l.trim().length > 0);
+  if (afterBraceLines.length > 0) {
+    const nextLineIndentMatch = afterBraceLines[0].match(/^(\s*)/);
+    if (nextLineIndentMatch && nextLineIndentMatch[1].length > methodIndent.length) {
+      indentLevel = nextLineIndentMatch[1].slice(methodIndent.length);
+    }
+  }
+  const finalIndent = methodIndent + indentLevel;
+  // Insert code just before the closing brace, with detected indentation
+  return content.substring(0, closeBracePos) + '\n' + finalIndent + codeToAdd + '\n' + methodIndent + content.substring(closeBracePos);
 };
 
 // Copy template file to Android project with content transformation

@@ -67,7 +67,7 @@ class MainApplication : Application() {
 
   describe('addCodeToMethod', () => {
     const methodRegex = /override\s+fun\s+onCreate\s*\(\s*\)\s*\{[\s\S]*?\}/;
-    const codeToAdd = '\n    CustomerIOSDKInitializer.initialize(this)';
+    const codeToAdd = 'CustomerIOSDKInitializer.initialize(this)';
 
     it('should add code at end of method before closing brace', () => {
       const content = `class MainApplication : Application() {
@@ -80,6 +80,8 @@ class MainApplication : Application() {
       const result = addCodeToMethod(content, methodRegex, codeToAdd);
       expect(result).toContain('// Existing code');
       expect(result).toContain('CustomerIOSDKInitializer.initialize(this)');
+      // Should maintain proper indentation
+      expect(result).toContain('        CustomerIOSDKInitializer.initialize(this)');
     });
 
     it('should return content unchanged if method not found', () => {
@@ -100,6 +102,8 @@ class MainApplication : Application() {
       const result = addCodeToMethod(content, methodRegex, codeToAdd);
       expect(result).toContain('override fun onCreate() {');
       expect(result).toContain('CustomerIOSDKInitializer.initialize(this)');
+      // Should use default 2-space indentation when no existing content
+      expect(result).toContain('      CustomerIOSDKInitializer.initialize(this)');
     });
 
     it('should add code at end after ApplicationLifecycleDispatcher', () => {
@@ -116,6 +120,34 @@ class MainApplication : Application() {
       expect(result.indexOf('CustomerIOSDKInitializer.initialize')).toBeGreaterThan(
         result.indexOf('ApplicationLifecycleDispatcher.onApplicationCreate')
       );
+      // Should maintain proper indentation
+      expect(result).toContain('        CustomerIOSDKInitializer.initialize(this)');
+    });
+
+    it('should detect and use tabs for indentation', () => {
+      const content = `class MainApplication : Application() {
+\toverride fun onCreate() {
+\t\tsuper.onCreate()
+\t\t// Existing code
+\t}
+}`;
+
+      const result = addCodeToMethod(content, methodRegex, codeToAdd);
+      expect(result).toContain('// Existing code');
+      expect(result).toContain('\t\tCustomerIOSDKInitializer.initialize(this)');
+    });
+
+    it('should detect and use 4-space indentation', () => {
+      const content = `class MainApplication : Application() {
+    override fun onCreate() {
+        super.onCreate()
+        // Existing code
+    }
+}`;
+
+      const result = addCodeToMethod(content, methodRegex, codeToAdd);
+      expect(result).toContain('// Existing code');
+      expect(result).toContain('        CustomerIOSDKInitializer.initialize(this)');
     });
   });
 
