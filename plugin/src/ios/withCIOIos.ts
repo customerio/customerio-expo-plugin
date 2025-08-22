@@ -20,18 +20,19 @@ export function withCIOIos(
 ) {
   const isSwiftProject = isExpoVersion53OrHigher(config);
   const platformConfig = mergeDeprecatedPropertiesAndLogWarnings(props);
-  const richPushConfig = mergeConfigWithEnvValues(platformConfig, sdkConfig);
 
   if (platformConfig.pushNotification) {
     if (isSwiftProject) {
-      config = withCIOIosSwift(config, platformConfig);
+      config = withCIOIosSwift(config, sdkConfig, platformConfig);
     } else {
       // Auto initialization is only supported in Swift projects (Expo SDK 53+)
       // Legacy Objective-C projects only support push notifications
       config = withAppDelegateModifications(config, platformConfig);
     }
 
-    config = withCioNotificationsXcodeProject(config, { ...platformConfig, richPushConfig });
+    platformConfig.pushNotification.env = platformConfig.pushNotification.env
+      || mergeConfigWithEnvValues(platformConfig, sdkConfig);
+    config = withCioNotificationsXcodeProject(config, platformConfig);
     config = withCioXcodeProject(config, platformConfig);
     config = withGoogleServicesJsonFile(config, platformConfig);
   }

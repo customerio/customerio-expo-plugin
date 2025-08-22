@@ -163,3 +163,8 @@ export const CIO_REGISTER_PUSHNOTIFICATION_SNIPPET_v2 = `
     }`;
 
 export const CIO_REGISTER_PUSH_NOTIFICATION_PLACEHOLDER = /\{\{REGISTER_SNIPPET\}\}/;
+// Regex to match MessagingPush initialization in AppDelegate (different from NSE initialization)
+export const CIO_MESSAGING_PUSH_APP_DELEGATE_INIT_REGEX = /(MessagingPush(?:APN|FCM)\.initialize)/;
+export const CIO_NATIVE_SDK_INITIALIZE_SNIPPET = `// Auto Initialize Native Customer.io SDK
+    CustomerIOSDKInitializer.initialize()
+    `;
