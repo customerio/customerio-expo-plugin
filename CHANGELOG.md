@@ -1,3 +1,9 @@
+## [2.6.0](https://github.com/customerio/customerio-expo-plugin/compare/2.5.0...2.6.0) (2025-08-25)
+
+### Features
+
+* support for auto initializing native SDK from app.json ([#292](https://github.com/customerio/customerio-expo-plugin/issues/292)) ([529306b](https://github.com/customerio/customerio-expo-plugin/commit/529306bc02c976d3d88c7444f63504043ff7f0a0))
+
 ## [2.5.0](https://github.com/customerio/customerio-expo-plugin/compare/2.4.0...2.5.0) (2025-07-29)
 
 ### Features
