@@ -168,9 +168,12 @@ public class AppDelegate: ExpoAppDelegate {
       const appDelegateCallback = withAppDelegate.mock.calls[0][1];
       const result = await appDelegateCallback({
         modResults: {
-          contents: `public override func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
+          contents: `@UIApplicationMain
+public class AppDelegate: ExpoAppDelegate {
+  public override func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
-  }`,
+  }
+}`,
         },
       });
 
@@ -191,8 +194,8 @@ public class AppDelegate: ExpoAppDelegate {
       // Should not call withAppDelegate when there's nothing to configure
       withCIOIosSwift(mockConfig, undefined, mockPropsEmpty);
 
-      // withAppDelegate is called but should return early when nothing to inject
-      expect(withAppDelegate).toHaveBeenCalled();
+      // withAppDelegate should not be called since there's nothing to inject
+      expect(withAppDelegate).not.toHaveBeenCalled();
     });
 
     it('should skip duplicate injections when code already exists', async () => {

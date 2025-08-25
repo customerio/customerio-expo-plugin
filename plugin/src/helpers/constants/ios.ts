@@ -167,4 +167,5 @@ export const CIO_REGISTER_PUSH_NOTIFICATION_PLACEHOLDER = /\{\{REGISTER_SNIPPET\
 export const CIO_MESSAGING_PUSH_APP_DELEGATE_INIT_REGEX = /(MessagingPush(?:APN|FCM)\.initialize)/;
 export const CIO_NATIVE_SDK_INITIALIZE_CALL = 'CustomerIOSDKInitializer.initialize()';
 export const CIO_NATIVE_SDK_INITIALIZE_SNIPPET = `// Auto Initialize Native Customer.io SDK
-    ${CIO_NATIVE_SDK_INITIALIZE_CALL}`;
+    ${CIO_NATIVE_SDK_INITIALIZE_CALL}
+    `;

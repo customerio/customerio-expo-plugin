@@ -207,11 +207,13 @@ export const withCIOIosSwift = (
     return withAppDelegate(configOuter, async (config) => {
       return modifyAppDelegateWithPushAppDelegateHandler(config, props);
     });
-  } else {
+  } else if (sdkConfig) {
     // Without push notifications: directly inject auto initialization into AppDelegate
     return withAppDelegate(configOuter, async (config) => {
       return modifyAppDelegateWithNativeSDKInitializer(config);
     });
+  } else {
+    return configOuter;
   }
 };
 
@@ -281,7 +283,7 @@ const modifyAppDelegateWithNativeSDKInitializer = (
   // Modify didFinishLaunchingWithOptions to initialize and call the handler
   const modifiedContent = modifyDidFinishLaunchingWithOptions(
     appDelegateContent,
-    `${CIO_NATIVE_SDK_INITIALIZE_SNIPPET}\n\n    `,
+    CIO_NATIVE_SDK_INITIALIZE_SNIPPET,
   );
 
   config.modResults.contents = modifiedContent;
