@@ -13,6 +13,19 @@ function testAppName() {
   return process.env.TEST_APP_NAME || 'ExpoTestbed';
 }
 
+function getTestAppAndroidPackageName() {
+  // Use consistent package name for testing to ensure snapshot tests pass
+  return process.env.ANDROID_PACKAGE_NAME || 'io.customer.testbed.expo';
+}
+
+function getTestAppAndroidPackagePath() {
+  return getTestAppAndroidPackageName().replace(/\./g, '/');
+}
+
+function getTestAppAndroidJavaSourcePath() {
+  return `app/src/main/java/${getTestAppAndroidPackagePath()}`;
+}
+
 /**
  * Get the Expo version from environment variable
  * @returns {string} The Expo version
@@ -41,6 +54,9 @@ function isExpoVersion53OrHigher() {
 module.exports = {
   testAppPath,
   testAppName,
+  getTestAppAndroidPackageName,
+  getTestAppAndroidPackagePath,
+  getTestAppAndroidJavaSourcePath,
   getExpoVersion,
   isExpoVersion53OrHigher,
 };

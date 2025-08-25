@@ -58,6 +58,8 @@ public class CioSdkAppDelegateHandler: NSObject {
     _ = cioAppDelegate.application(application, didFinishLaunchingWithOptions: launchOptions)
     UIApplication.shared.registerForRemoteNotifications()
 
+    // Auto Initialize Native Customer.io SDK
+    CustomerIOSDKInitializer.initialize()
     MessagingPushFCM.initialize(
       withConfig: MessagingPushConfigBuilder()
         .autoFetchDeviceToken(true)

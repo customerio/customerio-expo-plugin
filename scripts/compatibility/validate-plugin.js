@@ -22,6 +22,20 @@ const CLEAN_FLAG = isFlagEnabled("--clean", { default: true });
 let PREBUILD_CMD = `cd ${APP_PATH} && CI=1 npx expo prebuild`;
 if (CLEAN_FLAG) PREBUILD_CMD += " --clean";
 
+// Read Android package name from app.json
+function getAndroidPackageFromAppJson() {
+  const appJsonPath = path.join(APP_PATH, "app.json");
+  if (fs.existsSync(appJsonPath)) {
+    try {
+      const appJson = JSON.parse(fs.readFileSync(appJsonPath, "utf8"));
+      return appJson.expo?.android?.package;
+    } catch (error) {
+      logMessage(`⚠️ Warning: Failed to read app.json - ${error.message}`, "warning");
+    }
+  }
+  return null;
+}
+
 // Returns iOS workspace name by checking /ios for .xcworkspace files or falling back to app.json name
 function getIosWorkspaceName(fallback = "App") {
   // Scan the /ios directory for .xcworkspace files
@@ -61,7 +75,16 @@ function execute() {
     runCommand(`${PREBUILD_CMD} --platform=android`);
 
     logMessage("🧪 Running Android tests...");
-    runCommand(`TEST_APP_PATH=${APP_PATH} EXPO_VERSION=${EXPO_VERSION} npm test -- ${TESTS_DIRECTORY_PATH}/android`);
+    const androidEnvVars = [
+      `TEST_APP_PATH=${APP_PATH}`,
+      `EXPO_VERSION=${EXPO_VERSION}`,
+    ];
+    const androidPackageName = getAndroidPackageFromAppJson();
+    if (androidPackageName) {
+      androidEnvVars.push(`ANDROID_PACKAGE_NAME=${androidPackageName}`);
+    }
+    const androidTestEnv = androidEnvVars.join(' ');
+    runCommand(`${androidTestEnv} npm test -- ${TESTS_DIRECTORY_PATH}/android`);
 
     logMessage("🤖 Building Android project...");
     try {

@@ -75,12 +75,37 @@ export type CustomerIOPluginOptionsAndroid = {
 };
 
 /**
+ * SDK configuration options for auto initialization
+ * @public
+ */
+export type NativeSDKConfig = {
+  cdpApiKey: string; // Required
+  region?: 'US' | 'EU'; // Default: 'US'. The workspace region set for your workspace on the Customer.io dashboard
+  autoTrackDeviceAttributes?: boolean; // Default: true
+  trackApplicationLifecycleEvents?: boolean; // Default: true
+  screenViewUse?: 'all' | 'inapp'; // Default: 'all'. 'all': sent to server + in-app messages, 'inapp': in-app messages only
+  logLevel?: 'none' | 'error' | 'info' | 'debug'; // Default: 'debug'. Controls SDK logging verbosity
+  siteId?: string; // Optional, if only siteId defined, migrationSiteId = siteId
+  migrationSiteId?: string; // Optional, if only migrationSiteId defined, siteId should be null
+};
+
+/**
  * Combined plugin options for both iOS and Android platforms
  * @public
  */
 export type CustomerIOPluginOptions = {
+  config?: NativeSDKConfig; // If defined, enables auto initialization of native SDK
   android: CustomerIOPluginOptionsAndroid;
   ios: CustomerIOPluginOptionsIOS;
+};
+
+/**
+ * Rich push configuration used to initialize Notification Service Extension (NSE) on the native side
+ * @public
+ */
+export type RichPushConfig = {
+  cdpApiKey: string;
+  region?: string;
 };
 
 /**
@@ -98,11 +123,8 @@ export type CustomerIOPluginPushNotificationOptions = {
   handleDeeplinkInKilledState?: boolean;
 
   /**
-   * These values will be used to initialize the Notification Service Extension (NSE) on the native side.
-   * They should match the values you use to initialize the SDK in your app
+   * Rich push config should match the values used to initialize SDK in the app.
+   * Optional if `config` is provided at the top level.
    */
-  env: {
-    cdpApiKey: string;
-    region: string;
-  };
+  env?: RichPushConfig;
 };

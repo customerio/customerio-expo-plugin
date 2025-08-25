@@ -3,31 +3,40 @@ import type { ExpoConfig } from '@expo/config-types';
 import type {
   CustomerIOPluginOptionsIOS,
   CustomerIOPluginPushNotificationOptions,
+  NativeSDKConfig,
 } from '../types/cio-types';
+import { mergeConfigWithEnvValues } from '../utils/config';
+import { isExpoVersion53OrHigher } from './utils';
 import { withAppDelegateModifications } from './withAppDelegateModifications';
+import { withCIOIosSwift } from './withCIOIosSwift';
+import { withGoogleServicesJsonFile } from './withGoogleServicesJsonFile';
 import { withCioNotificationsXcodeProject } from './withNotificationsXcodeProject';
 import { withCioXcodeProject } from './withXcodeProject';
-import { withGoogleServicesJsonFile } from './withGoogleServicesJsonFile';
-import { withCIOIosSwift } from './withCIOIosSwift';
-import { isExpoVersion53OrHigher } from './utils';
 
 export function withCIOIos(
   config: ExpoConfig,
+  sdkConfig: NativeSDKConfig | undefined,
   props: CustomerIOPluginOptionsIOS
 ) {
-  const cioProps = mergeDeprecatedPropertiesAndLogWarnings(props);
   const isSwiftProject = isExpoVersion53OrHigher(config);
+  const platformConfig = mergeDeprecatedPropertiesAndLogWarnings(props);
 
-  if (cioProps.pushNotification) {
+  if (platformConfig.pushNotification) {
     if (isSwiftProject) {
-      config = withCIOIosSwift(config, cioProps);
+      config = withCIOIosSwift(config, sdkConfig, platformConfig);
     } else {
-      config = withAppDelegateModifications(config, cioProps);
+      // Auto initialization is only supported in Swift projects (Expo SDK 53+)
+      // Legacy Objective-C projects only support push notifications
+      config = withAppDelegateModifications(config, platformConfig);
     }
 
-    config = withCioNotificationsXcodeProject(config, cioProps);
-    config = withCioXcodeProject(config, cioProps);
-    config = withGoogleServicesJsonFile(config, cioProps);
+    platformConfig.pushNotification.env = platformConfig.pushNotification.env
+      || mergeConfigWithEnvValues(platformConfig, sdkConfig);
+    config = withCioNotificationsXcodeProject(config, platformConfig);
+    config = withCioXcodeProject(config, platformConfig);
+    config = withGoogleServicesJsonFile(config, platformConfig);
+  } else if (sdkConfig && isSwiftProject) {
+    config = withCIOIosSwift(config, sdkConfig, platformConfig);
   }
 
   return config;
@@ -82,4 +91,3 @@ const mergeDeprecatedPropertiesAndLogWarnings = (
 
   return props;
 };
-

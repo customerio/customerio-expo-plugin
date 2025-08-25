@@ -1,9 +1,9 @@
 import type { ConfigPlugin } from '@expo/config-plugins';
 import { withXcodeProject } from '@expo/config-plugins';
 
-import { isFcmPushProvider } from './utils';
 import { injectCIOPodfileCode } from '../helpers/utils/injectCIOPodfileCode';
 import type { CustomerIOPluginOptionsIOS } from '../types/cio-types';
+import { isFcmPushProvider } from './utils';
 
 export const withCioXcodeProject: ConfigPlugin<CustomerIOPluginOptionsIOS> = (
   config,

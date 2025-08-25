@@ -11,8 +11,10 @@ const APP_PATH = getArgValue("--app-path", { required: true });
 
 const APP_NAME = path.basename(APP_PATH);
 const DEFAULT_APPLICATION_ID = `com.test.${APP_NAME.toLowerCase().replace(/[-_]/g, "")}`;
+// Use consistent package for testing to ensure snapshot tests pass
+const TEST_APP_PACKAGE_NAME = 'io.customer.testbed.expo';
 
-const ANDROID_PACKAGE_NAME = getArgValue("--android-package", { default: DEFAULT_APPLICATION_ID });
+const ANDROID_PACKAGE_NAME = getArgValue("--android-package", { default: TEST_APP_PACKAGE_NAME });
 const IOS_BUNDLE_IDENTIFIER = getArgValue("--ios-bundle-id", { default: DEFAULT_APPLICATION_ID });
 const GOOGLE_SERVICES_SOURCE_PATH = getArgValue("--google-services");
 const APP_JSON_FILE_PATH = path.join(APP_PATH, "app.json");

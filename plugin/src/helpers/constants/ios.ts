@@ -1,23 +1,15 @@
-const finder = require('find-package-json');
 const path = require('path');
 const resolveFrom = require('resolve-from');
-
-const f = finder(__dirname);
-let pluginPackageRoot = f.next().filename;
-// This is the path to the root of the customerio-expo-plugin package
-pluginPackageRoot = path.dirname(pluginPackageRoot);
-
-export const LOCAL_PATH_TO_CIO_NSE_FILES = path.join(
-  pluginPackageRoot,
-  'plugin/src/helpers/native-files/ios'
-);
 
 export function getRelativePathToRNSDK(iosPath: string) {
   // Root path of the Expo project
   const rootAppPath = path.dirname(iosPath);
 
   // Path of the cio RN package.json file. Example: test-app/node_modules/customerio-reactnative/package.json
-  const pluginPackageJsonPath = resolveFrom.silent(rootAppPath, `customerio-reactnative/package.json`);
+  const pluginPackageJsonPath = resolveFrom.silent(
+    rootAppPath,
+    `customerio-reactnative/package.json`
+  );
 
   // Example: ../node_modules/customerio-reactnative
   return path.relative(iosPath, path.dirname(pluginPackageJsonPath));
@@ -171,3 +163,9 @@ export const CIO_REGISTER_PUSHNOTIFICATION_SNIPPET_v2 = `
     }`;
 
 export const CIO_REGISTER_PUSH_NOTIFICATION_PLACEHOLDER = /\{\{REGISTER_SNIPPET\}\}/;
+// Regex to match MessagingPush initialization in AppDelegate (different from NSE initialization)
+export const CIO_MESSAGING_PUSH_APP_DELEGATE_INIT_REGEX = /(MessagingPush(?:APN|FCM)\.initialize)/;
+export const CIO_NATIVE_SDK_INITIALIZE_CALL = 'CustomerIOSDKInitializer.initialize()';
+export const CIO_NATIVE_SDK_INITIALIZE_SNIPPET = `// Auto Initialize Native Customer.io SDK
+    ${CIO_NATIVE_SDK_INITIALIZE_CALL}
+    `;

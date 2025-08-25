@@ -3,7 +3,10 @@ import { getRelativePathToRNSDK } from '../constants/ios';
 import { injectCodeByRegex } from './codeInjection';
 import { FileManagement } from './fileManagement';
 
-export async function injectCIOPodfileCode(iosPath: string, isFcmPushProvider: boolean) {
+export async function injectCIOPodfileCode(
+  iosPath: string,
+  isFcmPushProvider: boolean
+) {
   const blockStart = '# --- CustomerIO Host App START ---';
   const blockEnd = '# --- CustomerIO Host App END ---';
 
@@ -19,9 +22,8 @@ export async function injectCIOPodfileCode(iosPath: string, isFcmPushProvider: b
 
     const snippetToInjectInPodfile = `
 ${blockStart}
-  pod 'customerio-reactnative/${isFcmPushProvider ? "fcm" : "apn"}', :path => '${getRelativePathToRNSDK(
-    iosPath
-  )}'
+  pod 'customerio-reactnative/${isFcmPushProvider ? 'fcm' : 'apn'
+      }', :path => '${getRelativePathToRNSDK(iosPath)}'
 ${blockEnd}
 `.trim();
 
@@ -56,9 +58,8 @@ export async function injectCIONotificationPodfileCode(
 ${blockStart}
 target 'NotificationService' do
   ${useFrameworks === 'static' ? 'use_frameworks! :linkage => :static' : ''}
-  pod 'customerio-reactnative-richpush/${isFcmPushProvider ? "fcm" : "apn"}', :path => '${getRelativePathToRNSDK(
-    iosPath
-  )}'
+  pod 'customerio-reactnative-richpush/${isFcmPushProvider ? 'fcm' : 'apn'
+      }', :path => '${getRelativePathToRNSDK(iosPath)}'
 end
 ${blockEnd}
 `.trim();

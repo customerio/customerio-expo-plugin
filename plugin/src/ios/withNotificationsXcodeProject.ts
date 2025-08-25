@@ -5,11 +5,11 @@ import {
   CIO_NOTIFICATION_TARGET_NAME,
   CIO_REGISTER_PUSHNOTIFICATION_SNIPPET,
   DEFAULT_BUNDLE_VERSION,
-  LOCAL_PATH_TO_CIO_NSE_FILES,
 } from '../helpers/constants/ios';
 import { replaceCodeByRegex } from '../helpers/utils/codeInjection';
 import { injectCIONotificationPodfileCode } from '../helpers/utils/injectCIOPodfileCode';
-import type { CustomerIOPluginOptionsIOS } from '../types/cio-types';
+import type { CustomerIOPluginOptionsIOS, RichPushConfig } from '../types/cio-types';
+import { getIosNativeFilesPath } from '../utils/plugin';
 import { FileManagement } from './../helpers/utils/fileManagement';
 import { isExpoVersion53OrHigher, isFcmPushProvider } from './utils';
 
@@ -21,11 +21,11 @@ const TARGETED_DEVICE_FAMILY = `"1,2"`;
 const addNotificationServiceExtension = async (
   options: CustomerIOPluginOptionsIOS,
   xcodeProject: XcodeProject,
-  isExpoVersion53OrHigher: boolean
+  isExpo53OrHigher: boolean,
 ) => {
   try {
     // PushService file is only needed for pre-Expo 53 code generation
-    if (options.pushNotification && !isExpoVersion53OrHigher) {
+    if (options.pushNotification && !isExpo53OrHigher) {
       await addPushNotificationFile(options, xcodeProject);
     }
 
@@ -33,7 +33,7 @@ const addNotificationServiceExtension = async (
       await addRichPushXcodeProj(options, xcodeProject);
     }
     return xcodeProject;
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error(error);
     return null;
   }
@@ -88,7 +88,7 @@ export const withCioNotificationsXcodeProject: ConfigPlugin<
     const modifiedProjectFile = await addNotificationServiceExtension(
       options,
       config.modResults,
-      isExpoVersion53OrHigher(configOuter)
+      isExpoVersion53OrHigher(configOuter),
     );
 
     if (modifiedProjectFile) {
@@ -101,7 +101,7 @@ export const withCioNotificationsXcodeProject: ConfigPlugin<
 
 const addRichPushXcodeProj = async (
   options: CustomerIOPluginOptionsIOS,
-  xcodeProject: any
+  xcodeProject: XcodeProject,
 ) => {
   const {
     appleTeamId,
@@ -145,8 +145,7 @@ const addRichPushXcodeProj = async (
   platformSpecificFiles.forEach((filename) => {
     const targetFile = getTargetFile(filename);
     FileManagement.copyFile(
-      `${LOCAL_PATH_TO_CIO_NSE_FILES}/${
-        isFcmProvider ? 'fcm' : 'apn'
+      `${getIosNativeFilesPath()}/${isFcmProvider ? 'fcm' : 'apn'
       }/${filename}`,
       targetFile
     );
@@ -156,7 +155,7 @@ const addRichPushXcodeProj = async (
   commonFiles.forEach((filename) => {
     const targetFile = getTargetFile(filename);
     FileManagement.copyFile(
-      `${LOCAL_PATH_TO_CIO_NSE_FILES}/common/${filename}`,
+      `${getIosNativeFilesPath()}/common/${filename}`,
       targetFile
     );
   });
@@ -168,7 +167,7 @@ const addRichPushXcodeProj = async (
     bundleShortVersion,
     infoPlistTargetFile,
   });
-  updateNseEnv(options, getTargetFile(ENV_FILENAME));
+  updateNseEnv(getTargetFile(ENV_FILENAME), options.pushNotification?.env);
 
   // Create new PBXGroup for the extension
   const extGroup = xcodeProject.addPbxGroup(
@@ -179,7 +178,7 @@ const addRichPushXcodeProj = async (
 
   // Add the new PBXGroup to the top level group. This makes the
   // files / folder appear in the file explorer in Xcode.
-  const groups = xcodeProject.hash.project.objects['PBXGroup'];
+  const groups = xcodeProject.hash.project.objects.PBXGroup;
   Object.keys(groups).forEach((key) => {
     if (groups[key].name === undefined && groups[key].path === undefined) {
       xcodeProject.addToPbxGroup(extGroup.uuid, key);
@@ -191,9 +190,8 @@ const addRichPushXcodeProj = async (
   // An upstream fix should be made to the code referenced in this link:
   //   - https://github.com/apache/cordova-node-xcode/blob/8b98cabc5978359db88dc9ff2d4c015cba40f150/lib/pbxProject.js#L860
   const projObjects = xcodeProject.hash.project.objects;
-  projObjects['PBXTargetDependency'] = projObjects['PBXTargetDependency'] || {};
-  projObjects['PBXContainerItemProxy'] =
-    projObjects['PBXTargetDependency'] || {};
+  projObjects.PBXTargetDependency = projObjects.PBXTargetDependency || {};
+  projObjects.PBXContainerItemProxy = projObjects.PBXTargetDependency || {};
 
   if (xcodeProject.pbxTargetByName(CIO_NOTIFICATION_TARGET_NAME)) {
     console.warn(
@@ -238,7 +236,7 @@ const addRichPushXcodeProj = async (
     if (
       typeof configurations[key].buildSettings !== 'undefined' &&
       configurations[key].buildSettings.PRODUCT_NAME ===
-        `"${CIO_NOTIFICATION_TARGET_NAME}"`
+      `"${CIO_NOTIFICATION_TARGET_NAME}"`
     ) {
       const buildSettingsObj = configurations[key].buildSettings;
       buildSettingsObj.DEVELOPMENT_TEAM = appleTeamId;
@@ -285,21 +283,21 @@ const updateNseInfoPlist = (payload: {
 };
 
 const updateNseEnv = (
-  options: CustomerIOPluginOptionsIOS,
-  envFileName: string
+  envFileName: string,
+  richPushConfig?: RichPushConfig
 ) => {
   const CDP_API_KEY_RE = /\{\{CDP_API_KEY\}\}/;
   const REGION_RE = /\{\{REGION\}\}/;
 
   let envFileContent = FileManagement.readFile(envFileName);
-  const { cdpApiKey, region } = options.pushNotification?.env || {
-    cdpApiKey: undefined,
-    region: undefined,
-  };
+
+  // Use merged config values (config takes precedence over env)
+  const cdpApiKey = richPushConfig?.cdpApiKey;
+  const region = richPushConfig?.region;
 
   if (!cdpApiKey) {
     throw new Error(
-      'Adding NotificationServiceExtension failed: ios.pushNotification.env.cdpApiKey is missing from app.config.js or app.json.'
+      'NotificationServiceExtension failed: cdpApiKey missing. Provide in config.cdpApiKey or ios.pushNotification.env.cdpApiKey.'
     );
   }
   envFileContent = replaceCodeByRegex(
@@ -313,7 +311,8 @@ const updateNseEnv = (
       us: 'Region.US',
       eu: 'Region.EU',
     };
-    const mappedRegion = (regionMap as any)[region.toLowerCase()] || '';
+    const mappedRegion =
+      regionMap[region.toLowerCase() as keyof typeof regionMap] || '';
     if (!mappedRegion) {
       console.warn(
         `${region} is an invalid region. Please use the values from the docs: https://customer.io/docs/sdk/expo/getting-started/#configure-the-plugin`
@@ -332,7 +331,7 @@ const updateNseEnv = (
 
 async function addPushNotificationFile(
   options: CustomerIOPluginOptionsIOS,
-  xcodeProject: any
+  xcodeProject: XcodeProject
 ) {
   // Maybe copy a different file with FCM config based on config
   const { iosPath, appName } = options;
@@ -352,7 +351,7 @@ async function addPushNotificationFile(
     });
 
     FileManagement.copyFile(
-      `${LOCAL_PATH_TO_CIO_NSE_FILES}/${sourceFile}`,
+      `${getIosNativeFilesPath()}/${sourceFile}`,
       targetFile
     );
   } else {
