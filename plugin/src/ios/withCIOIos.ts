@@ -35,6 +35,8 @@ export function withCIOIos(
     config = withCioNotificationsXcodeProject(config, platformConfig);
     config = withCioXcodeProject(config, platformConfig);
     config = withGoogleServicesJsonFile(config, platformConfig);
+  } else if (sdkConfig && isSwiftProject) {
+    config = withCIOIosSwift(config, sdkConfig, platformConfig);
   }
 
   return config;

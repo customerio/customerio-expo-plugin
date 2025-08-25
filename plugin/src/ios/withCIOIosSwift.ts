@@ -9,6 +9,7 @@ import { PLATFORM } from '../helpers/constants/common';
 import {
   CIO_CONFIGUREDEEPLINK_KILLEDSTATE_SWIFT_SNIPPET,
   CIO_MESSAGING_PUSH_APP_DELEGATE_INIT_REGEX,
+  CIO_NATIVE_SDK_INITIALIZE_CALL,
   CIO_NATIVE_SDK_INITIALIZE_SNIPPET,
   CIO_REGISTER_PUSHNOTIFICATION_SNIPPET_v2,
   CIO_REGISTER_PUSH_NOTIFICATION_PLACEHOLDER,
@@ -18,7 +19,7 @@ import { FileManagement } from '../helpers/utils/fileManagement';
 import { patchNativeSDKInitializer } from '../helpers/utils/patchPluginNativeCode';
 import type { CustomerIOPluginOptionsIOS, NativeSDKConfig } from '../types/cio-types';
 import { getIosNativeFilesPath } from '../utils/plugin';
-import { copyFileToXcode } from '../utils/xcode';
+import { copyFileToXcode, getOrCreateCustomerIOGroup } from '../utils/xcode';
 import { isFcmPushProvider } from './utils';
 
 // Constants
@@ -31,10 +32,62 @@ const CIO_SDK_APP_DELEGATE_HANDLER_FILENAME = `${CIO_SDK_APP_DELEGATE_HANDLER_CL
 const copyAndConfigureAppDelegateHandler = (
   config: ExportedConfigWithProps<XcodeProject>,
   sdkConfig: NativeSDKConfig | undefined,
-  props: CustomerIOPluginOptionsIOS
+  props: CustomerIOPluginOptionsIOS,
 ): ExportedConfigWithProps<XcodeProject> => {
+  // Destination path in the iOS project
+  const projectName = config.modRequest.projectName || '';
+  if (!projectName) {
+    console.warn(
+      'Project name is undefined, cannot copy CustomerIO files'
+    );
+    return config;
+  }
+
+  // Add files to the Xcode project
+  const xcodeProject = config.modResults;
   const projectRoot = config.modRequest.projectRoot;
   const iosProjectRoot = path.join(projectRoot, 'ios');
+
+  const group = getOrCreateCustomerIOGroup(xcodeProject, projectName);
+  if (props.pushNotification) {
+    // Copy CioSdkAppDelegateHandler.swift for full push notification + auto-init support
+    copyAndConfigurePushAppDelegateHandler({
+      xcodeProject,
+      group,
+      iosProjectRoot,
+      projectName,
+      sdkConfig,
+      props,
+    });
+  } else if (sdkConfig) {
+    // Copy only CustomerIOSDKInitializer.swift for auto-init without push notifications
+    copyAndConfigureNativeSDKInitializer({
+      xcodeProject,
+      group,
+      iosProjectRoot,
+      projectName,
+      sdkConfig,
+    });
+  }
+
+  return config;
+};
+
+const copyAndConfigurePushAppDelegateHandler = ({
+  xcodeProject,
+  group,
+  iosProjectRoot,
+  projectName,
+  sdkConfig,
+  props,
+}: {
+  xcodeProject: XcodeProject;
+  group: XcodeProject['pbxCreateGroup'];
+  iosProjectRoot: string;
+  projectName: string;
+  sdkConfig: NativeSDKConfig | undefined;
+  props: CustomerIOPluginOptionsIOS;
+}) => {
   const useFcm = isFcmPushProvider(props);
 
   // Source path for the handler file
@@ -44,15 +97,6 @@ const copyAndConfigureAppDelegateHandler = (
     CIO_SDK_APP_DELEGATE_HANDLER_FILENAME
   );
 
-  // Destination path in the iOS project
-  const projectName = config.modRequest.projectName || '';
-  if (!projectName) {
-    console.warn(
-      'Project name is undefined, cannot copy CioSdkAppDelegateHandler.swift'
-    );
-    return config;
-  }
-
   const handlerDestPath = path.join(
     iosProjectRoot,
     projectName,
@@ -60,20 +104,6 @@ const copyAndConfigureAppDelegateHandler = (
   );
 
   FileManagement.copyFile(handlerSourcePath, handlerDestPath);
-
-  // Add the file to the Xcode project
-  const xcodeProject = config.modResults;
-
-  // Create a group for CustomerIO files if it doesn't exist
-  let group;
-  const existingGroup = xcodeProject.pbxGroupByName('CustomerIO');
-  if (existingGroup) {
-    group = existingGroup;
-  } else {
-    group = xcodeProject.pbxCreateGroup('CustomerIO');
-    const classesKey = xcodeProject.findPBXGroupKey({ name: projectName });
-    xcodeProject.addToPbxGroup(group, classesKey);
-  }
 
   // Add the file to the Xcode project
   xcodeProject.addSourceFile(
@@ -124,6 +154,7 @@ const copyAndConfigureAppDelegateHandler = (
 
   // Add auto initialization if sdkConfig is provided
   if (sdkConfig) {
+    // Also copy CustomerIOSDKInitializer.swift for auto-initialization
     copyAndConfigureNativeSDKInitializer({ xcodeProject, group, iosProjectRoot, projectName, sdkConfig });
 
     // Inject auto initialization call before MessagingPush initialization
@@ -131,8 +162,6 @@ const copyAndConfigureAppDelegateHandler = (
   }
 
   FileManagement.writeFile(handlerDestPath, handlerFileContent);
-
-  return config;
 };
 
 const copyAndConfigureNativeSDKInitializer = ({
@@ -167,21 +196,29 @@ export const withCIOIosSwift = (
   sdkConfig: NativeSDKConfig | undefined,
   props: CustomerIOPluginOptionsIOS,
 ) => {
-  // First, copy the CioSdkAppDelegateHandler.swift file to the iOS project and add it to Xcode project
+  // First, copy required swift files to iOS folder and add it to Xcode project
   configOuter = withXcodeProject(configOuter, async (config) => {
     return copyAndConfigureAppDelegateHandler(config, sdkConfig, props);
   });
 
-  // Then modify the AppDelegate
-  return withAppDelegate(configOuter, async (config) => {
-    return modifyAppDelegate(config, props);
-  });
+  // Modify the AppDelegate based on configuration
+  if (props.pushNotification) {
+    // With push notifications: delegate to CioSdkAppDelegateHandler for both push and auto-init
+    return withAppDelegate(configOuter, async (config) => {
+      return modifyAppDelegateWithPushAppDelegateHandler(config, props);
+    });
+  } else {
+    // Without push notifications: directly inject auto initialization into AppDelegate
+    return withAppDelegate(configOuter, async (config) => {
+      return modifyAppDelegateWithNativeSDKInitializer(config);
+    });
+  }
 };
 
 /**
  * Modify the AppDelegate to integrate with Customer.io SDK
  */
-const modifyAppDelegate = (
+const modifyAppDelegateWithPushAppDelegateHandler = (
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   config: any,
   props: CustomerIOPluginOptionsIOS
@@ -201,7 +238,10 @@ const modifyAppDelegate = (
   let modifiedContent = addHandlerPropertyDeclaration(appDelegateContent);
 
   // Modify didFinishLaunchingWithOptions to initialize and call the handler
-  modifiedContent = modifyDidFinishLaunchingWithOptions(modifiedContent);
+  modifiedContent = modifyDidFinishLaunchingWithOptions(
+    modifiedContent,
+    `  cioSdkHandler.application(application, didFinishLaunchingWithOptions: launchOptions)\n\n    `
+  );
 
   // Add didRegisterForRemoteNotificationsWithDeviceToken implementation
   modifiedContent =
@@ -215,6 +255,34 @@ const modifyAppDelegate = (
   if (props.pushNotification?.handleDeeplinkInKilledState === true) {
     modifiedContent = addHandleDeeplinkInKilledState(modifiedContent);
   }
+
+  config.modResults.contents = modifiedContent;
+  return config;
+};
+
+/**
+ * Modify the AppDelegate to integrate with Customer.io SDK
+ */
+const modifyAppDelegateWithNativeSDKInitializer = (
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  config: any,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+): any => {
+  const appDelegateContent = config.modResults.contents;
+
+  // Check if modifications have already been applied
+  if (appDelegateContent.includes(CIO_NATIVE_SDK_INITIALIZE_CALL)) {
+    console.log(
+      'CustomerIO Swift AppDelegate changes already exist. Skipping...'
+    );
+    return config;
+  }
+
+  // Modify didFinishLaunchingWithOptions to initialize and call the handler
+  const modifiedContent = modifyDidFinishLaunchingWithOptions(
+    appDelegateContent,
+    `${CIO_NATIVE_SDK_INITIALIZE_SNIPPET}\n\n    `,
+  );
 
   config.modResults.contents = modifiedContent;
   return config;
@@ -257,10 +325,10 @@ const addHandlerPropertyDeclaration = (content: string): string => {
 };
 
 /**
- * Modify didFinishLaunchingWithOptions to call the handler
- * This adds the handler call before the return statement in didFinishLaunchingWithOptions
+ * Modify didFinishLaunchingWithOptions to inject Customer.io code
+ * Injects the provided code (either handler call or auto initialization) before the return statement
  */
-const modifyDidFinishLaunchingWithOptions = (content: string): string => {
+const modifyDidFinishLaunchingWithOptions = (content: string, codeToInject: string): string => {
   // Find the return statement in didFinishLaunchingWithOptions
   // Always look for launchOptions since modifiedLaunchOptions is only set later
   const returnStatementRegex =
@@ -275,13 +343,12 @@ const modifyDidFinishLaunchingWithOptions = (content: string): string => {
     return content;
   }
 
-  // Add handler call before the return statement
+  // Inject Customer.io code before the return statement
   const insertPosition = returnStatementMatch.index ?? 0;
-  const handlerCallCode = `  cioSdkHandler.application(application, didFinishLaunchingWithOptions: launchOptions)\n\n    `;
 
   return (
     content.substring(0, insertPosition) +
-    handlerCallCode +
+    codeToInject +
     content.substring(insertPosition)
   );
 };
