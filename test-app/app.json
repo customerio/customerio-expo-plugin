@@ -62,7 +62,8 @@
       "buildTimestamp": "@BUILD_TIMESTAMP@",
       "branchName": "@BRANCH_NAME@",
       "commitHash": "@COMMIT_HASH@",
-      "commitsAheadCount": "@COMMITS_AHEAD_COUNT@"
+      "commitsAheadCount": "@COMMITS_AHEAD_COUNT@",
+      "wisdom": "cache invalidation is hard"
     },
     "plugins": [
       [
