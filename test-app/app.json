@@ -72,10 +72,7 @@
             "cdpApiKey": "@CDP_API_KEY@",
             "siteId": "@SITE_ID@",
             "region": "us",
-            "logLevel": "debug",
-            "autoTrackDeviceAttributes": true,
-            "trackApplicationLifecycleEvents": true,
-            "screenViewUse": "all"
+            "logLevel": "debug"
           },
           "android": {
             "googleServicesFile": "./files/google-services.json",
