@@ -87,6 +87,20 @@ export const withAndroidManifestUpdates: ConfigPlugin<
         },
         'intent-filter': [intentFilter],
       });
+    } else if (options.setHighPriorityPushHandler === true) {
+      // Service exists, need to ensure it becomes high priority (remove priority attribute)
+      const existingService = application[0].service[existingServiceIndex];
+
+      if (existingService['intent-filter'] && existingService['intent-filter'].length > 0) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const intentFilter = existingService['intent-filter'][0] as any;
+        if (intentFilter.$ && intentFilter.$['android:priority']) {
+          delete intentFilter.$['android:priority'];
+          console.log(
+            'Successfully updated existing CustomerIO push handler to high priority in AndroidManifest.xml'
+          );
+        }
+      }
     } else if (options.setHighPriorityPushHandler === false) {
       // Service exists, but we need to update its priority when flag is false
       const existingService = application[0].service[existingServiceIndex];
@@ -94,12 +108,14 @@ export const withAndroidManifestUpdates: ConfigPlugin<
       // Calculate target priority excluding the existing CustomerIO service
       const targetPriority = calculateLowPriority(application[0].service, existingServiceIndex);
 
-      // Update existing service intent-filter with priority
+      // Update existing service intent-filter with priority (preserve other attributes)
       if (existingService['intent-filter'] && existingService['intent-filter'].length > 0) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (existingService['intent-filter'][0] as any).$ = {
-          'android:priority': targetPriority.toString(),
-        };
+        const intentFilter = existingService['intent-filter'][0] as any;
+        if (!intentFilter.$) {
+          intentFilter.$ = {};
+        }
+        intentFilter.$['android:priority'] = targetPriority.toString();
         console.log(
           `Successfully updated existing CustomerIO push handler to low priority (${targetPriority}) in AndroidManifest.xml`
         );

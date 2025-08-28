@@ -168,6 +168,39 @@ describe('Android Manifest Updates', () => {
       expect(services).toHaveLength(1);
     });
 
+    it('should remove priority attribute from existing service when setHighPriorityPushHandler is true', () => {
+      const existingServices = [
+        {
+          $: {
+            'android:name': customerIOServiceName,
+            'android:exported': 'false'
+          },
+          'intent-filter': [{
+            $: { 'android:priority': '-5', 'android:autoVerify': 'true' },
+            action: [{ $: { 'android:name': messagingAction } }]
+          }]
+        }
+      ];
+
+      const mockConfig = createMockConfig(existingServices);
+
+      mockWithAndroidManifest.mockImplementation((config, modifier) => {
+        modifier(mockConfig as any);
+        return config;
+      });
+
+      withAndroidManifestUpdates({} as any, createMockOptions(true));
+
+      const services = mockConfig.modResults.manifest.application[0].service;
+      expect(services).toHaveLength(1);
+
+      const cioService = services[0];
+      const intentFilter = cioService['intent-filter'][0];
+      // Priority should be removed but other attributes preserved
+      expect(intentFilter.$['android:priority']).toBeUndefined();
+      expect(intentFilter.$['android:autoVerify']).toBe('true');
+    });
+
     it('should update existing service priority when setHighPriorityPushHandler is false', () => {
       const existingServices = [
         {
@@ -198,6 +231,39 @@ describe('Android Manifest Updates', () => {
       const intentFilter = cioService['intent-filter'][0];
       // Should have updated the existing service with low priority
       expect(intentFilter.$['android:priority']).toBe(DEFAULT_LOW_PRIORITY.toString());
+    });
+
+    it('should preserve other intent-filter attributes when updating priority', () => {
+      const existingServices = [
+        {
+          $: {
+            'android:name': customerIOServiceName,
+            'android:exported': 'false'
+          },
+          'intent-filter': [{
+            $: { 'android:autoVerify': 'true', 'data-generated': 'false' },
+            action: [{ $: { 'android:name': messagingAction } }]
+          }]
+        }
+      ];
+
+      const mockConfig = createMockConfig(existingServices);
+
+      mockWithAndroidManifest.mockImplementation((config, modifier) => {
+        modifier(mockConfig as any);
+        return config;
+      });
+
+      withAndroidManifestUpdates({} as any, createMockOptions(false));
+
+      const services = mockConfig.modResults.manifest.application[0].service;
+      const cioService = services[0];
+      const intentFilter = cioService['intent-filter'][0];
+
+      // Should add priority while preserving existing attributes
+      expect(intentFilter.$['android:priority']).toBe(DEFAULT_LOW_PRIORITY.toString());
+      expect(intentFilter.$['android:autoVerify']).toBe('true');
+      expect(intentFilter.$['data-generated']).toBe('false');
     });
 
     it('should update existing service priority considering other services', () => {
