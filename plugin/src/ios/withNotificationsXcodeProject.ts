@@ -10,6 +10,7 @@ import { replaceCodeByRegex } from '../helpers/utils/codeInjection';
 import { injectCIONotificationPodfileCode } from '../helpers/utils/injectCIOPodfileCode';
 import type { CustomerIOPluginOptionsIOS, RichPushConfig } from '../types/cio-types';
 import { getIosNativeFilesPath } from '../utils/plugin';
+import { logWarning, validateRequired, validateString } from '../utils/validation';
 import { FileManagement } from './../helpers/utils/fileManagement';
 import { isExpoVersion53OrHigher, isFcmPushProvider } from './utils';
 
@@ -295,35 +296,37 @@ const updateNseEnv = (
   const cdpApiKey = richPushConfig?.cdpApiKey;
   const region = richPushConfig?.region;
 
-  if (!cdpApiKey) {
-    throw new Error(
-      'NotificationServiceExtension failed: cdpApiKey missing. Provide in config.cdpApiKey or ios.pushNotification.env.cdpApiKey.'
+  const hasValidCdpApiKey = validateRequired(cdpApiKey, 'cdpApiKey', 'NotificationServiceExtension') &&
+    validateString(cdpApiKey, 'cdpApiKey', 'NotificationServiceExtension');
+
+  if (!hasValidCdpApiKey) {
+    logWarning(
+      'NotificationServiceExtension failed: cdpApiKey missing or invalid. Provide in config.cdpApiKey or ios.pushNotification.env.cdpApiKey.'
     );
   }
+
   envFileContent = replaceCodeByRegex(
     envFileContent,
     CDP_API_KEY_RE,
-    cdpApiKey
+    cdpApiKey || ''
   );
 
-  if (region) {
-    const regionMap = {
-      us: 'Region.US',
-      eu: 'Region.EU',
-    };
-    const mappedRegion =
-      regionMap[region.toLowerCase() as keyof typeof regionMap] || '';
-    if (!mappedRegion) {
-      console.warn(
-        `${region} is an invalid region. Please use the values from the docs: https://customer.io/docs/sdk/expo/getting-started/#configure-the-plugin`
-      );
-    } else {
-      envFileContent = replaceCodeByRegex(
-        envFileContent,
-        REGION_RE,
-        mappedRegion
-      );
-    }
+  // Always replace region - use provided value or fallback to 'us'
+  const regionMap = {
+    us: 'Region.US',
+    eu: 'Region.EU',
+  };
+  const regionToUse = region || 'us';
+  const mappedRegion = regionMap[regionToUse.toLowerCase() as keyof typeof regionMap];
+
+  if (!mappedRegion) {
+    logWarning(
+      `${regionToUse} is an invalid region. Please use the values from the docs: https://customer.io/docs/sdk/expo/getting-started/#configure-the-plugin`
+    );
+    // Fallback to US if invalid region provided
+    envFileContent = replaceCodeByRegex(envFileContent, REGION_RE, regionMap.us);
+  } else {
+    envFileContent = replaceCodeByRegex(envFileContent, REGION_RE, mappedRegion);
   }
 
   FileManagement.writeFile(envFileName, envFileContent);
@@ -381,14 +384,17 @@ const updatePushFile = (
     cdpApiKey: undefined,
     region: undefined,
   };
-  if (!cdpApiKey) {
-    throw new Error(
-      'Adding NotificationServiceExtension failed: ios.pushNotification.env.cdpApiKey is missing from app.config.js or app.json.'
+  const hasValidCdpApiKey = validateRequired(cdpApiKey, 'cdpApiKey', 'NotificationServiceExtension') &&
+    validateString(cdpApiKey, 'cdpApiKey', 'NotificationServiceExtension');
+
+  if (!hasValidCdpApiKey) {
+    logWarning(
+      'Adding NotificationServiceExtension failed: ios.pushNotification.env.cdpApiKey is missing or invalid from app.config.js or app.json.'
     );
   }
 
   let snippet = '';
-  // unless this property is explicity set to true, push notification
+  // unless this property is explicitly set to true, push notification
   // registration will be added to the AppDelegate
   if (disableNotificationRegistration !== true) {
     snippet = CIO_REGISTER_PUSHNOTIFICATION_SNIPPET;
@@ -398,7 +404,7 @@ const updatePushFile = (
   envFileContent = replaceCodeByRegex(
     envFileContent,
     /\{\{CDP_API_KEY\}\}/,
-    cdpApiKey
+    cdpApiKey || ''
   );
 
   if (region) {

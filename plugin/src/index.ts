@@ -4,7 +4,7 @@ import { withCIOAndroid } from './android/withCIOAndroid';
 import { isExpoVersion53OrHigher } from './ios/utils';
 import { withCIOIos } from './ios/withCIOIos';
 import type { CustomerIOPluginOptions } from './types/cio-types';
-import { validateNativeSDKConfig } from './utils/validation';
+import { isEASBuild, validateNativeSDKConfig } from './utils/validation';
 
 // Entry point for config plugin
 function withCustomerIOPlugin(
@@ -20,8 +20,8 @@ function withCustomerIOPlugin(
     );
   }
 
-  // Validate SDK config if provided
-  if (props.config) {
+  // Validate SDK config if provided (skip validation for EAS builds)
+  if (props.config && !isEASBuild()) {
     validateNativeSDKConfig(props.config);
   }
 
