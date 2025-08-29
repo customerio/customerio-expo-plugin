@@ -7,30 +7,6 @@ import type { CustomerIOPluginOptionsAndroid } from '../types/cio-types';
 // Default low priority for Firebase messaging service when setHighPriorityPushHandler is false
 export const DEFAULT_LOW_PRIORITY = -10;
 
-// Helper function to calculate target priority for low priority services
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function calculateLowPriority(services: any[], excludeIndex?: number): number {
-  const relevantServices = excludeIndex !== undefined
-    ? services.filter((_, index) => index !== excludeIndex)
-    : services;
-
-  const existingPriorities = relevantServices
-    .flatMap(service => service['intent-filter'] || [])
-    .map(filter => (filter.$ as Record<string, string>)?.['android:priority'])
-    .filter(priority => priority !== undefined)
-    .map(priority => parseInt(priority, 10))
-    .filter(priority => !isNaN(priority));
-
-  let targetPriority = DEFAULT_LOW_PRIORITY;
-  if (existingPriorities.length > 0) {
-    const minExistingPriority = Math.min(...existingPriorities);
-    if (minExistingPriority <= DEFAULT_LOW_PRIORITY) {
-      targetPriority = minExistingPriority - 1;
-    }
-  }
-
-  return targetPriority;
-}
 
 export const withAndroidManifestUpdates: ConfigPlugin<
   CustomerIOPluginOptionsAndroid
@@ -69,14 +45,12 @@ export const withAndroidManifestUpdates: ConfigPlugin<
           'Successfully set CustomerIO push handler as high priority in AndroidManifest.xml'
         );
       } else if (options.setHighPriorityPushHandler === false) {
-        // Low priority - calculate target priority based on existing services
-        const targetPriority = calculateLowPriority(application[0].service);
-
+        // Low priority - set fixed priority
         intentFilter.$ = {
-          'android:priority': targetPriority.toString(),
+          'android:priority': DEFAULT_LOW_PRIORITY.toString(),
         };
         console.log(
-          `Successfully set CustomerIO push handler as low priority (${targetPriority}) in AndroidManifest.xml`
+          `Successfully set CustomerIO push handler as low priority (${DEFAULT_LOW_PRIORITY}) in AndroidManifest.xml`
         );
       }
 
@@ -102,22 +76,19 @@ export const withAndroidManifestUpdates: ConfigPlugin<
         }
       }
     } else if (options.setHighPriorityPushHandler === false) {
-      // Service exists, but we need to update its priority when flag is false
+      // Service exists, update to low priority
       const existingService = application[0].service[existingServiceIndex];
 
-      // Calculate target priority excluding the existing CustomerIO service
-      const targetPriority = calculateLowPriority(application[0].service, existingServiceIndex);
-
-      // Update existing service intent-filter with priority (preserve other attributes)
+      // Update existing service intent-filter with fixed priority
       if (existingService['intent-filter'] && existingService['intent-filter'].length > 0) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const intentFilter = existingService['intent-filter'][0] as any;
         if (!intentFilter.$) {
           intentFilter.$ = {};
         }
-        intentFilter.$['android:priority'] = targetPriority.toString();
+        intentFilter.$['android:priority'] = DEFAULT_LOW_PRIORITY.toString();
         console.log(
-          `Successfully updated existing CustomerIO push handler to low priority (${targetPriority}) in AndroidManifest.xml`
+          `Successfully updated existing CustomerIO push handler to low priority (${DEFAULT_LOW_PRIORITY}) in AndroidManifest.xml`
         );
       }
     }
