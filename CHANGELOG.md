@@ -1,3 +1,9 @@
+## [2.7.0](https://github.com/customerio/customerio-expo-plugin/compare/2.6.0...2.7.0) (2025-08-29)
+
+### Features
+
+* support for xcode 26 beta ([#294](https://github.com/customerio/customerio-expo-plugin/issues/294)) ([a0e6190](https://github.com/customerio/customerio-expo-plugin/commit/a0e619043b5c7155bd3d73d5eef3bb6a6dc66d84))
+
 ## [2.6.0](https://github.com/customerio/customerio-expo-plugin/compare/2.5.0...2.6.0) (2025-08-25)
 
 ### Features
