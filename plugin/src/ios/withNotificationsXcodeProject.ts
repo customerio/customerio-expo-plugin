@@ -10,7 +10,7 @@ import { replaceCodeByRegex } from '../helpers/utils/codeInjection';
 import { injectCIONotificationPodfileCode } from '../helpers/utils/injectCIOPodfileCode';
 import type { CustomerIOPluginOptionsIOS, RichPushConfig } from '../types/cio-types';
 import { getIosNativeFilesPath } from '../utils/plugin';
-import { logWarning, validateRequired, validateString } from '../utils/validation';
+import { logWarning, validateString } from '../utils/validation';
 import { FileManagement } from './../helpers/utils/fileManagement';
 import { isExpoVersion53OrHigher, isFcmPushProvider } from './utils';
 
@@ -296,8 +296,7 @@ const updateNseEnv = (
   const cdpApiKey = richPushConfig?.cdpApiKey;
   const region = richPushConfig?.region;
 
-  const hasValidCdpApiKey = validateRequired(cdpApiKey, 'cdpApiKey', 'NotificationServiceExtension') &&
-    validateString(cdpApiKey, 'cdpApiKey', 'NotificationServiceExtension');
+  const hasValidCdpApiKey = cdpApiKey !== undefined && validateString(cdpApiKey, 'cdpApiKey', 'NotificationServiceExtension');
 
   if (!hasValidCdpApiKey) {
     logWarning(
@@ -321,7 +320,7 @@ const updateNseEnv = (
 
   if (!mappedRegion) {
     logWarning(
-      `${regionToUse} is an invalid region. Please use the values from the docs: https://customer.io/docs/sdk/expo/getting-started/#configure-the-plugin`
+      `${regionToUse} is an invalid region. Please use the values from the docs: https://docs.customer.io/integrations/sdk/expo/getting-started/packages-options/#configuring-the-expo-plugin`
     );
     // Fallback to US if invalid region provided
     envFileContent = replaceCodeByRegex(envFileContent, REGION_RE, regionMap.us);
@@ -384,8 +383,7 @@ const updatePushFile = (
     cdpApiKey: undefined,
     region: undefined,
   };
-  const hasValidCdpApiKey = validateRequired(cdpApiKey, 'cdpApiKey', 'NotificationServiceExtension') &&
-    validateString(cdpApiKey, 'cdpApiKey', 'NotificationServiceExtension');
+  const hasValidCdpApiKey = cdpApiKey !== undefined && validateString(cdpApiKey, 'cdpApiKey', 'NotificationServiceExtension');
 
   if (!hasValidCdpApiKey) {
     logWarning(

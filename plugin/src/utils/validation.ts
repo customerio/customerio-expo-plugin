@@ -1,22 +1,15 @@
 import type { NativeSDKConfig } from '../types/cio-types';
 
-// Checks if running in an EAS build environment.
-function isEASBuild(): boolean {
-  return process.env.EAS_BUILD === 'true';
-}
-
-/**
- * Centralized logging utility that adds [CustomerIO] prefix and respects log flags.
- */
+// Centralized logging utility that adds [CustomerIO] prefix and respects debug flag
 function logWarning(message: string): void {
-  // Only log if debugging is enabled or in development
-  if (process.env.CUSTOMERIO_DEBUG === 'true') {
+  // Default to enabled unless explicitly disabled
+  if (process.env.CUSTOMERIO_DEBUG !== 'false') {
     console.warn(`[CustomerIO] ${message}`);
   }
 }
 
 /**
- * Validates a condition and handles errors appropriately.
+ * Validates a condition and handles errors based on CUSTOMERIO_STRICT_VALIDATION flag.
  * @param isValid - Function that returns true if validation passes
  * @param messageFactory - Function that returns the error message if validation fails
  * @returns true if validation passes, false if it fails
@@ -26,21 +19,14 @@ function validate(isValid: () => boolean, messageFactory: () => string): boolean
     return true;
   }
 
-  // Throw errors in local development, log warnings during EAS builds
+  // Throw errors unless explicitly disabled, default to strict validation
   const message = messageFactory();
-  if (!isEASBuild()) {
+  if (process.env.CUSTOMERIO_STRICT_VALIDATION !== 'false') {
     throw new Error(`[CustomerIO] ${message}`);
   } else {
     logWarning(message);
   }
   return false;
-}
-
-function validateRequired(value: unknown, fieldName: string, context: string): boolean {
-  return validate(
-    () => value !== undefined && value !== null,
-    () => `${context}: ${fieldName} is required, received: ${value}`
-  );
 }
 
 function validateString(value: unknown, fieldName: string, context: string): boolean {
@@ -89,9 +75,11 @@ function validateNativeSDKConfig(config: NativeSDKConfig): boolean {
 
   let isValid = true;
 
-  isValid = validateRequired(config.cdpApiKey, 'cdpApiKey', context) && isValid;
+  // Only validate cdpApiKey as a string if it's defined - don't require it
+  // This allows for undefined values during builds where env vars may not be injected yet
   isValid = validateString(config.cdpApiKey, 'cdpApiKey', context) && isValid;
 
+  // Other fields are only validated if they're defined (already handled by individual validators)
   isValid = validateEnum(config.region, 'region', ['US', 'EU'] as const, context) && isValid;
   isValid = validateEnum(config.screenViewUse, 'screenViewUse', ['all', 'inapp'] as const, context) && isValid;
   isValid = validateEnum(config.logLevel, 'logLevel', ['none', 'error', 'info', 'debug'] as const, context) && isValid;
@@ -103,4 +91,4 @@ function validateNativeSDKConfig(config: NativeSDKConfig): boolean {
   return isValid;
 }
 
-export { isEASBuild, logWarning, validateNativeSDKConfig, validateRequired, validateString };
+export { logWarning, validateNativeSDKConfig, validateString };
