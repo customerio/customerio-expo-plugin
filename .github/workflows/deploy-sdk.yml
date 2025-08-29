@@ -28,10 +28,10 @@ jobs:
           app_id: ${{ secrets.CIO_APP_ID }}
           private_key: ${{ secrets.CIO_APP_SECRET }}
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Deploy git tag via semantic release
-        uses: cycjimmy/semantic-release-action@0a51e81a6baff2acad3ee88f4121c589c73d0f0e # v4.2.0
+        uses: cycjimmy/semantic-release-action@16ca923e6ccbb50770c415a0ccd43709a8c5f7a4 # v4.2.2
         id: semantic-release        
         with:
           semantic_version: latest
@@ -46,7 +46,7 @@ jobs:
           GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
 
       - name: Notify team of git tag being created
-        uses: slackapi/slack-github-action@70cd7be8e40a46e8b0eced40b0de447bdb42f68e # v1.26.0
+        uses: slackapi/slack-github-action@91efab103c0de0a537f72a35f6b8cda0ee76bf0a # v2.1.1
         if: steps.semantic-release.outputs.new_release_published == 'true' # only run if a git tag was made.
         with:
           # Use block kit to format the Slack message: https://app.slack.com/block-kit-builder
@@ -89,7 +89,7 @@ jobs:
       #     environment: production
 
       - name: Notify team of failure
-        uses: slackapi/slack-github-action@70cd7be8e40a46e8b0eced40b0de447bdb42f68e # v1.26.0
+        uses: slackapi/slack-github-action@91efab103c0de0a537f72a35f6b8cda0ee76bf0a # v2.1.1
         if: ${{ failure() }} # only run this if any previous step failed
         with:
           # Use block kit to format the Slack message: https://app.slack.com/block-kit-builder
@@ -129,7 +129,7 @@ jobs:
     if: needs.deploy-git-tag.outputs.new_release_published == 'true' # only run if a git tag was made.
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           ref: ${{ needs.deploy-git-tag.outputs.new_release_git_head }}
       - uses: actions/setup-node@v4
@@ -143,7 +143,7 @@ jobs:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Notify team of successful deployment
-        uses: slackapi/slack-github-action@70cd7be8e40a46e8b0eced40b0de447bdb42f68e # v1.26.0
+        uses: slackapi/slack-github-action@91efab103c0de0a537f72a35f6b8cda0ee76bf0a # v2.1.1
         if: ${{ success() }}
         with:
           # Use block kit to format the Slack message: https://app.slack.com/block-kit-builder
@@ -178,7 +178,7 @@ jobs:
           SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
 
       - name: Notify team of failure
-        uses: slackapi/slack-github-action@70cd7be8e40a46e8b0eced40b0de447bdb42f68e # v1.26.0
+        uses: slackapi/slack-github-action@91efab103c0de0a537f72a35f6b8cda0ee76bf0a # v2.1.1
         if: ${{ failure() }} # only run this if any previous step failed
         with:
           # Use block kit to format the Slack message: https://app.slack.com/block-kit-builder
