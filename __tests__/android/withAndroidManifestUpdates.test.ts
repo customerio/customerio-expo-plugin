@@ -1,0 +1,209 @@
+import { withAndroidManifest } from '@expo/config-plugins';
+import { DEFAULT_LOW_PRIORITY, withAndroidManifestUpdates } from '../../plugin/src/android/withAndroidManifestUpdates';
+import type { CustomerIOPluginOptionsAndroid } from '../../plugin/src/types/cio-types';
+
+jest.mock('@expo/config-plugins');
+
+const mockWithAndroidManifest = withAndroidManifest as jest.MockedFunction<typeof withAndroidManifest>;
+
+describe('Android Manifest Updates', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  const createMockConfig = (existingServices: any[] = []) => ({
+    modResults: {
+      manifest: {
+        application: [{
+          service: existingServices
+        }]
+      }
+    }
+  });
+
+  const createMockOptions = (setHighPriorityPushHandler?: boolean): CustomerIOPluginOptionsAndroid => ({
+    androidPath: '/test/path',
+    setHighPriorityPushHandler
+  });
+
+  const customerIOServiceName = 'io.customer.messagingpush.CustomerIOFirebaseMessagingService';
+  const messagingAction = 'com.google.firebase.MESSAGING_EVENT';
+
+  describe('when setHighPriorityPushHandler is true', () => {
+    it('should add CustomerIO service without priority (high priority)', () => {
+      const mockConfig = createMockConfig();
+
+      mockWithAndroidManifest.mockImplementation((config, modifier) => {
+        modifier(mockConfig as any);
+        return config;
+      });
+
+      withAndroidManifestUpdates({} as any, createMockOptions(true));
+
+      const services = mockConfig.modResults.manifest.application[0].service;
+      expect(services).toHaveLength(1);
+
+      const cioService = services[0];
+      expect(cioService.$['android:name']).toBe(customerIOServiceName);
+      expect(cioService.$['android:exported']).toBe('false');
+      expect(cioService['intent-filter']).toHaveLength(1);
+
+      const intentFilter = cioService['intent-filter'][0];
+      expect(intentFilter.action[0].$['android:name']).toBe(messagingAction);
+      // High priority should not have android:priority attribute
+      expect(intentFilter.$).toBeUndefined();
+    });
+  });
+
+  describe('when setHighPriorityPushHandler is false', () => {
+    it('should add CustomerIO service with fixed low priority', () => {
+      const mockConfig = createMockConfig();
+      mockWithAndroidManifest.mockImplementation((config, modifier) => {
+        modifier(mockConfig as any);
+        return config;
+      });
+
+      withAndroidManifestUpdates({} as any, createMockOptions(false));
+
+      const services = mockConfig.modResults.manifest.application[0].service;
+      expect(services).toHaveLength(1);
+
+      const cioService = services[0];
+      expect(cioService.$['android:name']).toBe(customerIOServiceName);
+      expect(cioService.$['android:exported']).toBe('false');
+      expect(cioService['intent-filter']).toHaveLength(1);
+
+      const intentFilter = cioService['intent-filter'][0];
+      expect(intentFilter.action[0].$['android:name']).toBe(messagingAction);
+      // Low priority should have fixed -10 priority
+      expect(intentFilter.$['android:priority']).toBe(DEFAULT_LOW_PRIORITY.toString());
+    });
+  });
+
+  describe('when CustomerIO service already exists', () => {
+
+    it('should remove priority attribute from existing service when setHighPriorityPushHandler is true', () => {
+      const existingServices = [
+        {
+          $: {
+            'android:name': customerIOServiceName,
+            'android:exported': 'false'
+          },
+          'intent-filter': [{
+            $: { 'android:priority': '-5', 'android:autoVerify': 'true' },
+            action: [{ $: { 'android:name': messagingAction } }]
+          }]
+        }
+      ];
+
+      const mockConfig = createMockConfig(existingServices);
+
+      mockWithAndroidManifest.mockImplementation((config, modifier) => {
+        modifier(mockConfig as any);
+        return config;
+      });
+
+      withAndroidManifestUpdates({} as any, createMockOptions(true));
+
+      const services = mockConfig.modResults.manifest.application[0].service;
+      expect(services).toHaveLength(1);
+
+      const cioService = services[0];
+      const intentFilter = cioService['intent-filter'][0];
+      // Priority should be removed but other attributes preserved
+      expect(intentFilter.$['android:priority']).toBeUndefined();
+      expect(intentFilter.$['android:autoVerify']).toBe('true');
+    });
+
+    it('should update existing service with fixed low priority when setHighPriorityPushHandler is false', () => {
+      const existingServices = [
+        {
+          $: {
+            'android:name': customerIOServiceName,
+            'android:exported': 'false'
+          },
+          'intent-filter': [{
+            action: [{ $: { 'android:name': messagingAction } }]
+          }]
+        }
+      ];
+
+      const mockConfig = createMockConfig(existingServices);
+
+      mockWithAndroidManifest.mockImplementation((config, modifier) => {
+        modifier(mockConfig as any);
+        return config;
+      });
+
+      withAndroidManifestUpdates({} as any, createMockOptions(false));
+
+      const services = mockConfig.modResults.manifest.application[0].service;
+      // Should still be 1 (not duplicated)
+      expect(services).toHaveLength(1);
+
+      const cioService = services[0];
+      const intentFilter = cioService['intent-filter'][0];
+      // Should have updated the existing service with fixed low priority
+      expect(intentFilter.$['android:priority']).toBe(DEFAULT_LOW_PRIORITY.toString());
+    });
+
+    it('should preserve other intent-filter attributes when setting low priority', () => {
+      const existingServices = [
+        {
+          $: {
+            'android:name': customerIOServiceName,
+            'android:exported': 'false'
+          },
+          'intent-filter': [{
+            $: { 'android:autoVerify': 'true', 'data-generated': 'false' },
+            action: [{ $: { 'android:name': messagingAction } }]
+          }]
+        }
+      ];
+
+      const mockConfig = createMockConfig(existingServices);
+
+      mockWithAndroidManifest.mockImplementation((config, modifier) => {
+        modifier(mockConfig as any);
+        return config;
+      });
+
+      withAndroidManifestUpdates({} as any, createMockOptions(false));
+
+      const services = mockConfig.modResults.manifest.application[0].service;
+      const cioService = services[0];
+      const intentFilter = cioService['intent-filter'][0];
+
+      // Should add fixed priority while preserving existing attributes
+      expect(intentFilter.$['android:priority']).toBe(DEFAULT_LOW_PRIORITY.toString());
+      expect(intentFilter.$['android:autoVerify']).toBe('true');
+      expect(intentFilter.$['data-generated']).toBe('false');
+    });
+
+
+  });
+
+  describe('when application services array does not exist', () => {
+    it('should create services array and add CustomerIO service', () => {
+      const mockConfig = {
+        modResults: {
+          manifest: {
+            application: [{}] // No service property
+          }
+        }
+      };
+
+      mockWithAndroidManifest.mockImplementation((config, modifier) => {
+        modifier(mockConfig as any);
+        return config;
+      });
+
+      withAndroidManifestUpdates({} as any, createMockOptions(true));
+
+      const application = mockConfig.modResults.manifest.application[0] as any;
+      expect(application.service).toBeDefined();
+      expect(application.service).toHaveLength(1);
+      expect(application.service[0].$['android:name']).toBe(customerIOServiceName);
+    });
+  });
+});
