@@ -13,7 +13,7 @@ import SendEventModal from './SendEventModal';
 
 export default function DashboardScreen({ navigation }) {
   useEffect(() => {
-    registerInAppMessagingEventListener();
+    return registerInAppMessagingEventListener();
   }, []);
 
   const [loginModalVisible, seLoginModalVisible] = useState(false);

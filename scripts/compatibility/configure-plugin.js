@@ -125,6 +125,7 @@ function execute() {
       Object.assign(cioPluginConfig, {
         config: {
           ...envConfig,
+          siteId: "dummy-site-id",
         },
         android: androidConfig,
         ios: baseIosConfig,
