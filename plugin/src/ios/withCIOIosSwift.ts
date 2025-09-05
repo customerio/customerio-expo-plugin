@@ -32,7 +32,7 @@ const CIO_SDK_APP_DELEGATE_HANDLER_FILENAME = `${CIO_SDK_APP_DELEGATE_HANDLER_CL
 const copyAndConfigureAppDelegateHandler = (
   config: ExportedConfigWithProps<XcodeProject>,
   sdkConfig: NativeSDKConfig | undefined,
-  props: CustomerIOPluginOptionsIOS,
+  props?: CustomerIOPluginOptionsIOS,
 ): ExportedConfigWithProps<XcodeProject> => {
   // Destination path in the iOS project
   const projectName = config.modRequest.projectName || '';
@@ -49,7 +49,7 @@ const copyAndConfigureAppDelegateHandler = (
   const iosProjectRoot = path.join(projectRoot, 'ios');
 
   const group = getOrCreateCustomerIOGroup(xcodeProject, projectName);
-  if (props.pushNotification) {
+  if (props?.pushNotification) {
     // Copy CioSdkAppDelegateHandler.swift for full push notification + auto-init support
     copyAndConfigurePushAppDelegateHandler({
       xcodeProject,
@@ -194,7 +194,7 @@ const copyAndConfigureNativeSDKInitializer = ({
 export const withCIOIosSwift = (
   configOuter: ExpoConfig,
   sdkConfig: NativeSDKConfig | undefined,
-  props: CustomerIOPluginOptionsIOS,
+  props?: CustomerIOPluginOptionsIOS,
 ) => {
   // First, copy required swift files to iOS folder and add it to Xcode project
   configOuter = withXcodeProject(configOuter, async (config) => {
@@ -202,7 +202,7 @@ export const withCIOIosSwift = (
   });
 
   // Modify the AppDelegate based on configuration
-  if (props.pushNotification) {
+  if (props?.pushNotification) {
     // With push notifications: delegate to CioSdkAppDelegateHandler for both push and auto-init
     return withAppDelegate(configOuter, async (config) => {
       return modifyAppDelegateWithPushAppDelegateHandler(config, props);
