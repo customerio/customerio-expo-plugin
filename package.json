@@ -55,7 +55,7 @@
     "registry": "https://registry.npmjs.org/"
   },
   "peerDependencies": {
-    "customerio-reactnative": "4.8.0"
+    "customerio-reactnative": "git+https://github.com/customerio/customerio-reactnative#deccbd9d38d30fad87cf28df0dcf7b24688826a6"
   },
   "devDependencies": {
     "@eslint/js": "^9.33.0",
