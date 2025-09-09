@@ -3,6 +3,7 @@ import { withAndroidManifest } from '@expo/config-plugins';
 import type { ManifestApplication } from '@expo/config-plugins/build/android/Manifest';
 
 import type { CustomerIOPluginOptionsAndroid } from '../types/cio-types';
+import { logger } from '../utils/logger';
 
 // Default low priority for Firebase messaging service when setHighPriorityPushHandler is false
 export const DEFAULT_LOW_PRIORITY = -10;
@@ -41,7 +42,7 @@ export const withAndroidManifestUpdates: ConfigPlugin<
       // Handle priority based on setHighPriorityPushHandler value
       if (options.setHighPriorityPushHandler === true) {
         // High priority - no priority attribute means default high priority
-        console.log(
+        logger.info(
           'Successfully set CustomerIO push handler as high priority in AndroidManifest.xml'
         );
       } else if (options.setHighPriorityPushHandler === false) {
@@ -49,7 +50,7 @@ export const withAndroidManifestUpdates: ConfigPlugin<
         intentFilter.$ = {
           'android:priority': DEFAULT_LOW_PRIORITY.toString(),
         };
-        console.log(
+        logger.info(
           `Successfully set CustomerIO push handler as low priority (${DEFAULT_LOW_PRIORITY}) in AndroidManifest.xml`
         );
       }
@@ -70,7 +71,7 @@ export const withAndroidManifestUpdates: ConfigPlugin<
         const intentFilter = existingService['intent-filter'][0] as any;
         if (intentFilter.$ && intentFilter.$['android:priority']) {
           delete intentFilter.$['android:priority'];
-          console.log(
+          logger.info(
             'Successfully updated existing CustomerIO push handler to high priority in AndroidManifest.xml'
           );
         }
@@ -87,7 +88,7 @@ export const withAndroidManifestUpdates: ConfigPlugin<
           intentFilter.$ = {};
         }
         intentFilter.$['android:priority'] = DEFAULT_LOW_PRIORITY.toString();
-        console.log(
+        logger.info(
           `Successfully updated existing CustomerIO push handler to low priority (${DEFAULT_LOW_PRIORITY}) in AndroidManifest.xml`
         );
       }

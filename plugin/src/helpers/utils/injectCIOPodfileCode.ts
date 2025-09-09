@@ -1,4 +1,5 @@
 import type { CustomerIOPluginOptionsIOS } from '../../types/cio-types';
+import { logger } from '../../utils/logger';
 import { getRelativePathToRNSDK } from '../constants/ios';
 import { injectCodeByRegex } from './codeInjection';
 import { FileManagement } from './fileManagement';
@@ -36,7 +37,7 @@ ${blockEnd}
       ).join('\n')
     );
   } else {
-    console.log('CustomerIO Podfile snippets already exists. Skipping...');
+    logger.info('CustomerIO Podfile snippets already exists. Skipping...');
   }
 }
 

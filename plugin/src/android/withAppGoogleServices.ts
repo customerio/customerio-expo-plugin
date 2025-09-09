@@ -6,6 +6,7 @@ import {
   CIO_APP_GOOGLE_SNIPPET,
 } from '../helpers/constants/android';
 import type { CustomerIOPluginOptionsAndroid } from '../types/cio-types';
+import { logger } from '../utils/logger';
 
 export const withAppGoogleServices: ConfigPlugin<
   CustomerIOPluginOptionsAndroid
@@ -19,7 +20,7 @@ export const withAppGoogleServices: ConfigPlugin<
         `$1\n${CIO_APP_GOOGLE_SNIPPET}`
       );
     } else {
-      console.log('app/build.gradle snippet already exists. Skipping...');
+      logger.info('app/build.gradle snippet already exists. Skipping...');
     }
 
     return props;

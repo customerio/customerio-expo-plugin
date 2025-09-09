@@ -1,6 +1,7 @@
 import type { XcodeProject } from "@expo/config-plugins";
 import path from 'path';
 import { FileManagement } from "../helpers/utils/fileManagement";
+import { logger } from './logger';
 
 /**
  * Gets an existing CustomerIO group or creates a new one in the Xcode project
@@ -68,7 +69,7 @@ export function copyFileToXcode({
     xcodeProject.addSourceFile(`${projectName}/${targetFileName}`, null, customerIOGroup);
     return destinationPath;
   } catch (error) {
-    console.warn(`Failed to add ${targetFileName} to Xcode project:`, error);
+    logger.warn(`Failed to add ${targetFileName} to Xcode project:`, error);
     throw error;
   }
 }
