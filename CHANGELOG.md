@@ -1,3 +1,9 @@
+## [2.7.1](https://github.com/customerio/customerio-expo-plugin/compare/2.7.0...2.7.1) (2025-09-09)
+
+### Bug Fixes
+
+* remove react native sdk header import in ios ([#303](https://github.com/customerio/customerio-expo-plugin/issues/303)) ([0f16213](https://github.com/customerio/customerio-expo-plugin/commit/0f16213ac7c9bbc8223fe3eccade81e3a406d23c))
+
 ## [2.7.0](https://github.com/customerio/customerio-expo-plugin/compare/2.6.0...2.7.0) (2025-08-29)
 
 ### Features
