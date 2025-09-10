@@ -1,6 +1,7 @@
 import type { NativeSDKConfig } from '../../types/cio-types';
-import { PLATFORM, type Platform } from '../constants/common';
 import { getPluginVersion } from '../../utils/plugin';
+import { validateNativeSDKConfig } from '../../utils/validation';
+import { PLATFORM, type Platform } from '../constants/common';
 
 /**
  * Shared utility function to perform common SDK config replacements
@@ -11,6 +12,10 @@ export function patchNativeSDKInitializer(
   platform: Platform,
   sdkConfig: NativeSDKConfig
 ): string {
+  // Validate SDK configuration to ensure all fields are present and 
+  // correct at the time of patching in prebuild
+  validateNativeSDKConfig(sdkConfig);
+
   let content = rawContent;
 
   // Helper function to replace placeholders with platform-specific fallback values
