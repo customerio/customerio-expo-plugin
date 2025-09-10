@@ -15,13 +15,14 @@ export function withCIOAndroid(
   sdkConfig: NativeSDKConfig | undefined,
   props?: CustomerIOPluginOptionsAndroid
 ): ExpoConfig {
+
+    config = withProjectStrings(config);
   // Only run notification setup if props are provided
   if(props) {
     config = withGistMavenRepository(config, props);
     config = withProjectGoogleServices(config, props);
     config = withAppGoogleServices(config, props);
     config = withGoogleServicesJSON(config, props);
-    config = withProjectStrings(config);
     if (props.setHighPriorityPushHandler !== undefined) {
       config = withAndroidManifestUpdates(config, props);
     }
