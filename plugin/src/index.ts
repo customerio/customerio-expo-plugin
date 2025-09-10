@@ -19,11 +19,6 @@ function withCustomerIOPlugin(
     );
   }
 
-  // Validate SDK config if provided
-  if (props.config) {
-    validateNativeSDKConfig(props.config);
-  }
-
   config = withCIOIos(config, props.config, props.ios);
   config = withCIOAndroid(config, props.config, props.android);
 

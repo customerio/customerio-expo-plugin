@@ -15,8 +15,6 @@ export function withCIOAndroid(
   sdkConfig: NativeSDKConfig | undefined,
   props?: CustomerIOPluginOptionsAndroid
 ): ExpoConfig {
-
-    config = withProjectStrings(config);
   // Only run notification setup if props are provided
   if(props) {
     config = withGistMavenRepository(config, props);
@@ -30,10 +28,13 @@ export function withCIOAndroid(
       config = withNotificationChannelMetadata(config, props);
     }
   }
+
   // Add auto initialization if sdkConfig is provided
   if (sdkConfig) {
     config = withMainApplicationModifications(config, sdkConfig);
   }
+
+  config = withProjectStrings(config);
 
   return config;
 }
