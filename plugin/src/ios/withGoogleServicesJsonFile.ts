@@ -2,6 +2,7 @@ import type { ConfigPlugin, XcodeProject } from '@expo/config-plugins';
 import { IOSConfig, withXcodeProject } from '@expo/config-plugins';
 
 import type { CustomerIOPluginOptionsIOS } from '../types/cio-types';
+import { logger } from '../utils/logger';
 import { FileManagement } from './../helpers/utils/fileManagement';
 import { isFcmPushProvider } from './utils';
 
@@ -15,7 +16,7 @@ export const withGoogleServicesJsonFile: ConfigPlugin<
       return props;
     }
 
-    console.log(
+    logger.info(
       'Only specify Customer.io ios.pushNotification.googleServicesFile config if you are not already including' +
       ' GoogleService-Info.plist as part of Firebase integration'
     );
@@ -26,7 +27,7 @@ export const withGoogleServicesJsonFile: ConfigPlugin<
     const appName = props.modRequest.projectName;
 
     if (FileManagement.exists(`${iosPath}/GoogleService-Info.plist`)) {
-      console.log(
+      logger.info(
         `File already exists: ${iosPath}/GoogleService-Info.plist. Skipping...`
       );
       return props;
@@ -37,7 +38,7 @@ export const withGoogleServicesJsonFile: ConfigPlugin<
     ) {
       // This is where RN Firebase potentially copies GoogleService-Info.plist
       // Do not copy if it's already done by Firebase to avoid conflict in Resources
-      console.log(
+      logger.info(
         `File already exists: ${iosPath}/${appName}/GoogleService-Info.plist. Skipping...`
       );
       return props;
@@ -45,7 +46,7 @@ export const withGoogleServicesJsonFile: ConfigPlugin<
 
     if (googleServicesFile && FileManagement.exists(googleServicesFile)) {
       if (config.ios?.googleServicesFile) {
-        console.warn(
+        logger.warn(
           'Specifying both Expo ios.googleServicesFile and Customer.io ios.pushNotification.googleServicesFile can cause a conflict' +
           ' duplicating GoogleService-Info.plist in the iOS project resources. Please remove Customer.io ios.pushNotification.googleServicesFile'
         );
@@ -59,12 +60,12 @@ export const withGoogleServicesJsonFile: ConfigPlugin<
 
         addFileToXcodeProject(props.modResults, 'GoogleService-Info.plist');
       } catch {
-        console.error(
+        logger.error(
           `There was an error copying your GoogleService-Info.plist file. You can copy it manually into ${iosPath}/GoogleService-Info.plist`
         );
       }
     } else {
-      console.error(
+      logger.error(
         `The Google Services file provided in ${googleServicesFile} doesn't seem to exist. You can copy it manually into ${iosPath}/GoogleService-Info.plist`
       );
     }
@@ -78,7 +79,7 @@ function addFileToXcodeProject(project: XcodeProject, fileName: string) {
   const filepath = fileName;
 
   if (!IOSConfig.XcodeUtils.ensureGroupRecursively(project, groupName)) {
-    console.error(
+    logger.error(
       `Error copying GoogleService-Info.plist. Failed to find or create '${groupName}' group in Xcode.`
     );
     return;

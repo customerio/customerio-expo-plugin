@@ -9,6 +9,7 @@ import {
 import { replaceCodeByRegex } from '../helpers/utils/codeInjection';
 import { injectCIONotificationPodfileCode } from '../helpers/utils/injectCIOPodfileCode';
 import type { CustomerIOPluginOptionsIOS, RichPushConfig } from '../types/cio-types';
+import { logger } from '../utils/logger';
 import { getIosNativeFilesPath } from '../utils/plugin';
 import { FileManagement } from './../helpers/utils/fileManagement';
 import { isExpoVersion53OrHigher, isFcmPushProvider } from './utils';
@@ -34,7 +35,7 @@ const addNotificationServiceExtension = async (
     }
     return xcodeProject;
   } catch (error: unknown) {
-    console.error(error);
+    logger.error(String(error));
     return null;
   }
 };
@@ -120,7 +121,7 @@ const addRichPushXcodeProj = async (
   // Check if `CIO_NOTIFICATION_TARGET_NAME` group already exist in the project
   // If true then skip creating a new group to avoid duplicate folders
   if (xcodeProject.pbxTargetByName(CIO_NOTIFICATION_TARGET_NAME)) {
-    console.warn(
+    logger.warn(
       `${CIO_NOTIFICATION_TARGET_NAME} already exists in project. Skipping...`
     );
     return;
@@ -194,7 +195,7 @@ const addRichPushXcodeProj = async (
   projObjects.PBXContainerItemProxy = projObjects.PBXTargetDependency || {};
 
   if (xcodeProject.pbxTargetByName(CIO_NOTIFICATION_TARGET_NAME)) {
-    console.warn(
+    logger.warn(
       `${CIO_NOTIFICATION_TARGET_NAME} already exists in project. Skipping...`
     );
     return;
@@ -314,7 +315,7 @@ const updateNseEnv = (
     const mappedRegion =
       regionMap[region.toLowerCase() as keyof typeof regionMap] || '';
     if (!mappedRegion) {
-      console.warn(
+      logger.warn(
         `${region} is an invalid region. Please use the values from the docs: https://customer.io/docs/sdk/expo/getting-started/#configure-the-plugin`
       );
     } else {
@@ -355,7 +356,7 @@ async function addPushNotificationFile(
       targetFile
     );
   } else {
-    console.log(`${getTargetFile(targetFileName)} already exists. Skipping...`);
+    logger.info(`${getTargetFile(targetFileName)} already exists. Skipping...`);
     return;
   }
 

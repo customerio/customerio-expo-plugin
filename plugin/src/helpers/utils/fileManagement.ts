@@ -1,14 +1,15 @@
-import {
-  readFile,
-  writeFile,
-  appendFile,
-  existsSync,
-  copyFileSync,
-  mkdirSync,
-  writeFileSync,
-  readFileSync,
-} from 'fs';
 import type { MakeDirectoryOptions } from 'fs';
+import {
+  appendFile,
+  copyFileSync,
+  existsSync,
+  mkdirSync,
+  readFile,
+  readFileSync,
+  writeFile,
+  writeFileSync,
+} from 'fs';
+import { logger } from '../../utils/logger';
 
 export class FileManagement {
   static async read(path: string): Promise<string> {
@@ -55,7 +56,7 @@ export class FileManagement {
     try {
       copyFileSync(src, dest);
     } catch (err) {
-      console.log(`Error copying file from ${src} to ${dest}: `, err);
+      logger.error(`Error copying file from ${src} to ${dest}: `, err);
     }
   }
 
@@ -63,7 +64,7 @@ export class FileManagement {
     try {
       mkdirSync(path, options);
     } catch (err) {
-      console.log(`Error creating directory ${path}: `, err);
+      logger.error(`Error creating directory ${path}: `, err);
     }
   }
 
@@ -71,7 +72,7 @@ export class FileManagement {
     try {
       writeFileSync(path, data);
     } catch (err) {
-      console.log(`Error writing to file ${path}: `, err);
+      logger.error(`Error writing to file ${path}: `, err);
     }
   }
 
@@ -79,7 +80,7 @@ export class FileManagement {
     try {
       return readFileSync(path, 'utf-8');
     } catch (err) {
-      console.log(`Error reading file ${path}: `, err);
+      logger.error(`Error reading file ${path}: `, err);
     }
 
     return '';

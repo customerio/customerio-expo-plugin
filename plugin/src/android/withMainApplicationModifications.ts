@@ -6,6 +6,7 @@ import { PLATFORM } from '../helpers/constants/common';
 import { patchNativeSDKInitializer } from '../helpers/utils/patchPluginNativeCode';
 import type { NativeSDKConfig } from '../types/cio-types';
 import { addCodeToMethod, addImportToFile, copyTemplateFile } from '../utils/android';
+import { logger } from '../utils/logger';
 
 export const withMainApplicationModifications: ConfigPlugin<NativeSDKConfig> = (configOuter, sdkConfig) => {
   return withMainApplication(configOuter, async (config) => {
@@ -42,7 +43,7 @@ const setupCustomerIOSDKInitializer = (
       content = addCodeToMethod(content, CIO_MAINAPPLICATION_ONCREATE_REGEX, CIO_NATIVE_SDK_INITIALIZE_SNIPPET);
     }
   } catch (error) {
-    console.warn(`Could not setup ${SDK_INITIALIZER_CLASS}:`, error);
+    logger.warn(`Could not setup ${SDK_INITIALIZER_CLASS}:`, error);
     return config.modResults.contents;
   }
 

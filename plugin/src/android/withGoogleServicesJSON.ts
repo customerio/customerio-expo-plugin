@@ -1,6 +1,7 @@
 import type { ConfigPlugin } from '@expo/config-plugins';
 import { withProjectBuildGradle } from '@expo/config-plugins';
 
+import { logger } from '../utils/logger';
 import { FileManagement } from './../helpers/utils/fileManagement';
 import type { CustomerIOPluginOptionsAndroid } from './../types/cio-types';
 
@@ -21,17 +22,17 @@ export const withGoogleServicesJSON: ConfigPlugin<
             `${androidPath}/app/google-services.json`
           );
         } catch {
-          console.log(
+          logger.info(
             `There was an error copying your google-services.json file. You can copy it manually into ${androidPath}/app/google-services.json`
           );
         }
       } else {
-        console.log(
+        logger.info(
           `The Google Services file provided in ${googleServicesFile} doesn't seem to exist. You can copy it manually into ${androidPath}/app/google-services.json`
         );
       }
     } else {
-      console.log(
+      logger.info(
         `File already exists: ${androidPath}/app/google-services.json. Skipping...`
       );
     }

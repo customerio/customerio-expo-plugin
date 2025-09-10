@@ -32,6 +32,7 @@ import {
 } from '../helpers/utils/codeInjection';
 import { FileManagement } from '../helpers/utils/fileManagement';
 import type { CustomerIOPluginOptionsIOS } from '../types/cio-types';
+import { logger } from '../utils/logger';
 import { isFcmPushProvider } from './utils';
 
 const addImport = (stringContents: string, appName: string) => {
@@ -268,7 +269,7 @@ export const withAppDelegateModifications: ConfigPlugin<
 
       config.modResults.contents = stringContents;
     } else {
-      console.log('Customerio AppDelegate changes already exist. Skipping...');
+      logger.info('Customerio AppDelegate changes already exist. Skipping...');
     }
 
     return config;
