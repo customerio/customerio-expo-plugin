@@ -32,7 +32,7 @@ const CIO_SDK_APP_DELEGATE_HANDLER_FILENAME = `${CIO_SDK_APP_DELEGATE_HANDLER_CL
  */
 const copyAndConfigureAppDelegateHandler = (
   config: ExportedConfigWithProps<XcodeProject>,
-  sdkConfig: NativeSDKConfig | undefined,
+  sdkConfig?: NativeSDKConfig,
   props?: CustomerIOPluginOptionsIOS,
 ): ExportedConfigWithProps<XcodeProject> => {
   // Destination path in the iOS project
@@ -194,7 +194,7 @@ const copyAndConfigureNativeSDKInitializer = ({
 
 export const withCIOIosSwift = (
   configOuter: ExpoConfig,
-  sdkConfig: NativeSDKConfig | undefined,
+  sdkConfig?: NativeSDKConfig,
   props?: CustomerIOPluginOptionsIOS,
 ) => {
   // First, copy required swift files to iOS folder and add it to Xcode project

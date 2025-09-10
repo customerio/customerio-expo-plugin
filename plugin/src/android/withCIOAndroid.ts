@@ -12,11 +12,11 @@ import { withProjectStrings } from './withProjectStrings';
 
 export function withCIOAndroid(
   config: ExpoConfig,
-  sdkConfig: NativeSDKConfig | undefined,
-  props?: CustomerIOPluginOptionsAndroid
+  sdkConfig?: NativeSDKConfig,
+  props?: CustomerIOPluginOptionsAndroid,
 ): ExpoConfig {
   // Only run notification setup if props are provided
-  if(props) {
+  if (props) {
     config = withGistMavenRepository(config, props);
     config = withProjectGoogleServices(config, props);
     config = withAppGoogleServices(config, props);
@@ -34,6 +34,7 @@ export function withCIOAndroid(
     config = withMainApplicationModifications(config, sdkConfig);
   }
 
+  // Update project strings for user agent metadata
   config = withProjectStrings(config);
 
   return config;

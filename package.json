@@ -83,7 +83,8 @@
   },
   "eslintIgnore": [
     "node_modules/",
-    "plugin/lib/"
+    "plugin/lib/",
+    "ci-test-apps/"
   ],
   "prettier": {
     "quoteProps": "consistent",
