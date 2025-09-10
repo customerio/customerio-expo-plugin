@@ -18,6 +18,7 @@ import { replaceCodeByRegex } from '../helpers/utils/codeInjection';
 import { FileManagement } from '../helpers/utils/fileManagement';
 import { patchNativeSDKInitializer } from '../helpers/utils/patchPluginNativeCode';
 import type { CustomerIOPluginOptionsIOS, NativeSDKConfig } from '../types/cio-types';
+import { logger } from '../utils/logger';
 import { getIosNativeFilesPath } from '../utils/plugin';
 import { copyFileToXcode, getOrCreateCustomerIOGroup } from '../utils/xcode';
 import { isFcmPushProvider } from './utils';
@@ -37,7 +38,7 @@ const copyAndConfigureAppDelegateHandler = (
   // Destination path in the iOS project
   const projectName = config.modRequest.projectName || '';
   if (!projectName) {
-    console.warn(
+    logger.warn(
       'Project name is undefined, cannot copy CustomerIO files'
     );
     return config;
@@ -230,7 +231,7 @@ const modifyAppDelegateWithPushAppDelegateHandler = (
 
   // Check if modifications have already been applied
   if (appDelegateContent.includes(CIO_SDK_APP_DELEGATE_HANDLER_CLASS)) {
-    console.log(
+    logger.info(
       'CustomerIO Swift AppDelegate changes already exist. Skipping...'
     );
     return config;
@@ -274,7 +275,7 @@ const modifyAppDelegateWithNativeSDKInitializer = (
 
   // Check if modifications have already been applied
   if (appDelegateContent.includes(CIO_NATIVE_SDK_INITIALIZE_CALL)) {
-    console.log(
+    logger.info(
       'CustomerIO Swift AppDelegate changes already exist. Skipping...'
     );
     return config;
@@ -314,7 +315,7 @@ const addHandlerPropertyDeclaration = (content: string): string => {
   const match = content.match(classDeclarationRegex);
 
   if (!match) {
-    console.warn('Could not find AppDelegate class declaration');
+    logger.warn('Could not find AppDelegate class declaration');
     return content;
   }
 
@@ -339,7 +340,7 @@ const modifyDidFinishLaunchingWithOptions = (content: string, codeToInject: stri
   const returnStatementMatch = content.match(returnStatementRegex);
 
   if (!returnStatementMatch) {
-    console.warn(
+    logger.warn(
       'Could not find return statement with super.application in didFinishLaunchingWithOptions'
     );
     return content;
@@ -394,7 +395,7 @@ const addDidRegisterForRemoteNotificationsWithDeviceToken = (
     const classEndMatch = content.match(classEndRegex);
 
     if (!classEndMatch) {
-      console.warn('Could not find end of AppDelegate class');
+      logger.warn('Could not find end of AppDelegate class');
       return content;
     }
 
@@ -452,7 +453,7 @@ const addDidFailToRegisterForRemoteNotificationsWithError = (
     const classEndMatch = content.match(classEndRegex);
 
     if (!classEndMatch) {
-      console.warn('Could not find end of AppDelegate class');
+      logger.warn('Could not find end of AppDelegate class');
       return content;
     }
 
@@ -489,7 +490,7 @@ const addHandleDeeplinkInKilledState = (content: string): string => {
   const returnStatementMatch = content.match(returnStatementRegex);
 
   if (!returnStatementMatch) {
-    console.warn('Could not find return statement with launchOptions');
+    logger.warn('Could not find return statement with launchOptions');
     return content;
   }
 

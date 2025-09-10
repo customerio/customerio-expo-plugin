@@ -2,6 +2,7 @@ import type { ExportedConfigWithProps } from '@expo/config-plugins';
 import type { ApplicationProjectFile } from '@expo/config-plugins/build/android/Paths';
 import path from 'path';
 import { FileManagement } from '../helpers/utils/fileManagement';
+import { logger } from './logger';
 import { getAndroidNativeFilesPath } from './plugin';
 
 // Generic utility to add import to Kotlin files
@@ -106,7 +107,7 @@ export const copyTemplateFile = (
     const destinationPath = path.join(packagePath, filename);
     FileManagement.writeFile(destinationPath, content);
   } catch (error) {
-    console.warn(`Failed to copy ${filename} to Android project:`, error);
+    logger.warn(`Failed to copy ${filename} to Android project:`, error);
     throw error;
   }
 };

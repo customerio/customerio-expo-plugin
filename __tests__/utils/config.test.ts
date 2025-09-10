@@ -19,7 +19,7 @@ describe('mergeConfigWithEnvValues - Resolves conflicts between legacy env confi
   describe('when both environment and native configs are provided', () => {
     test('should throw error when configs have conflicting values', () => {
       const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
-      
+
       const props: CustomerIOPluginOptionsIOS = {
         ...mockIosProps,
         pushNotification: {
@@ -37,7 +37,7 @@ describe('mergeConfigWithEnvValues - Resolves conflicts between legacy env confi
 
     test('should warn and return config when both configs have matching values', () => {
       const consoleSpy = jest.spyOn(console, 'warn').mockImplementation();
-      
+
       const matchingEnvConfig = {
         cdpApiKey: 'same-api-key',
         region: 'EU',
@@ -63,7 +63,7 @@ describe('mergeConfigWithEnvValues - Resolves conflicts between legacy env confi
       });
 
       expect(consoleSpy).toHaveBeenCalledWith(
-        'Both \'config\' and \'ios.pushNotification.env\' are provided with matching values. Consider removing \'ios.pushNotification.env\' since \'config\' is already specified.'
+        '[CustomerIO] Both \'config\' and \'ios.pushNotification.env\' are provided with matching values. Consider removing \'ios.pushNotification.env\' since \'config\' is already specified.'
       );
 
       consoleSpy.mockRestore();
@@ -71,7 +71,7 @@ describe('mergeConfigWithEnvValues - Resolves conflicts between legacy env confi
 
     test('should allow case-insensitive region matching', () => {
       const consoleSpy = jest.spyOn(console, 'warn').mockImplementation();
-      
+
       const envWithLowerCase = {
         cdpApiKey: 'same-api-key',
         region: 'us',
@@ -97,7 +97,7 @@ describe('mergeConfigWithEnvValues - Resolves conflicts between legacy env confi
       });
 
       expect(consoleSpy).toHaveBeenCalledWith(
-        'Both \'config\' and \'ios.pushNotification.env\' are provided with matching values. Consider removing \'ios.pushNotification.env\' since \'config\' is already specified.'
+        '[CustomerIO] Both \'config\' and \'ios.pushNotification.env\' are provided with matching values. Consider removing \'ios.pushNotification.env\' since \'config\' is already specified.'
       );
 
       consoleSpy.mockRestore();

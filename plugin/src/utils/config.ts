@@ -1,4 +1,5 @@
 import type { CustomerIOPluginOptionsIOS, NativeSDKConfig, RichPushConfig } from '../types/cio-types';
+import { logger } from './logger';
 
 /**
  * Merges config values with env values for backward compatibility.
@@ -25,12 +26,12 @@ function mergeConfigWithEnvValues(
         `  config.region: "${nativeRegion}"\n` +
         `  env.region: "${envRegion}"`;
 
-      console.error(errorMessage);
+      logger.error(errorMessage);
       throw new Error(errorMessage);
     }
 
     // Values match - warn about redundant configuration
-    console.warn(
+    logger.warn(
       `Both 'config' and 'ios.pushNotification.env' are provided with matching values. ` +
       `Consider removing 'ios.pushNotification.env' since 'config' is already specified.`
     );

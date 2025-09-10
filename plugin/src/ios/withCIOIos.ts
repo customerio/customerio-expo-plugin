@@ -6,6 +6,7 @@ import type {
   NativeSDKConfig,
 } from '../types/cio-types';
 import { mergeConfigWithEnvValues } from '../utils/config';
+import { logger } from '../utils/logger';
 import { isExpoVersion53OrHigher } from './utils';
 import { withAppDelegateModifications } from './withAppDelegateModifications';
 import { withCIOIosSwift } from './withCIOIosSwift';
@@ -70,7 +71,7 @@ const mergeDeprecatedPropertiesAndLogWarnings = (
   // loop over all the deprecated properties and log a warning if they are set
   Object.entries(deprecatedTopLevelProperties).forEach(([key, value]) => {
     if (value !== undefined) {
-      console.warn(
+      logger.warn(
         `The ios.${key} property is deprecated. Please use ios.pushNotification.${key} instead.`
       );
 
@@ -84,7 +85,7 @@ const mergeDeprecatedPropertiesAndLogWarnings = (
           [propKey]: value,
         };
       } else {
-        console.warn(
+        logger.warn(
           `The ios.${key} property is deprecated. Since the value of ios.pushNotification.${key} is set, it will be used.`
         );
       }
