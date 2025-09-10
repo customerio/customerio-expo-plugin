@@ -1,7 +1,6 @@
 import CioDataPipelines
 import CioInternalCommon
 import CioMessagingInApp
-import customerio_reactnative
 
 class CustomerIOSDKInitializer {
     static func initialize() {
@@ -27,9 +26,16 @@ class CustomerIOSDKInitializer {
         CustomerIO.initialize(withConfig: builder.build())
 
         if let siteId = siteId {
-          let inAppConfig = MessagingInAppConfigBuilder(siteId: siteId, region: region).build()
-          MessagingInApp.initialize(withConfig: inAppConfig)
-          MessagingInApp.shared.setEventListener(ReactInAppEventListener.shared)
+            let inAppConfig = MessagingInAppConfigBuilder(siteId: siteId, region: region).build()
+            MessagingInApp.initialize(withConfig: inAppConfig)
+            let logger = DIGraphShared.shared.logger
+            // Retrieves ReactInAppEventListener from DI graph, populated when it is accessed in React Native SDK.
+            if let listener: InAppEventListener? = DIGraphShared.shared.getOverriddenInstance() {
+                logger.debug("[Expo][InApp] React InAppEventListener found in DI graph and set")
+                MessagingInApp.shared.setEventListener(listener)
+            } else {
+                logger.debug("[Expo][InApp] React InAppEventListener not found in DI graph, will be set by React Native module when accessed")
+            }
         }
     }
 
