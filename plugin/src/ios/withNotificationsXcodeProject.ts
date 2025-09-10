@@ -377,7 +377,7 @@ const updatePushFile = (
   const richPushConfig = options.pushNotification?.env;
   validateRichPushConfig(richPushConfig);
   const { cdpApiKey, region } = richPushConfig || {
-    cdpApiKey: 'invalid',
+    cdpApiKey: 'MISSING_API_KEY',
     region: undefined,
   };
 
