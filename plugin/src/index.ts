@@ -4,7 +4,6 @@ import { withCIOAndroid } from './android/withCIOAndroid';
 import { isExpoVersion53OrHigher } from './ios/utils';
 import { withCIOIos } from './ios/withCIOIos';
 import type { CustomerIOPluginOptions } from './types/cio-types';
-import { validateNativeSDKConfig } from './utils/validation';
 
 // Entry point for config plugin
 function withCustomerIOPlugin(

@@ -185,6 +185,9 @@ describe('Native SDK Configuration Patching', () => {
       });
 
       test('treats empty or whitespace-only siteId as undefined and uses platform null', () => {
+        // Mock console.warn to suppress expected validation warnings
+        const consoleSpy = jest.spyOn(console, 'warn').mockImplementation();
+
         const testCases = ['', '   '];
 
         testCases.forEach(siteId => {
@@ -197,6 +200,13 @@ describe('Native SDK Configuration Patching', () => {
           expect(androidResult).toContain('siteId: null');
           expect(androidResult).toContain('migrationSiteId: null');
         });
+
+        // Verify warnings were logged as expected (but suppressed from console)
+        expect(consoleSpy).toHaveBeenCalledWith(
+          expect.stringContaining('[CustomerIO] NativeSDKConfig: siteId must be a non-empty string')
+        );
+
+        consoleSpy.mockRestore();
       });
     });
 
