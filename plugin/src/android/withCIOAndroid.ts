@@ -13,23 +13,28 @@ import { withProjectStrings } from './withProjectStrings';
 export function withCIOAndroid(
   config: ExpoConfig,
   sdkConfig: NativeSDKConfig | undefined,
-  props: CustomerIOPluginOptionsAndroid
+  props?: CustomerIOPluginOptionsAndroid
 ): ExpoConfig {
-  config = withGistMavenRepository(config, props);
-  config = withProjectGoogleServices(config, props);
-  config = withAppGoogleServices(config, props);
-  config = withGoogleServicesJSON(config, props);
-  config = withProjectStrings(config);
-  if (props.setHighPriorityPushHandler !== undefined) {
-    config = withAndroidManifestUpdates(config, props);
+  // Only run notification setup if props are provided
+  if(props) {
+    config = withGistMavenRepository(config, props);
+    config = withProjectGoogleServices(config, props);
+    config = withAppGoogleServices(config, props);
+    config = withGoogleServicesJSON(config, props);
+    if (props.setHighPriorityPushHandler !== undefined) {
+      config = withAndroidManifestUpdates(config, props);
+    }
+    if (props.pushNotification?.channel) {
+      config = withNotificationChannelMetadata(config, props);
+    }
   }
-  if (props.pushNotification?.channel) {
-    config = withNotificationChannelMetadata(config, props);
-  }
+
   // Add auto initialization if sdkConfig is provided
   if (sdkConfig) {
     config = withMainApplicationModifications(config, sdkConfig);
   }
+
+  config = withProjectStrings(config);
 
   return config;
 }

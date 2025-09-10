@@ -17,12 +17,12 @@ import { withCioXcodeProject } from './withXcodeProject';
 export function withCIOIos(
   config: ExpoConfig,
   sdkConfig: NativeSDKConfig | undefined,
-  props: CustomerIOPluginOptionsIOS
+  props?: CustomerIOPluginOptionsIOS
 ) {
   const isSwiftProject = isExpoVersion53OrHigher(config);
   const platformConfig = mergeDeprecatedPropertiesAndLogWarnings(props);
 
-  if (platformConfig.pushNotification) {
+  if (platformConfig?.pushNotification) {
     if (isSwiftProject) {
       config = withCIOIosSwift(config, sdkConfig, platformConfig);
     } else {
@@ -50,13 +50,15 @@ export function withCIOIos(
   while the rest of the plugin code remains unchanged.
 */
 const mergeDeprecatedPropertiesAndLogWarnings = (
-  props: CustomerIOPluginOptionsIOS
+  props?: CustomerIOPluginOptionsIOS
 ) => {
   // The deprecatedTopLevelProperties maps the top level properties
   // that are deprecated to the new ios.pushNotification.* properties
   // that should be used instead. The deprecated properties are
   // still available for backwards compatibility, but they will
   // be removed in the future.
+
+  if(!props) return props
 
   const deprecatedTopLevelProperties = {
     showPushAppInForeground: props.showPushAppInForeground,
