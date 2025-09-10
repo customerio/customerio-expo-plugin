@@ -303,7 +303,7 @@ const updateNseEnv = (
   envFileContent = replaceCodeByRegex(
     envFileContent,
     CDP_API_KEY_RE,
-    cdpApiKey || 'invalid',
+    cdpApiKey || 'MISSING_API_KEY',
   );
 
   // Simplify region mapping with case insensitive keys and fallback for invalid regions
@@ -375,11 +375,13 @@ const updatePushFile = (
   const disableNotificationRegistration =
     options.pushNotification?.disableNotificationRegistration;
   const richPushConfig = options.pushNotification?.env;
-  validateRichPushConfig(richPushConfig);
   const { cdpApiKey, region } = richPushConfig || {
     cdpApiKey: 'MISSING_API_KEY',
     region: undefined,
   };
+  if (!validateRichPushConfig(richPushConfig)) {
+    return;
+  }
 
   let snippet = '';
   // unless this property is explicitly set to true, push notification
