@@ -1,5 +1,4 @@
 import type { ExpoConfig } from '@expo/config-types';
-
 import type {
   CustomerIOPluginOptionsIOS,
   CustomerIOPluginPushNotificationOptions,
@@ -16,8 +15,8 @@ import { withCioXcodeProject } from './withXcodeProject';
 
 export function withCIOIos(
   config: ExpoConfig,
-  sdkConfig: NativeSDKConfig | undefined,
-  props?: CustomerIOPluginOptionsIOS
+  sdkConfig?: NativeSDKConfig,
+  props?: CustomerIOPluginOptionsIOS,
 ) {
   const isSwiftProject = isExpoVersion53OrHigher(config);
   const platformConfig = mergeDeprecatedPropertiesAndLogWarnings(props);
@@ -50,15 +49,17 @@ export function withCIOIos(
   while the rest of the plugin code remains unchanged.
 */
 const mergeDeprecatedPropertiesAndLogWarnings = (
-  props?: CustomerIOPluginOptionsIOS
-) => {
+  props?: CustomerIOPluginOptionsIOS,
+): CustomerIOPluginOptionsIOS | undefined => {
   // The deprecatedTopLevelProperties maps the top level properties
   // that are deprecated to the new ios.pushNotification.* properties
   // that should be used instead. The deprecated properties are
   // still available for backwards compatibility, but they will
   // be removed in the future.
 
-  if(!props) return props
+  if (!props) {
+    return props
+  }
 
   const deprecatedTopLevelProperties = {
     showPushAppInForeground: props.showPushAppInForeground,

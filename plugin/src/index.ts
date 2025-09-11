@@ -19,6 +19,7 @@ function withCustomerIOPlugin(
     );
   }
 
+  // Apply platform specific modifications
   config = withCIOIos(config, props.config, props.ios);
   config = withCIOAndroid(config, props.config, props.android);
 
