@@ -1,3 +1,9 @@
+## [2.7.2](https://github.com/customerio/customerio-expo-plugin/compare/2.7.1...2.7.2) (2025-09-11)
+
+### Bug Fixes
+
+* typescript and test script cleanup ([#309](https://github.com/customerio/customerio-expo-plugin/issues/309)) ([a69e62b](https://github.com/customerio/customerio-expo-plugin/commit/a69e62bb4c5bee96d0f69570dd5f34da10d53d90))
+
 ## [2.7.1](https://github.com/customerio/customerio-expo-plugin/compare/2.7.0...2.7.1) (2025-09-09)
 
 ### Bug Fixes
