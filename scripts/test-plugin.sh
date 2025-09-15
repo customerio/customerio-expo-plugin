@@ -85,6 +85,6 @@ if [[ "$UPDATE_SNAPSHOTS" == true ]]; then
   SNAPSHOT_FLAG="-u"
 fi
 
-npm test $SNAPSHOT_FLAG -- __tests__/utils
-npm test $SNAPSHOT_FLAG -- __tests__/android
-npm test $SNAPSHOT_FLAG -- __tests__/ios/common __tests__/ios/$pushProviderValue
+npm test -- $SNAPSHOT_FLAG __tests__/utils
+npm test -- $SNAPSHOT_FLAG __tests__/android
+npm test -- $SNAPSHOT_FLAG __tests__/ios/common __tests__/ios/$pushProviderValue

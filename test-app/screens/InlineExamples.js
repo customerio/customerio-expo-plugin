@@ -1,6 +1,7 @@
 import { InlineInAppMessageView } from 'customerio-reactnative';
 import React from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet } from 'react-native';
+import { ThemedView } from '../components/themed-view';
 
 export default function InlineExamplesScreen() {
   const handleActionClick = (message, actionValue, actionName) => {
@@ -14,7 +15,7 @@ export default function InlineExamplesScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <ThemedView style={styles.container}>
       <InlineInAppMessageView
         elementId="sticky-header"
         style={[styles.inlineMessage, { marginTop: 0 }]}
@@ -22,22 +23,22 @@ export default function InlineExamplesScreen() {
       />
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.row}>
-          <View style={[styles.image, styles.grayBackground, { aspectRatio: 4 / 3 }]} />
-          <View style={styles.textBlock}>
-            <View style={[styles.title, styles.grayBackground]} />
-            <View style={[styles.subTitle, styles.grayBackground]} />
-            <View style={[styles.description, styles.grayBackground]} />
-          </View>
-        </View>
+        <ThemedView style={styles.row}>
+          <ThemedView style={[styles.image, styles.grayBackground, { aspectRatio: 4 / 3 }]} />
+          <ThemedView style={styles.textBlock}>
+            <ThemedView style={[styles.title, styles.grayBackground]} />
+            <ThemedView style={[styles.subTitle, styles.grayBackground]} />
+            <ThemedView style={[styles.description, styles.grayBackground]} />
+          </ThemedView>
+        </ThemedView>
 
-        <View style={[styles.fullWidthCard, styles.grayBackground]} />
+        <ThemedView style={[styles.fullWidthCard, styles.grayBackground]} />
 
-        <View style={styles.row}>
-          <View style={[styles.columnCard, styles.grayBackground]} />
-          <View style={[styles.columnCard, styles.grayBackground]} />
-          <View style={[styles.columnCard, styles.grayBackground]} />
-        </View>
+        <ThemedView style={styles.row}>
+          <ThemedView style={[styles.columnCard, styles.grayBackground]} />
+          <ThemedView style={[styles.columnCard, styles.grayBackground]} />
+          <ThemedView style={[styles.columnCard, styles.grayBackground]} />
+        </ThemedView>
 
         <InlineInAppMessageView
           elementId="inline"
@@ -45,22 +46,22 @@ export default function InlineExamplesScreen() {
           onActionClick={handleActionClick}
         />
 
-        <View style={styles.row}>
-          <View style={[styles.image, styles.grayBackground, { aspectRatio: 4 / 3 }]} />
-          <View style={styles.textBlock}>
-            <View style={[styles.title, styles.grayBackground]} />
-            <View style={[styles.subTitle, styles.grayBackground]} />
-            <View style={[styles.description, styles.grayBackground]} />
-          </View>
-        </View>
+        <ThemedView style={styles.row}>
+          <ThemedView style={[styles.image, styles.grayBackground, { aspectRatio: 4 / 3 }]} />
+          <ThemedView style={styles.textBlock}>
+            <ThemedView style={[styles.title, styles.grayBackground]} />
+            <ThemedView style={[styles.subTitle, styles.grayBackground]} />
+            <ThemedView style={[styles.description, styles.grayBackground]} />
+          </ThemedView>
+        </ThemedView>
 
-        <View style={[styles.fullWidthCard, styles.grayBackground]} />
+        <ThemedView style={[styles.fullWidthCard, styles.grayBackground]} />
 
-        <View style={styles.row}>
-          <View style={[styles.columnCard, styles.grayBackground]} />
-          <View style={[styles.columnCard, styles.grayBackground]} />
-          <View style={[styles.columnCard, styles.grayBackground]} />
-        </View>
+        <ThemedView style={styles.row}>
+          <ThemedView style={[styles.columnCard, styles.grayBackground]} />
+          <ThemedView style={[styles.columnCard, styles.grayBackground]} />
+          <ThemedView style={[styles.columnCard, styles.grayBackground]} />
+        </ThemedView>
 
         <InlineInAppMessageView
           elementId="below-fold"
@@ -68,7 +69,7 @@ export default function InlineExamplesScreen() {
           onActionClick={handleActionClick}
         />
       </ScrollView>
-    </View>
+    </ThemedView>
   );
 }
 

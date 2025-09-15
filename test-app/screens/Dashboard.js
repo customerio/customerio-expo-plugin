@@ -1,6 +1,10 @@
 import { useFocusEffect } from '@react-navigation/native';
+import { router } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
-import { Button, Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Button, Image, Linking, StyleSheet } from 'react-native';
+import ParallaxScrollView from '../components/parallax-scroll-view';
+import { ThemedText } from '../components/themed-text';
+import { ThemedView } from '../components/themed-view';
 import { registerInAppMessagingEventListener } from '../helpers/InAppMessagingListener';
 import { requestPermissionForPush } from '../helpers/RequestPushPermission';
 
@@ -11,7 +15,7 @@ import LoginModal from './LoginModal';
 import ProfileAttributeModal from './ProfileAttributeModal';
 import SendEventModal from './SendEventModal';
 
-export default function DashboardScreen({ navigation }) {
+export default function DashboardScreen() {
   useEffect(() => {
     return registerInAppMessagingEventListener();
   }, []);
@@ -30,7 +34,7 @@ export default function DashboardScreen({ navigation }) {
   };
 
   const handleNavigateToTestScreenButtonPressed = () => {
-    navigation.navigate('NavigationTest');
+    router.push('/nav-test');
   };
 
   const handleDeeplinkToTestScreenButtonPressed = () => {
@@ -44,7 +48,7 @@ export default function DashboardScreen({ navigation }) {
   };
 
   const handleNavigateToInlineExamplesButtonPressed = () => {
-    navigation.navigate('InlineExamples');
+    router.push('/inline-examples');
   };
 
   const handleLogoutButtonPressed = () => {
@@ -62,71 +66,76 @@ export default function DashboardScreen({ navigation }) {
   );
 
   return (
-    <View style={styles.container}>
-      <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.section}>
-          <Button title="Login" onPress={() => seLoginModalVisible(true)} />
-        </View>
+    <ParallaxScrollView
+      headerBackgroundColor={{ light: '#E3FFCE', dark: '#E3FFCE' }}
+      headerImage={
+        <Image
+          source={require('../assets/images/partial-customerio-logo.png')}
+          style={styles.reactLogo}
+        />
+      }>
+      <ThemedView style={styles.section}>
+        <Button title="Login" onPress={() => seLoginModalVisible(true)} />
+      </ThemedView>
 
-        <View style={styles.section}>
-          <Button
-            title="Send event"
-            onPress={() => setSendEventModalVisible(true)}
-          />
-        </View>
+      <ThemedView style={styles.section}>
+        <Button
+          title="Send event"
+          onPress={() => setSendEventModalVisible(true)}
+        />
+      </ThemedView>
 
-        <View style={styles.section}>
-          <Button
-            title="Profile Attribute"
-            onPress={() => setProfileAttributeModalVisible(true)}
-          />
-        </View>
+      <ThemedView style={styles.section}>
+        <Button
+          title="Profile Attribute"
+          onPress={() => setProfileAttributeModalVisible(true)}
+        />
+      </ThemedView>
 
-        <View style={styles.section}>
-          <Button
-            title="Device attribute"
-            onPress={() => setDeviceAttributeModalVisible(true)}
-          />
-        </View>
+      <ThemedView style={styles.section}>
+        <Button
+          title="Device attribute"
+          onPress={() => setDeviceAttributeModalVisible(true)}
+        />
+      </ThemedView>
 
-        <View style={styles.section}>
-          <Button
-            title="Request push permission"
-            onPress={handleRequestPushPermissionButtonPressed}
-          />
-        </View>
+      <ThemedView style={styles.section}>
+        <Button
+          title="Request push permission"
+          onPress={handleRequestPushPermissionButtonPressed}
+        />
+      </ThemedView>
 
-        <View style={styles.section}>
-          <Button
-            title="Navigate to test screen"
-            onPress={handleNavigateToTestScreenButtonPressed}
-          />
-        </View>
+      <ThemedView style={styles.section}>
+        <Button
+          title="Navigate to test screen"
+          onPress={handleNavigateToTestScreenButtonPressed}
+        />
+      </ThemedView>
 
-        <View style={styles.section}>
-          <Button
-            title="Deeplink to test screen"
-            onPress={handleDeeplinkToTestScreenButtonPressed}
-          />
-        </View>
+      <ThemedView style={styles.section}>
+        <Button
+          title="Deeplink to test screen"
+          onPress={handleDeeplinkToTestScreenButtonPressed}
+        />
+      </ThemedView>
 
-        <View style={styles.section}>
-          <Button
-            title="Inline Examples"
-            onPress={handleNavigateToInlineExamplesButtonPressed}
-          />
-        </View>
+      <ThemedView style={styles.section}>
+        <Button
+          title="Inline Examples"
+          onPress={handleNavigateToInlineExamplesButtonPressed}
+        />
+      </ThemedView>
 
-        <View style={styles.section}>
-          <Button title="Logout" onPress={handleLogoutButtonPressed} />
-        </View>
+      <ThemedView style={styles.section}>
+        <Button title="Logout" onPress={handleLogoutButtonPressed} />
+      </ThemedView>
 
-        <View style={styles.spacer} />
+      <ThemedView style={styles.spacer} />
 
-        <View style={styles.bottomLabelContainer}>
-          <Text style={styles.bottomLabel}>{workspaceInfo}</Text>
-        </View>
-      </ScrollView>
+      <ThemedView style={styles.bottomLabelContainer}>
+        <ThemedText style={styles.bottomLabel}>{workspaceInfo}</ThemedText>
+      </ThemedView>
 
       <LoginModal
         visible={loginModalVisible}
@@ -144,29 +153,27 @@ export default function DashboardScreen({ navigation }) {
         visible={deviceAttributeModalVisible}
         onClose={() => setDeviceAttributeModalVisible(false)}
       />
-    </View>
+    </ParallaxScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  content: {
-    flexGrow: 1,
-    paddingVertical: 20,
-    paddingHorizontal: 10,
-    alignItems: 'center',
+  reactLogo: {
+    height: 178,
+    width: 290,
+    bottom: 0,
+    left: 0,
+    position: 'absolute',
   },
   spacer: {
-    flexGrow: 1,
+    height: 32,
   },
   section: {
-    marginBottom: 20,
-    width: '100%',
+    marginBottom: 16,
     alignItems: 'center',
+  },
+  sectionTitle: {
+    marginBottom: 8,
   },
   input: {
     borderWidth: 1,
@@ -177,9 +184,8 @@ const styles = StyleSheet.create({
     width: '80%',
   },
   bottomLabelContainer: {
-    marginTop: 20,
+    marginTop: 16,
     alignItems: 'center',
-    width: '100%',
   },
   bottomLabel: {
     fontSize: 16,
