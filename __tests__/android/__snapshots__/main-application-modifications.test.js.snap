@@ -1,6 +1,6 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`Expo 53+ MainApplication tests Plugin injects CIO initializer into MainApplication.kt 1`] = `
+exports[`Expo 54+ MainApplication tests Plugin injects CIO initializer into MainApplication.kt 1`] = `
 "package io.customer.testbed.expo
 
 import android.app.Application
