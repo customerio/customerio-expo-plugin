@@ -2,6 +2,7 @@
   "extends": "./tsconfig.json",
   "exclude": [
     "ci-test-apps",
-    "__tests__"
+    "__tests__",
+    "test-app"
   ]
 }

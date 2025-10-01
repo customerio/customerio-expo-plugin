@@ -13,7 +13,7 @@ const {
 const APP_PATH = getArgValue("--app-path", { required: true });
 const EXPO_VERSION = getArgValue("--expo-version", { default: 53 })
 const PLATFORMS = getArgValue("--platforms", { default: "android,ios" }).split(",");
-const IOS_PUSH_PROVIDERS = parseArrayArg("--ios-push-providers", { default: "apn,fcm" });
+const IOS_PUSH_PROVIDERS = parseArrayArg("--ios-push-providers", { default: ["apn", "fcm"] });
 const TESTS_DIRECTORY_PATH = getArgValue("--tests-dir-path", {
   default: path.join(__dirname, "../../__tests__"),
 });

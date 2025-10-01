@@ -1,12 +1,12 @@
 import React, { useState } from "react";
 import {
-  View,
-  Text,
   TextInput,
   StyleSheet,
   TouchableOpacity,
   Modal,
 } from "react-native";
+import { ThemedText } from '../components/themed-text';
+import { ThemedView } from '../components/themed-view';
 import { CustomerIO } from "customerio-reactnative";
 
 export default function SendEventModal({ visible, onClose }) {
@@ -36,9 +36,9 @@ export default function SendEventModal({ visible, onClose }) {
       visible={visible}
       onRequestClose={onClose}
     >
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalContainer}>
-          <Text style={styles.modalTitle}>Send Event</Text>
+      <ThemedView style={styles.modalOverlay}>
+        <ThemedView style={styles.modalContainer}>
+          <ThemedText style={styles.modalTitle}>Send Event</ThemedText>
 
           <TextInput
             style={styles.input}
@@ -64,10 +64,10 @@ export default function SendEventModal({ visible, onClose }) {
             style={styles.modalButton}
             onPress={handlePopupButtonPress}
           >
-            <Text style={styles.modalButtonText}>Submit</Text>
+            <ThemedText style={styles.modalButtonText}>Submit</ThemedText>
           </TouchableOpacity>
-        </View>
-      </View>
+        </ThemedView>
+      </ThemedView>
     </Modal>
   );
 }

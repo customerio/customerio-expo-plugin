@@ -1,5 +1,7 @@
 import React, { useCallback } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { StyleSheet } from 'react-native';
+import { ThemedText } from '../components/themed-text';
+import { ThemedView } from '../components/themed-view';
 import { useFocusEffect } from '@react-navigation/native';
 import { CustomerIO } from "customerio-reactnative";
 
@@ -17,9 +19,9 @@ export default function NavigationTestScreen() {
   );
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.label}>This is a page to test navigation!</Text>
-    </View>
+    <ThemedView style={styles.container}>
+      <ThemedText style={styles.label}>This is a page to test navigation!</ThemedText>
+    </ThemedView>
   );
 }
 
