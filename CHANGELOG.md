@@ -1,3 +1,9 @@
+## [2.7.3](https://github.com/customerio/customerio-expo-plugin/compare/2.7.2...2.7.3) (2025-10-03)
+
+### Bug Fixes
+
+* suppress logger crash on armeabi devices ([#312](https://github.com/customerio/customerio-expo-plugin/issues/312)) ([f970974](https://github.com/customerio/customerio-expo-plugin/commit/f970974f252adbd2b91bb10b59a34d5d0c822087))
+
 ## [2.7.2](https://github.com/customerio/customerio-expo-plugin/compare/2.7.1...2.7.2) (2025-09-11)
 
 ### Bug Fixes
