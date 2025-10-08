@@ -98,8 +98,7 @@ jobs:
         run: |
           npm run compatibility:configure-plugin -- \
             --app-path=${{ env.APP_PATH }} \
-            --add-default-config \
-            ${{ matrix.expo-version == 53 && '--use-auto-init=false' || '' }}
+            --add-default-config
 
       - name: Validate Plugin
         run: |
