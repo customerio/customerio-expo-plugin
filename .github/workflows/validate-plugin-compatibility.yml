@@ -26,23 +26,21 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - expo-version: 52
+          - expo-version: 53
             platform: android
-          - expo-version: 52
+          - expo-version: 53
             platform: ios
             ios-push-provider: apn
-            ios-deployment-target: "15.1"
-          - expo-version: 52
+          - expo-version: 53
             platform: ios
             ios-push-provider: fcm
-            ios-deployment-target: "15.1"
 
-          - expo-version: 53
+          - expo-version: 54
             platform: android
-          - expo-version: 53
+          - expo-version: 54
             platform: ios
             ios-push-provider: apn
-          - expo-version: 53
+          - expo-version: 54
             platform: ios
             ios-push-provider: fcm
 
