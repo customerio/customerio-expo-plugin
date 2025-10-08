@@ -99,8 +99,7 @@ jobs:
           npm run compatibility:configure-plugin -- \
             --app-path=${{ env.APP_PATH }} \
             --add-default-config \
-            ${{ matrix.expo-version == 52 && '--use-auto-init=false' || '' }} \
-            ${{ matrix.ios-deployment-target && format('--expo-build-props.ios.deploymentTarget={0}', matrix.ios-deployment-target) }}
+            ${{ matrix.expo-version == 53 && '--use-auto-init=false' || '' }}
 
       - name: Validate Plugin
         run: |
@@ -108,5 +107,4 @@ jobs:
             --app-path=${{ env.APP_PATH }} \
             --platforms=${{ matrix.platform }}\
             --ios-use-frameworks="static" \
-            ${{ matrix.ios-push-provider && format(' --ios-push-providers={0}', matrix.ios-push-provider) }} \
-            ${{ matrix.expo-version < 53 && format(' --expo-version={0}', matrix.expo-version) }}
+            ${{ matrix.ios-push-provider && format(' --ios-push-providers={0}', matrix.ios-push-provider) }}
