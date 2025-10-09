@@ -26,23 +26,21 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - expo-version: 52
+          - expo-version: 53
             platform: android
-          - expo-version: 52
+          - expo-version: 53
             platform: ios
             ios-push-provider: apn
-            ios-deployment-target: "15.1"
-          - expo-version: 52
+          - expo-version: 53
             platform: ios
             ios-push-provider: fcm
-            ios-deployment-target: "15.1"
 
-          - expo-version: 53
+          - expo-version: 54
             platform: android
-          - expo-version: 53
+          - expo-version: 54
             platform: ios
             ios-push-provider: apn
-          - expo-version: 53
+          - expo-version: 54
             platform: ios
             ios-push-provider: fcm
 
@@ -100,9 +98,7 @@ jobs:
         run: |
           npm run compatibility:configure-plugin -- \
             --app-path=${{ env.APP_PATH }} \
-            --add-default-config \
-            ${{ matrix.expo-version == 52 && '--use-auto-init=false' || '' }} \
-            ${{ matrix.ios-deployment-target && format('--expo-build-props.ios.deploymentTarget={0}', matrix.ios-deployment-target) }}
+            --add-default-config
 
       - name: Validate Plugin
         run: |
@@ -110,5 +106,4 @@ jobs:
             --app-path=${{ env.APP_PATH }} \
             --platforms=${{ matrix.platform }}\
             --ios-use-frameworks="static" \
-            ${{ matrix.ios-push-provider && format(' --ios-push-providers={0}', matrix.ios-push-provider) }} \
-            ${{ matrix.expo-version < 53 && format(' --expo-version={0}', matrix.expo-version) }}
+            ${{ matrix.ios-push-provider && format(' --ios-push-providers={0}', matrix.ios-push-provider) }}
