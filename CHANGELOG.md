@@ -1,3 +1,9 @@
+## [2.8.0](https://github.com/customerio/customerio-expo-plugin/compare/2.7.3...2.8.0) (2025-10-09)
+
+### Features
+
+* in-app anonymous support ([#313](https://github.com/customerio/customerio-expo-plugin/issues/313)) ([ad96c18](https://github.com/customerio/customerio-expo-plugin/commit/ad96c183da6785a4cf79800b4ca0010f12c98d67))
+
 ## [2.7.3](https://github.com/customerio/customerio-expo-plugin/compare/2.7.2...2.7.3) (2025-10-03)
 
 ### Bug Fixes
