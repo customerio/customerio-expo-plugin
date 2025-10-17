@@ -1,5 +1,6 @@
 import Foundation
 import CioMessagingPushFCM
+import CioFirebaseWrapper
 import FirebaseCore
 import FirebaseMessaging
 import UserNotifications

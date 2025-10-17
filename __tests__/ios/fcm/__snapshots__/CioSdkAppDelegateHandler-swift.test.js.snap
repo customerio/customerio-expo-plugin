@@ -3,6 +3,7 @@
 exports[`Expo 53 FCM CioSdkAppDelegateHandler tests Plugin creates expected CioSdkAppDelegateHandler.swift 1`] = `
 "import Foundation
 import CioMessagingPushFCM
+import CioFirebaseWrapper
 import FirebaseCore
 import FirebaseMessaging
 import UserNotifications
