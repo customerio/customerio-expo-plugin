@@ -1,6 +1,7 @@
 import Foundation
 import CioMessagingPushFCM
 import CioFirebaseWrapper
+@_spi(Internal) import CioMessagingPush
 import FirebaseCore
 import FirebaseMessaging
 import UserNotifications
@@ -45,8 +46,8 @@ public class CioSdkAppDelegateHandler: NSObject {
     if (FirebaseApp.app() == nil) {
       FirebaseApp.configure()
     }
-    _ = cioAppDelegate.application(application, didFinishLaunchingWithOptions: launchOptions)
-    UIApplication.shared.registerForRemoteNotifications()
+
+    MessagingPush.appDelegateIntegratedExplicitly = true
 
     MessagingPushFCM.initialize(
       withConfig: MessagingPushConfigBuilder()
@@ -55,6 +56,9 @@ public class CioSdkAppDelegateHandler: NSObject {
         .autoTrackPushEvents({{AUTO_TRACK_PUSH_EVENTS}})
         .build()
     )
+
+    _ = cioAppDelegate.application(application, didFinishLaunchingWithOptions: launchOptions)
+    UIApplication.shared.registerForRemoteNotifications()
   }
 
   public func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
