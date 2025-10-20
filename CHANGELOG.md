@@ -1,3 +1,9 @@
+## [2.9.0](https://github.com/customerio/customerio-expo-plugin/compare/2.8.0...2.9.0) (2025-10-20)
+
+### Features
+
+* Use latest RN SDK version and internally use CioFirebaseWrapper ([#314](https://github.com/customerio/customerio-expo-plugin/issues/314)) ([0fb27c3](https://github.com/customerio/customerio-expo-plugin/commit/0fb27c39aff5a19f4d7591b41459b967d871e5dc))
+
 ## [2.8.0](https://github.com/customerio/customerio-expo-plugin/compare/2.7.3...2.8.0) (2025-10-09)
 
 ### Features
