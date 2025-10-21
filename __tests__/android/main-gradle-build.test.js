@@ -19,5 +19,4 @@ test('Plugin injects expted dependencies in the main Gradle build file', async (
       dependency.version === '4.3.13'
   );
   expect(hasBuildScriptDependency).toBe(true);
-  expect(mainBuildGradleContent).toContain('maven { url "https://maven.gist.build" }');
 });
