@@ -1,3 +1,9 @@
+## [2.9.1](https://github.com/customerio/customerio-expo-plugin/compare/2.9.0...2.9.1) (2025-10-22)
+
+### Bug Fixes
+
+* remove deprecated maven dependency ([#316](https://github.com/customerio/customerio-expo-plugin/issues/316)) ([cb2f8b5](https://github.com/customerio/customerio-expo-plugin/commit/cb2f8b5ed93a8c03d65726550360a2c25be7b26d))
+
 ## [2.9.0](https://github.com/customerio/customerio-expo-plugin/compare/2.8.0...2.9.0) (2025-10-20)
 
 ### Features
