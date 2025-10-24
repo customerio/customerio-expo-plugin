@@ -1,3 +1,9 @@
+## [2.9.2](https://github.com/customerio/customerio-expo-plugin/compare/2.9.1...2.9.2) (2025-10-24)
+
+### Bug Fixes
+
+* prevent message type crash in release builds ([#318](https://github.com/customerio/customerio-expo-plugin/issues/318)) ([71e40d7](https://github.com/customerio/customerio-expo-plugin/commit/71e40d7e84f3c1ee7618d05eddce6ef3d3ed9406))
+
 ## [2.9.1](https://github.com/customerio/customerio-expo-plugin/compare/2.9.0...2.9.1) (2025-10-22)
 
 ### Bug Fixes
