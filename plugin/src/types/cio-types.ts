@@ -72,6 +72,20 @@ export type CustomerIOPluginOptionsAndroid = {
       importance?: number;
     };
   };
+  /**
+   * Controls whether to disable Android 16 support by downgrading androidx dependencies.
+   *
+   * When true (default for Expo SDK 53), forces older androidx versions compatible with
+   * Android API 35 and AGP 8.8.2, preventing Android 16 incompatibility errors.
+   *
+   * When false (default for Expo SDK 54+), allows newer androidx versions that support Android 16
+   * but require Android API 36 and AGP 8.9.1+.
+   *
+   * If not specified, the plugin auto-detects based on Expo SDK version.
+   *
+   * @default undefined (true for SDK ≤53, false for SDK ≥54)
+   */
+  disableAndroid16Support?: boolean;
 };
 
 /**

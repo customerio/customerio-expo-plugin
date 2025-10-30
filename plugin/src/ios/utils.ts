@@ -13,15 +13,20 @@ export const isFcmPushProvider = (
   return iosOptions?.pushNotification?.provider === 'fcm';
 };
 
-export const isExpoVersion53OrHigher = (config: ExpoConfig): boolean => {
+/** Checks if Expo SDK version meets minimum version requirement */
+function isExpoVersionOrHigher(config: ExpoConfig, minVersion: string): boolean {
   const sdkVersion = config.sdkVersion || '';
-
-  // If sdkVersion is not a valid semver, coerce it to a valid one if possible
   const validVersion = semver.valid(sdkVersion) || semver.coerce(sdkVersion);
-
-  // If we couldn't get a valid version, return false
   if (!validVersion) return false;
+  return semver.gte(validVersion, minVersion);
+}
 
-  // Check if the version is greater than or equal to 53.0.0
-  return semver.gte(validVersion, '53.0.0');
+/** Returns true if Expo SDK version is >= 53.0.0 */
+export const isExpoVersion53OrHigher = (config: ExpoConfig): boolean => {
+  return isExpoVersionOrHigher(config, '53.0.0');
+};
+
+/** Returns true if Expo SDK version is <= 53.x.x (used for Android 16 compat detection) */
+export const isExpoVersion53OrLower = (config: ExpoConfig): boolean => {
+  return !isExpoVersionOrHigher(config, '54.0.0');
 };
