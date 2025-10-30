@@ -23,6 +23,7 @@ export type CustomerIOPluginOptionsAndroid = {
             importance?: number;
         };
     };
+    disableAndroid16Support?: boolean;
 };
 
 // @public
