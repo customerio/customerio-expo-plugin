@@ -81,9 +81,9 @@ export type CustomerIOPluginOptionsAndroid = {
    * When false (default for Expo SDK 54+), allows newer androidx versions that support Android 16
    * but require Android API 36 and AGP 8.9.1+.
    *
-   * If not specified, the plugin auto-detects based on Expo SDK version.
-   *
-   * @default undefined (true for SDK ≤53, false for SDK ≥54)
+   * If not specified, the plugin auto-detects based on Expo SDK version:
+   * - Expo SDK ≤53: true (disables Android 16)
+   * - Expo SDK ≥54: false (enables Android 16)
    */
   disableAndroid16Support?: boolean;
 };
