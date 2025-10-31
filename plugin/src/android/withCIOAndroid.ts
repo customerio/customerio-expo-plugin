@@ -6,6 +6,7 @@ import { withAppGoogleServices } from './withAppGoogleServices';
 import { withGoogleServicesJSON } from './withGoogleServicesJSON';
 import { withMainApplicationModifications } from './withMainApplicationModifications';
 import { withNotificationChannelMetadata } from './withNotificationChannelMetadata';
+import { withProjectBuildGradle } from './withProjectBuildGradle';
 import { withProjectGoogleServices } from './withProjectGoogleServices';
 import { withProjectStrings } from './withProjectStrings';
 
@@ -34,6 +35,10 @@ export function withCIOAndroid(
 
   // Update project strings for user agent metadata
   config = withProjectStrings(config);
+
+  // Add dependency resolution strategy for Expo SDK 53 compatibility
+  // This prevents androidx versions that require API 36 from being pulled in
+  config = withProjectBuildGradle(config, props);
 
   return config;
 }
