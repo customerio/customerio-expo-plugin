@@ -1,3 +1,9 @@
+## [2.10.0](https://github.com/customerio/customerio-expo-plugin/compare/2.9.2...2.10.0) (2025-10-31)
+
+### Features
+
+* support for Android 16 ([#319](https://github.com/customerio/customerio-expo-plugin/issues/319)) ([2537f17](https://github.com/customerio/customerio-expo-plugin/commit/2537f17f77ff0b3f9a8bd376770767ab55280336))
+
 ## [2.9.2](https://github.com/customerio/customerio-expo-plugin/compare/2.9.1...2.9.2) (2025-10-24)
 
 ### Bug Fixes
