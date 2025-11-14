@@ -1,3 +1,9 @@
+## [2.10.1](https://github.com/customerio/customerio-expo-plugin/compare/2.10.0...2.10.1) (2025-11-14)
+
+### Bug Fixes
+
+* in-app listener for android ([#320](https://github.com/customerio/customerio-expo-plugin/issues/320)) ([352cc5e](https://github.com/customerio/customerio-expo-plugin/commit/352cc5e1e964f4feece0c64dcb9c340eaf0e9de3))
+
 ## [2.10.0](https://github.com/customerio/customerio-expo-plugin/compare/2.9.2...2.10.0) (2025-10-31)
 
 ### Features
