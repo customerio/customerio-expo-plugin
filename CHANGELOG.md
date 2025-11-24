@@ -1,3 +1,9 @@
+## [2.11.0](https://github.com/customerio/customerio-expo-plugin/compare/2.10.1...2.11.0) (2025-11-24)
+
+### Features
+
+* **auth:** DX-809 update to use preferred OIDC for npm publish in github actions [#321](https://github.com/customerio/customerio-expo-plugin/issues/321) ([#321](https://github.com/customerio/customerio-expo-plugin/issues/321)) ([d595723](https://github.com/customerio/customerio-expo-plugin/commit/d5957230c33ac0c984ec0b277b71f3122ae9eac0))
+
 ## [2.10.1](https://github.com/customerio/customerio-expo-plugin/compare/2.10.0...2.10.1) (2025-11-14)
 
 ### Bug Fixes
