@@ -149,9 +149,7 @@ jobs:
         run: yarn typescript
 
       - name: Publish to npm
-        run: |
-          npm version 0.0.0-test-oidc --no-git-tag-version
-          npm publish --dry-run --tag test-oidc
+        run: npm publish
 
       - name: Notify team of successful deployment
         uses: slackapi/slack-github-action@70cd7be8e40a46e8b0eced40b0de447bdb42f68e # v1.26.0
