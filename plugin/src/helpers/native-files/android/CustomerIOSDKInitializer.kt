@@ -6,7 +6,7 @@ import io.customer.messaginginapp.MessagingInAppModuleConfig
 import io.customer.messaginginapp.ModuleMessagingInApp
 import io.customer.messagingpush.MessagingPushModuleConfig
 import io.customer.messagingpush.ModuleMessagingPushFCM
-import io.customer.reactnative.sdk.messaginginapp.NativeMessagingInAppModuleImpl
+import io.customer.reactnative.sdk.messaginginapp.ReactInAppEventListener
 import io.customer.sdk.CustomerIOBuilder
 import io.customer.sdk.core.util.CioLogLevel
 import io.customer.sdk.data.model.Region
@@ -31,7 +31,7 @@ object CustomerIOSDKInitializer {
             addCustomerIOModule(
                 ModuleMessagingInApp(
                     MessagingInAppModuleConfig.Builder(siteId, region)
-                        .setEventListener(NativeMessagingInAppModuleImpl.inAppEventListener)
+                        .setEventListener(ReactInAppEventListener.instance)
                         .build()
                 )
             )
