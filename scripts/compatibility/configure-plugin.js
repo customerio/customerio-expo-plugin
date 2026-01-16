@@ -172,6 +172,11 @@ function execute() {
     delete buildPropsConfig.ios?.useFrameworks;
   }
 
+  // Exclude duplicate META-INF files from okhttp
+  setNestedProperty(buildPropsConfig, "android.packagingOptions", {
+    exclude: ["META-INF/versions/9/OSGI-INF/MANIFEST.MF"],
+  });
+
   // Step 6: Apply additional plugin-specific configurations
   logMessage("🔧 Applying additional configurations...");
   const cioAdditionalConfig = getPluginConfigFromCliPrefix(CUSTOMER_IO_EXPO_PLUGIN_NAME);
