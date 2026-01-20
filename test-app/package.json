@@ -15,7 +15,7 @@
     "@react-navigation/elements": "^2.6.3",
     "@react-navigation/native": "^7.1.8",
     "customerio-expo-plugin": "file:../customerio-expo-plugin-latest.tgz",
-    "customerio-reactnative": "^5.1.1",
+    "customerio-reactnative": "^6.1.0",
     "dotenv": "^17.2.2",
     "expo": "~54.0.2",
     "expo-build-properties": "^1.0.8",
