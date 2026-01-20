@@ -1,3 +1,13 @@
+## [3.0.0](https://github.com/customerio/customerio-expo-plugin/compare/2.11.0...3.0.0) (2026-01-20)
+
+### ⚠ BREAKING CHANGES
+
+* remove React Native old architecture support (#323)
+
+### Features
+
+* remove React Native old architecture support ([#323](https://github.com/customerio/customerio-expo-plugin/issues/323)) ([0f96132](https://github.com/customerio/customerio-expo-plugin/commit/0f96132cf0f405e4c73c52397c4916ffaefc498c))
+
 ## [2.11.0](https://github.com/customerio/customerio-expo-plugin/compare/2.10.1...2.11.0) (2025-11-24)
 
 ### Features
