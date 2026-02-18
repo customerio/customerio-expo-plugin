@@ -1,3 +1,9 @@
+## [3.0.1](https://github.com/customerio/customerio-expo-plugin/compare/3.0.0...3.0.1) (2026-02-18)
+
+### Bug Fixes
+
+* Downgrade okhttp to v4.x ([#325](https://github.com/customerio/customerio-expo-plugin/issues/325)) ([60a5b89](https://github.com/customerio/customerio-expo-plugin/commit/60a5b898a8091f590a55051b56c596fdcb57926f))
+
 ## [3.0.0](https://github.com/customerio/customerio-expo-plugin/compare/2.11.0...3.0.0) (2026-01-20)
 
 ### ⚠ BREAKING CHANGES
