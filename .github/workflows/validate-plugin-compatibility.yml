@@ -13,14 +13,14 @@ concurrency:
 env:
   NODE_VERSION: "20"
   JAVA_VERSION: "17"
-  XCODE_VERSION: "16.2"
+  XCODE_VERSION: "26.2"
   APP_DIR: ci-test-apps
   APP_NAME_PREFIX: ExpoPluginTestApp
 
 jobs:
   validate:
     name: Expo ${{ matrix.expo-version }} - ${{ matrix.platform }}${{ matrix.ios-push-provider && format(' ({0})', matrix.ios-push-provider) }}
-    runs-on: macos-14
+    runs-on: macos-15
 
     strategy:
       fail-fast: false
@@ -60,8 +60,8 @@ jobs:
           distribution: temurin
           java-version: ${{ env.JAVA_VERSION }}
 
-      - name: Setup Xcode
-        uses: maxim-lobanov/setup-xcode@60606e260d2fc5762a71e64e74b2174e8ea3c8bd # v1.6.0
+      - name: Setup iOS
+        uses: customerio/mobile-ci-tools/github-actions/ios/setup-ios/v1@MacOS-15+iOS-26
         with:
           xcode-version: ${{ env.XCODE_VERSION }}
 
