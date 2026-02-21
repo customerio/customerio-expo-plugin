@@ -1,3 +1,9 @@
+## [3.1.0](https://github.com/customerio/customerio-expo-plugin/compare/3.0.1...3.1.0) (2026-02-21)
+
+### Features
+
+* support for notification inbox ([#327](https://github.com/customerio/customerio-expo-plugin/issues/327)) ([e8bb3a7](https://github.com/customerio/customerio-expo-plugin/commit/e8bb3a7b18b2c679470dbc4dd5096e76c54dc68e))
+
 ## [3.0.1](https://github.com/customerio/customerio-expo-plugin/compare/3.0.0...3.0.1) (2026-02-18)
 
 ### Bug Fixes
