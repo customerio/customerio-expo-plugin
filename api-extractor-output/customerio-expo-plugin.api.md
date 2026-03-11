@@ -5,10 +5,16 @@
 ```ts
 
 // @public
+export type CustomerIOPluginLocationOptions = {
+    enabled?: boolean;
+};
+
+// @public
 export type CustomerIOPluginOptions = {
     config?: NativeSDKConfig;
     android: CustomerIOPluginOptionsAndroid;
     ios: CustomerIOPluginOptionsIOS;
+    location?: CustomerIOPluginLocationOptions;
 };
 
 // @public
@@ -66,6 +72,9 @@ export type CustomerIOPluginPushNotificationOptions = {
 };
 
 // @public
+export type LocationTrackingMode = 'OFF' | 'MANUAL' | 'ON_APP_START';
+
+// @public
 export type NativeSDKConfig = {
     cdpApiKey: string;
     region?: 'US' | 'EU';
@@ -75,6 +84,9 @@ export type NativeSDKConfig = {
     logLevel?: 'none' | 'error' | 'info' | 'debug';
     siteId?: string;
     migrationSiteId?: string;
+    location?: {
+        trackingMode?: LocationTrackingMode;
+    };
 };
 
 // @public

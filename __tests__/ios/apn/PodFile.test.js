@@ -9,8 +9,12 @@ const podFilePath = path.join(iosPath, "Podfile");
 test("Plugin injects expected customerio-reactnative/apn and customerio-reactnative-richpush/apn in Podfile", async () => {
     const content = await fs.readFile(podFilePath, "utf8");
 
-    // Ensure APN pod is added
-    expect(content).toContain("pod 'customerio-reactnative/apn', :path => '../node_modules/customerio-reactnative'");
+    // Ensure CustomerIO Host App block exists and APN pod is added (single-subspec or :subspecs including 'apn')
+    expect(content).toContain("# --- CustomerIO Host App START ---");
+    expect(content).toContain("# --- CustomerIO Host App END ---");
+    const hasSingleSubspec = content.includes("pod 'customerio-reactnative/apn', :path => '../node_modules/customerio-reactnative'");
+    const hasMultiSubspecWithApn = content.includes("customerio-reactnative") && content.includes("'apn'") && content.includes(":subspecs =>");
+    expect(hasSingleSubspec || hasMultiSubspecWithApn).toBe(true);
 
     // Ensure NotificationService target is added with rich push pod
     const podFileAsLines = content.split('\n').map(line => line.trim());

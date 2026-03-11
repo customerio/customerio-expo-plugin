@@ -2,6 +2,7 @@ import type { ExpoConfig } from '@expo/config-types';
 import type {
   CustomerIOPluginOptionsIOS,
   CustomerIOPluginPushNotificationOptions,
+  CustomerIOPluginLocationOptions,
   NativeSDKConfig,
 } from '../types/cio-types';
 import { mergeConfigWithEnvValues } from '../utils/config';
@@ -17,13 +18,15 @@ export function withCIOIos(
   config: ExpoConfig,
   sdkConfig?: NativeSDKConfig,
   props?: CustomerIOPluginOptionsIOS,
+  location?: CustomerIOPluginLocationOptions,
 ) {
   const isSwiftProject = isExpoVersion53OrHigher(config);
   const platformConfig = mergeDeprecatedPropertiesAndLogWarnings(props);
+  const locationEnabled = location?.enabled === true;
 
   if (platformConfig?.pushNotification) {
     if (isSwiftProject) {
-      config = withCIOIosSwift(config, sdkConfig, platformConfig);
+      config = withCIOIosSwift(config, sdkConfig, platformConfig, location);
     } else {
       // Auto initialization is only supported in Swift projects (Expo SDK 53+)
       // Legacy Objective-C projects only support push notifications
@@ -33,10 +36,22 @@ export function withCIOIos(
     platformConfig.pushNotification.env = platformConfig.pushNotification.env
       || mergeConfigWithEnvValues(platformConfig, sdkConfig);
     config = withCioNotificationsXcodeProject(config, platformConfig);
-    config = withCioXcodeProject(config, platformConfig);
+    config = withCioXcodeProject(config, {
+      ...platformConfig,
+      podfileOptions: {
+        locationEnabled,
+        hasPush: true,
+      },
+    });
     config = withGoogleServicesJsonFile(config, platformConfig);
   } else if (sdkConfig && isSwiftProject) {
-    config = withCIOIosSwift(config, sdkConfig, platformConfig);
+    config = withCIOIosSwift(config, sdkConfig, platformConfig, location);
+    if (locationEnabled) {
+      config = withCioXcodeProject(config, {
+        ...platformConfig,
+        podfileOptions: { locationEnabled: true, hasPush: false },
+      });
+    }
   }
 
   return config;

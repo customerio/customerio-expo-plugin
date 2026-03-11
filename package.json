@@ -55,9 +55,10 @@
     "registry": "https://registry.npmjs.org/"
   },
   "peerDependencies": {
-    "customerio-reactnative": "6.2.0"
+    "customerio-reactnative": "6.3.1"
   },
   "devDependencies": {
+    "dotenv": "^16.4.5",
     "@eslint/js": "^9.33.0",
     "@expo/config-plugins": "^10.0.0",
     "@expo/config-types": "^53.0.0",
