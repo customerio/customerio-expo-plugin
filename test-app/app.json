@@ -15,6 +15,7 @@
         "aps-environment": "development"
       },
       "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "This app uses location to test Customer.io location features.",
         "CFBundleURLTypes": [
           {
             "CFBundleURLSchemes": [
@@ -85,7 +86,10 @@
             "cdpApiKey": "@CDP_API_KEY@",
             "siteId": "@SITE_ID@",
             "region": "us",
-            "logLevel": "debug"
+            "logLevel": "debug",
+            "location": {
+              "trackingMode": "MANUAL"
+            }
           },
           "android": {
             "googleServicesFile": "./files/google-services.json",
@@ -104,6 +108,9 @@
               "provider": "apn",
               "useRichPush": true
             }
+          },
+          "location": {
+            "enabled": true
           }
         }
       ],

@@ -51,6 +51,10 @@ export default function DashboardScreen() {
     router.push('/inline-examples');
   };
 
+  const handleNavigateToLocationButtonPressed = () => {
+    router.push('/location');
+  };
+
   const handleLogoutButtonPressed = () => {
     CustomerIO.clearIdentify();
   };
@@ -124,6 +128,13 @@ export default function DashboardScreen() {
         <Button
           title="Inline Examples"
           onPress={handleNavigateToInlineExamplesButtonPressed}
+        />
+      </ThemedView>
+
+      <ThemedView style={styles.section}>
+        <Button
+          title="Location"
+          onPress={handleNavigateToLocationButtonPressed}
         />
       </ThemedView>
 
