@@ -1,3 +1,9 @@
+## [3.2.0](https://github.com/customerio/customerio-expo-plugin/compare/3.1.0...3.2.0) (2026-03-12)
+
+### Features
+
+* Locaiton enrichment ([#328](https://github.com/customerio/customerio-expo-plugin/issues/328)) ([53db70e](https://github.com/customerio/customerio-expo-plugin/commit/53db70eab5d1eece55e63ea16a63ea05d59bc7a3))
+
 ## [3.1.0](https://github.com/customerio/customerio-expo-plugin/compare/3.0.1...3.1.0) (2026-02-21)
 
 ### Features
