@@ -52,6 +52,12 @@ export function withCIOIos(
         podfileOptions: { locationEnabled: true, hasPush: false },
       });
     }
+  } else if (locationEnabled) {
+    // Location-only: no push, no config. Still add Podfile location subspec so CIO_LOCATION_ENABLED is set and native location code is included.
+    config = withCioXcodeProject(config, {
+      ...platformConfig,
+      podfileOptions: { locationEnabled: true, hasPush: false },
+    });
   }
 
   return config;
