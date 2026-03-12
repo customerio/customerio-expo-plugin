@@ -89,8 +89,7 @@ jobs:
         run: |
           npm run compatibility:configure-plugin -- \
             --app-path=${{ env.APP_PATH }} \
-            --add-default-config \
-            --cio-plugin.location.enabled=true
+            --add-default-config
 
       - name: Validate Plugin
         run: |

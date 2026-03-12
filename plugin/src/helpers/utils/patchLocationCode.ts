@@ -15,7 +15,7 @@ function normalizeTrackingMode(
   const upper = rawMode?.toUpperCase();
   return upper && VALID_TRACKING_MODES.includes(upper as LocationTrackingMode)
     ? (upper as LocationTrackingMode)
-    : 'OFF';
+    : 'MANUAL';
 }
 
 /**

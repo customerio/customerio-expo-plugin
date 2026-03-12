@@ -233,6 +233,16 @@ describe('Native SDK Configuration Patching', () => {
         expect(result).not.toContain('CIO_LOCATION_ENABLED');
       });
 
+      test('when location enabled with no tracking mode specified, defaults to .manual', () => {
+        const result = patchNativeSDKInitializer(
+          swiftTemplateContent,
+          PLATFORM.IOS,
+          baseSdkConfig,
+          { enabled: true }
+        );
+        expect(result).toContain('LocationConfig(mode: .manual)');
+      });
+
       test('when location enabled with OFF tracking mode, uses .off', () => {
         const result = patchNativeSDKInitializer(
           swiftTemplateContent,
