@@ -18,6 +18,7 @@ export default function RootLayout() {
         <Stack.Screen name="index" options={{ title: "Home", headerShown: false }} />
         <Stack.Screen name="nav-test" options={{ title: "Navigation Test" }} />
         <Stack.Screen name="inline-examples" options={{ title: "Inline Examples" }} />
+        <Stack.Screen name="location" options={{ title: "Location" }} />
       </Stack>
       <StatusBar style="auto" />
     </ThemeProvider>
