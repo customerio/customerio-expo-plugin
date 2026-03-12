@@ -176,10 +176,6 @@ function execute() {
   logMessage("🔧 Applying additional configurations...");
   const cioAdditionalConfig = getPluginConfigFromCliPrefix(CUSTOMER_IO_EXPO_PLUGIN_NAME);
   Object.entries(cioAdditionalConfig).forEach(([key, value]) => {
-    // Coerce string "true"/"false" to boolean for plugin checks (e.g. location?.enabled === true)
-    if (key === 'location.enabled' && (value === 'true' || value === 'false')) {
-      value = value === 'true';
-    }
     setNestedProperty(cioPluginConfig, key, value);
   });
   const buildPropsAdditionalConfig = getPluginConfigFromCliPrefix(EXPO_BUILD_PROPERTIES_PLUGIN);

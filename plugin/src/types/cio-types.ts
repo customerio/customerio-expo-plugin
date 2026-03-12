@@ -90,7 +90,7 @@ export type CustomerIOPluginOptionsAndroid = {
 
 /**
  * Location tracking mode for the Customer.io SDK location module.
- * Only used when location is enabled (plugin option location.enabled: true).
+ * Location is off by default. Only used when location is enabled (plugin option location.enabled: true).
  * @public
  */
 export type LocationTrackingMode = 'OFF' | 'MANUAL' | 'ON_APP_START';
@@ -109,7 +109,7 @@ export type NativeSDKConfig = {
   siteId?: string; // Optional, if only siteId defined, migrationSiteId = siteId
   migrationSiteId?: string; // Optional, if only migrationSiteId defined, siteId should be null
   /**
-   * Location module config. Only applied when plugin option location.enabled is true.
+   * Location module config. Location is off by default; only applied when plugin option location.enabled is true.
    * trackingMode: 'MANUAL' (host app controls when location is captured, default),
    * 'ON_APP_START' (SDK captures once per launch when app becomes active), or 'OFF'.
    */
@@ -119,7 +119,7 @@ export type NativeSDKConfig = {
 };
 
 /**
- * When true, enables the Customer.io SDK location native module (iOS Podfile location subspec,
+ * Location is off by default. When true, enables the Customer.io SDK location native module (iOS Podfile location subspec,
  * Android gradle.properties flag). Permissions and privacy keys (Info.plist, AndroidManifest)
  * remain the host app's responsibility.
  * @public
@@ -137,7 +137,7 @@ export type CustomerIOPluginOptions = {
   android: CustomerIOPluginOptionsAndroid;
   ios: CustomerIOPluginOptionsIOS;
   /**
-   * When location.enabled is true, the plugin adds SDK build-time setup (Podfile location subspec,
+   * Location is off by default. When location.enabled is true, the plugin adds SDK build-time setup (Podfile location subspec,
    * gradle.properties). Host apps must add their own location permissions and privacy usage strings.
    */
   location?: CustomerIOPluginLocationOptions;

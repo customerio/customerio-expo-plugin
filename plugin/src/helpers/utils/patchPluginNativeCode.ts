@@ -1,18 +1,13 @@
-import type {
-  LocationTrackingMode,
-  NativeSDKConfig,
-} from '../../types/cio-types';
+import type { NativeSDKConfig } from '../../types/cio-types';
 import { getPluginVersion } from '../../utils/plugin';
 import { validateNativeSDKConfig } from '../../utils/validation';
 import { PLATFORM, type Platform } from '../constants/common';
+import {
+  type LocationInitOptions,
+  patchLocationPlaceholders,
+} from './patchLocationCode';
 
-const VALID_TRACKING_MODES: LocationTrackingMode[] = ['OFF', 'MANUAL', 'ON_APP_START'];
-
-/** Options for location module in generated native initializer */
-export type LocationInitOptions = {
-  enabled: boolean;
-  trackingMode?: LocationTrackingMode;
-};
+export type { LocationInitOptions };
 
 /**
  * Shared utility function to perform common SDK config replacements
@@ -110,65 +105,7 @@ export function patchNativeSDKInitializer(
     (configValue) => `"${configValue}"`
   );
 
-  // Location module: replace placeholders when location is enabled
-  const locationEnabled = locationOptions?.enabled === true;
-  const rawMode = locationOptions?.trackingMode?.toUpperCase();
-  const trackingMode: LocationTrackingMode =
-    rawMode && VALID_TRACKING_MODES.includes(rawMode as LocationTrackingMode)
-      ? (rawMode as LocationTrackingMode)
-      : 'OFF';
-
-  if (platform === PLATFORM.ANDROID) {
-    if (locationEnabled) {
-      content = content.replace(
-        /\{\{LOCATION_MODULE_IMPORT\}\}/g,
-        `import io.customer.location.LocationModuleConfig
-import io.customer.location.LocationTrackingMode
-import io.customer.location.ModuleLocation
-`
-      );
-      const trackingModeKotlin = `LocationTrackingMode.${trackingMode}`;
-      content = content.replace(
-        /\{\{LOCATION_MODULE_INIT\}\}/g,
-        `if (io.customer.reactnative.sdk.BuildConfig.CIO_LOCATION_ENABLED) {
-            addCustomerIOModule(
-                ModuleLocation(
-                    LocationModuleConfig.Builder()
-                        .setLocationTrackingMode(${trackingModeKotlin})
-                        .build()
-                )
-            )
-        }
-        `
-      );
-    } else {
-      // Remove placeholder and its line to avoid extra blank lines
-      content = content.replace(/\n\{\{LOCATION_MODULE_IMPORT\}\}\n/g, '\n');
-      content = content.replace(/\n\s*\{\{LOCATION_MODULE_INIT\}\}\n/g, '\n');
-    }
-  } else {
-    // iOS
-    if (locationEnabled) {
-      content = content.replace(
-        /\{\{LOCATION_MODULE_IMPORT\}\}/g,
-        'import CioLocation\n'
-      );
-      const modeSwift =
-        trackingMode === 'OFF'
-          ? '.off'
-          : trackingMode === 'ON_APP_START'
-            ? '.onAppStart'
-            : '.manual';
-      content = content.replace(
-        /\{\{LOCATION_MODULE_INIT\}\}/g,
-        `_ = builder.addModule(LocationModule(config: LocationConfig(mode: ${modeSwift})))`
-      );
-    } else {
-      // Remove placeholder and its line; keep one blank line before CustomerIO.initialize (iOS template style)
-      content = content.replace(/\n\{\{LOCATION_MODULE_IMPORT\}\}\n/g, '\n');
-      content = content.replace(/\n\s*\{\{LOCATION_MODULE_INIT\}\}\n/g, '\n\n');
-    }
-  }
+  content = patchLocationPlaceholders(content, platform, locationOptions);
 
   return content;
 }
