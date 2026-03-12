@@ -17,7 +17,11 @@ import {
 import { replaceCodeByRegex } from '../helpers/utils/codeInjection';
 import { FileManagement } from '../helpers/utils/fileManagement';
 import { patchNativeSDKInitializer } from '../helpers/utils/patchPluginNativeCode';
-import type { CustomerIOPluginOptionsIOS, NativeSDKConfig } from '../types/cio-types';
+import type {
+  CustomerIOPluginOptionsIOS,
+  CustomerIOPluginLocationOptions,
+  NativeSDKConfig,
+} from '../types/cio-types';
 import { logger } from '../utils/logger';
 import { getIosNativeFilesPath } from '../utils/plugin';
 import { copyFileToXcode, getOrCreateCustomerIOGroup } from '../utils/xcode';
@@ -34,6 +38,7 @@ const copyAndConfigureAppDelegateHandler = (
   config: ExportedConfigWithProps<XcodeProject>,
   sdkConfig?: NativeSDKConfig,
   props?: CustomerIOPluginOptionsIOS,
+  location?: CustomerIOPluginLocationOptions,
 ): ExportedConfigWithProps<XcodeProject> => {
   // Destination path in the iOS project
   const projectName = config.modRequest.projectName || '';
@@ -59,6 +64,7 @@ const copyAndConfigureAppDelegateHandler = (
       projectName,
       sdkConfig,
       props,
+      location,
     });
   } else if (sdkConfig) {
     // Copy only CustomerIOSDKInitializer.swift for auto-init without push notifications
@@ -68,6 +74,7 @@ const copyAndConfigureAppDelegateHandler = (
       iosProjectRoot,
       projectName,
       sdkConfig,
+      location,
     });
   }
 
@@ -81,6 +88,7 @@ const copyAndConfigurePushAppDelegateHandler = ({
   projectName,
   sdkConfig,
   props,
+  location,
 }: {
   xcodeProject: XcodeProject;
   group: XcodeProject['pbxCreateGroup'];
@@ -88,6 +96,7 @@ const copyAndConfigurePushAppDelegateHandler = ({
   projectName: string;
   sdkConfig: NativeSDKConfig | undefined;
   props: CustomerIOPluginOptionsIOS;
+  location?: CustomerIOPluginLocationOptions;
 }) => {
   const useFcm = isFcmPushProvider(props);
 
@@ -156,7 +165,7 @@ const copyAndConfigurePushAppDelegateHandler = ({
   // Add auto initialization if sdkConfig is provided
   if (sdkConfig) {
     // Also copy CustomerIOSDKInitializer.swift for auto-initialization
-    copyAndConfigureNativeSDKInitializer({ xcodeProject, group, iosProjectRoot, projectName, sdkConfig });
+    copyAndConfigureNativeSDKInitializer({ xcodeProject, group, iosProjectRoot, projectName, sdkConfig, location });
 
     // Inject auto initialization call before MessagingPush initialization
     handlerFileContent = handlerFileContent.replace(CIO_MESSAGING_PUSH_APP_DELEGATE_INIT_REGEX, CIO_NATIVE_SDK_INITIALIZE_SNIPPET + '$1');
@@ -171,13 +180,18 @@ const copyAndConfigureNativeSDKInitializer = ({
   iosProjectRoot,
   projectName,
   sdkConfig,
+  location,
 }: {
   xcodeProject: XcodeProject;
   group: XcodeProject['pbxCreateGroup'];
   iosProjectRoot: string;
   projectName: string;
   sdkConfig: NativeSDKConfig;
+  location?: CustomerIOPluginLocationOptions;
 }) => {
+  const locationOptions = location
+    ? { enabled: location.enabled === true, trackingMode: sdkConfig?.location?.trackingMode }
+    : undefined;
   const filename = 'CustomerIOSDKInitializer.swift';
   const sourcePath = path.join(getIosNativeFilesPath(), filename);
   // Add the CustomerIOSDKInitializer.swift file to the same Xcode group as CioSdkAppDelegateHandler
@@ -187,7 +201,8 @@ const copyAndConfigureNativeSDKInitializer = ({
     projectName,
     sourceFilePath: sourcePath,
     targetFileName: filename,
-    transform: (content) => patchNativeSDKInitializer(content, PLATFORM.IOS, sdkConfig),
+    transform: (content) =>
+      patchNativeSDKInitializer(content, PLATFORM.IOS, sdkConfig, locationOptions),
     customerIOGroup: group,
   });
 };
@@ -196,10 +211,11 @@ export const withCIOIosSwift = (
   configOuter: ExpoConfig,
   sdkConfig?: NativeSDKConfig,
   props?: CustomerIOPluginOptionsIOS,
+  location?: CustomerIOPluginLocationOptions,
 ) => {
   // First, copy required swift files to iOS folder and add it to Xcode project
   configOuter = withXcodeProject(configOuter, async (config) => {
-    return copyAndConfigureAppDelegateHandler(config, sdkConfig, props);
+    return copyAndConfigureAppDelegateHandler(config, sdkConfig, props, location);
   });
 
   // Modify the AppDelegate based on configuration

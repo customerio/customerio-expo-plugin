@@ -1,6 +1,7 @@
 import CioDataPipelines
 import CioInternalCommon
 import CioMessagingInApp
+{{LOCATION_MODULE_IMPORT}}
 
 class CustomerIOSDKInitializer {
     static func initialize() {
@@ -23,6 +24,7 @@ class CustomerIOSDKInitializer {
         setIfDefined(value: {{SCREEN_VIEW_USE}}, thenPassItTo: builder.screenViewUse) { ScreenView.getScreenView($0) }
         setIfDefined(value: {{MIGRATION_SITE_ID}}, thenPassItTo: builder.migrationSiteId)
 
+        {{LOCATION_MODULE_INIT}}
         CustomerIO.initialize(withConfig: builder.build())
 
         if let siteId = siteId {

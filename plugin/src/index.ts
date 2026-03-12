@@ -3,7 +3,13 @@ import type { ExpoConfig } from '@expo/config-types';
 import { withCIOAndroid } from './android/withCIOAndroid';
 import { isExpoVersion53OrHigher } from './ios/utils';
 import { withCIOIos } from './ios/withCIOIos';
-import type { CustomerIOPluginOptions } from './types/cio-types';
+import type {
+  CustomerIOPluginOptions,
+  LocationTrackingMode,
+  NativeSDKConfig,
+} from './types/cio-types';
+
+export type { LocationTrackingMode, NativeSDKConfig };
 
 // Entry point for config plugin
 function withCustomerIOPlugin(
@@ -20,8 +26,8 @@ function withCustomerIOPlugin(
   }
 
   // Apply platform specific modifications
-  config = withCIOIos(config, props.config, props.ios);
-  config = withCIOAndroid(config, props.config, props.android);
+  config = withCIOIos(config, props.config, props.ios, props.location);
+  config = withCIOAndroid(config, props.config, props.android, props.location);
 
   return config;
 }

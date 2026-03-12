@@ -9,8 +9,12 @@ const podFilePath = path.join(iosPath, "Podfile");
 test("Plugin injects expected customerio-reactnative/fcm and customerio-reactnative-richpush/fcm in Podfile", async () => {
     const content = await fs.readFile(podFilePath, "utf8");
 
-    // Ensure FCM pod is added
-    expect(content).toContain("pod 'customerio-reactnative/fcm', :path => '../node_modules/customerio-reactnative'");
+    // Ensure CustomerIO Host App block exists and FCM pod is added (single-subspec or :subspecs including 'fcm')
+    expect(content).toContain("# --- CustomerIO Host App START ---");
+    expect(content).toContain("# --- CustomerIO Host App END ---");
+    const hasSingleSubspec = content.includes("pod 'customerio-reactnative/fcm', :path => '../node_modules/customerio-reactnative'");
+    const hasMultiSubspecWithFcm = content.includes("customerio-reactnative") && content.includes("'fcm'") && content.includes(":subspecs =>");
+    expect(hasSingleSubspec || hasMultiSubspecWithFcm).toBe(true);
 
     // Ensure NotificationService target is added with rich push pod
     const podFileAsLines = content.split('\n').map(line => line.trim());

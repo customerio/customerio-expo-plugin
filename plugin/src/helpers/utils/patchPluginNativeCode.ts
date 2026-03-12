@@ -2,6 +2,12 @@ import type { NativeSDKConfig } from '../../types/cio-types';
 import { getPluginVersion } from '../../utils/plugin';
 import { validateNativeSDKConfig } from '../../utils/validation';
 import { PLATFORM, type Platform } from '../constants/common';
+import {
+  type LocationInitOptions,
+  patchLocationPlaceholders,
+} from './patchLocationCode';
+
+export type { LocationInitOptions };
 
 /**
  * Shared utility function to perform common SDK config replacements
@@ -10,7 +16,8 @@ import { PLATFORM, type Platform } from '../constants/common';
 export function patchNativeSDKInitializer(
   rawContent: string,
   platform: Platform,
-  sdkConfig: NativeSDKConfig
+  sdkConfig: NativeSDKConfig,
+  locationOptions?: LocationInitOptions
 ): string {
   // Validate SDK configuration to ensure all fields are present and 
   // correct at the time of patching in prebuild
@@ -97,6 +104,8 @@ export function patchNativeSDKInitializer(
     migrationSiteId?.trim() || undefined,
     (configValue) => `"${configValue}"`
   );
+
+  content = patchLocationPlaceholders(content, platform, locationOptions);
 
   return content;
 }

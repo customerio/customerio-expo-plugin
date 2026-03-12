@@ -210,6 +210,50 @@ describe('Native SDK Configuration Patching', () => {
       });
     });
 
+    describe('iOS location module', () => {
+      test('when location not enabled, omits CioLocation import and LocationModule', () => {
+        const result = patchNativeSDKInitializer(
+          swiftTemplateContent,
+          PLATFORM.IOS,
+          baseSdkConfig
+        );
+        expect(result).not.toContain('CioLocation');
+        expect(result).not.toContain('LocationModule');
+      });
+
+      test('when location enabled, adds LocationModule without CIO_LOCATION_ENABLED guard', () => {
+        const result = patchNativeSDKInitializer(
+          swiftTemplateContent,
+          PLATFORM.IOS,
+          baseSdkConfig,
+          { enabled: true, trackingMode: 'MANUAL' }
+        );
+        expect(result).toContain('import CioLocation');
+        expect(result).toContain('_ = builder.addModule(LocationModule(config: LocationConfig(mode: .manual)))');
+        expect(result).not.toContain('CIO_LOCATION_ENABLED');
+      });
+
+      test('when location enabled with no tracking mode specified, defaults to .manual', () => {
+        const result = patchNativeSDKInitializer(
+          swiftTemplateContent,
+          PLATFORM.IOS,
+          baseSdkConfig,
+          { enabled: true }
+        );
+        expect(result).toContain('LocationConfig(mode: .manual)');
+      });
+
+      test('when location enabled with OFF tracking mode, uses .off', () => {
+        const result = patchNativeSDKInitializer(
+          swiftTemplateContent,
+          PLATFORM.IOS,
+          baseSdkConfig,
+          { enabled: true, trackingMode: 'OFF' }
+        );
+        expect(result).toContain('LocationConfig(mode: .off)');
+      });
+    });
+
     describe('snapshots', () => {
       test('iOS complete', () => {
         const config = {
