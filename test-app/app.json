@@ -79,6 +79,7 @@
           }
         }
       ],
+      "expo-notifications",
       [
         "customerio-expo-plugin",
         {
@@ -106,7 +107,9 @@
             "useFrameworks": "static",
             "pushNotification": {
               "provider": "apn",
-              "useRichPush": true
+              "useRichPush": true,
+              "showPushAppInForeground": true,
+              "handleDeeplinkInKilledState": true
             }
           },
           "location": {
