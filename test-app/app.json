@@ -79,6 +79,7 @@
           }
         }
       ],
+      "expo-notifications",
       [
         "customerio-expo-plugin",
         {
