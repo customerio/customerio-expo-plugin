@@ -162,6 +162,16 @@ const copyAndConfigurePushAppDelegateHandler = ({
     showPushAppInForeground.toString()
   );
 
+  const appGroupId = props.pushNotification?.appGroupId;
+  const appGroupIdBuilderLine = appGroupId
+    ? `        .appGroupId(${JSON.stringify(appGroupId)})\n`
+    : '';
+  handlerFileContent = replaceCodeByRegex(
+    handlerFileContent,
+    /\{\{APP_GROUP_ID_BUILDER_LINE\}\}/,
+    appGroupIdBuilderLine
+  );
+
   // Add auto initialization if sdkConfig is provided
   if (sdkConfig) {
     // Also copy CustomerIOSDKInitializer.swift for auto-initialization

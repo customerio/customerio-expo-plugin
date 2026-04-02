@@ -52,7 +52,7 @@ public class CioSdkAppDelegateHandler: NSObject {
     MessagingPushFCM.initialize(
       withConfig: MessagingPushConfigBuilder()
         .autoFetchDeviceToken({{AUTO_FETCH_DEVICE_TOKEN}})
-        .showPushAppInForeground({{SHOW_PUSH_APP_IN_FOREGROUND}})
+{{APP_GROUP_ID_BUILDER_LINE}}        .showPushAppInForeground({{SHOW_PUSH_APP_IN_FOREGROUND}})
         .autoTrackPushEvents({{AUTO_TRACK_PUSH_EVENTS}})
         .build()
     )

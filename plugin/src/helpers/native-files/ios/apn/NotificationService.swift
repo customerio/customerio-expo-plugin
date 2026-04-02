@@ -12,7 +12,7 @@ public class NotificationServiceCioManager : NSObject {
     MessagingPushAPN.initializeForExtension(
       withConfig: MessagingPushConfigBuilder(cdpApiKey: Env.customerIOCdpApiKey)
         .region(Env.customerIORegion)
-        .build()
+{{APP_GROUP_ID_BUILDER_LINE}}        .build()
     )
     
     MessagingPush.shared.didReceive(request, withContentHandler: contentHandler)

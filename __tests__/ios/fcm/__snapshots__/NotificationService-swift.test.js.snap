@@ -15,6 +15,7 @@ public class NotificationServiceCioManager : NSObject {
     MessagingPushFCM.initializeForExtension(
       withConfig: MessagingPushConfigBuilder(cdpApiKey: Env.customerIOCdpApiKey)
         .region(Env.customerIORegion)
+        .appGroupId("group.io.customer.testbed.expo.apn.cio")
         .build()
     )
     

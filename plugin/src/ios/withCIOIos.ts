@@ -1,4 +1,5 @@
 import type { ExpoConfig } from '@expo/config-types';
+import { withEntitlementsPlist } from '@expo/config-plugins';
 import type {
   CustomerIOPluginOptionsIOS,
   CustomerIOPluginPushNotificationOptions,
@@ -7,6 +8,7 @@ import type {
 } from '../types/cio-types';
 import { mergeConfigWithEnvValues } from '../utils/config';
 import { logger } from '../utils/logger';
+import { validatePushNotificationOptions } from '../utils/validation';
 import { isExpoVersion53OrHigher } from './utils';
 import { withAppDelegateModifications } from './withAppDelegateModifications';
 import { withCIOIosSwift } from './withCIOIosSwift';
@@ -25,6 +27,7 @@ export function withCIOIos(
   const locationEnabled = location?.enabled === true;
 
   if (platformConfig?.pushNotification) {
+    validatePushNotificationOptions(platformConfig.pushNotification);
     if (isSwiftProject) {
       config = withCIOIosSwift(config, sdkConfig, platformConfig, location);
     } else {
@@ -44,6 +47,19 @@ export function withCIOIos(
       },
     });
     config = withGoogleServicesJsonFile(config, platformConfig);
+
+    // Merge App Group entitlements on host only when appGroupId is explicitly set
+    const appGroupId = platformConfig.pushNotification?.appGroupId;
+    if (appGroupId) {
+      config = withEntitlementsPlist(config, (entitlementsConfig) => {
+        const entitlements = entitlementsConfig.modResults as Record<string, unknown>;
+        const existing = (entitlements['com.apple.security.application-groups'] as string[] | undefined) ?? [];
+        if (!existing.includes(appGroupId)) {
+          entitlements['com.apple.security.application-groups'] = [...existing, appGroupId];
+        }
+        return entitlementsConfig;
+      });
+    }
   } else if (sdkConfig && isSwiftProject) {
     config = withCIOIosSwift(config, sdkConfig, platformConfig, location);
     if (locationEnabled) {

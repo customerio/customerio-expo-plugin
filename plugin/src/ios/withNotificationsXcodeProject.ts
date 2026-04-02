@@ -135,6 +135,25 @@ const addRichPushXcodeProj = async (
 
   const platformSpecificFiles = ['NotificationService.swift'];
 
+  const nseEntitlementsFilename = 'NotificationService.entitlements';
+  const appGroupId = options.pushNotification?.appGroupId;
+
+  // Write NSE entitlements file only when appGroupId is explicitly configured
+  if (appGroupId) {
+    const nseEntitlementsContent = `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>com.apple.security.application-groups</key>
+  <array>
+    <string>${appGroupId}</string>
+  </array>
+</dict>
+</plist>
+`;
+    FileManagement.writeFile(`${nsePath}/${nseEntitlementsFilename}`, nseEntitlementsContent);
+  }
+
   const commonFiles = [
     PLIST_FILENAME,
     'NotificationService.h',
@@ -170,10 +189,19 @@ const addRichPushXcodeProj = async (
     infoPlistTargetFile,
   });
   updateNseEnv(getTargetFile(ENV_FILENAME), options.pushNotification?.env);
+  updateNseNotificationService(getTargetFile('NotificationService.swift'), options.pushNotification?.appGroupId);
+
+  // The entitlements file is generated (not copied from source), so it's listed separately
+  // for the Xcode group so it appears in the file navigator
+  const allGroupFiles = [
+    ...platformSpecificFiles,
+    ...commonFiles,
+    ...(appGroupId ? [nseEntitlementsFilename] : []),
+  ];
 
   // Create new PBXGroup for the extension
   const extGroup = xcodeProject.addPbxGroup(
-    [...platformSpecificFiles, ...commonFiles], // Combine platform-specific and common files,
+    allGroupFiles,
     CIO_NOTIFICATION_TARGET_NAME,
     CIO_NOTIFICATION_TARGET_NAME
   );
@@ -247,6 +275,9 @@ const addRichPushXcodeProj = async (
       buildSettingsObj.TARGETED_DEVICE_FAMILY = TARGETED_DEVICE_FAMILY;
       buildSettingsObj.CODE_SIGN_STYLE = 'Automatic';
       buildSettingsObj.SWIFT_VERSION = 4.2;
+      if (appGroupId) {
+        buildSettingsObj.CODE_SIGN_ENTITLEMENTS = `${CIO_NOTIFICATION_TARGET_NAME}/${nseEntitlementsFilename}`;
+      }
     }
   }
 
@@ -282,6 +313,20 @@ const updateNseInfoPlist = (payload: {
   }
 
   FileManagement.writeFile(payload.infoPlistTargetFile, plistFileString);
+};
+
+const updateNseNotificationService = (
+  notificationServiceFile: string,
+  appGroupId?: string,
+) => {
+  const APP_GROUP_ID_BUILDER_LINE_RE = /\{\{APP_GROUP_ID_BUILDER_LINE\}\}/;
+
+  let content = FileManagement.readFile(notificationServiceFile);
+  const builderLine = appGroupId
+    ? `        .appGroupId(${JSON.stringify(appGroupId)})\n`
+    : '';
+  content = replaceCodeByRegex(content, APP_GROUP_ID_BUILDER_LINE_RE, builderLine);
+  FileManagement.writeFile(notificationServiceFile, content);
 };
 
 const updateNseEnv = (
@@ -427,6 +472,16 @@ const updatePushFile = (
     envFileContent,
     /\{\{SHOW_PUSH_APP_IN_FOREGROUND\}\}/,
     showPushAppInForeground.toString()
+  );
+
+  const appGroupId = options.pushNotification?.appGroupId;
+  const appGroupIdBuilderLine = appGroupId
+    ? `        .appGroupId(${JSON.stringify(appGroupId)})\n`
+    : '';
+  envFileContent = replaceCodeByRegex(
+    envFileContent,
+    /\{\{APP_GROUP_ID_BUILDER_LINE\}\}/,
+    appGroupIdBuilderLine
   );
 
   FileManagement.writeFile(envFileName, envFileContent);
