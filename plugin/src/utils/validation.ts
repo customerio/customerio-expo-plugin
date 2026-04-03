@@ -114,10 +114,11 @@ function validatePushNotificationOptions(options: CustomerIOPluginPushNotificati
 
   let isValid = true;
 
-  if (options.appGroupId !== undefined) {
-    isValid = validateString(options.appGroupId, 'appGroupId', context) && isValid;
-    if (isValid && options.appGroupId !== undefined && !options.appGroupId.startsWith('group.')) {
-      logger.warn(`${context}: appGroupId "${options.appGroupId}" does not start with "group." — ensure this matches your Apple App Group entitlement.`);
+  const appGroupId = options.appGroupId;
+  if (appGroupId !== undefined) {
+    isValid = validateString(appGroupId, 'appGroupId', context) && isValid;
+    if (isValid && !appGroupId.startsWith('group.')) {
+      logger.warn(`${context}: appGroupId "${appGroupId}" does not start with "group." — ensure this matches your Apple App Group entitlement.`);
     }
   }
 
