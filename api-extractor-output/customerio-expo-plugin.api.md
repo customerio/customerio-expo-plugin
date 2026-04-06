@@ -69,6 +69,7 @@ export type CustomerIOPluginPushNotificationOptions = {
     disableNotificationRegistration?: boolean;
     handleDeeplinkInKilledState?: boolean;
     env?: RichPushConfig;
+    appGroupId?: string;
 };
 
 // @public

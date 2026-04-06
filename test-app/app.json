@@ -106,7 +106,8 @@
             "useFrameworks": "static",
             "pushNotification": {
               "provider": "apn",
-              "useRichPush": true
+              "useRichPush": true,
+              "appGroupId": "group.io.customer.testbed.expo.apn.cio"
             }
           },
           "location": {

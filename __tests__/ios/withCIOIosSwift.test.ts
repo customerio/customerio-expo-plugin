@@ -42,7 +42,7 @@ public class AppDelegate: ExpoAppDelegate {
 jest.mock('../../plugin/src/helpers/utils/fileManagement', () => ({
   FileManagement: {
     copyFile: jest.fn(),
-    readFile: jest.fn(() => 'mock file content {{AUTO_TRACK_PUSH_EVENTS}} {{AUTO_FETCH_DEVICE_TOKEN}} {{SHOW_PUSH_APP_IN_FOREGROUND}}'),
+    readFile: jest.fn(() => 'mock file content {{AUTO_TRACK_PUSH_EVENTS}} {{AUTO_FETCH_DEVICE_TOKEN}} {{SHOW_PUSH_APP_IN_FOREGROUND}} {{APP_GROUP_ID_BUILDER_LINE}}'),
     writeFile: jest.fn(),
   },
 }));
@@ -220,6 +220,37 @@ public class AppDelegate: ExpoAppDelegate {
       // Should not inject duplicate code
       const initializeOccurrences = (result.modResults.contents.match(/CustomerIOSDKInitializer\.initialize\(\)/g) || []).length;
       expect(initializeOccurrences).toBe(1);
+    });
+
+    it('should inject .appGroupId(...) builder line when appGroupId is set', () => {
+      const { FileManagement } = require('../../plugin/src/helpers/utils/fileManagement');
+      const propsWithAppGroup: CustomerIOPluginOptionsIOS = {
+        iosPath: '/test/ios',
+        pushNotification: {
+          provider: 'apn',
+          appGroupId: 'group.com.example.app',
+        },
+      };
+
+      withCIOIosSwift(mockConfig, undefined, propsWithAppGroup);
+
+      const writtenContent: string = FileManagement.writeFile.mock.calls[0][1];
+      expect(writtenContent).toContain('.appGroupId("group.com.example.app")');
+    });
+
+    it('should NOT inject .appGroupId(...) builder line when appGroupId is not set', () => {
+      const { FileManagement } = require('../../plugin/src/helpers/utils/fileManagement');
+      const propsNoAppGroup: CustomerIOPluginOptionsIOS = {
+        iosPath: '/test/ios',
+        pushNotification: {
+          provider: 'apn',
+        },
+      };
+
+      withCIOIosSwift(mockConfig, undefined, propsNoAppGroup);
+
+      const writtenContent: string = FileManagement.writeFile.mock.calls[0][1];
+      expect(writtenContent).not.toContain('.appGroupId(');
     });
   });
 });

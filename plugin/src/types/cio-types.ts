@@ -171,4 +171,12 @@ export type CustomerIOPluginPushNotificationOptions = {
    * Optional if `config` is provided at the top level.
    */
   env?: RichPushConfig;
+
+  /**
+   * iOS App Group identifier shared between the host app and the Notification Service Extension.
+   * When set, `.appGroupId(...)` is injected into the MessagingPushConfigBuilder, the identifier
+   * is added to the host app entitlements, and an NSE entitlements file is written.
+   * When omitted, the native SDK handles group discovery on its own and no entitlements are added.
+   */
+  appGroupId?: string;
 };

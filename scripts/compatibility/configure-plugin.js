@@ -117,6 +117,7 @@ function execute() {
     const baseIosConfig = {
       pushNotification: {
         useRichPush: true,
+        appGroupId: "group.io.customer.testbed.expo.apn.cio",
       },
     };
 

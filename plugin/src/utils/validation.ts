@@ -1,4 +1,4 @@
-import type { NativeSDKConfig, RichPushConfig } from '../types/cio-types';
+import type { CustomerIOPluginPushNotificationOptions, NativeSDKConfig, RichPushConfig } from '../types/cio-types';
 import { logger } from './logger';
 
 /**
@@ -109,8 +109,25 @@ function validateRichPushConfig(config: RichPushConfig | undefined): boolean {
   return isValid;
 }
 
+function validatePushNotificationOptions(options: CustomerIOPluginPushNotificationOptions): boolean {
+  const context = 'PushNotification';
+
+  let isValid = true;
+
+  const appGroupId = options.appGroupId;
+  if (appGroupId !== undefined) {
+    isValid = validateString(appGroupId, 'appGroupId', context) && isValid;
+    if (isValid && !appGroupId.startsWith('group.')) {
+      logger.warn(`${context}: appGroupId "${appGroupId}" does not start with "group." — ensure this matches your Apple App Group entitlement.`);
+    }
+  }
+
+  return isValid;
+}
+
 export {
   validateNativeSDKConfig,
+  validatePushNotificationOptions,
   validateRequired,
   validateRichPushConfig,
   validateString
