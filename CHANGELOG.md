@@ -1,3 +1,9 @@
+## [3.3.0](https://github.com/customerio/customerio-expo-plugin/compare/3.2.0...3.3.0) (2026-04-06)
+
+### Features
+
+* Push delivery reslience improvement ([#333](https://github.com/customerio/customerio-expo-plugin/issues/333)) ([791b847](https://github.com/customerio/customerio-expo-plugin/commit/791b84721ad04a02ac18f7b0e9f88a9f50a96e3a))
+
 ## [3.2.0](https://github.com/customerio/customerio-expo-plugin/compare/3.1.0...3.2.0) (2026-03-12)
 
 ### Features
