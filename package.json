@@ -34,10 +34,15 @@
     "compatibility:validate-plugin": "node scripts/compatibility/validate-plugin.js",
     "compatibility:run-compatibility-tests": "node scripts/compatibility/run-compatibility-tests.js",
     "setup-test-app": "bash scripts/setup-test-app.sh",
+    "setup-test-app-pnpm": "bash scripts/setup-test-app-pnpm.sh",
+    "setup-test-app-pnpm-monorepo": "bash scripts/setup-test-app-pnpm-monorepo.sh",
     "test-plugin": "bash scripts/test-plugin.sh",
     "cleanAll": "bash scripts/clean-all.sh",
     "buildAll": "bash scripts/build-all.sh",
     "cleanAndBuildAll": "npm run cleanAll && npm run buildAll",
+    "cleanAllPnpm": "bash scripts/clean-all-pnpm.sh",
+    "buildAllPnpm": "bash scripts/build-all-pnpm.sh",
+    "cleanAndBuildAllPnpm": "npm run cleanAllPnpm && npm run buildAllPnpm",
     "generate-api-docs": "bash scripts/generate-api-docs.sh"
   },
   "keywords": [

@@ -24,5 +24,10 @@
     "target": "esnext",
     "verbatimModuleSyntax": true
   },
-  "exclude": ["ci-test-apps/**", "test-app/**"]
+  "exclude": [
+    "ci-test-apps/**",
+    "test-app/**",
+    "test-app-pnpm/**",
+    "test-app-pnpm-monorepo/**"
+  ]
 }
