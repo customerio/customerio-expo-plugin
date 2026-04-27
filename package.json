@@ -43,6 +43,7 @@
     "cleanAllPnpm": "bash scripts/clean-all-pnpm.sh",
     "buildAllPnpm": "bash scripts/build-all-pnpm.sh",
     "cleanAndBuildAllPnpm": "npm run cleanAllPnpm && npm run buildAllPnpm",
+    "verify-pnpm-dev-apps": "bash scripts/verify-pnpm-dev-apps.sh",
     "generate-api-docs": "bash scripts/generate-api-docs.sh"
   },
   "keywords": [
