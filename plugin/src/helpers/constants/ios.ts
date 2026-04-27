@@ -1,18 +1,17 @@
 const path = require('path');
-const resolveFrom = require('resolve-from');
+import { resolveRNSDK } from '../../utils/resolveRNSDK';
 
 export function getRelativePathToRNSDK(iosPath: string) {
   // Root path of the Expo project
   const rootAppPath = path.dirname(iosPath);
 
-  // Path of the cio RN package.json file. Example: test-app/node_modules/customerio-reactnative/package.json
-  const pluginPackageJsonPath = resolveFrom.silent(
-    rootAppPath,
-    `customerio-reactnative/package.json`
-  );
+  // Resolve the RN SDK using the symlink path when available so the
+  // emitted Podfile :path agrees with React Native autolinking under
+  // pnpm and yarn workspaces. See resolveRNSDK for details.
+  const { packageDir } = resolveRNSDK(rootAppPath);
 
   // Example: ../node_modules/customerio-reactnative
-  return path.relative(iosPath, path.dirname(pluginPackageJsonPath));
+  return path.relative(iosPath, packageDir);
 }
 
 export const IOS_DEPLOYMENT_TARGET = '13.0';

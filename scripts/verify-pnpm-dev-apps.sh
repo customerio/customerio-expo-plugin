@@ -1,19 +1,28 @@
 #!/bin/bash
 
-# Asserts that the pnpm dev apps are built with portable, correct artifacts.
+# Asserts that the pnpm dev apps are built with correct artifacts.
 # Run after both setup-test-app-pnpm.sh and setup-test-app-pnpm-monorepo.sh.
 #
 # Two regression dimensions:
 #
-#   1. Podfile :path values must not contain `.pnpm/` — the plugin must emit
-#      the symlinked node_modules path that React Native autolinking expects,
-#      not the realpath inside pnpm's virtual store.
+#   1. The Podfile must emit the install-time `customerio_reactnative_path`
+#      Ruby lambda, and every `pod 'customerio-reactnative...', :path =>`
+#      line must reference the variable rather than a baked path string.
+#      This is what guarantees the plugin's path agrees with whatever path
+#      React Native autolinking emits in the same Podfile, regardless of
+#      pnpm/yarn/symlink behavior.
+#
+#      The actual path validity is enforced by `pod install` succeeding in
+#      the setup-test-app-pnpm{,-monorepo}.sh steps that ran before this
+#      script — those would already have failed if the resolved path were
+#      bogus. This script's job is to catch plugin bugs that re-introduce
+#      a baked-path :path => before pod install runs.
 #
 #   2. `expoVersion` must be present in the installed customerio-reactnative
 #      package.json. The RN SDK reads this at runtime to set User-Agent
 #      attribution to "Expo" instead of "ReactNative". Under pnpm the
-#      postinstall hook can be silently skipped, so the plugin must also
-#      write this at expo-prebuild time.
+#      postinstall hook can be silently skipped, so the plugin's prebuild-
+#      time fallback must land the field reliably.
 
 set -e
 
@@ -57,7 +66,7 @@ find_cio_pkg_json() {
 }
 
 echo
-print_blue "Checking Podfile :path values..."
+print_blue "Checking install-time path-resolver lambda is emitted..."
 for podfile in "${PODFILES[@]}"; do
   if [ ! -f "$podfile" ]; then
     echo "::error::$podfile does not exist — did the prebuild step run?"
@@ -65,15 +74,33 @@ for podfile in "${PODFILES[@]}"; do
     continue
   fi
 
-  offending=$(grep -E "^\s*pod .* :path =>" "$podfile" | grep "\.pnpm/" || true)
-  if [ -n "$offending" ]; then
-    echo "::error::$podfile contains .pnpm/ in a :path => line."
-    echo "Plugin emitted the pnpm realpath instead of the symlink path that React Native autolinking expects."
-    echo "$offending"
+  if ! grep -q "customerio_reactnative_path = (lambda do" "$podfile"; then
+    echo "::error::$podfile is missing the customerio_reactnative_path lambda."
+    echo "         The plugin should emit a Ruby block that resolves the SDK path"
+    echo "         at pod install time via Node's require.resolve."
     failures=$((failures + 1))
-  else
-    echo "  OK: $podfile"
+    continue
   fi
+
+  if ! grep -q "node --print \"require.resolve('customerio-reactnative/package.json')\"" "$podfile"; then
+    echo "::error::$podfile lambda is missing the node --print require.resolve call."
+    failures=$((failures + 1))
+    continue
+  fi
+
+  # Every customerio-reactnative pod line must reference the variable, not a
+  # baked path string. A baked-path regression looks like
+  # `:path => '../node_modules/...'` instead of `:path => customerio_reactnative_path`.
+  baked=$(grep -E "^\s*pod 'customerio-reactnative.*':path *=> *'" "$podfile" || true)
+  if [ -n "$baked" ]; then
+    echo "::error::$podfile contains a customerio-reactnative pod line with a baked :path => string:"
+    echo "$baked"
+    echo "         Expected every such line to use ':path => customerio_reactnative_path'."
+    failures=$((failures + 1))
+    continue
+  fi
+
+  echo "  OK: $podfile"
 done
 
 echo
