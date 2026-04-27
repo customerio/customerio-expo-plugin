@@ -7,7 +7,8 @@
     "start": "expo start",
     "android": "expo run:android",
     "ios": "expo run:ios",
-    "prebuild": "expo prebuild --clean"
+    "prebuild": "expo prebuild --clean",
+    "eas-build-post-install": "echo 'eas-build-post-install: running expo prebuild --no-install' && expo prebuild --no-install"
   },
   "dependencies": {
     "customerio-expo-plugin": "file:../customerio-expo-plugin-latest.tgz",

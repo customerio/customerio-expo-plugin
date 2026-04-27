@@ -6,7 +6,8 @@
   "scripts": {
     "start": "expo start",
     "android": "expo run:android",
-    "ios": "expo run:ios"
+    "ios": "expo run:ios",
+    "eas-build-post-install": "echo 'eas-build-post-install: running expo prebuild --no-install' && expo prebuild --no-install"
   },
   "dependencies": {
     "@cio-test/shared-cio-utils": "workspace:*",
