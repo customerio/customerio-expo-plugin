@@ -79,8 +79,8 @@ jobs:
         run: npm test -- __tests__/utils
 
   test-pnpm-dev-apps:
-    name: Build pnpm dev apps and verify Podfile + expoVersion
-    runs-on: ubuntu-latest
+    name: Build pnpm dev apps (prebuild + pod install) and verify artifacts
+    runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -93,10 +93,15 @@ jobs:
       - name: Install root dependencies
         run: npm ci
 
-      - name: Set up test-app-pnpm (flat)
+      # Each setup script runs `expo prebuild --clean`, which on macOS
+      # automatically runs `pod install` against the generated Podfile.
+      # That's the step that fails with the customer's "multiple
+      # dependencies with different sources" error if the resolver
+      # regresses to emitting the .pnpm/ realpath.
+      - name: Set up test-app-pnpm (flat) — includes pod install
         run: npm run setup-test-app-pnpm
 
-      - name: Set up test-app-pnpm-monorepo (workspace)
+      - name: Set up test-app-pnpm-monorepo (workspace) — includes pod install
         run: npm run setup-test-app-pnpm-monorepo
 
       - name: Verify Podfile :path values and expoVersion attribution
