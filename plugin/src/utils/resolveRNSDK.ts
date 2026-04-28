@@ -68,31 +68,38 @@ function readVersion(pkgJsonPath: string): string | null {
 //      Handles yarn classic workspaces where the dep is hoisted to a parent
 //      node_modules. yarn classic has no symlinks, so the realpath is fine.
 //
-// Returns null if neither finds the package.
+// Returns null if neither finds the package, including the case where
+// `resolve-from` itself can't be required (mirrors tryReadRNVersion's
+// graceful-failure shape so callers can rely on the documented contract).
 export function tryResolveRNSDK(fromDir: string): ResolvedRNSDK | null {
-  const directPkgJson = path.join(
-    fromDir,
-    'node_modules',
-    RN_SDK_PACKAGE,
-    'package.json'
-  );
-  if (fs.existsSync(directPkgJson)) {
-    return {
-      packageDir: path.dirname(directPkgJson),
-      packageJsonPath: directPkgJson,
-    };
-  }
+  try {
+    const directPkgJson = path.join(
+      fromDir,
+      'node_modules',
+      RN_SDK_PACKAGE,
+      'package.json'
+    );
+    if (fs.existsSync(directPkgJson)) {
+      return {
+        packageDir: path.dirname(directPkgJson),
+        packageJsonPath: directPkgJson,
+      };
+    }
 
-  const resolveFrom = require('resolve-from');
-  const fallbackPkgJson = resolveFrom.silent(
-    fromDir,
-    `${RN_SDK_PACKAGE}/package.json`
-  );
-  if (fallbackPkgJson) {
-    return {
-      packageDir: path.dirname(fallbackPkgJson),
-      packageJsonPath: fallbackPkgJson,
-    };
+    const resolveFrom = require('resolve-from');
+    const fallbackPkgJson = resolveFrom.silent(
+      fromDir,
+      `${RN_SDK_PACKAGE}/package.json`
+    );
+    if (fallbackPkgJson) {
+      return {
+        packageDir: path.dirname(fallbackPkgJson),
+        packageJsonPath: fallbackPkgJson,
+      };
+    }
+  } catch {
+    // Fall through to null. resolveRNSDK() turns this into a clear
+    // "customerio-reactnative was not found" error for the caller.
   }
 
   return null;
