@@ -28,10 +28,33 @@ PODFILES=(
   "test-app-pnpm-monorepo/apps/mobile/ios/Podfile"
 )
 
-PKG_JSONS=(
-  "test-app-pnpm/node_modules/customerio-reactnative/package.json"
-  "test-app-pnpm-monorepo/apps/mobile/node_modules/customerio-reactnative/package.json"
+# Apps whose customerio-reactnative install we need to inspect. The package
+# may live at the leaf app's node_modules (default pnpm isolated layout) OR
+# at a parent's node_modules (pnpm hoisted layout, or yarn-classic-style
+# hoisting in workspaces). We walk up from each app and use the first match.
+APP_DIRS=(
+  "test-app-pnpm"
+  "test-app-pnpm-monorepo/apps/mobile"
 )
+
+# Echoes the path to customerio-reactnative/package.json reachable from
+# $1 by walking up directories, or returns 1 if none is found.
+find_cio_pkg_json() {
+  local dir="$1"
+  while :; do
+    local candidate="$dir/node_modules/customerio-reactnative/package.json"
+    if [ -f "$candidate" ]; then
+      echo "$candidate"
+      return 0
+    fi
+    local parent
+    parent=$(dirname "$dir")
+    if [ "$parent" = "$dir" ]; then
+      return 1
+    fi
+    dir="$parent"
+  done
+}
 
 echo
 print_blue "Checking Podfile :path values..."
@@ -55,9 +78,9 @@ done
 
 echo
 print_blue "Checking expoVersion in customerio-reactnative/package.json..."
-for pkg in "${PKG_JSONS[@]}"; do
-  if [ ! -f "$pkg" ]; then
-    echo "::error::$pkg does not exist — did pnpm install run?"
+for app_dir in "${APP_DIRS[@]}"; do
+  if ! pkg=$(find_cio_pkg_json "$app_dir"); then
+    echo "::error::could not find customerio-reactnative/package.json reachable from $app_dir — did pnpm install run?"
     failures=$((failures + 1))
     continue
   fi
