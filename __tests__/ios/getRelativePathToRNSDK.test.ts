@@ -57,12 +57,28 @@ describe('getRelativePathToRNSDK fixtures', () => {
     fs.rmSync(tmpRoot, { recursive: true, force: true });
   });
 
-  it('flat npm: resolves to ../node_modules/customerio-reactnative', () => {
-    const projectRoot = path.join(tmpRoot, 'flat-npm');
+  it('flat npm + RN >=0.80: resolves to ../node_modules/customerio-reactnative', () => {
+    const projectRoot = path.join(tmpRoot, 'flat-npm-rn81');
     const iosPath = path.join(projectRoot, 'ios');
     fs.mkdirSync(iosPath, { recursive: true });
     makeCioPkg(path.join(projectRoot, 'node_modules', 'customerio-reactnative'));
     makeRnPkg(projectRoot, '0.81.4');
+
+    expect(getRelativePathToRNSDK(iosPath)).toBe(
+      path.join('..', 'node_modules', 'customerio-reactnative')
+    );
+  });
+
+  it('flat npm + RN <0.80: resolves to ../node_modules/customerio-reactnative (no regression)', () => {
+    // The dominant install layout (regular npm, no monorepo, no symlinks)
+    // must emit the same string regardless of which RN version pins the
+    // dispatch branch. This locks in the no-regression guarantee for the
+    // overwhelming majority of users when we changed the resolver.
+    const projectRoot = path.join(tmpRoot, 'flat-npm-rn79');
+    const iosPath = path.join(projectRoot, 'ios');
+    fs.mkdirSync(iosPath, { recursive: true });
+    makeCioPkg(path.join(projectRoot, 'node_modules', 'customerio-reactnative'));
+    makeRnPkg(projectRoot, '0.79.5');
 
     expect(getRelativePathToRNSDK(iosPath)).toBe(
       path.join('..', 'node_modules', 'customerio-reactnative')
