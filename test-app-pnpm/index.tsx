@@ -1,9 +1,10 @@
 import { CioConfig, CioLogLevel, CioRegion, CustomerIO } from 'customerio-reactnative';
+import { registerRootComponent } from 'expo';
 import { useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, Text, View } from 'react-native';
 
-export default function App() {
+function App() {
   useEffect(() => {
     const config: CioConfig = {
       cdpApiKey: 'REPLACE_WITH_REAL_KEY',
@@ -44,3 +45,5 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 });
+
+registerRootComponent(App);
