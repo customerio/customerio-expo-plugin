@@ -32,10 +32,11 @@ PODFILES=(
   "test-app-pnpm-monorepo/apps/mobile/ios/Podfile"
 )
 
-# Apps whose customerio-reactnative install we need to inspect. The package
-# may live at the leaf app's node_modules (default pnpm isolated layout) OR
-# at a parent's node_modules (pnpm hoisted layout, or yarn-classic-style
-# hoisting in workspaces). We walk up from each app and use the first match.
+# Apps whose customerio-reactnative install we need to inspect. The actual
+# package.json may land at the leaf app's node_modules (default pnpm
+# isolated layout) OR at a parent's node_modules (pnpm hoisted layout, or
+# yarn-classic-style hoisting in workspaces) — so we walk up from each app
+# and use the first match.
 APP_DIRS=(
   "test-app-pnpm"
   "test-app-pnpm-monorepo/apps/mobile"
@@ -75,8 +76,8 @@ for podfile in "${PODFILES[@]}"; do
   # prebuild run, so a divergence here would mean either a bug in the
   # snippet builder or autolinking emitting a path the plugin didn't match.
   paths=$(grep -E "^\s*pod 'customerio-reactnative" "$podfile" \
+            | grep -E ":path *=> *'[^']*'" \
             | sed -E "s/.*:path *=> *'([^']*)'.*/\1/" \
-            | grep -v "^pod " \
             | sort -u || true)
   count=$(echo -n "$paths" | grep -c '^' || true)
 
