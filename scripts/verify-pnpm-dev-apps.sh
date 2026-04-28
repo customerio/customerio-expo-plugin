@@ -5,24 +5,19 @@
 #
 # Two regression dimensions:
 #
-#   1. The Podfile must emit the install-time `customerio_reactnative_path`
-#      Ruby lambda, and every `pod 'customerio-reactnative...', :path =>`
-#      line must reference the variable rather than a baked path string.
-#      This is what guarantees the plugin's path agrees with whatever path
-#      React Native autolinking emits in the same Podfile, regardless of
-#      pnpm/yarn/symlink behavior.
-#
-#      The actual path validity is enforced by `pod install` succeeding in
-#      the setup-test-app-pnpm{,-monorepo}.sh steps that ran before this
-#      script — those would already have failed if the resolved path were
-#      bogus. This script's job is to catch plugin bugs that re-introduce
-#      a baked-path :path => before pod install runs.
+#   1. Every customerio-reactnative pod line in the Podfile must use the
+#      same :path => value. CocoaPods rejects "multiple dependencies with
+#      different sources" when our plugin and React Native autolinking
+#      emit different paths for the same package, which is the customer-
+#      reported failure under pnpm. The actual validity of the path is
+#      verified by `pod install` succeeding in the setup-test-app-pnpm{,
+#      -monorepo}.sh steps that ran before this script.
 #
 #   2. `expoVersion` must be present in the installed customerio-reactnative
 #      package.json. The RN SDK reads this at runtime to set User-Agent
 #      attribution to "Expo" instead of "ReactNative". Under pnpm the
 #      postinstall hook can be silently skipped, so the plugin's prebuild-
-#      time fallback must land the field reliably.
+#      time write must land the field reliably.
 
 set -e
 
@@ -66,7 +61,7 @@ find_cio_pkg_json() {
 }
 
 echo
-print_blue "Checking install-time path-resolver lambda is emitted..."
+print_blue "Checking customerio-reactnative pod :path consistency..."
 for podfile in "${PODFILES[@]}"; do
   if [ ! -f "$podfile" ]; then
     echo "::error::$podfile does not exist — did the prebuild step run?"
@@ -74,33 +69,32 @@ for podfile in "${PODFILES[@]}"; do
     continue
   fi
 
-  if ! grep -q "customerio_reactnative_path = (lambda do" "$podfile"; then
-    echo "::error::$podfile is missing the customerio_reactnative_path lambda."
-    echo "         The plugin should emit a Ruby block that resolves the SDK path"
-    echo "         at pod install time via Node's require.resolve."
+  # Extract every distinct :path => value across customerio-reactnative pod
+  # lines (host app + NSE target). All such values must be identical for
+  # CocoaPods to accept the install. The plugin uses one resolved path per
+  # prebuild run, so a divergence here would mean either a bug in the
+  # snippet builder or autolinking emitting a path the plugin didn't match.
+  paths=$(grep -E "^\s*pod 'customerio-reactnative" "$podfile" \
+            | sed -E "s/.*:path *=> *'([^']*)'.*/\1/" \
+            | grep -v "^pod " \
+            | sort -u || true)
+  count=$(echo -n "$paths" | grep -c '^' || true)
+
+  if [ "$count" -eq 0 ]; then
+    echo "::error::$podfile has no customerio-reactnative pod lines with a baked :path."
     failures=$((failures + 1))
     continue
   fi
 
-  if ! grep -q "node --print \"require.resolve('customerio-reactnative/package.json')\"" "$podfile"; then
-    echo "::error::$podfile lambda is missing the node --print require.resolve call."
+  if [ "$count" -gt 1 ]; then
+    echo "::error::$podfile has $count differing :path values for customerio-reactnative pods:"
+    echo "$paths" | sed 's/^/    /'
+    echo "         Every line must agree, otherwise CocoaPods rejects the install."
     failures=$((failures + 1))
     continue
   fi
 
-  # Every customerio-reactnative pod line must reference the variable, not a
-  # baked path string. A baked-path regression looks like
-  # `:path => '../node_modules/...'` instead of `:path => customerio_reactnative_path`.
-  baked=$(grep -E "^\s*pod 'customerio-reactnative.*':path *=> *'" "$podfile" || true)
-  if [ -n "$baked" ]; then
-    echo "::error::$podfile contains a customerio-reactnative pod line with a baked :path => string:"
-    echo "$baked"
-    echo "         Expected every such line to use ':path => customerio_reactnative_path'."
-    failures=$((failures + 1))
-    continue
-  fi
-
-  echo "  OK: $podfile"
+  echo "  OK: $podfile (:path => '$paths')"
 done
 
 echo

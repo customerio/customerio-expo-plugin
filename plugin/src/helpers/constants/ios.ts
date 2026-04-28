@@ -1,17 +1,97 @@
+import fs from 'fs';
+import * as semver from 'semver';
+
 const path = require('path');
-import { resolveRNSDK } from '../../utils/resolveRNSDK';
+import { resolveRNSDK, tryReadRNVersion } from '../../utils/resolveRNSDK';
 
+// Threshold at which React Native pod autolinking moves from
+// @react-native-community/cli (lexical, symlink-preserving) to
+// expo-modules-autolinking (realpath). The two flavors emit different
+// :path strings on pnpm/yarn-symlink layouts, so to keep CocoaPods happy
+// we must match whichever flavor will resolve the same package later.
+const RN_REALPATH_AUTOLINKING_MIN_VERSION = '0.80.0';
+
+const PLUGIN_LOG_PREFIX = '[CustomerIO Plugin]';
+
+// Always-on so the trail shows up in customer-shared `expo prebuild`
+// output without needing a separate verbose-mode opt-in.
+function pluginLog(message: string): void {
+  // eslint-disable-next-line no-console
+  console.log(`${PLUGIN_LOG_PREFIX} ${message}`);
+}
+
+/**
+ * Returns the relative path from the iOS project dir to the installed
+ * customerio-reactnative directory, in the exact form React Native pod
+ * autolinking will emit for the same package. The two autolinking
+ * flavors disagree on path shape under pnpm/yarn symlinks:
+ *
+ *   - RN <0.80 (`@react-native-community/cli`): walks node_modules
+ *     lexically, preserves symlinks. We keep the symlink path too —
+ *     `tryResolveRNSDK` already does this without calling realpath.
+ *
+ *   - RN >=0.80 (`expo-modules-autolinking`): realpaths the package
+ *     via Node, emitting the underlying `.pnpm/...` (or yarn-classic)
+ *     path. We match by realpath'ing the resolved directory.
+ *
+ * Decision points are logged so a customer's prebuild output is enough
+ * to triage path-resolution issues without a follow-up "set
+ * CUSTOMERIO_DEBUG_MODE and rerun" round-trip.
+ */
 export function getRelativePathToRNSDK(iosPath: string) {
-  // Root path of the Expo project
   const rootAppPath = path.dirname(iosPath);
+  pluginLog(
+    `Resolving customerio-reactnative for Podfile (iosPath=${iosPath}, projectRoot=${rootAppPath})`
+  );
 
-  // Resolve the RN SDK using the symlink path when available so the
-  // emitted Podfile :path agrees with React Native autolinking under
-  // pnpm and yarn workspaces. See resolveRNSDK for details.
   const { packageDir } = resolveRNSDK(rootAppPath);
+  pluginLog(`customerio-reactnative resolved to: ${packageDir}`);
 
-  // Example: ../node_modules/customerio-reactnative
-  return path.relative(iosPath, packageDir);
+  const rnVersion = tryReadRNVersion(rootAppPath);
+  pluginLog(`Detected react-native version: ${rnVersion ?? 'unknown'}`);
+
+  const useLexical = shouldUseLexicalPath(rnVersion);
+  pluginLog(
+    useLexical
+      ? `RN <${RN_REALPATH_AUTOLINKING_MIN_VERSION} — using lexical/symlink path to match @react-native-community/cli autolinking`
+      : `RN >=${RN_REALPATH_AUTOLINKING_MIN_VERSION} or unknown — using realpath to match expo-modules-autolinking`
+  );
+
+  let absolutePath: string;
+  if (useLexical) {
+    absolutePath = packageDir;
+  } else {
+    try {
+      absolutePath = fs.realpathSync(packageDir);
+      if (absolutePath !== packageDir) {
+        pluginLog(`Realpath differs from resolved dir: ${absolutePath}`);
+      }
+    } catch (err) {
+      pluginLog(
+        `realpathSync failed (${
+          err instanceof Error ? err.message : String(err)
+        }); falling back to symlink path`
+      );
+      absolutePath = packageDir;
+    }
+  }
+
+  const relativePath = path.relative(iosPath, absolutePath);
+  pluginLog(`Final Podfile :path => '${relativePath}'`);
+  return relativePath;
+}
+
+function shouldUseLexicalPath(rnVersion: string | null): boolean {
+  if (!rnVersion) {
+    // Modern Expo (realpath) has been the working path for the last few
+    // SDKs, so it's the safer default when RN can't be detected.
+    return false;
+  }
+  const coerced = semver.valid(rnVersion) || semver.coerce(rnVersion);
+  if (!coerced) {
+    return false;
+  }
+  return semver.lt(coerced, RN_REALPATH_AUTOLINKING_MIN_VERSION);
 }
 
 export const IOS_DEPLOYMENT_TARGET = '13.0';
