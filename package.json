@@ -115,7 +115,6 @@
   },
   "overrides": {
     "minimatch": "8.0.6",
-    "@tootallnate/once": "3.0.1",
     "@xmldom/xmldom": "0.8.12"
   }
 }
