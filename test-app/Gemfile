@@ -1,5 +1,10 @@
 source "https://rubygems.org"
 
+# Security pins for transitive deps (MBL-1688)
+gem 'faraday', '1.10.5'
+gem 'aws-sdk-s3', '1.208.0'
+gem 'rexml', '3.4.2'
+
 gem 'fastlane'
 plugins_path = File.join(File.dirname(__FILE__), 'fastlane', 'Pluginfile')
 eval_gemfile(plugins_path) if File.exist?(plugins_path)
