@@ -112,10 +112,5 @@
     "find-package-json": "^1.2.0",
     "fs-extra": "^11.2.0",
     "semver": "^7.7.2"
-  },
-  "overrides": {
-    "expo-module-scripts": {
-      "minimatch": "8.0.6"
-    }
   }
 }
