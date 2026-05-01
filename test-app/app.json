@@ -107,7 +107,8 @@
             "pushNotification": {
               "provider": "apn",
               "useRichPush": true,
-              "appGroupId": "group.io.customer.testbed.expo.apn.cio"
+              "appGroupId": "group.io.customer.testbed.expo.apn.cio",
+              "handleDeeplinkInKilledState": true
             }
           },
           "location": {

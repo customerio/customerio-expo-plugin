@@ -76,4 +76,4 @@ jobs:
         run: npm ci
 
       - name: Run utils tests
-        run: npm test -- __tests__/utils
+        run: npm test -- __tests__/utils __tests__/ios/withCIOIos.test.ts __tests__/ios/withCIOIosSwift.test.ts
