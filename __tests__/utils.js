@@ -27,6 +27,14 @@ function getTestAppAndroidJavaSourcePath() {
 }
 
 /**
+ * Resolve a path inside the scenario-suite fixtures tree.
+ * Pinned-SDK fixtures live under `__tests__/fixtures/<area>/<name>`.
+ */
+function getFixturePath(area, name) {
+  return path.join(__dirname, 'fixtures', area, name);
+}
+
+/**
  * Get the Expo version from environment variable
  * @returns {string} The Expo version
  */
@@ -59,4 +67,5 @@ module.exports = {
   getTestAppAndroidJavaSourcePath,
   getExpoVersion,
   isExpoVersion53OrHigher,
+  getFixturePath,
 };
