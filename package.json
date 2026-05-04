@@ -28,6 +28,7 @@
     "prepare": "npm run clean && bob build",
     "postinstall": "node plugin/src/postInstall.js",
     "test": "jest",
+    "test:scenarios": "jest --selectProjects scenarios",
     "compatibility:create-test-app": "node scripts/compatibility/create-test-app.js",
     "compatibility:setup-test-app": "node scripts/compatibility/setup-test-app.js",
     "compatibility:configure-plugin": "node scripts/compatibility/configure-plugin.js",
