@@ -5,38 +5,40 @@ import { logger } from '../utils/logger';
 import { FileManagement } from './../helpers/utils/fileManagement';
 import type { CustomerIOPluginOptionsAndroid } from './../types/cio-types';
 
+export function copyGoogleServicesFile(
+  androidPath: string,
+  googleServicesFile: string | undefined
+): void {
+  const destination = `${androidPath}/app/google-services.json`;
+
+  if (FileManagement.exists(destination)) {
+    logger.info(`File already exists: ${destination}. Skipping...`);
+    return;
+  }
+
+  if (googleServicesFile && FileManagement.exists(googleServicesFile)) {
+    try {
+      FileManagement.copyFile(googleServicesFile, destination);
+    } catch {
+      logger.info(
+        `There was an error copying your google-services.json file. You can copy it manually into ${destination}`
+      );
+    }
+  } else {
+    logger.info(
+      `The Google Services file provided in ${googleServicesFile} doesn't seem to exist. You can copy it manually into ${destination}`
+    );
+  }
+}
+
 export const withGoogleServicesJSON: ConfigPlugin<
   CustomerIOPluginOptionsAndroid
 > = (configOuter, cioProps) => {
   return withProjectBuildGradle(configOuter, (props) => {
-    const options: CustomerIOPluginOptionsAndroid = {
-      androidPath: props.modRequest.platformProjectRoot,
-      googleServicesFile: cioProps?.googleServicesFile,
-    };
-    const { androidPath, googleServicesFile } = options;
-    if (!FileManagement.exists(`${androidPath}/app/google-services.json`)) {
-      if (googleServicesFile && FileManagement.exists(googleServicesFile)) {
-        try {
-          FileManagement.copyFile(
-            googleServicesFile,
-            `${androidPath}/app/google-services.json`
-          );
-        } catch {
-          logger.info(
-            `There was an error copying your google-services.json file. You can copy it manually into ${androidPath}/app/google-services.json`
-          );
-        }
-      } else {
-        logger.info(
-          `The Google Services file provided in ${googleServicesFile} doesn't seem to exist. You can copy it manually into ${androidPath}/app/google-services.json`
-        );
-      }
-    } else {
-      logger.info(
-        `File already exists: ${androidPath}/app/google-services.json. Skipping...`
-      );
-    }
-
+    copyGoogleServicesFile(
+      props.modRequest.platformProjectRoot,
+      cioProps?.googleServicesFile
+    );
     return props;
   });
 };
