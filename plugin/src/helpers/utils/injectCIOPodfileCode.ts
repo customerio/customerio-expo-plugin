@@ -11,27 +11,35 @@ export type InjectCIOPodfileOptions = {
   hasPush?: boolean;
 };
 
-/** Builds the host app pod line for the Podfile (single subspec or :subspecs with location). Exported for tests. */
+/** Builds the host-app pod snippet for the Podfile.
+ *
+ * The :path is resolved at prebuild time by `getRelativePathToRNSDK`,
+ * which dispatches on the installed React Native version so the path
+ * matches what RN pod autolinking will emit (lexical for RN <0.80,
+ * realpath for RN >=0.80). Baking the resolved string directly avoids
+ * any Ruby/install-time logic in the Podfile and keeps the snippet
+ * trivially diff-able.
+ *
+ * Exported for tests.
+ */
 export function buildHostAppPodSnippet(
   iosPath: string,
   isFcmPushProvider: boolean,
   options?: InjectCIOPodfileOptions
 ): string {
-  const path = getRelativePathToRNSDK(iosPath);
+  const resolvedPath = getRelativePathToRNSDK(iosPath);
   const locationEnabled = options?.locationEnabled === true;
   const hasPush = options?.hasPush !== false;
 
   if (!locationEnabled) {
     const subspec = isFcmPushProvider ? 'fcm' : 'apn';
-    return `pod 'customerio-reactnative/${subspec}', :path => '${path}'`;
+    return `pod 'customerio-reactnative/${subspec}', :path => '${resolvedPath}'`;
   }
-
   if (!hasPush) {
-    return `pod 'customerio-reactnative', :subspecs => ['location'], :path => '${path}'`;
+    return `pod 'customerio-reactnative', :subspecs => ['location'], :path => '${resolvedPath}'`;
   }
-
   const pushSubspec = isFcmPushProvider ? 'fcm' : 'apn';
-  return `pod 'customerio-reactnative', :subspecs => ['${pushSubspec}', 'location'], :path => '${path}'`;
+  return `pod 'customerio-reactnative', :subspecs => ['${pushSubspec}', 'location'], :path => '${resolvedPath}'`;
 }
 
 export async function injectCIOPodfileCode(
@@ -87,12 +95,16 @@ export async function injectCIONotificationPodfileCode(
   const matches = podfile.match(new RegExp(blockStart));
 
   if (!matches) {
+    const resolvedPath = getRelativePathToRNSDK(iosPath);
+    const subspec = isFcmPushProvider ? 'fcm' : 'apn';
+    const useFrameworksLine =
+      useFrameworks === 'static' ? 'use_frameworks! :linkage => :static' : '';
+
     const snippetToInjectInPodfile = `
 ${blockStart}
 target 'NotificationService' do
-  ${useFrameworks === 'static' ? 'use_frameworks! :linkage => :static' : ''}
-  pod 'customerio-reactnative-richpush/${isFcmPushProvider ? 'fcm' : 'apn'
-      }', :path => '${getRelativePathToRNSDK(iosPath)}'
+  ${useFrameworksLine}
+  pod 'customerio-reactnative-richpush/${subspec}', :path => '${resolvedPath}'
 end
 ${blockEnd}
 `.trim();

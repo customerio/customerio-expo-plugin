@@ -1,19 +1,23 @@
 #!/bin/bash
 
-# Asserts that the pnpm dev apps are built with portable, correct artifacts.
+# Asserts that the pnpm dev apps are built with correct artifacts.
 # Run after both setup-test-app-pnpm.sh and setup-test-app-pnpm-monorepo.sh.
 #
 # Two regression dimensions:
 #
-#   1. Podfile :path values must not contain `.pnpm/` — the plugin must emit
-#      the symlinked node_modules path that React Native autolinking expects,
-#      not the realpath inside pnpm's virtual store.
+#   1. Every customerio-reactnative pod line in the Podfile must use the
+#      same :path => value. CocoaPods rejects "multiple dependencies with
+#      different sources" when our plugin and React Native autolinking
+#      emit different paths for the same package, which is the customer-
+#      reported failure under pnpm. The actual validity of the path is
+#      verified by `pod install` succeeding in the setup-test-app-pnpm{,
+#      -monorepo}.sh steps that ran before this script.
 #
 #   2. `expoVersion` must be present in the installed customerio-reactnative
 #      package.json. The RN SDK reads this at runtime to set User-Agent
 #      attribution to "Expo" instead of "ReactNative". Under pnpm the
-#      postinstall hook can be silently skipped, so the plugin must also
-#      write this at expo-prebuild time.
+#      postinstall hook can be silently skipped, so the plugin's prebuild-
+#      time write must land the field reliably.
 
 set -e
 
@@ -28,10 +32,11 @@ PODFILES=(
   "test-app-pnpm-monorepo/apps/mobile/ios/Podfile"
 )
 
-# Apps whose customerio-reactnative install we need to inspect. The package
-# may live at the leaf app's node_modules (default pnpm isolated layout) OR
-# at a parent's node_modules (pnpm hoisted layout, or yarn-classic-style
-# hoisting in workspaces). We walk up from each app and use the first match.
+# Apps whose customerio-reactnative install we need to inspect. The actual
+# package.json may land at the leaf app's node_modules (default pnpm
+# isolated layout) OR at a parent's node_modules (pnpm hoisted layout, or
+# yarn-classic-style hoisting in workspaces) — so we walk up from each app
+# and use the first match.
 APP_DIRS=(
   "test-app-pnpm"
   "test-app-pnpm-monorepo/apps/mobile"
@@ -57,7 +62,7 @@ find_cio_pkg_json() {
 }
 
 echo
-print_blue "Checking Podfile :path values..."
+print_blue "Checking customerio-reactnative pod :path consistency..."
 for podfile in "${PODFILES[@]}"; do
   if [ ! -f "$podfile" ]; then
     echo "::error::$podfile does not exist — did the prebuild step run?"
@@ -65,15 +70,32 @@ for podfile in "${PODFILES[@]}"; do
     continue
   fi
 
-  offending=$(grep -E "^\s*pod .* :path =>" "$podfile" | grep "\.pnpm/" || true)
-  if [ -n "$offending" ]; then
-    echo "::error::$podfile contains .pnpm/ in a :path => line."
-    echo "Plugin emitted the pnpm realpath instead of the symlink path that React Native autolinking expects."
-    echo "$offending"
+  # Extract every distinct :path => value across customerio-reactnative pod
+  # lines (host app + NSE target). All such values must be identical for
+  # CocoaPods to accept the install. The plugin uses one resolved path per
+  # prebuild run, so a divergence here would mean either a bug in the
+  # snippet builder or autolinking emitting a path the plugin didn't match.
+  paths=$(grep -E "^\s*pod 'customerio-reactnative" "$podfile" \
+            | grep -E ":path *=> *'[^']*'" \
+            | sed -E "s/.*:path *=> *'([^']*)'.*/\1/" \
+            | sort -u || true)
+  count=$(echo -n "$paths" | grep -c '^' || true)
+
+  if [ "$count" -eq 0 ]; then
+    echo "::error::$podfile has no customerio-reactnative pod lines with a baked :path."
     failures=$((failures + 1))
-  else
-    echo "  OK: $podfile"
+    continue
   fi
+
+  if [ "$count" -gt 1 ]; then
+    echo "::error::$podfile has $count differing :path values for customerio-reactnative pods:"
+    echo "$paths" | sed 's/^/    /'
+    echo "         Every line must agree, otherwise CocoaPods rejects the install."
+    failures=$((failures + 1))
+    continue
+  fi
+
+  echo "  OK: $podfile (:path => '$paths')"
 done
 
 echo
