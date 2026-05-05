@@ -18,6 +18,21 @@ import { isExpoVersion53OrHigher, isFcmPushProvider } from './utils';
 const PLIST_FILENAME = `${CIO_NOTIFICATION_TARGET_NAME}-Info.plist`;
 const ENV_FILENAME = 'Env.swift';
 
+// NSE source files registered in the Xcode group AND copied to the target
+// directory. Single source of truth — both `addNotificationServiceExtensionToXcodeProject`
+// (registers them in the PBXGroup) and `addRichPushXcodeProj` (copies them
+// from the plugin's native-files dir) read the same arrays. Keeping these
+// in sync is load-bearing: the Xcode group must reference the same files
+// that exist on disk, or the build fails with "no such file" / unresolved
+// references.
+const NSE_PLATFORM_SPECIFIC_FILES = ['NotificationService.swift'];
+const NSE_COMMON_FILES = [
+  PLIST_FILENAME,
+  'NotificationService.h',
+  'NotificationService.m',
+  ENV_FILENAME,
+];
+
 const TARGETED_DEVICE_FAMILY = `"1,2"`;
 
 const addNotificationServiceExtension = async (
@@ -136,18 +151,11 @@ export function addNotificationServiceExtensionToXcodeProject(
 
   const { appleTeamId, bundleIdentifier, iosDeploymentTarget, appGroupId } = options;
 
-  const platformSpecificFiles = ['NotificationService.swift'];
-  const commonFiles = [
-    PLIST_FILENAME,
-    'NotificationService.h',
-    'NotificationService.m',
-    ENV_FILENAME,
-  ];
   // The entitlements file is generated (not copied from source), so it's listed separately
   // for the Xcode group so it appears in the file navigator.
   const allGroupFiles = [
-    ...platformSpecificFiles,
-    ...commonFiles,
+    ...NSE_PLATFORM_SPECIFIC_FILES,
+    ...NSE_COMMON_FILES,
     ...(appGroupId ? [NSE_ENTITLEMENTS_FILENAME] : []),
   ];
 
@@ -268,17 +276,10 @@ const addRichPushXcodeProj = async (
     FileManagement.writeFile(`${nsePath}/${NSE_ENTITLEMENTS_FILENAME}`, nseEntitlementsContent);
   }
 
-  const platformSpecificFiles = ['NotificationService.swift'];
-  const commonFiles = [
-    PLIST_FILENAME,
-    'NotificationService.h',
-    'NotificationService.m',
-    ENV_FILENAME,
-  ];
   const getTargetFile = (filename: string) => `${nsePath}/${filename}`;
 
   // Copy platform-specific files
-  platformSpecificFiles.forEach((filename) => {
+  NSE_PLATFORM_SPECIFIC_FILES.forEach((filename) => {
     FileManagement.copyFile(
       `${getIosNativeFilesPath()}/${isFcmProvider ? 'fcm' : 'apn'}/${filename}`,
       getTargetFile(filename),
@@ -286,7 +287,7 @@ const addRichPushXcodeProj = async (
   });
 
   // Copy common files
-  commonFiles.forEach((filename) => {
+  NSE_COMMON_FILES.forEach((filename) => {
     FileManagement.copyFile(
       `${getIosNativeFilesPath()}/common/${filename}`,
       getTargetFile(filename),
