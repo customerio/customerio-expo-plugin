@@ -286,89 +286,108 @@ const addRichPushXcodeProj = async (
   xcodeProject.addTargetAttribute('DevelopmentTeam', appleTeamId);
 };
 
+/**
+ * Pure string transform: substitutes the `{{BUNDLE_VERSION}}` and
+ * `{{BUNDLE_SHORT_VERSION}}` placeholders in the NSE Info.plist template.
+ * Either or both may be provided; missing values leave the corresponding
+ * placeholder untouched.
+ */
+export function applyBundleVersionToNsePlist(
+  content: string,
+  payload: { bundleVersion?: string; bundleShortVersion?: string }
+): string {
+  let next = content;
+  if (payload.bundleVersion) {
+    next = replaceCodeByRegex(next, /\{\{BUNDLE_VERSION\}\}/, payload.bundleVersion);
+  }
+  if (payload.bundleShortVersion) {
+    next = replaceCodeByRegex(next, /\{\{BUNDLE_SHORT_VERSION\}\}/, payload.bundleShortVersion);
+  }
+  return next;
+}
+
 const updateNseInfoPlist = (payload: {
   bundleVersion?: string;
   bundleShortVersion?: string;
   infoPlistTargetFile: string;
 }) => {
-  const BUNDLE_SHORT_VERSION_RE = /\{\{BUNDLE_SHORT_VERSION\}\}/;
-  const BUNDLE_VERSION_RE = /\{\{BUNDLE_VERSION\}\}/;
-
-  let plistFileString = FileManagement.readFile(payload.infoPlistTargetFile);
-
-  if (payload.bundleVersion) {
-    plistFileString = replaceCodeByRegex(
-      plistFileString,
-      BUNDLE_VERSION_RE,
-      payload.bundleVersion
-    );
-  }
-
-  if (payload.bundleShortVersion) {
-    plistFileString = replaceCodeByRegex(
-      plistFileString,
-      BUNDLE_SHORT_VERSION_RE,
-      payload.bundleShortVersion
-    );
-  }
-
-  FileManagement.writeFile(payload.infoPlistTargetFile, plistFileString);
+  const next = applyBundleVersionToNsePlist(
+    FileManagement.readFile(payload.infoPlistTargetFile),
+    payload,
+  );
+  FileManagement.writeFile(payload.infoPlistTargetFile, next);
 };
+
+/**
+ * Pure string transform: substitutes the `{{APP_GROUP_ID_BUILDER_LINE}}`
+ * placeholder in NotificationService.swift with either the configured
+ * appGroupId builder line or an empty string.
+ */
+export function applyAppGroupIdToNotificationService(
+  content: string,
+  appGroupId?: string
+): string {
+  const builderLine = appGroupId
+    ? `        .appGroupId(${JSON.stringify(appGroupId)})\n`
+    : '';
+  return replaceCodeByRegex(content, /\{\{APP_GROUP_ID_BUILDER_LINE\}\}/, builderLine);
+}
 
 const updateNseNotificationService = (
   notificationServiceFile: string,
   appGroupId?: string,
 ) => {
-  const APP_GROUP_ID_BUILDER_LINE_RE = /\{\{APP_GROUP_ID_BUILDER_LINE\}\}/;
-
-  let content = FileManagement.readFile(notificationServiceFile);
-  const builderLine = appGroupId
-    ? `        .appGroupId(${JSON.stringify(appGroupId)})\n`
-    : '';
-  content = replaceCodeByRegex(content, APP_GROUP_ID_BUILDER_LINE_RE, builderLine);
-  FileManagement.writeFile(notificationServiceFile, content);
+  const next = applyAppGroupIdToNotificationService(
+    FileManagement.readFile(notificationServiceFile),
+    appGroupId,
+  );
+  FileManagement.writeFile(notificationServiceFile, next);
 };
 
-const updateNseEnv = (
-  envFileName: string,
-  richPushConfig?: RichPushConfig
-) => {
-  const CDP_API_KEY_RE = /\{\{CDP_API_KEY\}\}/;
-  const REGION_RE = /\{\{REGION\}\}/;
-
-  let envFileContent = FileManagement.readFile(envFileName);
-
-  // Use merged config values (config takes precedence over env)
+/**
+ * Pure string transform: substitutes the `{{CDP_API_KEY}}` and `{{REGION}}`
+ * placeholders in the NSE Env.swift template. Missing or invalid region
+ * falls back to `Region.US` and logs a warning.
+ */
+export function applyRichPushConfigToEnv(
+  content: string,
+  richPushConfig?: RichPushConfig,
+): string {
   const cdpApiKey = richPushConfig?.cdpApiKey;
   const region = richPushConfig?.region;
 
-  if (!validateRichPushConfig(richPushConfig)) {
-    return;
-  }
-  envFileContent = replaceCodeByRegex(
-    envFileContent,
-    CDP_API_KEY_RE,
+  let next = replaceCodeByRegex(
+    content,
+    /\{\{CDP_API_KEY\}\}/,
     cdpApiKey || 'MISSING_API_KEY',
   );
 
-  // Simplify region mapping with case insensitive keys and fallback for invalid regions
   const regionKey = region?.toLowerCase() ?? '';
-  const regionMap = {
-    us: 'Region.US',
-    eu: 'Region.EU',
-  } as const;
+  const regionMap = { us: 'Region.US', eu: 'Region.EU' } as const;
   const mappedRegion = regionMap[regionKey as keyof typeof regionMap];
   if (!mappedRegion) {
     logger.warn(
       `${regionKey} is an invalid region. Please use the values from the docs: https://docs.customer.io/integrations/sdk/expo/getting-started/packages-options/#configuring-the-expo-plugin`
     );
-    // Fallback to US if invalid region provided
-    envFileContent = replaceCodeByRegex(envFileContent, REGION_RE, regionMap.us);
+    next = replaceCodeByRegex(next, /\{\{REGION\}\}/, regionMap.us);
   } else {
-    envFileContent = replaceCodeByRegex(envFileContent, REGION_RE, mappedRegion);
+    next = replaceCodeByRegex(next, /\{\{REGION\}\}/, mappedRegion);
   }
+  return next;
+}
 
-  FileManagement.writeFile(envFileName, envFileContent);
+const updateNseEnv = (
+  envFileName: string,
+  richPushConfig?: RichPushConfig
+) => {
+  if (!validateRichPushConfig(richPushConfig)) {
+    return;
+  }
+  const next = applyRichPushConfigToEnv(
+    FileManagement.readFile(envFileName),
+    richPushConfig,
+  );
+  FileManagement.writeFile(envFileName, next);
 };
 
 async function addPushNotificationFile(
@@ -410,79 +429,84 @@ async function addPushNotificationFile(
   xcodeProject.addSourceFile(`${appName}/${targetFileName}`, null, group);
 }
 
-const updatePushFile = (
+/**
+ * Pure string transform: substitutes every PushService.swift placeholder
+ * (`{{REGISTER_SNIPPET}}`, `{{CDP_API_KEY}}`, `{{REGION}}`,
+ * `{{AUTO_TRACK_PUSH_EVENTS}}`, `{{AUTO_FETCH_DEVICE_TOKEN}}`,
+ * `{{SHOW_PUSH_APP_IN_FOREGROUND}}`, `{{APP_GROUP_ID_BUILDER_LINE}}`) using
+ * the configured push-notification options. Validation of the rich-push
+ * config (cdpApiKey/region required) is the wrapper's responsibility.
+ */
+export function applyConfigToPushFile(
+  content: string,
   options: CustomerIOPluginOptionsIOS,
-  envFileName: string
-) => {
-  const REGISTER_RE = /\{\{REGISTER_SNIPPET\}\}/;
-
-  let envFileContent = FileManagement.readFile(envFileName);
-  const disableNotificationRegistration =
-    options.pushNotification?.disableNotificationRegistration;
+): string {
   const richPushConfig = options.pushNotification?.env;
   const { cdpApiKey, region } = richPushConfig || {
     cdpApiKey: 'MISSING_API_KEY',
     region: undefined,
   };
-  if (!validateRichPushConfig(richPushConfig)) {
-    return;
-  }
+  const disableNotificationRegistration =
+    options.pushNotification?.disableNotificationRegistration;
 
-  let snippet = '';
   // unless this property is explicitly set to true, push notification
   // registration will be added to the AppDelegate
-  if (disableNotificationRegistration !== true) {
-    snippet = CIO_REGISTER_PUSHNOTIFICATION_SNIPPET;
-  }
-  envFileContent = replaceCodeByRegex(envFileContent, REGISTER_RE, snippet);
+  const registerSnippet = disableNotificationRegistration !== true
+    ? CIO_REGISTER_PUSHNOTIFICATION_SNIPPET
+    : '';
 
-  envFileContent = replaceCodeByRegex(
-    envFileContent,
-    /\{\{CDP_API_KEY\}\}/,
-    cdpApiKey,
-  );
+  let next = replaceCodeByRegex(content, /\{\{REGISTER_SNIPPET\}\}/, registerSnippet);
+  next = replaceCodeByRegex(next, /\{\{CDP_API_KEY\}\}/, cdpApiKey);
 
   if (region) {
-    envFileContent = replaceCodeByRegex(
-      envFileContent,
-      /\{\{REGION\}\}/,
-      region.toUpperCase()
-    );
+    next = replaceCodeByRegex(next, /\{\{REGION\}\}/, region.toUpperCase());
   }
 
   const autoTrackPushEvents =
     options.pushNotification?.autoTrackPushEvents !== false;
-  envFileContent = replaceCodeByRegex(
-    envFileContent,
+  next = replaceCodeByRegex(
+    next,
     /\{\{AUTO_TRACK_PUSH_EVENTS\}\}/,
-    autoTrackPushEvents.toString()
+    autoTrackPushEvents.toString(),
   );
 
   const autoFetchDeviceToken =
     options.pushNotification?.autoFetchDeviceToken !== false;
-  envFileContent = replaceCodeByRegex(
-    envFileContent,
+  next = replaceCodeByRegex(
+    next,
     /\{\{AUTO_FETCH_DEVICE_TOKEN\}\}/,
-    autoFetchDeviceToken.toString()
+    autoFetchDeviceToken.toString(),
   );
 
   const showPushAppInForeground =
     options.pushNotification?.showPushAppInForeground !== false;
-  envFileContent = replaceCodeByRegex(
-    envFileContent,
+  next = replaceCodeByRegex(
+    next,
     /\{\{SHOW_PUSH_APP_IN_FOREGROUND\}\}/,
-    showPushAppInForeground.toString()
+    showPushAppInForeground.toString(),
   );
 
   const appGroupId = options.pushNotification?.appGroupId;
   const appGroupIdBuilderLine = appGroupId
     ? `        .appGroupId(${JSON.stringify(appGroupId)})\n`
     : '';
-  envFileContent = replaceCodeByRegex(
-    envFileContent,
+  next = replaceCodeByRegex(
+    next,
     /\{\{APP_GROUP_ID_BUILDER_LINE\}\}/,
-    appGroupIdBuilderLine
+    appGroupIdBuilderLine,
   );
 
-  FileManagement.writeFile(envFileName, envFileContent);
+  return next;
+}
+
+const updatePushFile = (
+  options: CustomerIOPluginOptionsIOS,
+  envFileName: string
+) => {
+  const richPushConfig = options.pushNotification?.env;
+  if (!validateRichPushConfig(richPushConfig)) {
+    return;
+  }
+  const next = applyConfigToPushFile(FileManagement.readFile(envFileName), options);
+  FileManagement.writeFile(envFileName, next);
 };
