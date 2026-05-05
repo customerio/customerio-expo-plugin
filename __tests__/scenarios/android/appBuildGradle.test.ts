@@ -1,20 +1,24 @@
-import * as fs from 'fs';
 import { modifyAppBuildGradle } from '../../../plugin/src/android/withAppGoogleServices';
-import { getFixturePath } from '../../utils';
 
-const baseline = fs.readFileSync(getFixturePath('android', 'app_build.gradle'), 'utf8');
+// Minimal-but-viable slice of an Expo prebuild app/build.gradle.
+// The helper looks for the `apply plugin: "com.android.application"` line and
+// inserts the Google Services apply line right after it.
+const baseline = [
+  'apply plugin: "com.android.application"',
+  'apply plugin: "org.jetbrains.kotlin.android"',
+  'apply plugin: "com.facebook.react"',
+  '',
+].join('\n');
 
 describe('android scenarios — modifyAppBuildGradle', () => {
-  it('injects the Google Services plugin apply line under the android.application apply line', () => {
-    const result = modifyAppBuildGradle(baseline);
-    const appliedLine = result.match(/^apply plugin: "com\.google\.gms\.google-services".*$/m);
-    expect(appliedLine).not.toBeNull();
-    // It should sit immediately after the android.application apply line
-    const lines = result.split('\n');
-    const androidIdx = lines.findIndex((l) => l === 'apply plugin: "com.android.application"');
-    expect(lines[androidIdx + 1]).toMatchInlineSnapshot(
-      `"apply plugin: "com.google.gms.google-services"  // Google Services plugin"`,
-    );
+  it('injects the Google Services apply line under the android.application apply line', () => {
+    expect(modifyAppBuildGradle(baseline)).toMatchInlineSnapshot(`
+      "apply plugin: "com.android.application"
+      apply plugin: "com.google.gms.google-services"  // Google Services plugin
+      apply plugin: "org.jetbrains.kotlin.android"
+      apply plugin: "com.facebook.react"
+      "
+    `);
   });
 
   it('is idempotent — applying twice equals applying once', () => {

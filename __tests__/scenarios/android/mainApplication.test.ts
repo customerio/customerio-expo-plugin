@@ -2,21 +2,32 @@ import * as fs from 'fs';
 import { injectCustomerIOInitializerIntoMainApplication } from '../../../plugin/src/android/withMainApplicationModifications';
 import { getFixturePath } from '../../utils';
 
-const baseline = fs.readFileSync(getFixturePath('android', 'MainApplication_kt_sdk54.kt'), 'utf8');
+const baseline = fs.readFileSync(
+  getFixturePath('android', 'MainApplication.kt'),
+  'utf8'
+);
 
-describe('android scenarios — injectCustomerIOInitializerIntoMainApplication (SDK 54)', () => {
-  it('adds the import and the onCreate initialize call', () => {
-    const result = injectCustomerIOInitializerIntoMainApplication(baseline);
-    expect(result).toContain('import io.customer.sdk.expo.CustomerIOSDKInitializer');
-    expect(result).toContain('CustomerIOSDKInitializer.initialize(this)');
-  });
+describe('android scenarios — injectCustomerIOInitializerIntoMainApplication', () => {
+  it('adds the SDK initializer import and injects the onCreate call', () => {
+    expect(injectCustomerIOInitializerIntoMainApplication(baseline))
+      .toMatchInlineSnapshot(`
+      "package io.customer.testbed.expo
 
-  it('places the initialize call inside override fun onCreate, after super.onCreate', () => {
-    const result = injectCustomerIOInitializerIntoMainApplication(baseline);
-    // Capture the onCreate body and assert the call is in there
-    const onCreateMatch = result.match(/override\s+fun\s+onCreate\s*\(\s*\)\s*\{([\s\S]*?)\}/);
-    expect(onCreateMatch).not.toBeNull();
-    expect(onCreateMatch![1]).toContain('CustomerIOSDKInitializer.initialize(this)');
+      import android.app.Application
+      import com.facebook.react.PackageList
+
+      import io.customer.sdk.expo.CustomerIOSDKInitializer
+
+      class MainApplication : Application() {
+        override fun onCreate() {
+          super.onCreate()
+        
+          // Auto Initialize Native Customer.io SDK
+          CustomerIOSDKInitializer.initialize(this)
+        }
+      }
+      "
+    `);
   });
 
   it('is idempotent — running twice equals running once', () => {

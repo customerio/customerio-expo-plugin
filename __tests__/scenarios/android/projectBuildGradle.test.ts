@@ -3,24 +3,54 @@ import { modifyProjectBuildGradleAndroid16Support } from '../../../plugin/src/an
 import { modifyProjectBuildGradleForGoogleServices } from '../../../plugin/src/android/withProjectGoogleServices';
 import { getFixturePath } from '../../utils';
 
-const baseline = fs.readFileSync(getFixturePath('android', 'project_build.gradle'), 'utf8');
+const baseline = fs.readFileSync(
+  getFixturePath('android', 'project_build.gradle'),
+  'utf8'
+);
 
 describe('android scenarios — modifyProjectBuildGradleAndroid16Support', () => {
-  it('injects the resolutionStrategy block when disableAndroid16Support is true', () => {
-    const result = modifyProjectBuildGradleAndroid16Support(baseline, {
-      disableAndroid16Support: true,
-    });
-    expect(result).toContain("force 'androidx.core:core-ktx:1.13.1'");
-    expect(result).toContain("force 'androidx.lifecycle:lifecycle-process:2.8.7'");
-    // Block lives inside the allprojects { ... } scope
-    expect(result).toMatch(/allprojects\s*\{[\s\S]*configurations\.all[\s\S]*resolutionStrategy/);
+  it('injects the resolutionStrategy block inside allprojects when the flag is true', () => {
+    expect(
+      modifyProjectBuildGradleAndroid16Support(baseline, {
+        disableAndroid16Support: true,
+      })
+    ).toMatchInlineSnapshot(`
+      "// Top-level build file where you can add configuration options common to all sub-projects/modules.
+
+      buildscript {
+          repositories {
+              google()
+              mavenCentral()
+          }
+          dependencies {
+              classpath('com.android.tools.build:gradle')
+          }
+      }
+
+      allprojects {
+          configurations.all {
+              resolutionStrategy {
+                  // Disable Android 16 support by forcing older androidx versions
+                  // Compatible with API 35 and AGP 8.8.2 (prevents API 36/AGP 8.9.1+ requirement)
+                  force 'androidx.core:core-ktx:1.13.1'
+                  force 'androidx.lifecycle:lifecycle-process:2.8.7'
+              }
+          }
+          repositories {
+              google()
+              mavenCentral()
+          }
+      }
+      "
+    `);
   });
 
   it('returns input unchanged when the flag is false', () => {
-    const result = modifyProjectBuildGradleAndroid16Support(baseline, {
-      disableAndroid16Support: false,
-    });
-    expect(result).toEqual(baseline);
+    expect(
+      modifyProjectBuildGradleAndroid16Support(baseline, {
+        disableAndroid16Support: false,
+      })
+    ).toEqual(baseline);
   });
 
   it('is idempotent when the flag is true', () => {
@@ -35,13 +65,30 @@ describe('android scenarios — modifyProjectBuildGradleAndroid16Support', () =>
 });
 
 describe('android scenarios — modifyProjectBuildGradleForGoogleServices', () => {
-  it('injects the Google Services classpath under buildscript.dependencies', () => {
-    const result = modifyProjectBuildGradleForGoogleServices(baseline);
-    expect(result).toContain('classpath "com.google.gms:google-services:4.3.13"');
-    // It should sit inside the buildscript { ... dependencies { ... } block
-    expect(result).toMatch(
-      /buildscript\s*\{[\s\S]*dependencies\s*\{[\s\S]*com\.google\.gms:google-services/,
-    );
+  it('injects the Google Services classpath into buildscript.dependencies', () => {
+    expect(modifyProjectBuildGradleForGoogleServices(baseline))
+      .toMatchInlineSnapshot(`
+      "// Top-level build file where you can add configuration options common to all sub-projects/modules.
+
+      buildscript {
+          repositories {
+              google()
+              mavenCentral()
+          }
+          dependencies {
+              classpath "com.google.gms:google-services:4.3.13"  // Google Services plugin
+              classpath('com.android.tools.build:gradle')
+          }
+      }
+
+      allprojects {
+          repositories {
+              google()
+              mavenCentral()
+          }
+      }
+      "
+    `);
   });
 
   it('is idempotent', () => {
