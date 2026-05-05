@@ -26,4 +26,15 @@ describe('android scenarios — modifyAppBuildGradle', () => {
     const twice = modifyAppBuildGradle(once);
     expect(twice).toEqual(once);
   });
+
+  // Negative-template: customer's app/build.gradle doesn't have the anchor line.
+  // Helper should leave the file untouched rather than producing malformed output.
+  it('returns input unchanged when there is no com.android.application apply line', () => {
+    const noAndroidPlugin = [
+      'apply plugin: "com.facebook.react"',
+      'apply plugin: "org.jetbrains.kotlin.android"',
+      '',
+    ].join('\n');
+    expect(modifyAppBuildGradle(noAndroidPlugin)).toEqual(noAndroidPlugin);
+  });
 });
