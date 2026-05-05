@@ -101,109 +101,61 @@ export const withCioNotificationsXcodeProject: ConfigPlugin<
   });
 };
 
-const addRichPushXcodeProj = async (
-  options: CustomerIOPluginOptionsIOS,
+const NSE_ENTITLEMENTS_FILENAME = 'NotificationService.entitlements';
+
+export type AddNseTargetToXcodeProjectOptions = {
+  appleTeamId?: string;
+  bundleIdentifier?: string;
+  iosDeploymentTarget?: string;
+  appGroupId?: string;
+};
+
+/**
+ * Mutates the parsed XcodeProject to register the rich-push NotificationService
+ * extension target: creates a PBXGroup for its files, registers the group under
+ * the project's top-level group, adds the app_extension target, wires three
+ * build phases (Sources, Resources, Frameworks), configures the target's build
+ * settings (DEVELOPMENT_TEAM, IPHONEOS_DEPLOYMENT_TARGET, code-sign style,
+ * Swift version, and CODE_SIGN_ENTITLEMENTS when `appGroupId` is set), and
+ * stamps the development team attribute on both the new target and the
+ * project's main target attributes.
+ *
+ * Idempotent — returns the project unchanged if a target named
+ * `CIO_NOTIFICATION_TARGET_NAME` is already present.
+ */
+export function addNotificationServiceExtensionToXcodeProject(
   xcodeProject: XcodeProject,
-) => {
-  const {
-    appleTeamId,
-    bundleIdentifier,
-    bundleShortVersion,
-    bundleVersion,
-    iosPath,
-    iosDeploymentTarget,
-    useFrameworks,
-  } = options;
-
-  const isFcmProvider = isFcmPushProvider(options);
-
-  await injectCIONotificationPodfileCode(iosPath, useFrameworks, isFcmProvider);
-
-  // Check if `CIO_NOTIFICATION_TARGET_NAME` group already exist in the project
-  // If true then skip creating a new group to avoid duplicate folders
+  options: AddNseTargetToXcodeProjectOptions,
+): XcodeProject {
   if (xcodeProject.pbxTargetByName(CIO_NOTIFICATION_TARGET_NAME)) {
     logger.warn(
-      `${CIO_NOTIFICATION_TARGET_NAME} already exists in project. Skipping...`
+      `${CIO_NOTIFICATION_TARGET_NAME} already exists in project. Skipping...`,
     );
-    return;
+    return xcodeProject;
   }
 
-  const nsePath = `${iosPath}/${CIO_NOTIFICATION_TARGET_NAME}`;
-  FileManagement.mkdir(nsePath, {
-    recursive: true,
-  });
+  const { appleTeamId, bundleIdentifier, iosDeploymentTarget, appGroupId } = options;
 
   const platformSpecificFiles = ['NotificationService.swift'];
-
-  const nseEntitlementsFilename = 'NotificationService.entitlements';
-  const appGroupId = options.pushNotification?.appGroupId;
-
-  // Write NSE entitlements file only when appGroupId is explicitly configured
-  if (appGroupId) {
-    const nseEntitlementsContent = `<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-  <key>com.apple.security.application-groups</key>
-  <array>
-    <string>${appGroupId}</string>
-  </array>
-</dict>
-</plist>
-`;
-    FileManagement.writeFile(`${nsePath}/${nseEntitlementsFilename}`, nseEntitlementsContent);
-  }
-
   const commonFiles = [
     PLIST_FILENAME,
     'NotificationService.h',
     'NotificationService.m',
     ENV_FILENAME,
   ];
-
-  const getTargetFile = (filename: string) => `${nsePath}/${filename}`;
-  // Copy platform-specific files
-  platformSpecificFiles.forEach((filename) => {
-    const targetFile = getTargetFile(filename);
-    FileManagement.copyFile(
-      `${getIosNativeFilesPath()}/${isFcmProvider ? 'fcm' : 'apn'
-      }/${filename}`,
-      targetFile
-    );
-  });
-
-  // Copy common files
-  commonFiles.forEach((filename) => {
-    const targetFile = getTargetFile(filename);
-    FileManagement.copyFile(
-      `${getIosNativeFilesPath()}/common/${filename}`,
-      targetFile
-    );
-  });
-
-  /* MODIFY COPIED EXTENSION FILES */
-  const infoPlistTargetFile = getTargetFile(PLIST_FILENAME);
-  updateNseInfoPlist({
-    bundleVersion,
-    bundleShortVersion,
-    infoPlistTargetFile,
-  });
-  updateNseEnv(getTargetFile(ENV_FILENAME), options.pushNotification?.env);
-  updateNseNotificationService(getTargetFile('NotificationService.swift'), options.pushNotification?.appGroupId);
-
   // The entitlements file is generated (not copied from source), so it's listed separately
-  // for the Xcode group so it appears in the file navigator
+  // for the Xcode group so it appears in the file navigator.
   const allGroupFiles = [
     ...platformSpecificFiles,
     ...commonFiles,
-    ...(appGroupId ? [nseEntitlementsFilename] : []),
+    ...(appGroupId ? [NSE_ENTITLEMENTS_FILENAME] : []),
   ];
 
   // Create new PBXGroup for the extension
   const extGroup = xcodeProject.addPbxGroup(
     allGroupFiles,
     CIO_NOTIFICATION_TARGET_NAME,
-    CIO_NOTIFICATION_TARGET_NAME
+    CIO_NOTIFICATION_TARGET_NAME,
   );
 
   // Add the new PBXGroup to the top level group. This makes the
@@ -223,20 +175,12 @@ const addRichPushXcodeProj = async (
   projObjects.PBXTargetDependency = projObjects.PBXTargetDependency || {};
   projObjects.PBXContainerItemProxy = projObjects.PBXTargetDependency || {};
 
-  if (xcodeProject.pbxTargetByName(CIO_NOTIFICATION_TARGET_NAME)) {
-    logger.warn(
-      `${CIO_NOTIFICATION_TARGET_NAME} already exists in project. Skipping...`
-    );
-    return;
-  }
-
-  // Add the NSE target
-  // This also adds PBXTargetDependency and PBXContainerItemProxy
+  // Add the NSE target. This also adds PBXTargetDependency and PBXContainerItemProxy.
   const nseTarget = xcodeProject.addTarget(
     CIO_NOTIFICATION_TARGET_NAME,
     'app_extension',
     CIO_NOTIFICATION_TARGET_NAME,
-    `${bundleIdentifier}.richpush`
+    `${bundleIdentifier}.richpush`,
   );
 
   // Add build phases to the new target
@@ -244,21 +188,10 @@ const addRichPushXcodeProj = async (
     ['NotificationService.m', 'NotificationService.swift', 'Env.swift'],
     'PBXSourcesBuildPhase',
     'Sources',
-    nseTarget.uuid
+    nseTarget.uuid,
   );
-  xcodeProject.addBuildPhase(
-    [],
-    'PBXResourcesBuildPhase',
-    'Resources',
-    nseTarget.uuid
-  );
-
-  xcodeProject.addBuildPhase(
-    [],
-    'PBXFrameworksBuildPhase',
-    'Frameworks',
-    nseTarget.uuid
-  );
+  xcodeProject.addBuildPhase([], 'PBXResourcesBuildPhase', 'Resources', nseTarget.uuid);
+  xcodeProject.addBuildPhase([], 'PBXFrameworksBuildPhase', 'Frameworks', nseTarget.uuid);
 
   // Edit the Deployment info of the target
   const configurations = xcodeProject.pbxXCBuildConfigurationSection();
@@ -266,17 +199,16 @@ const addRichPushXcodeProj = async (
     if (
       typeof configurations[key].buildSettings !== 'undefined' &&
       configurations[key].buildSettings.PRODUCT_NAME ===
-      `"${CIO_NOTIFICATION_TARGET_NAME}"`
+        `"${CIO_NOTIFICATION_TARGET_NAME}"`
     ) {
       const buildSettingsObj = configurations[key].buildSettings;
       buildSettingsObj.DEVELOPMENT_TEAM = appleTeamId;
-      buildSettingsObj.IPHONEOS_DEPLOYMENT_TARGET =
-        iosDeploymentTarget || '15.1';
+      buildSettingsObj.IPHONEOS_DEPLOYMENT_TARGET = iosDeploymentTarget || '15.1';
       buildSettingsObj.TARGETED_DEVICE_FAMILY = TARGETED_DEVICE_FAMILY;
       buildSettingsObj.CODE_SIGN_STYLE = 'Automatic';
       buildSettingsObj.SWIFT_VERSION = 4.2;
       if (appGroupId) {
-        buildSettingsObj.CODE_SIGN_ENTITLEMENTS = `${CIO_NOTIFICATION_TARGET_NAME}/${nseEntitlementsFilename}`;
+        buildSettingsObj.CODE_SIGN_ENTITLEMENTS = `${CIO_NOTIFICATION_TARGET_NAME}/${NSE_ENTITLEMENTS_FILENAME}`;
       }
     }
   }
@@ -284,6 +216,99 @@ const addRichPushXcodeProj = async (
   // Add development team to the target & the main
   xcodeProject.addTargetAttribute('DevelopmentTeam', appleTeamId, nseTarget);
   xcodeProject.addTargetAttribute('DevelopmentTeam', appleTeamId);
+
+  return xcodeProject;
+}
+
+const addRichPushXcodeProj = async (
+  options: CustomerIOPluginOptionsIOS,
+  xcodeProject: XcodeProject,
+) => {
+  const {
+    appleTeamId,
+    bundleIdentifier,
+    bundleShortVersion,
+    bundleVersion,
+    iosPath,
+    iosDeploymentTarget,
+    useFrameworks,
+  } = options;
+
+  const isFcmProvider = isFcmPushProvider(options);
+  const appGroupId = options.pushNotification?.appGroupId;
+
+  await injectCIONotificationPodfileCode(iosPath, useFrameworks, isFcmProvider);
+
+  // Skip the rest of the work if the NSE target is already in place. The pbxproj-mutating
+  // helper has its own idempotency check, but bailing out here also avoids redundant file
+  // copies and entitlements writes when prebuild re-runs against an already-prepared project.
+  if (xcodeProject.pbxTargetByName(CIO_NOTIFICATION_TARGET_NAME)) {
+    logger.warn(
+      `${CIO_NOTIFICATION_TARGET_NAME} already exists in project. Skipping...`,
+    );
+    return;
+  }
+
+  const nsePath = `${iosPath}/${CIO_NOTIFICATION_TARGET_NAME}`;
+  FileManagement.mkdir(nsePath, { recursive: true });
+
+  // Write NSE entitlements file only when appGroupId is explicitly configured
+  if (appGroupId) {
+    const nseEntitlementsContent = `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>com.apple.security.application-groups</key>
+  <array>
+    <string>${appGroupId}</string>
+  </array>
+</dict>
+</plist>
+`;
+    FileManagement.writeFile(`${nsePath}/${NSE_ENTITLEMENTS_FILENAME}`, nseEntitlementsContent);
+  }
+
+  const platformSpecificFiles = ['NotificationService.swift'];
+  const commonFiles = [
+    PLIST_FILENAME,
+    'NotificationService.h',
+    'NotificationService.m',
+    ENV_FILENAME,
+  ];
+  const getTargetFile = (filename: string) => `${nsePath}/${filename}`;
+
+  // Copy platform-specific files
+  platformSpecificFiles.forEach((filename) => {
+    FileManagement.copyFile(
+      `${getIosNativeFilesPath()}/${isFcmProvider ? 'fcm' : 'apn'}/${filename}`,
+      getTargetFile(filename),
+    );
+  });
+
+  // Copy common files
+  commonFiles.forEach((filename) => {
+    FileManagement.copyFile(
+      `${getIosNativeFilesPath()}/common/${filename}`,
+      getTargetFile(filename),
+    );
+  });
+
+  /* MODIFY COPIED EXTENSION FILES */
+  updateNseInfoPlist({
+    bundleVersion,
+    bundleShortVersion,
+    infoPlistTargetFile: getTargetFile(PLIST_FILENAME),
+  });
+  updateNseEnv(getTargetFile(ENV_FILENAME), options.pushNotification?.env);
+  updateNseNotificationService(getTargetFile('NotificationService.swift'), appGroupId);
+
+  // Register the NSE target in the parsed Xcode project
+  addNotificationServiceExtensionToXcodeProject(xcodeProject, {
+    appleTeamId,
+    bundleIdentifier,
+    iosDeploymentTarget,
+    appGroupId,
+  });
 };
 
 /**
