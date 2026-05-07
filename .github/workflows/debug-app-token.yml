@@ -1,19 +1,24 @@
 name: Debug App Token Bypass
 
-# Manually-triggered probe to verify which identity actually pushes to main
-# during the deploy-sdk workflow. Two questions this answers:
-#   1. What is the slug of the App minted from CIO_APP_ID / CIO_APP_SECRET?
-#      (This is the identity that must appear on the ruleset bypass list.)
-#   2. After `actions/checkout@v4` with no `token:` set, whose credentials
-#      get persisted into local git config and used by later `git push`?
+# Probe to verify which token actually authenticates `git push` from the
+# deploy-sdk workflow. Hypothesis: `actions/checkout@v4` with no `token:`
+# input persists the default GITHUB_TOKEN (= github-actions[bot]) into
+# local git config (`http.https://github.com/.extraheader`), so a later
+# `git push` — including the one inside @semantic-release/git — uses
+# THAT token rather than the App token exposed only as a step-level env
+# var. github-actions[bot] is not on the ruleset bypass list, hence the
+# GH013 rejection.
 #
-# The hypothesis: a default checkout persists GITHUB_TOKEN
-# (= github-actions[bot]), which overrides the App token even when the App
-# token is exported as the GITHUB_TOKEN env var to a later step. That bot is
-# not on the ruleset bypass list, hence "Changes must be made through a pull
-# request."
+# Method: mint the App installation token, then run actions/checkout twice
+# (default vs `token: <app-token>`) and after each, decode the persisted
+# auth header and compare its SHA-256 to the App token's SHA-256.
 #
-# This workflow does NOT push anything. It only inspects token identities.
+#   default checkout    -> expected: persisted token != App token
+#   `token:` checkout   -> expected: persisted token == App token
+#
+# Hashes are safe to print; the raw tokens are not.
+#
+# This workflow does not push anything.
 
 on:
   workflow_dispatch:
@@ -35,44 +40,41 @@ jobs:
           app_id: ${{ secrets.CIO_APP_ID }}
           private_key: ${{ secrets.CIO_APP_SECRET }}
 
-      - name: Identify App-token identity (must match ruleset bypass entry)
+      - name: Hash the App installation token
+        id: app_hash
         env:
           TOKEN: ${{ steps.app_token.outputs.token }}
         run: |
-          echo "::group::App identity from CIO_APP_ID"
-          curl -sS \
-            -H "Authorization: Bearer $TOKEN" \
-            -H "Accept: application/vnd.github+json" \
-            https://api.github.com/app \
-            | jq '{slug, id, name, owner: .owner.login}'
-          echo "::endgroup::"
+          HASH=$(printf '%s' "$TOKEN" | sha256sum | cut -d' ' -f1)
+          echo "App-token sha256: $HASH"
+          echo "app_token_sha=$HASH" >> "$GITHUB_OUTPUT"
 
-      - name: Checkout WITHOUT app token (default — current deploy-sdk.yml behavior)
+      - name: Hash the default GITHUB_TOKEN
+        id: default_hash
+        env:
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          HASH=$(printf '%s' "$TOKEN" | sha256sum | cut -d' ' -f1)
+          echo "Default GITHUB_TOKEN sha256: $HASH"
+          echo "default_token_sha=$HASH" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout WITHOUT app token (default - current deploy-sdk.yml behavior)
         uses: actions/checkout@v4
 
-      - name: Decode credentials persisted by default checkout
+      - name: Hash credentials persisted by default checkout
+        id: default_persisted
         run: |
-          echo "::group::Local git http config after default checkout"
-          git config --local --list | grep -iE 'http|extraheader' || echo "(none)"
-          echo "::endgroup::"
-
           HEADER=$(git config --local http.https://github.com/.extraheader || true)
           BASIC=$(printf '%s' "$HEADER" | sed -n 's/^AUTHORIZATION: basic //ip')
           if [ -z "$BASIC" ]; then
-            echo "No persisted auth header found — nothing to decode."
-            exit 0
+            echo "No persisted auth header found."
+            exit 1
           fi
-
           DECODED=$(printf '%s' "$BASIC" | base64 -d 2>/dev/null || true)
           PERSISTED=$(printf '%s' "$DECODED" | sed 's/^x-access-token://')
-
-          echo "::group::Identity of the persisted token (this is what 'git push' would use)"
-          curl -sS \
-            -H "Authorization: Bearer $PERSISTED" \
-            -H "Accept: application/vnd.github+json" \
-            https://api.github.com/app \
-            | jq '{slug, id, name}' || true
-          echo "::endgroup::"
+          HASH=$(printf '%s' "$PERSISTED" | sha256sum | cut -d' ' -f1)
+          echo "Persisted-after-default-checkout sha256: $HASH"
+          echo "persisted_sha=$HASH" >> "$GITHUB_OUTPUT"
 
       - name: Re-checkout WITH app token (proposed fix)
         uses: actions/checkout@v4
@@ -80,29 +82,46 @@ jobs:
           token: ${{ steps.app_token.outputs.token }}
           clean: true
 
-      - name: Decode credentials persisted by app-token checkout
+      - name: Hash credentials persisted by app-token checkout
+        id: appcheckout_persisted
         run: |
           HEADER=$(git config --local http.https://github.com/.extraheader || true)
           BASIC=$(printf '%s' "$HEADER" | sed -n 's/^AUTHORIZATION: basic //ip')
           DECODED=$(printf '%s' "$BASIC" | base64 -d 2>/dev/null || true)
           PERSISTED=$(printf '%s' "$DECODED" | sed 's/^x-access-token://')
+          HASH=$(printf '%s' "$PERSISTED" | sha256sum | cut -d' ' -f1)
+          echo "Persisted-after-app-token-checkout sha256: $HASH"
+          echo "persisted_sha=$HASH" >> "$GITHUB_OUTPUT"
 
-          echo "::group::Identity of the persisted token after passing token: to checkout"
-          curl -sS \
-            -H "Authorization: Bearer $PERSISTED" \
-            -H "Accept: application/vnd.github+json" \
-            https://api.github.com/app \
-            | jq '{slug, id, name}'
-          echo "::endgroup::"
-
-      - name: Summary
+      - name: Compare hashes and report
+        env:
+          APP_SHA:                   ${{ steps.app_hash.outputs.app_token_sha }}
+          DEFAULT_SHA:               ${{ steps.default_hash.outputs.default_token_sha }}
+          DEFAULT_PERSISTED_SHA:     ${{ steps.default_persisted.outputs.persisted_sha }}
+          APPCHECKOUT_PERSISTED_SHA: ${{ steps.appcheckout_persisted.outputs.persisted_sha }}
         run: |
-          echo "Compare the two persisted-token identities above."
-          echo "  - Default checkout should resolve to the 'github-actions' app"
-          echo "    (the identity 'github-actions[bot]', which is NOT on the bypass list)."
-          echo "  - App-token checkout should resolve to the same slug printed in"
-          echo "    the first step (the App you added to the bypass list)."
+          echo "App installation token         : $APP_SHA"
+          echo "Default GITHUB_TOKEN           : $DEFAULT_SHA"
+          echo "Persisted by default checkout  : $DEFAULT_PERSISTED_SHA"
+          echo "Persisted by app-token checkout: $APPCHECKOUT_PERSISTED_SHA"
           echo
-          echo "If those two identities differ, the hypothesis is confirmed:"
-          echo "the default checkout persists creds that override the App token"
-          echo "during 'git push' in semantic-release."
+
+          if [ "$DEFAULT_PERSISTED_SHA" = "$DEFAULT_SHA" ]; then
+            echo "PASS: Default checkout persisted the default GITHUB_TOKEN."
+          elif [ "$DEFAULT_PERSISTED_SHA" = "$APP_SHA" ]; then
+            echo "FAIL: Default checkout persisted the App token - hypothesis WRONG."
+          else
+            echo "WARN: Default checkout persisted a token matching neither - unexpected."
+          fi
+
+          if [ "$APPCHECKOUT_PERSISTED_SHA" = "$APP_SHA" ]; then
+            echo "PASS: App-token checkout persisted the App installation token."
+          else
+            echo "FAIL: App-token checkout did NOT persist the App token - unexpected."
+          fi
+
+          echo
+          if [ "$DEFAULT_PERSISTED_SHA" = "$DEFAULT_SHA" ] \
+             && [ "$APPCHECKOUT_PERSISTED_SHA" = "$APP_SHA" ]; then
+            echo "HYPOTHESIS CONFIRMED: deploy-sdk.yml needs 'token: \${{ steps.generate_token.outputs.token }}' on actions/checkout."
+          fi
