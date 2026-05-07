@@ -1,10 +1,16 @@
 name: Deploy SDK
 
-# Only run after a pull request has been merged. This is because
-# bot account runs write operations on the github repo to push a tag
+# Chained off the release-gating compatibility matrix via `workflow_run`.
+# We only deploy when:
+#   1. The matrix completed successfully, AND
+#   2. It was triggered by a `push` (defends against any future change that
+#      accidentally adds a `workflow_dispatch` trigger to the release matrix —
+#      a manually-dispatched run would not satisfy `event == 'push'`), AND
+#   3. The push targeted `main` (the only branch in `.releaserc.json`).
 on:
-  push:
-    branches: [ main, beta ] # all branches where deployments currently occur. Make sure this list matches list of branches in  `.releaserc` file.
+  workflow_run:
+    workflows: ["Validate Plugin Compatibility Release"]
+    types: [completed]
 
 permissions:
   id-token: write
@@ -15,6 +21,10 @@ permissions:
 jobs:
   deploy-git-tag:
     name: Deploy git tag
+    if: >
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_branch == 'main'
     runs-on: ubuntu-latest
     outputs:
       new_release_git_head: ${{ steps.semantic-release.outputs.new_release_git_head }}
@@ -32,6 +42,9 @@ jobs:
       - uses: actions/checkout@v4
         with:
           token: ${{ steps.generate_token.outputs.token }}
+          # Operate on the exact commit the matrix validated, not the latest
+          # main HEAD which could have advanced while the matrix was running.
+          ref: ${{ github.event.workflow_run.head_sha }}
 
       - name: Deploy git tag via semantic release
         uses: cycjimmy/semantic-release-action@0a51e81a6baff2acad3ee88f4121c589c73d0f0e # v4.2.0
@@ -129,12 +142,22 @@ jobs:
   deploy-npm:
     name: Deploy to npm
     needs: [deploy-git-tag]
-    if: needs.deploy-git-tag.outputs.new_release_published == 'true' # only run if a git tag was made.
+    # Belt-and-suspenders: the `needs:` already guarantees deploy-git-tag ran,
+    # which itself was gated on success+push+main. Re-stating the workflow_run
+    # checks here means even if the gate on deploy-git-tag is ever loosened,
+    # the npm publish stays guarded.
+    if: >
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_branch == 'main' &&
+      needs.deploy-git-tag.outputs.new_release_published == 'true'
     environment: release
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
+          # Use the semantic-release-produced commit (which is built on top of
+          # the workflow_run head_sha that deploy-git-tag started from).
           ref: ${{ needs.deploy-git-tag.outputs.new_release_git_head }}
       - uses: actions/setup-node@v4
         with:

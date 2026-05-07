@@ -1,0 +1,14 @@
+name: Validate Plugin Compatibility Release
+
+# Fires only on a real merge to main. This is the workflow `deploy-sdk.yml`
+# chains off via `workflow_run`, so it must NOT have a `workflow_dispatch`
+# trigger — manual full-matrix runs go through
+# `validate-plugin-compatibility-manual.yml` instead, which is intentionally
+# disconnected from the release path.
+on:
+  push:
+    branches: [main]
+
+jobs:
+  run:
+    uses: ./.github/workflows/validate-plugin-compatibility-matrix.yml
