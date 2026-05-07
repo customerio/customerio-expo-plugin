@@ -22,7 +22,7 @@ env:
 jobs:
   validate:
     name: Expo ${{ matrix.expo-version }} - ${{ matrix.platform }}${{ matrix.ios-push-provider && format(' ({0})', matrix.ios-push-provider) }}
-    runs-on: macos-15
+    runs-on: ${{ matrix.runs-on }}
 
     strategy:
       fail-fast: false
@@ -30,21 +30,27 @@ jobs:
         include:
           - expo-version: 54
             platform: android
+            runs-on: ubuntu-latest
           - expo-version: 54
             platform: ios
+            runs-on: macos-15
             ios-push-provider: apn
           - expo-version: 54
             platform: ios
+            runs-on: macos-15
             ios-push-provider: fcm
 
           # Running on latest version helps to catch issues early for new versions not listed above
           - expo-version: latest
             platform: android
+            runs-on: ubuntu-latest
           - expo-version: latest
             platform: ios
+            runs-on: macos-15
             ios-push-provider: apn
           - expo-version: latest
             platform: ios
+            runs-on: macos-15
             ios-push-provider: fcm
 
     steps:
@@ -57,6 +63,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
 
       - name: Setup Java
         uses: actions/setup-java@v4
@@ -65,6 +72,7 @@ jobs:
           java-version: ${{ env.JAVA_VERSION }}
 
       - name: Setup iOS
+        if: matrix.platform == 'ios'
         uses: customerio/mobile-ci-tools/github-actions/ios/setup-ios/v1@MacOS-15+iOS-26
         with:
           xcode-version: ${{ env.XCODE_VERSION }}
@@ -76,6 +84,33 @@ jobs:
         run: |
           echo "APP_NAME=${{ env.APP_NAME_PREFIX }}_${{ matrix.expo-version }}" >> $GITHUB_ENV
           echo "APP_PATH=${{ env.APP_DIR }}/${{ env.APP_NAME_PREFIX }}_${{ matrix.expo-version }}" >> $GITHUB_ENV
+
+      # The test app is generated fresh by `compatibility:create-test-app`, so
+      # `Podfile.lock` / Gradle files don't exist at checkout. The cache keys
+      # below pin to the inputs that determine resolved versions: Expo SDK,
+      # Xcode, push provider, and the plugin's own lockfile.
+      - name: Cache CocoaPods
+        if: matrix.platform == 'ios'
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/Library/Caches/CocoaPods
+            ~/.cocoapods
+          key: ${{ runner.os }}-pods-${{ matrix.expo-version }}-${{ matrix.ios-push-provider }}-${{ env.XCODE_VERSION }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-pods-${{ matrix.expo-version }}-${{ matrix.ios-push-provider }}-${{ env.XCODE_VERSION }}-
+            ${{ runner.os }}-pods-${{ matrix.expo-version }}-${{ matrix.ios-push-provider }}-
+
+      - name: Cache Gradle
+        if: matrix.platform == 'android'
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ matrix.expo-version }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-${{ matrix.expo-version }}-
 
       - name: Create Test App
         run: |
