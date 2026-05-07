@@ -25,12 +25,26 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
+          cache: 'npm'
+          cache-dependency-path: |
+            package-lock.json
+            test-app/package-lock.json
 
       - uses: actions/setup-java@v4
         with:
           distribution: "temurin"
           java-version: "17"
-      
+
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-sampleapp-${{ hashFiles('test-app/android/**/*.gradle*', 'test-app/android/**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-sampleapp-
+
       - name: Capture Git Context
         shell: bash
         id: git-context
@@ -154,6 +168,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
+          cache: 'npm'
+          cache-dependency-path: |
+            package-lock.json
+            test-app/package-lock.json
 
       - name: Capture Git Context
         shell: bash
@@ -203,7 +221,17 @@ jobs:
         uses: customerio/mobile-ci-tools/github-actions/ios/setup-ios/v1@MacOS-15+iOS-26
         with:
           xcode-version: "26.2"
-      
+
+      - name: Cache CocoaPods
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/Library/Caches/CocoaPods
+            ~/.cocoapods
+          key: ${{ runner.os }}-pods-sampleapp-${{ matrix.push_provider }}-${{ hashFiles('test-app/Podfile', 'package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-pods-sampleapp-${{ matrix.push_provider }}-
+
       - name: Install tools from Gemfile (ruby language) used for building our apps with
         uses: ruby/setup-ruby@354a1ad156761f5ee2b7b13fa8e09943a5e8d252 # v1.229.0
         with:
