@@ -26,7 +26,9 @@ jobs:
         id: generate_token
         uses: actions/create-github-app-token@1b10c78c7865c340bc4f6099eb2f838309f1e8c3 # v3.1.1
         with:
-          app-id: ${{ secrets.CIO_APP_ID }}
+          # Client ID of the cio-mobile-release GitHub App. Public value
+          # (visible in the App's settings URL); no need to store as a secret.
+          client-id: Iv23lioetkOFxtjR0Ezu
           private-key: ${{ secrets.CIO_APP_SECRET }}
 
       - uses: actions/checkout@v4
