@@ -232,12 +232,19 @@ export const withCIOIosSwift = (
   if (props?.pushNotification) {
     // With push notifications: delegate to CioSdkAppDelegateHandler for both push and auto-init
     return withAppDelegate(configOuter, async (config) => {
-      return modifyAppDelegateWithPushAppDelegateHandler(config, props);
+      config.modResults.contents = modifyAppDelegateForPushHandler(
+        config.modResults.contents,
+        props
+      );
+      return config;
     });
   } else if (sdkConfig) {
     // Without push notifications: directly inject auto initialization into AppDelegate
     return withAppDelegate(configOuter, async (config) => {
-      return modifyAppDelegateWithNativeSDKInitializer(config);
+      config.modResults.contents = modifyAppDelegateForNativeSDKInitializer(
+        config.modResults.contents
+      );
+      return config;
     });
   } else {
     return configOuter;
@@ -245,77 +252,53 @@ export const withCIOIosSwift = (
 };
 
 /**
- * Modify the AppDelegate to integrate with Customer.io SDK
+ * Pure string transform: produces the Swift AppDelegate contents wired to delegate to
+ * `CioSdkAppDelegateHandler` for both push notifications and (when configured) auto-init.
+ * Idempotent — returns `contents` unchanged when the handler is already present.
  */
-const modifyAppDelegateWithPushAppDelegateHandler = (
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  config: any,
+export function modifyAppDelegateForPushHandler(
+  contents: string,
   props: CustomerIOPluginOptionsIOS
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-): any => {
-  const appDelegateContent = config.modResults.contents;
-
-  // Check if modifications have already been applied
-  if (appDelegateContent.includes(CIO_SDK_APP_DELEGATE_HANDLER_CLASS)) {
+): string {
+  if (contents.includes(CIO_SDK_APP_DELEGATE_HANDLER_CLASS)) {
     logger.info(
       'CustomerIO Swift AppDelegate changes already exist. Skipping...'
     );
-    return config;
+    return contents;
   }
 
-  // Add the handler property declaration
-  let modifiedContent = addHandlerPropertyDeclaration(appDelegateContent);
-
-  // Modify didFinishLaunchingWithOptions to initialize and call the handler
-  modifiedContent = modifyDidFinishLaunchingWithOptions(
-    modifiedContent,
+  let next = addHandlerPropertyDeclaration(contents);
+  next = modifyDidFinishLaunchingWithOptions(
+    next,
     `  cioSdkHandler.application(application, didFinishLaunchingWithOptions: launchOptions)\n\n    `
   );
+  next = addDidRegisterForRemoteNotificationsWithDeviceToken(next);
+  next = addDidFailToRegisterForRemoteNotificationsWithError(next);
 
-  // Add didRegisterForRemoteNotificationsWithDeviceToken implementation
-  modifiedContent =
-    addDidRegisterForRemoteNotificationsWithDeviceToken(modifiedContent);
-
-  // Add didFailToRegisterForRemoteNotificationsWithError implementation
-  modifiedContent =
-    addDidFailToRegisterForRemoteNotificationsWithError(modifiedContent);
-
-  // Add deep link handling for killed state if enabled
   if (props.pushNotification?.handleDeeplinkInKilledState === true) {
-    modifiedContent = addHandleDeeplinkInKilledState(modifiedContent);
+    next = addHandleDeeplinkInKilledState(next);
   }
 
-  config.modResults.contents = modifiedContent;
-  return config;
-};
+  return next;
+}
 
 /**
- * Modify the AppDelegate to integrate with Customer.io SDK
+ * Pure string transform: injects the auto-init snippet into the Swift AppDelegate's
+ * didFinishLaunchingWithOptions for the no-push path. Idempotent.
  */
-const modifyAppDelegateWithNativeSDKInitializer = (
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  config: any,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-): any => {
-  const appDelegateContent = config.modResults.contents;
-
-  // Check if modifications have already been applied
-  if (appDelegateContent.includes(CIO_NATIVE_SDK_INITIALIZE_CALL)) {
+export function modifyAppDelegateForNativeSDKInitializer(contents: string): string {
+  if (contents.includes(CIO_NATIVE_SDK_INITIALIZE_CALL)) {
     logger.info(
       'CustomerIO Swift AppDelegate changes already exist. Skipping...'
     );
-    return config;
+    return contents;
   }
 
-  // Modify didFinishLaunchingWithOptions to initialize and call the handler
-  const modifiedContent = modifyDidFinishLaunchingWithOptions(
-    appDelegateContent,
+  return modifyDidFinishLaunchingWithOptions(
+    contents,
     CIO_NATIVE_SDK_INITIALIZE_SNIPPET,
   );
-
-  config.modResults.contents = modifiedContent;
-  return config;
-};
+}
 
 /**
  * Check if a method exists in the AppDelegate content

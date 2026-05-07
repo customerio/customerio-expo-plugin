@@ -18,6 +18,21 @@ import { isExpoVersion53OrHigher, isFcmPushProvider } from './utils';
 const PLIST_FILENAME = `${CIO_NOTIFICATION_TARGET_NAME}-Info.plist`;
 const ENV_FILENAME = 'Env.swift';
 
+// NSE source files registered in the Xcode group AND copied to the target
+// directory. Single source of truth — both `addNotificationServiceExtensionToXcodeProject`
+// (registers them in the PBXGroup) and `addRichPushXcodeProj` (copies them
+// from the plugin's native-files dir) read the same arrays. Keeping these
+// in sync is load-bearing: the Xcode group must reference the same files
+// that exist on disk, or the build fails with "no such file" / unresolved
+// references.
+const NSE_PLATFORM_SPECIFIC_FILES = ['NotificationService.swift'];
+const NSE_COMMON_FILES = [
+  PLIST_FILENAME,
+  'NotificationService.h',
+  'NotificationService.m',
+  ENV_FILENAME,
+];
+
 const TARGETED_DEVICE_FAMILY = `"1,2"`;
 
 const addNotificationServiceExtension = async (
@@ -101,109 +116,54 @@ export const withCioNotificationsXcodeProject: ConfigPlugin<
   });
 };
 
-const addRichPushXcodeProj = async (
-  options: CustomerIOPluginOptionsIOS,
+const NSE_ENTITLEMENTS_FILENAME = 'NotificationService.entitlements';
+
+export type AddNseTargetToXcodeProjectOptions = {
+  appleTeamId?: string;
+  bundleIdentifier?: string;
+  iosDeploymentTarget?: string;
+  appGroupId?: string;
+};
+
+/**
+ * Mutates the parsed XcodeProject to register the rich-push NotificationService
+ * extension target: creates a PBXGroup for its files, registers the group under
+ * the project's top-level group, adds the app_extension target, wires three
+ * build phases (Sources, Resources, Frameworks), configures the target's build
+ * settings (DEVELOPMENT_TEAM, IPHONEOS_DEPLOYMENT_TARGET, code-sign style,
+ * Swift version, and CODE_SIGN_ENTITLEMENTS when `appGroupId` is set), and
+ * stamps the development team attribute on both the new target and the
+ * project's main target attributes.
+ *
+ * Idempotent — returns the project unchanged if a target named
+ * `CIO_NOTIFICATION_TARGET_NAME` is already present.
+ */
+export function addNotificationServiceExtensionToXcodeProject(
   xcodeProject: XcodeProject,
-) => {
-  const {
-    appleTeamId,
-    bundleIdentifier,
-    bundleShortVersion,
-    bundleVersion,
-    iosPath,
-    iosDeploymentTarget,
-    useFrameworks,
-  } = options;
-
-  const isFcmProvider = isFcmPushProvider(options);
-
-  await injectCIONotificationPodfileCode(iosPath, useFrameworks, isFcmProvider);
-
-  // Check if `CIO_NOTIFICATION_TARGET_NAME` group already exist in the project
-  // If true then skip creating a new group to avoid duplicate folders
+  options: AddNseTargetToXcodeProjectOptions,
+): XcodeProject {
   if (xcodeProject.pbxTargetByName(CIO_NOTIFICATION_TARGET_NAME)) {
     logger.warn(
-      `${CIO_NOTIFICATION_TARGET_NAME} already exists in project. Skipping...`
+      `${CIO_NOTIFICATION_TARGET_NAME} already exists in project. Skipping...`,
     );
-    return;
+    return xcodeProject;
   }
 
-  const nsePath = `${iosPath}/${CIO_NOTIFICATION_TARGET_NAME}`;
-  FileManagement.mkdir(nsePath, {
-    recursive: true,
-  });
-
-  const platformSpecificFiles = ['NotificationService.swift'];
-
-  const nseEntitlementsFilename = 'NotificationService.entitlements';
-  const appGroupId = options.pushNotification?.appGroupId;
-
-  // Write NSE entitlements file only when appGroupId is explicitly configured
-  if (appGroupId) {
-    const nseEntitlementsContent = `<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-  <key>com.apple.security.application-groups</key>
-  <array>
-    <string>${appGroupId}</string>
-  </array>
-</dict>
-</plist>
-`;
-    FileManagement.writeFile(`${nsePath}/${nseEntitlementsFilename}`, nseEntitlementsContent);
-  }
-
-  const commonFiles = [
-    PLIST_FILENAME,
-    'NotificationService.h',
-    'NotificationService.m',
-    ENV_FILENAME,
-  ];
-
-  const getTargetFile = (filename: string) => `${nsePath}/${filename}`;
-  // Copy platform-specific files
-  platformSpecificFiles.forEach((filename) => {
-    const targetFile = getTargetFile(filename);
-    FileManagement.copyFile(
-      `${getIosNativeFilesPath()}/${isFcmProvider ? 'fcm' : 'apn'
-      }/${filename}`,
-      targetFile
-    );
-  });
-
-  // Copy common files
-  commonFiles.forEach((filename) => {
-    const targetFile = getTargetFile(filename);
-    FileManagement.copyFile(
-      `${getIosNativeFilesPath()}/common/${filename}`,
-      targetFile
-    );
-  });
-
-  /* MODIFY COPIED EXTENSION FILES */
-  const infoPlistTargetFile = getTargetFile(PLIST_FILENAME);
-  updateNseInfoPlist({
-    bundleVersion,
-    bundleShortVersion,
-    infoPlistTargetFile,
-  });
-  updateNseEnv(getTargetFile(ENV_FILENAME), options.pushNotification?.env);
-  updateNseNotificationService(getTargetFile('NotificationService.swift'), options.pushNotification?.appGroupId);
+  const { appleTeamId, bundleIdentifier, iosDeploymentTarget, appGroupId } = options;
 
   // The entitlements file is generated (not copied from source), so it's listed separately
-  // for the Xcode group so it appears in the file navigator
+  // for the Xcode group so it appears in the file navigator.
   const allGroupFiles = [
-    ...platformSpecificFiles,
-    ...commonFiles,
-    ...(appGroupId ? [nseEntitlementsFilename] : []),
+    ...NSE_PLATFORM_SPECIFIC_FILES,
+    ...NSE_COMMON_FILES,
+    ...(appGroupId ? [NSE_ENTITLEMENTS_FILENAME] : []),
   ];
 
   // Create new PBXGroup for the extension
   const extGroup = xcodeProject.addPbxGroup(
     allGroupFiles,
     CIO_NOTIFICATION_TARGET_NAME,
-    CIO_NOTIFICATION_TARGET_NAME
+    CIO_NOTIFICATION_TARGET_NAME,
   );
 
   // Add the new PBXGroup to the top level group. This makes the
@@ -223,20 +183,12 @@ const addRichPushXcodeProj = async (
   projObjects.PBXTargetDependency = projObjects.PBXTargetDependency || {};
   projObjects.PBXContainerItemProxy = projObjects.PBXTargetDependency || {};
 
-  if (xcodeProject.pbxTargetByName(CIO_NOTIFICATION_TARGET_NAME)) {
-    logger.warn(
-      `${CIO_NOTIFICATION_TARGET_NAME} already exists in project. Skipping...`
-    );
-    return;
-  }
-
-  // Add the NSE target
-  // This also adds PBXTargetDependency and PBXContainerItemProxy
+  // Add the NSE target. This also adds PBXTargetDependency and PBXContainerItemProxy.
   const nseTarget = xcodeProject.addTarget(
     CIO_NOTIFICATION_TARGET_NAME,
     'app_extension',
     CIO_NOTIFICATION_TARGET_NAME,
-    `${bundleIdentifier}.richpush`
+    `${bundleIdentifier}.richpush`,
   );
 
   // Add build phases to the new target
@@ -244,21 +196,10 @@ const addRichPushXcodeProj = async (
     ['NotificationService.m', 'NotificationService.swift', 'Env.swift'],
     'PBXSourcesBuildPhase',
     'Sources',
-    nseTarget.uuid
+    nseTarget.uuid,
   );
-  xcodeProject.addBuildPhase(
-    [],
-    'PBXResourcesBuildPhase',
-    'Resources',
-    nseTarget.uuid
-  );
-
-  xcodeProject.addBuildPhase(
-    [],
-    'PBXFrameworksBuildPhase',
-    'Frameworks',
-    nseTarget.uuid
-  );
+  xcodeProject.addBuildPhase([], 'PBXResourcesBuildPhase', 'Resources', nseTarget.uuid);
+  xcodeProject.addBuildPhase([], 'PBXFrameworksBuildPhase', 'Frameworks', nseTarget.uuid);
 
   // Edit the Deployment info of the target
   const configurations = xcodeProject.pbxXCBuildConfigurationSection();
@@ -266,17 +207,16 @@ const addRichPushXcodeProj = async (
     if (
       typeof configurations[key].buildSettings !== 'undefined' &&
       configurations[key].buildSettings.PRODUCT_NAME ===
-      `"${CIO_NOTIFICATION_TARGET_NAME}"`
+        `"${CIO_NOTIFICATION_TARGET_NAME}"`
     ) {
       const buildSettingsObj = configurations[key].buildSettings;
       buildSettingsObj.DEVELOPMENT_TEAM = appleTeamId;
-      buildSettingsObj.IPHONEOS_DEPLOYMENT_TARGET =
-        iosDeploymentTarget || '15.1';
+      buildSettingsObj.IPHONEOS_DEPLOYMENT_TARGET = iosDeploymentTarget || '15.1';
       buildSettingsObj.TARGETED_DEVICE_FAMILY = TARGETED_DEVICE_FAMILY;
       buildSettingsObj.CODE_SIGN_STYLE = 'Automatic';
       buildSettingsObj.SWIFT_VERSION = 4.2;
       if (appGroupId) {
-        buildSettingsObj.CODE_SIGN_ENTITLEMENTS = `${CIO_NOTIFICATION_TARGET_NAME}/${nseEntitlementsFilename}`;
+        buildSettingsObj.CODE_SIGN_ENTITLEMENTS = `${CIO_NOTIFICATION_TARGET_NAME}/${NSE_ENTITLEMENTS_FILENAME}`;
       }
     }
   }
@@ -284,91 +224,196 @@ const addRichPushXcodeProj = async (
   // Add development team to the target & the main
   xcodeProject.addTargetAttribute('DevelopmentTeam', appleTeamId, nseTarget);
   xcodeProject.addTargetAttribute('DevelopmentTeam', appleTeamId);
+
+  return xcodeProject;
+}
+
+const addRichPushXcodeProj = async (
+  options: CustomerIOPluginOptionsIOS,
+  xcodeProject: XcodeProject,
+) => {
+  const {
+    appleTeamId,
+    bundleIdentifier,
+    bundleShortVersion,
+    bundleVersion,
+    iosPath,
+    iosDeploymentTarget,
+    useFrameworks,
+  } = options;
+
+  const isFcmProvider = isFcmPushProvider(options);
+  const appGroupId = options.pushNotification?.appGroupId;
+
+  await injectCIONotificationPodfileCode(iosPath, useFrameworks, isFcmProvider);
+
+  // Skip the rest of the work if the NSE target is already in place. The pbxproj-mutating
+  // helper has its own idempotency check, but bailing out here also avoids redundant file
+  // copies and entitlements writes when prebuild re-runs against an already-prepared project.
+  if (xcodeProject.pbxTargetByName(CIO_NOTIFICATION_TARGET_NAME)) {
+    logger.warn(
+      `${CIO_NOTIFICATION_TARGET_NAME} already exists in project. Skipping...`,
+    );
+    return;
+  }
+
+  const nsePath = `${iosPath}/${CIO_NOTIFICATION_TARGET_NAME}`;
+  FileManagement.mkdir(nsePath, { recursive: true });
+
+  // Write NSE entitlements file only when appGroupId is explicitly configured
+  if (appGroupId) {
+    const nseEntitlementsContent = `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>com.apple.security.application-groups</key>
+  <array>
+    <string>${appGroupId}</string>
+  </array>
+</dict>
+</plist>
+`;
+    FileManagement.writeFile(`${nsePath}/${NSE_ENTITLEMENTS_FILENAME}`, nseEntitlementsContent);
+  }
+
+  const getTargetFile = (filename: string) => `${nsePath}/${filename}`;
+
+  // Copy platform-specific files
+  NSE_PLATFORM_SPECIFIC_FILES.forEach((filename) => {
+    FileManagement.copyFile(
+      `${getIosNativeFilesPath()}/${isFcmProvider ? 'fcm' : 'apn'}/${filename}`,
+      getTargetFile(filename),
+    );
+  });
+
+  // Copy common files
+  NSE_COMMON_FILES.forEach((filename) => {
+    FileManagement.copyFile(
+      `${getIosNativeFilesPath()}/common/${filename}`,
+      getTargetFile(filename),
+    );
+  });
+
+  /* MODIFY COPIED EXTENSION FILES */
+  updateNseInfoPlist({
+    bundleVersion,
+    bundleShortVersion,
+    infoPlistTargetFile: getTargetFile(PLIST_FILENAME),
+  });
+  updateNseEnv(getTargetFile(ENV_FILENAME), options.pushNotification?.env);
+  updateNseNotificationService(getTargetFile('NotificationService.swift'), appGroupId);
+
+  // Register the NSE target in the parsed Xcode project
+  addNotificationServiceExtensionToXcodeProject(xcodeProject, {
+    appleTeamId,
+    bundleIdentifier,
+    iosDeploymentTarget,
+    appGroupId,
+  });
 };
+
+/**
+ * Pure string transform: substitutes the `{{BUNDLE_VERSION}}` and
+ * `{{BUNDLE_SHORT_VERSION}}` placeholders in the NSE Info.plist template.
+ * Either or both may be provided; missing values leave the corresponding
+ * placeholder untouched.
+ */
+export function applyBundleVersionToNsePlist(
+  content: string,
+  payload: { bundleVersion?: string; bundleShortVersion?: string }
+): string {
+  let next = content;
+  if (payload.bundleVersion) {
+    next = replaceCodeByRegex(next, /\{\{BUNDLE_VERSION\}\}/, payload.bundleVersion);
+  }
+  if (payload.bundleShortVersion) {
+    next = replaceCodeByRegex(next, /\{\{BUNDLE_SHORT_VERSION\}\}/, payload.bundleShortVersion);
+  }
+  return next;
+}
 
 const updateNseInfoPlist = (payload: {
   bundleVersion?: string;
   bundleShortVersion?: string;
   infoPlistTargetFile: string;
 }) => {
-  const BUNDLE_SHORT_VERSION_RE = /\{\{BUNDLE_SHORT_VERSION\}\}/;
-  const BUNDLE_VERSION_RE = /\{\{BUNDLE_VERSION\}\}/;
-
-  let plistFileString = FileManagement.readFile(payload.infoPlistTargetFile);
-
-  if (payload.bundleVersion) {
-    plistFileString = replaceCodeByRegex(
-      plistFileString,
-      BUNDLE_VERSION_RE,
-      payload.bundleVersion
-    );
-  }
-
-  if (payload.bundleShortVersion) {
-    plistFileString = replaceCodeByRegex(
-      plistFileString,
-      BUNDLE_SHORT_VERSION_RE,
-      payload.bundleShortVersion
-    );
-  }
-
-  FileManagement.writeFile(payload.infoPlistTargetFile, plistFileString);
+  const next = applyBundleVersionToNsePlist(
+    FileManagement.readFile(payload.infoPlistTargetFile),
+    payload,
+  );
+  FileManagement.writeFile(payload.infoPlistTargetFile, next);
 };
+
+/**
+ * Pure string transform: substitutes the `{{APP_GROUP_ID_BUILDER_LINE}}`
+ * placeholder in NotificationService.swift with either the configured
+ * appGroupId builder line or an empty string.
+ */
+export function applyAppGroupIdToNotificationService(
+  content: string,
+  appGroupId?: string
+): string {
+  const builderLine = appGroupId
+    ? `        .appGroupId(${JSON.stringify(appGroupId)})\n`
+    : '';
+  return replaceCodeByRegex(content, /\{\{APP_GROUP_ID_BUILDER_LINE\}\}/, builderLine);
+}
 
 const updateNseNotificationService = (
   notificationServiceFile: string,
   appGroupId?: string,
 ) => {
-  const APP_GROUP_ID_BUILDER_LINE_RE = /\{\{APP_GROUP_ID_BUILDER_LINE\}\}/;
-
-  let content = FileManagement.readFile(notificationServiceFile);
-  const builderLine = appGroupId
-    ? `        .appGroupId(${JSON.stringify(appGroupId)})\n`
-    : '';
-  content = replaceCodeByRegex(content, APP_GROUP_ID_BUILDER_LINE_RE, builderLine);
-  FileManagement.writeFile(notificationServiceFile, content);
+  const next = applyAppGroupIdToNotificationService(
+    FileManagement.readFile(notificationServiceFile),
+    appGroupId,
+  );
+  FileManagement.writeFile(notificationServiceFile, next);
 };
 
-const updateNseEnv = (
-  envFileName: string,
-  richPushConfig?: RichPushConfig
-) => {
-  const CDP_API_KEY_RE = /\{\{CDP_API_KEY\}\}/;
-  const REGION_RE = /\{\{REGION\}\}/;
-
-  let envFileContent = FileManagement.readFile(envFileName);
-
-  // Use merged config values (config takes precedence over env)
+/**
+ * Pure string transform: substitutes the `{{CDP_API_KEY}}` and `{{REGION}}`
+ * placeholders in the NSE Env.swift template. Missing or invalid region
+ * falls back to `Region.US` and logs a warning.
+ */
+export function applyRichPushConfigToEnv(
+  content: string,
+  richPushConfig?: RichPushConfig,
+): string {
   const cdpApiKey = richPushConfig?.cdpApiKey;
   const region = richPushConfig?.region;
 
-  if (!validateRichPushConfig(richPushConfig)) {
-    return;
-  }
-  envFileContent = replaceCodeByRegex(
-    envFileContent,
-    CDP_API_KEY_RE,
+  let next = replaceCodeByRegex(
+    content,
+    /\{\{CDP_API_KEY\}\}/,
     cdpApiKey || 'MISSING_API_KEY',
   );
 
-  // Simplify region mapping with case insensitive keys and fallback for invalid regions
   const regionKey = region?.toLowerCase() ?? '';
-  const regionMap = {
-    us: 'Region.US',
-    eu: 'Region.EU',
-  } as const;
+  const regionMap = { us: 'Region.US', eu: 'Region.EU' } as const;
   const mappedRegion = regionMap[regionKey as keyof typeof regionMap];
   if (!mappedRegion) {
     logger.warn(
       `${regionKey} is an invalid region. Please use the values from the docs: https://docs.customer.io/integrations/sdk/expo/getting-started/packages-options/#configuring-the-expo-plugin`
     );
-    // Fallback to US if invalid region provided
-    envFileContent = replaceCodeByRegex(envFileContent, REGION_RE, regionMap.us);
+    next = replaceCodeByRegex(next, /\{\{REGION\}\}/, regionMap.us);
   } else {
-    envFileContent = replaceCodeByRegex(envFileContent, REGION_RE, mappedRegion);
+    next = replaceCodeByRegex(next, /\{\{REGION\}\}/, mappedRegion);
   }
+  return next;
+}
 
-  FileManagement.writeFile(envFileName, envFileContent);
+const updateNseEnv = (
+  envFileName: string,
+  richPushConfig?: RichPushConfig
+) => {
+  if (!validateRichPushConfig(richPushConfig)) {
+    return;
+  }
+  const next = applyRichPushConfigToEnv(
+    FileManagement.readFile(envFileName),
+    richPushConfig,
+  );
+  FileManagement.writeFile(envFileName, next);
 };
 
 async function addPushNotificationFile(
@@ -410,79 +455,84 @@ async function addPushNotificationFile(
   xcodeProject.addSourceFile(`${appName}/${targetFileName}`, null, group);
 }
 
-const updatePushFile = (
+/**
+ * Pure string transform: substitutes every PushService.swift placeholder
+ * (`{{REGISTER_SNIPPET}}`, `{{CDP_API_KEY}}`, `{{REGION}}`,
+ * `{{AUTO_TRACK_PUSH_EVENTS}}`, `{{AUTO_FETCH_DEVICE_TOKEN}}`,
+ * `{{SHOW_PUSH_APP_IN_FOREGROUND}}`, `{{APP_GROUP_ID_BUILDER_LINE}}`) using
+ * the configured push-notification options. Validation of the rich-push
+ * config (cdpApiKey/region required) is the wrapper's responsibility.
+ */
+export function applyConfigToPushFile(
+  content: string,
   options: CustomerIOPluginOptionsIOS,
-  envFileName: string
-) => {
-  const REGISTER_RE = /\{\{REGISTER_SNIPPET\}\}/;
-
-  let envFileContent = FileManagement.readFile(envFileName);
-  const disableNotificationRegistration =
-    options.pushNotification?.disableNotificationRegistration;
+): string {
   const richPushConfig = options.pushNotification?.env;
   const { cdpApiKey, region } = richPushConfig || {
     cdpApiKey: 'MISSING_API_KEY',
     region: undefined,
   };
-  if (!validateRichPushConfig(richPushConfig)) {
-    return;
-  }
+  const disableNotificationRegistration =
+    options.pushNotification?.disableNotificationRegistration;
 
-  let snippet = '';
   // unless this property is explicitly set to true, push notification
   // registration will be added to the AppDelegate
-  if (disableNotificationRegistration !== true) {
-    snippet = CIO_REGISTER_PUSHNOTIFICATION_SNIPPET;
-  }
-  envFileContent = replaceCodeByRegex(envFileContent, REGISTER_RE, snippet);
+  const registerSnippet = disableNotificationRegistration !== true
+    ? CIO_REGISTER_PUSHNOTIFICATION_SNIPPET
+    : '';
 
-  envFileContent = replaceCodeByRegex(
-    envFileContent,
-    /\{\{CDP_API_KEY\}\}/,
-    cdpApiKey,
-  );
+  let next = replaceCodeByRegex(content, /\{\{REGISTER_SNIPPET\}\}/, registerSnippet);
+  next = replaceCodeByRegex(next, /\{\{CDP_API_KEY\}\}/, cdpApiKey);
 
   if (region) {
-    envFileContent = replaceCodeByRegex(
-      envFileContent,
-      /\{\{REGION\}\}/,
-      region.toUpperCase()
-    );
+    next = replaceCodeByRegex(next, /\{\{REGION\}\}/, region.toUpperCase());
   }
 
   const autoTrackPushEvents =
     options.pushNotification?.autoTrackPushEvents !== false;
-  envFileContent = replaceCodeByRegex(
-    envFileContent,
+  next = replaceCodeByRegex(
+    next,
     /\{\{AUTO_TRACK_PUSH_EVENTS\}\}/,
-    autoTrackPushEvents.toString()
+    autoTrackPushEvents.toString(),
   );
 
   const autoFetchDeviceToken =
     options.pushNotification?.autoFetchDeviceToken !== false;
-  envFileContent = replaceCodeByRegex(
-    envFileContent,
+  next = replaceCodeByRegex(
+    next,
     /\{\{AUTO_FETCH_DEVICE_TOKEN\}\}/,
-    autoFetchDeviceToken.toString()
+    autoFetchDeviceToken.toString(),
   );
 
   const showPushAppInForeground =
     options.pushNotification?.showPushAppInForeground !== false;
-  envFileContent = replaceCodeByRegex(
-    envFileContent,
+  next = replaceCodeByRegex(
+    next,
     /\{\{SHOW_PUSH_APP_IN_FOREGROUND\}\}/,
-    showPushAppInForeground.toString()
+    showPushAppInForeground.toString(),
   );
 
   const appGroupId = options.pushNotification?.appGroupId;
   const appGroupIdBuilderLine = appGroupId
     ? `        .appGroupId(${JSON.stringify(appGroupId)})\n`
     : '';
-  envFileContent = replaceCodeByRegex(
-    envFileContent,
+  next = replaceCodeByRegex(
+    next,
     /\{\{APP_GROUP_ID_BUILDER_LINE\}\}/,
-    appGroupIdBuilderLine
+    appGroupIdBuilderLine,
   );
 
-  FileManagement.writeFile(envFileName, envFileContent);
+  return next;
+}
+
+const updatePushFile = (
+  options: CustomerIOPluginOptionsIOS,
+  envFileName: string
+) => {
+  const richPushConfig = options.pushNotification?.env;
+  if (!validateRichPushConfig(richPushConfig)) {
+    return;
+  }
+  const next = applyConfigToPushFile(FileManagement.readFile(envFileName), options);
+  FileManagement.writeFile(envFileName, next);
 };

@@ -153,9 +153,12 @@ const addFirebaseDelegateForwardDeclarationIfNeeded = (
   return stringContents;
 };
 
-const addAppdelegateHeaderModification = (stringContents: string) => {
-  // Add UNUserNotificationCenterDelegate if needed
-  stringContents = stringContents.replace(
+/**
+ * Pure string transform: ensures the AppDelegate header (Objective-C path) declares
+ * `UNUserNotificationCenterDelegate` and imports `UserNotifications`. Idempotent.
+ */
+export function modifyAppDelegateHeader(headerContent: string): string {
+  return headerContent.replace(
     CIO_APPDELEGATEHEADER_REGEX,
     (match, interfaceDeclaration, _groupedDelegates, existingDelegates) => {
       if (
@@ -179,9 +182,7 @@ ${interfaceDeclaration.trim()} <${CIO_APPDELEGATEHEADER_USER_NOTIFICATION_CENTER
       }
     }
   );
-
-  return stringContents;
-};
+}
 
 const addHandleDeeplinkInKilledState = (stringContents: string) => {
   // Find if the deep link code snippet is already present
@@ -219,58 +220,70 @@ const addHandleDeeplinkInKilledState = (stringContents: string) => {
   return stringContents;
 };
 
+/**
+ * Pure string transform: produces the modified Objective-C AppDelegate.m / AppDelegate.mm
+ * contents wired with the Customer.io push pipeline (imports, declarations, notification
+ * configuration, registration callbacks, optional killed-state deep-link, FCM forward decl,
+ * Expo notifications header). The caller is responsible for the AppDelegate header file
+ * (.h) — see `modifyAppDelegateHeader`.
+ */
+export function modifyAppDelegateContents(
+  contents: string,
+  projectName: string,
+  props: CustomerIOPluginOptionsIOS
+): string {
+  let next = addImport(contents, projectName);
+  next = addNotificationHandlerDeclaration(next);
+
+  // unless this property is explicity set to true, push notification
+  // registration will be added to the AppDelegate
+  if (props.pushNotification?.disableNotificationRegistration !== true) {
+    next = addNotificationConfiguration(next);
+  }
+
+  next = addInitializeNativeCioSdk(next);
+
+  if (props.pushNotification?.handleDeeplinkInKilledState === true) {
+    next = addHandleDeeplinkInKilledState(next);
+  }
+
+  next = addDidFailToRegisterForRemoteNotificationsWithError(next);
+  next = addDidRegisterForRemoteNotificationsWithDeviceToken(next);
+
+  if (isFcmPushProvider(props)) {
+    next = addFirebaseDelegateForwardDeclarationIfNeeded(next);
+  }
+
+  next = addExpoNotificationsHeaderModification(next);
+
+  return next;
+}
+
 export const withAppDelegateModifications: ConfigPlugin<
   CustomerIOPluginOptionsIOS
 > = (configOuter, props) => {
   return withAppDelegate(configOuter, async (config) => {
-    let stringContents = config.modResults.contents;
+    const stringContents = config.modResults.contents;
     const regex = new RegExp(
       `#import <${config.modRequest.projectName}-Swift.h>`
     );
-    const match = stringContents.match(regex);
 
-    if (!match) {
-      const headerPath = getAppDelegateHeaderFilePath(
-        config.modRequest.projectRoot
-      );
-      let headerContent = await FileManagement.read(headerPath);
-      headerContent = addAppdelegateHeaderModification(headerContent);
-      FileManagement.write(headerPath, headerContent);
-
-      stringContents = addImport(
-        stringContents,
-        config.modRequest.projectName as string
-      );
-      stringContents = addNotificationHandlerDeclaration(stringContents);
-
-      // unless this property is explicity set to true, push notification
-      // registration will be added to the AppDelegate
-      if (props.pushNotification?.disableNotificationRegistration !== true) {
-        stringContents = addNotificationConfiguration(stringContents);
-      }
-
-      stringContents = addInitializeNativeCioSdk(stringContents);
-
-      if (props.pushNotification?.handleDeeplinkInKilledState === true) {
-        stringContents = addHandleDeeplinkInKilledState(stringContents);
-      }
-
-      stringContents =
-        addDidFailToRegisterForRemoteNotificationsWithError(stringContents);
-      stringContents =
-        addDidRegisterForRemoteNotificationsWithDeviceToken(stringContents);
-
-      if (isFcmPushProvider(props)) {
-        stringContents =
-          addFirebaseDelegateForwardDeclarationIfNeeded(stringContents);
-      }
-
-      stringContents = addExpoNotificationsHeaderModification(stringContents);
-
-      config.modResults.contents = stringContents;
-    } else {
+    if (stringContents.match(regex)) {
       logger.info('Customerio AppDelegate changes already exist. Skipping...');
+      return config;
     }
+
+    const headerPath = getAppDelegateHeaderFilePath(
+      config.modRequest.projectRoot
+    );
+    const headerContent = await FileManagement.read(headerPath);
+    FileManagement.write(headerPath, modifyAppDelegateHeader(headerContent));
+
+    config.modResults.contents = modifyAppDelegateContents(
+      stringContents,
+      config.modRequest.projectName as string,
+      props
+    );
 
     return config;
   });
