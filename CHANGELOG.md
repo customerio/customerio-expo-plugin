@@ -1,3 +1,13 @@
+## [3.4.0](https://github.com/customerio/customerio-expo-plugin/compare/3.3.0...3.4.0) (2026-05-07)
+
+### Features
+
+* pnpm support ([#339](https://github.com/customerio/customerio-expo-plugin/issues/339)) ([ab06bcd](https://github.com/customerio/customerio-expo-plugin/commit/ab06bcd485fcc41ffd878acb1e9f93133fd0de06))
+
+### Bug Fixes
+
+* pass App token to actions/checkout in deploy-sdk ([#352](https://github.com/customerio/customerio-expo-plugin/issues/352)) ([d493d48](https://github.com/customerio/customerio-expo-plugin/commit/d493d4846313a3ac9e52c024b975c2da1f73f3eb))
+
 ## [3.3.0](https://github.com/customerio/customerio-expo-plugin/compare/3.2.0...3.3.0) (2026-04-06)
 
 ### Features
