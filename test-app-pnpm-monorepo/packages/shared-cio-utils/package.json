@@ -1,0 +1,10 @@
+{
+  "name": "@cio-test/shared-cio-utils",
+  "version": "1.0.0",
+  "private": true,
+  "main": "index.ts",
+  "types": "index.ts",
+  "dependencies": {
+    "customerio-reactnative": "^6.4.0"
+  }
+}

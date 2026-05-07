@@ -1,0 +1,46 @@
+{
+  "expo": {
+    "name": "Test App pnpm",
+    "slug": "test-app-pnpm",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "test-app-pnpm",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "io.customer.testbed.expo.pnpm",
+      "entitlements": {
+        "aps-environment": "development"
+      }
+    },
+    "android": {
+      "package": "io.customer.testbed.expo.pnpm"
+    },
+    "plugins": [
+      [
+        "customerio-expo-plugin",
+        {
+          "config": {
+            "cdpApiKey": "REPLACE_WITH_REAL_KEY_OR_LEAVE_FOR_PREBUILD_ONLY",
+            "region": "us",
+            "logLevel": "debug"
+          },
+          "ios": {
+            "useFrameworks": "static",
+            "pushNotification": {
+              "provider": "apn"
+            }
+          }
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "useFrameworks": "static"
+          }
+        }
+      ]
+    ]
+  }
+}

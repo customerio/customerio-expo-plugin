@@ -1,0 +1,11 @@
+{
+  "name": "test-app-pnpm-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "prebuild:ios": "pnpm --filter @cio-test/mobile exec expo prebuild --platform ios --clean",
+    "prebuild:android": "pnpm --filter @cio-test/mobile exec expo prebuild --platform android --clean",
+    "ios": "pnpm --filter @cio-test/mobile exec expo run:ios",
+    "android": "pnpm --filter @cio-test/mobile exec expo run:android"
+  }
+}

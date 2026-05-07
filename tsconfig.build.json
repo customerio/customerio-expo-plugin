@@ -3,6 +3,8 @@
   "exclude": [
     "ci-test-apps",
     "__tests__",
-    "test-app"
+    "test-app",
+    "test-app-pnpm",
+    "test-app-pnpm-monorepo"
   ]
 }

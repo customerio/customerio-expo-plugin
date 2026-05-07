@@ -8,6 +8,7 @@ import type {
   LocationTrackingMode,
   NativeSDKConfig,
 } from './types/cio-types';
+import { withExpoVersion } from './utils/writeExpoVersion';
 
 export type { LocationTrackingMode, NativeSDKConfig };
 
@@ -24,6 +25,12 @@ function withCustomerIOPlugin(
       'See documentation for manual setup instructions.'
     );
   }
+
+  // Belt-and-suspenders write of the plugin version into the RN SDK's
+  // package.json. The postinstall hook does the same write at install time;
+  // this covers installs where postinstall didn't run cleanly (pnpm with
+  // strict store layouts, --ignore-scripts, cached CI installs, etc).
+  config = withExpoVersion(config);
 
   // Apply platform specific modifications
   config = withCIOIos(config, props.config, props.ios, props.location);

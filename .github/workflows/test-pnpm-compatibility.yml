@@ -1,0 +1,69 @@
+name: Test pnpm Compatibility
+
+on:
+  pull_request:
+  push:
+    branches: [main, beta, feature/*]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pnpm-dev-apps:
+    name: Build pnpm dev apps (isolated + hoisted) and verify artifacts
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Install root dependencies
+        run: npm ci
+
+      # Phase A — default pnpm (isolated) mode.
+      # Each setup script runs `expo prebuild --clean`, which on macOS
+      # automatically runs `pod install` against the generated Podfile.
+      # That's the step that fails with the customer's "multiple
+      # dependencies with different sources" error if the resolver
+      # regresses to emitting the .pnpm/ realpath.
+      - name: 'Phase A — set up test-app-pnpm (flat) — includes pod install'
+        run: npm run setup-test-app-pnpm
+
+      - name: 'Phase A — set up test-app-pnpm-monorepo (workspace) — includes pod install'
+        run: npm run setup-test-app-pnpm-monorepo
+
+      - name: 'Phase A — verify Podfile :path values and expoVersion attribution'
+        run: npm run verify-pnpm-dev-apps
+
+      # Phase B — hoisted mode.
+      # Customers who can't wait for a release are advised to add a
+      # node-linker=hoisted .npmrc as a workaround. This phase exercises
+      # that workaround so a future change can't silently break the path
+      # we recommend customers take.
+      - name: 'Phase B — wipe monorepo install and write hoisted .npmrc'
+        run: |
+          set -euo pipefail
+          rm -rf \
+            test-app-pnpm-monorepo/node_modules \
+            test-app-pnpm-monorepo/pnpm-lock.yaml \
+            test-app-pnpm-monorepo/apps/*/node_modules \
+            test-app-pnpm-monorepo/apps/*/ios \
+            test-app-pnpm-monorepo/apps/*/android \
+            test-app-pnpm-monorepo/packages/*/node_modules
+
+          cat > test-app-pnpm-monorepo/.npmrc <<'EOF'
+          node-linker=hoisted
+          shamefully-hoist=true
+          public-hoist-pattern[]=*customerio*
+          EOF
+
+      - name: 'Phase B — set up test-app-pnpm-monorepo under hoisted mode'
+        run: npm run setup-test-app-pnpm-monorepo
+
+      - name: 'Phase B — verify Podfile :path values and expoVersion attribution under hoisted mode'
+        run: npm run verify-pnpm-dev-apps

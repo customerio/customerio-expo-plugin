@@ -43,6 +43,48 @@ We use tarball dependency to ensure our expo plugin is installed as if it was pu
 npm run preinstall
 ``` 
 
+## Testing pnpm and monorepo layouts locally
+
+Two additional dev apps live at the repo root for verifying the plugin under
+pnpm and pnpm workspace layouts. They are intentionally minimal — single
+screen, no fastlane, no env loader — and exist so that `expo prebuild` and
+`pod install` can be exercised end-to-end against the layouts that surfaced
+the duplicate-pod bug fixed in this plugin.
+
+These are a side dev-loop, not part of the default flow. The standard
+`npm run buildAll` / `cleanAll` continue to operate only on `test-app/`.
+
+Prerequisites: `pnpm` on your PATH (`npm install -g pnpm`).
+
+Set up either app individually:
+
+```bash
+# Flat pnpm install
+npm run setup-test-app-pnpm
+
+# pnpm workspace where apps/mobile shares customerio-reactnative with packages/shared-cio-utils
+npm run setup-test-app-pnpm-monorepo
+```
+
+Or use the all-in-one convenience commands (parallel to `cleanAll` / `buildAll`):
+
+```bash
+npm run buildAllPnpm           # rebuild plugin + set up both pnpm dev apps
+npm run cleanAllPnpm           # clean both pnpm dev apps + drop the cached tarball
+npm run cleanAndBuildAllPnpm   # clean + rebuild
+```
+
+Each setup regenerates the plugin tarball at the repo root, runs `pnpm install`,
+and runs `expo prebuild`. After setup, drop into the app dir and run as usual:
+
+```bash
+cd test-app-pnpm && pnpm exec expo run:ios
+cd test-app-pnpm-monorepo && npm run ios
+```
+
+When iterating on the plugin, re-run the matching `setup-test-app-pnpm*` script
+or `npm run buildAllPnpm` to rebuild and reinstall the tarball into the dev apps.
+
 ## Convenience scripts
 
 Sometimes when you are making changes to the plugin, it's helpful to clear out dependencies or rebuild the plugin. There are a couple of convenience scripts that you can use.
