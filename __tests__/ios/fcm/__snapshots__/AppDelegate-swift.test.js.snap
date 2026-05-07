@@ -26,17 +26,32 @@ public class AppDelegate: ExpoAppDelegate {
     reactNativeFactory = factory
     bindReactNativeFactory(factory)
 
+    // Deep link workaround for app killed state start
+    var modifiedLaunchOptions = launchOptions
+    if let launchOptions = launchOptions,
+       let pushContent = launchOptions[UIApplication.LaunchOptionsKey.remoteNotification] as? [AnyHashable: Any],
+       let cio = pushContent["CIO"] as? [String: Any],
+       let push = cio["push"] as? [String: Any],
+       let link = push["link"] as? String,
+       !launchOptions.keys.contains(UIApplication.LaunchOptionsKey.url) {
+        
+        var mutableLaunchOptions = launchOptions
+        mutableLaunchOptions[UIApplication.LaunchOptionsKey.url] = URL(string: link)
+        modifiedLaunchOptions = mutableLaunchOptions
+    }
+    // Deep link workaround for app killed state ends
+
 #if os(iOS) || os(tvOS)
     window = UIWindow(frame: UIScreen.main.bounds)
     factory.startReactNative(
       withModuleName: "main",
       in: window,
-      launchOptions: launchOptions)
+      launchOptions: modifiedLaunchOptions)
 #endif
 
       cioSdkHandler.application(application, didFinishLaunchingWithOptions: launchOptions)
 
-    return super.application(application, didFinishLaunchingWithOptions: launchOptions)
+    return super.application(application, didFinishLaunchingWithOptions: modifiedLaunchOptions)
   }
 
   // Linking API

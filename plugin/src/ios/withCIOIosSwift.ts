@@ -500,34 +500,47 @@ const addDidFailToRegisterForRemoteNotificationsWithError = (
 
 /**
  * Add deep link handling for killed state
- * This replaces the return statement with deep link handling code
- * and a modified return statement that uses modifiedLaunchOptions
+ *
+ * On modern Expo Swift templates, RN is bootstrapped by `factory.startReactNative(...)`
+ * inside an `#if os(iOS) || os(tvOS)` guard, *before* the trailing `return super.application(...)`.
+ * The deep-link block must run before that call so `modifiedLaunchOptions` flows into RN's
+ * initial launchOptions; otherwise the workaround is a no-op.
+ *
+ * For older templates (no `factory.startReactNative` — `super.application(...)` is what
+ * starts RN), the snippet is injected before the return statement as before.
  */
 const addHandleDeeplinkInKilledState = (content: string): string => {
-  // Check if deep link code snippet is already present
   const deepLinkMarker = 'Deep link workaround for app killed state start';
   if (content.includes(deepLinkMarker)) {
     return content;
   }
 
-  // Find the return statement with launchOptions
   const returnStatementRegex =
     /return\s+super\.application\s*\(\s*application\s*,\s*didFinishLaunchingWithOptions\s*:\s*launchOptions\s*\)/;
-  const returnStatementMatch = content.match(returnStatementRegex);
+  const modifiedReturnStatement =
+    'return super.application(application, didFinishLaunchingWithOptions: modifiedLaunchOptions)';
 
-  if (!returnStatementMatch) {
+  const factoryStartRegex =
+    /(\s*)#if\s+os\(iOS\)\s*\|\|\s*os\(tvOS\)([\s\S]*?factory\.startReactNative\s*\([\s\S]*?launchOptions:\s*)launchOptions(\s*\)[\s\S]*?#endif)/;
+
+  if (factoryStartRegex.test(content)) {
+    let result = content.replace(
+      factoryStartRegex,
+      `\n${CIO_CONFIGUREDEEPLINK_KILLEDSTATE_SWIFT_SNIPPET}\n#if os(iOS) || os(tvOS)$2modifiedLaunchOptions$3`
+    );
+    if (returnStatementRegex.test(result)) {
+      result = result.replace(returnStatementRegex, modifiedReturnStatement);
+    }
+    return result;
+  }
+
+  if (!returnStatementRegex.test(content)) {
     logger.warn('Could not find return statement with launchOptions');
     return content;
   }
-
-  // Create the replacement code with deep link handling and modified return statement
-  const modifiedReturnStatement =
-    'return super.application(application, didFinishLaunchingWithOptions: modifiedLaunchOptions)';
   const replacementCode =
     CIO_CONFIGUREDEEPLINK_KILLEDSTATE_SWIFT_SNIPPET +
     '\n\n    ' +
     modifiedReturnStatement;
-
-  // Replace the return statement with deep link handling code and modified return statement
   return content.replace(returnStatementRegex, replacementCode);
 };

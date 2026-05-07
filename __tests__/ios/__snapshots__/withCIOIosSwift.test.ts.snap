@@ -1,0 +1,141 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`withCIOIosSwift handleDeeplinkInKilledState placement injects deeplink workaround BEFORE factory.startReactNative on modern Expo Swift templates 1`] = `
+"import Expo
+import React
+import ReactAppDependencyProvider
+
+@UIApplicationMain
+public class AppDelegate: ExpoAppDelegate {
+  let cioSdkHandler = CioSdkAppDelegateHandler()
+
+  var window: UIWindow?
+
+  var reactNativeDelegate: ExpoReactNativeFactoryDelegate?
+  var reactNativeFactory: RCTReactNativeFactory?
+
+  public override func application(
+    _ application: UIApplication,
+    didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
+  ) -> Bool {
+    let delegate = ReactNativeDelegate()
+    let factory = ExpoReactNativeFactory(delegate: delegate)
+    delegate.dependencyProvider = RCTAppDependencyProvider()
+
+    reactNativeDelegate = delegate
+    reactNativeFactory = factory
+    bindReactNativeFactory(factory)
+
+    // Deep link workaround for app killed state start
+    var modifiedLaunchOptions = launchOptions
+    if let launchOptions = launchOptions,
+       let pushContent = launchOptions[UIApplication.LaunchOptionsKey.remoteNotification] as? [AnyHashable: Any],
+       let cio = pushContent["CIO"] as? [String: Any],
+       let push = cio["push"] as? [String: Any],
+       let link = push["link"] as? String,
+       !launchOptions.keys.contains(UIApplication.LaunchOptionsKey.url) {
+        
+        var mutableLaunchOptions = launchOptions
+        mutableLaunchOptions[UIApplication.LaunchOptionsKey.url] = URL(string: link)
+        modifiedLaunchOptions = mutableLaunchOptions
+    }
+    // Deep link workaround for app killed state ends
+
+#if os(iOS) || os(tvOS)
+    window = UIWindow(frame: UIScreen.main.bounds)
+    factory.startReactNative(
+      withModuleName: "main",
+      in: window,
+      launchOptions: modifiedLaunchOptions)
+#endif
+
+      cioSdkHandler.application(application, didFinishLaunchingWithOptions: launchOptions)
+
+    return super.application(application, didFinishLaunchingWithOptions: modifiedLaunchOptions)
+  }
+
+  // Handle device token registration
+  public override func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
+    // Call CustomerIO SDK handler
+    cioSdkHandler.application(application, didRegisterForRemoteNotificationsWithDeviceToken: deviceToken)
+    super.application(application, didRegisterForRemoteNotificationsWithDeviceToken: deviceToken)
+  }
+
+  // Handle remote notification registration errors
+  public override func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
+    // Call CustomerIO SDK handler
+    cioSdkHandler.application(application, didFailToRegisterForRemoteNotificationsWithError: error)
+    super.application(application, didFailToRegisterForRemoteNotificationsWithError: error)
+  }
+}"
+`;
+
+exports[`withCIOIosSwift handleDeeplinkInKilledState placement routes modifiedLaunchOptions into factory.startReactNative on modern templates 1`] = `
+"import Expo
+import React
+import ReactAppDependencyProvider
+
+@UIApplicationMain
+public class AppDelegate: ExpoAppDelegate {
+  let cioSdkHandler = CioSdkAppDelegateHandler()
+
+  var window: UIWindow?
+
+  var reactNativeDelegate: ExpoReactNativeFactoryDelegate?
+  var reactNativeFactory: RCTReactNativeFactory?
+
+  public override func application(
+    _ application: UIApplication,
+    didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
+  ) -> Bool {
+    let delegate = ReactNativeDelegate()
+    let factory = ExpoReactNativeFactory(delegate: delegate)
+    delegate.dependencyProvider = RCTAppDependencyProvider()
+
+    reactNativeDelegate = delegate
+    reactNativeFactory = factory
+    bindReactNativeFactory(factory)
+
+    // Deep link workaround for app killed state start
+    var modifiedLaunchOptions = launchOptions
+    if let launchOptions = launchOptions,
+       let pushContent = launchOptions[UIApplication.LaunchOptionsKey.remoteNotification] as? [AnyHashable: Any],
+       let cio = pushContent["CIO"] as? [String: Any],
+       let push = cio["push"] as? [String: Any],
+       let link = push["link"] as? String,
+       !launchOptions.keys.contains(UIApplication.LaunchOptionsKey.url) {
+        
+        var mutableLaunchOptions = launchOptions
+        mutableLaunchOptions[UIApplication.LaunchOptionsKey.url] = URL(string: link)
+        modifiedLaunchOptions = mutableLaunchOptions
+    }
+    // Deep link workaround for app killed state ends
+
+#if os(iOS) || os(tvOS)
+    window = UIWindow(frame: UIScreen.main.bounds)
+    factory.startReactNative(
+      withModuleName: "main",
+      in: window,
+      launchOptions: modifiedLaunchOptions)
+#endif
+
+      cioSdkHandler.application(application, didFinishLaunchingWithOptions: launchOptions)
+
+    return super.application(application, didFinishLaunchingWithOptions: modifiedLaunchOptions)
+  }
+
+  // Handle device token registration
+  public override func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
+    // Call CustomerIO SDK handler
+    cioSdkHandler.application(application, didRegisterForRemoteNotificationsWithDeviceToken: deviceToken)
+    super.application(application, didRegisterForRemoteNotificationsWithDeviceToken: deviceToken)
+  }
+
+  // Handle remote notification registration errors
+  public override func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
+    // Call CustomerIO SDK handler
+    cioSdkHandler.application(application, didFailToRegisterForRemoteNotificationsWithError: error)
+    super.application(application, didFailToRegisterForRemoteNotificationsWithError: error)
+  }
+}"
+`;

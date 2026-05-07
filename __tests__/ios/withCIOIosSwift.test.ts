@@ -253,4 +253,143 @@ public class AppDelegate: ExpoAppDelegate {
       expect(writtenContent).not.toContain('.appGroupId(');
     });
   });
+
+  describe('handleDeeplinkInKilledState placement', () => {
+    const modernAppDelegateFixture = `import Expo
+import React
+import ReactAppDependencyProvider
+
+@UIApplicationMain
+public class AppDelegate: ExpoAppDelegate {
+  var window: UIWindow?
+
+  var reactNativeDelegate: ExpoReactNativeFactoryDelegate?
+  var reactNativeFactory: RCTReactNativeFactory?
+
+  public override func application(
+    _ application: UIApplication,
+    didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
+  ) -> Bool {
+    let delegate = ReactNativeDelegate()
+    let factory = ExpoReactNativeFactory(delegate: delegate)
+    delegate.dependencyProvider = RCTAppDependencyProvider()
+
+    reactNativeDelegate = delegate
+    reactNativeFactory = factory
+    bindReactNativeFactory(factory)
+
+#if os(iOS) || os(tvOS)
+    window = UIWindow(frame: UIScreen.main.bounds)
+    factory.startReactNative(
+      withModuleName: "main",
+      in: window,
+      launchOptions: launchOptions)
+#endif
+
+    return super.application(application, didFinishLaunchingWithOptions: launchOptions)
+  }
+}`;
+
+    const legacyAppDelegateFixture = `@UIApplicationMain
+public class AppDelegate: ExpoAppDelegate {
+  public override func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
+    return super.application(application, didFinishLaunchingWithOptions: launchOptions)
+  }
+}`;
+
+    const propsWithDeeplink: CustomerIOPluginOptionsIOS = {
+      iosPath: '/test/ios',
+      pushNotification: {
+        provider: 'apn',
+        handleDeeplinkInKilledState: true,
+      },
+    };
+
+    it('injects deeplink workaround BEFORE factory.startReactNative on modern Expo Swift templates', async () => {
+      const { withAppDelegate } = require('@expo/config-plugins');
+
+      withCIOIosSwift(mockConfig, undefined, propsWithDeeplink);
+
+      const appDelegateCallback = withAppDelegate.mock.calls[0][1];
+      const result = await appDelegateCallback({
+        modResults: { contents: modernAppDelegateFixture },
+      });
+      const out: string = result.modResults.contents;
+
+      const snippetIdx = out.indexOf('Deep link workaround for app killed state start');
+      const factoryIdx = out.indexOf('factory.startReactNative');
+      const ifGuardIdx = out.indexOf('#if os(iOS) || os(tvOS)');
+
+      expect(snippetIdx).toBeGreaterThan(-1);
+      expect(factoryIdx).toBeGreaterThan(-1);
+      // Snippet must precede both the #if guard and the factory.startReactNative call,
+      // otherwise the workaround runs after RN has already bootstrapped.
+      expect(snippetIdx).toBeLessThan(ifGuardIdx);
+      expect(snippetIdx).toBeLessThan(factoryIdx);
+      // Snapshot the full transformed AppDelegate so unintended drift in the snippet content
+      // (whitespace, comments, the keys we read from the push payload) is also surfaced.
+      expect(out).toMatchSnapshot();
+    });
+
+    it('routes modifiedLaunchOptions into factory.startReactNative on modern templates', async () => {
+      const { withAppDelegate } = require('@expo/config-plugins');
+
+      withCIOIosSwift(mockConfig, undefined, propsWithDeeplink);
+
+      const appDelegateCallback = withAppDelegate.mock.calls[0][1];
+      const result = await appDelegateCallback({
+        modResults: { contents: modernAppDelegateFixture },
+      });
+      const out: string = result.modResults.contents;
+
+      // The factory.startReactNative call must consume modifiedLaunchOptions, not the original.
+      expect(out).toMatch(/factory\.startReactNative\([\s\S]*?launchOptions:\s*modifiedLaunchOptions\s*\)/);
+      expect(out).not.toMatch(/factory\.startReactNative\([\s\S]*?launchOptions:\s*launchOptions\s*\)/);
+      // Trailing super.application is also rewritten for backward compatibility with older templates
+      // where it was the call that bootstrapped RN.
+      expect(out).toContain(
+        'return super.application(application, didFinishLaunchingWithOptions: modifiedLaunchOptions)'
+      );
+      expect(out).toMatchSnapshot();
+    });
+
+    it('falls back to rewriting the return statement on legacy templates without factory.startReactNative', async () => {
+      const { withAppDelegate } = require('@expo/config-plugins');
+
+      withCIOIosSwift(mockConfig, undefined, propsWithDeeplink);
+
+      const appDelegateCallback = withAppDelegate.mock.calls[0][1];
+      const result = await appDelegateCallback({
+        modResults: { contents: legacyAppDelegateFixture },
+      });
+      const out: string = result.modResults.contents;
+
+      const snippetIdx = out.indexOf('Deep link workaround for app killed state start');
+      const returnIdx = out.indexOf('return super.application');
+
+      expect(snippetIdx).toBeGreaterThan(-1);
+      expect(snippetIdx).toBeLessThan(returnIdx);
+      expect(out).toContain(
+        'return super.application(application, didFinishLaunchingWithOptions: modifiedLaunchOptions)'
+      );
+    });
+
+    it('is idempotent — repeated invocations do not stack the snippet', async () => {
+      const { withAppDelegate } = require('@expo/config-plugins');
+
+      withCIOIosSwift(mockConfig, undefined, propsWithDeeplink);
+
+      const appDelegateCallback = withAppDelegate.mock.calls[0][1];
+      const first = await appDelegateCallback({
+        modResults: { contents: modernAppDelegateFixture },
+      });
+      const second = await appDelegateCallback({
+        modResults: { contents: first.modResults.contents },
+      });
+      const out: string = second.modResults.contents;
+
+      const occurrences = (out.match(/Deep link workaround for app killed state start/g) || []).length;
+      expect(occurrences).toBe(1);
+    });
+  });
 });
