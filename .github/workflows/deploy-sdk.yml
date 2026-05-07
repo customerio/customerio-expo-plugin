@@ -30,6 +30,8 @@ jobs:
           private_key: ${{ secrets.CIO_APP_SECRET }}
 
       - uses: actions/checkout@v4
+        with:
+          token: ${{ steps.generate_token.outputs.token }}
 
       - name: Deploy git tag via semantic release
         uses: cycjimmy/semantic-release-action@0a51e81a6baff2acad3ee88f4121c589c73d0f0e # v4.2.0
