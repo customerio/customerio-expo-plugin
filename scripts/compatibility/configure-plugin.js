@@ -118,6 +118,7 @@ function execute() {
       pushNotification: {
         useRichPush: true,
         appGroupId: "group.io.customer.testbed.expo.apn.cio",
+        handleDeeplinkInKilledState: true,
       },
     };
 
