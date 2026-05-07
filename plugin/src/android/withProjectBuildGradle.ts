@@ -24,6 +24,40 @@ function shouldDisableAndroid16Support(
 }
 
 /**
+ * Pure string transform: injects an androidx resolution-strategy block into the
+ * project-level build.gradle's `allprojects { ... }` section when
+ * `disableAndroid16Support` is true. Idempotent — returns input unchanged if the
+ * snippet is already present, or if the flag is false.
+ */
+export function modifyProjectBuildGradleAndroid16Support(
+  contents: string,
+  options: { disableAndroid16Support: boolean }
+): string {
+  if (!options.disableAndroid16Support) {
+    return contents;
+  }
+
+  if (contents.includes('androidx.core:core-ktx:1.13.1')) {
+    return contents;
+  }
+
+  const resolutionStrategy = `
+    configurations.all {
+        resolutionStrategy {
+            // Disable Android 16 support by forcing older androidx versions
+            // Compatible with API 35 and AGP 8.8.2 (prevents API 36/AGP 8.9.1+ requirement)
+            force 'androidx.core:core-ktx:1.13.1'
+            force 'androidx.lifecycle:lifecycle-process:2.8.7'
+        }
+    }`;
+
+  return contents.replace(
+    /allprojects\s*\{/,
+    `allprojects {${resolutionStrategy}`
+  );
+}
+
+/**
  * Adds dependency resolution strategy to force specific androidx versions.
  * This disables Android 16 support for apps using Expo SDK 53 or older gradle versions.
  *
@@ -38,34 +72,10 @@ export function withProjectBuildGradle(
   androidOptions?: CustomerIOPluginOptionsAndroid
 ): ExpoConfig {
   return withExpoProjectBuildGradle(config, (config) => {
-    const { modResults } = config;
-
-    // Check if Android 16 support should be disabled
-    if (!shouldDisableAndroid16Support(config, androidOptions)) {
-      return config;
-    }
-
-    // Skip if already applied
-    if (modResults.contents.includes('androidx.core:core-ktx:1.13.1')) {
-      return config;
-    }
-
-    const resolutionStrategy = `
-    configurations.all {
-        resolutionStrategy {
-            // Disable Android 16 support by forcing older androidx versions
-            // Compatible with API 35 and AGP 8.8.2 (prevents API 36/AGP 8.9.1+ requirement)
-            force 'androidx.core:core-ktx:1.13.1'
-            force 'androidx.lifecycle:lifecycle-process:2.8.7'
-        }
-    }`;
-
-    // Add resolution strategy inside allprojects block
-    modResults.contents = modResults.contents.replace(
-      /allprojects\s*\{/,
-      `allprojects {${resolutionStrategy}`
+    config.modResults.contents = modifyProjectBuildGradleAndroid16Support(
+      config.modResults.contents,
+      { disableAndroid16Support: shouldDisableAndroid16Support(config, androidOptions) }
     );
-
     return config;
   });
 }
