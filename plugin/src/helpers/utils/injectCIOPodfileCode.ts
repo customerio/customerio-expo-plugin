@@ -42,43 +42,90 @@ export function buildHostAppPodSnippet(
   return `pod 'customerio-reactnative', :subspecs => ['${pushSubspec}', 'location'], :path => '${resolvedPath}'`;
 }
 
+const HOST_APP_BLOCK_START = '# --- CustomerIO Host App START ---';
+const HOST_APP_BLOCK_END = '# --- CustomerIO Host App END ---';
+const NOTIFICATION_BLOCK_START = '# --- CustomerIO Notification START ---';
+const NOTIFICATION_BLOCK_END = '# --- CustomerIO Notification END ---';
+
+/**
+ * Pure string transform: given the existing Podfile contents, returns the
+ * Podfile with the CustomerIO host-app block injected before the Expo
+ * `post_install do |installer|` anchor. Idempotent — returns input unchanged
+ * if the block is already present.
+ */
+export function injectHostAppPodfileCode(
+  podfileContent: string,
+  iosPath: string,
+  isFcmPushProvider: boolean,
+  options?: InjectCIOPodfileOptions
+): string {
+  if (podfileContent.match(new RegExp(HOST_APP_BLOCK_START))) {
+    return podfileContent;
+  }
+
+  // We need to decide what line of code in the Podfile to insert our native code.
+  // The "post_install" line is always present in an Expo project Podfile so it's reliable.
+  // Find that line in the Podfile and then we will insert our code above that line.
+  const lineInPodfileToInjectSnippetBefore = /post_install do \|installer\|/;
+  const podLine = buildHostAppPodSnippet(iosPath, isFcmPushProvider, options);
+
+  const snippetToInjectInPodfile = `
+${HOST_APP_BLOCK_START}
+  ${podLine}
+${HOST_APP_BLOCK_END}
+`.trim();
+
+  return injectCodeByRegex(
+    podfileContent,
+    lineInPodfileToInjectSnippetBefore,
+    snippetToInjectInPodfile,
+  ).join('\n');
+}
+
 export async function injectCIOPodfileCode(
   iosPath: string,
   isFcmPushProvider: boolean,
   options?: InjectCIOPodfileOptions
 ) {
-  const blockStart = '# --- CustomerIO Host App START ---';
-  const blockEnd = '# --- CustomerIO Host App END ---';
-
   const filename = `${iosPath}/Podfile`;
   const podfile = await FileManagement.read(filename);
-  const matches = podfile.match(new RegExp(blockStart));
-
-  if (!matches) {
-    // We need to decide what line of code in the Podfile to insert our native code.
-    // The "post_install" line is always present in an Expo project Podfile so it's reliable.
-    // Find that line in the Podfile and then we will insert our code above that line.
-    const lineInPodfileToInjectSnippetBefore = /post_install do \|installer\|/;
-
-    const podLine = buildHostAppPodSnippet(iosPath, isFcmPushProvider, options);
-
-    const snippetToInjectInPodfile = `
-${blockStart}
-  ${podLine}
-${blockEnd}
-`.trim();
-
-    FileManagement.write(
-      filename,
-      injectCodeByRegex(
-        podfile,
-        lineInPodfileToInjectSnippetBefore,
-        snippetToInjectInPodfile
-      ).join('\n')
-    );
+  const next = injectHostAppPodfileCode(podfile, iosPath, isFcmPushProvider, options);
+  if (next !== podfile) {
+    FileManagement.write(filename, next);
   } else {
     logger.info('CustomerIO Podfile snippets already exists. Skipping...');
   }
+}
+
+/**
+ * Pure string transform: given the existing Podfile contents, returns the
+ * Podfile with the rich-push NotificationService target block appended at
+ * the end. Idempotent — returns input unchanged if the block is already
+ * present.
+ */
+export function appendNotificationTargetToPodfile(
+  podfileContent: string,
+  iosPath: string,
+  isFcmPushProvider: boolean,
+  useFrameworks: CustomerIOPluginOptionsIOS['useFrameworks'],
+): string {
+  if (podfileContent.match(new RegExp(NOTIFICATION_BLOCK_START))) {
+    return podfileContent;
+  }
+
+  const snippetToAppend = `
+${NOTIFICATION_BLOCK_START}
+target 'NotificationService' do
+  ${useFrameworks === 'static' ? 'use_frameworks! :linkage => :static' : ''}
+  pod 'customerio-reactnative-richpush/${isFcmPushProvider ? 'fcm' : 'apn'}', :path => '${getRelativePathToRNSDK(iosPath)}'
+end
+${NOTIFICATION_BLOCK_END}
+`.trim();
+
+  // Mirror FileManagement.append: append directly with no separator (real
+  // Podfiles end with a trailing newline, so the appended block starts on a
+  // fresh line in practice).
+  return `${podfileContent}${snippetToAppend}`;
 }
 
 export async function injectCIONotificationPodfileCode(
@@ -88,27 +135,15 @@ export async function injectCIONotificationPodfileCode(
 ) {
   const filename = `${iosPath}/Podfile`;
   const podfile = await FileManagement.read(filename);
-
-  const blockStart = '# --- CustomerIO Notification START ---';
-  const blockEnd = '# --- CustomerIO Notification END ---';
-
-  const matches = podfile.match(new RegExp(blockStart));
-
-  if (!matches) {
-    const resolvedPath = getRelativePathToRNSDK(iosPath);
-    const subspec = isFcmPushProvider ? 'fcm' : 'apn';
-    const useFrameworksLine =
-      useFrameworks === 'static' ? 'use_frameworks! :linkage => :static' : '';
-
-    const snippetToInjectInPodfile = `
-${blockStart}
-target 'NotificationService' do
-  ${useFrameworksLine}
-  pod 'customerio-reactnative-richpush/${subspec}', :path => '${resolvedPath}'
-end
-${blockEnd}
-`.trim();
-
-    FileManagement.append(filename, snippetToInjectInPodfile);
+  const next = appendNotificationTargetToPodfile(
+    podfile,
+    iosPath,
+    isFcmPushProvider,
+    useFrameworks,
+  );
+  if (next !== podfile) {
+    // FileManagement.append matches what the previous direct-append did.
+    // Slice off the leading content (already on disk) and append only the new tail.
+    FileManagement.append(filename, next.slice(podfile.length));
   }
 }
