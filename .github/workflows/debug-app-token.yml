@@ -1,0 +1,105 @@
+name: Debug App Token Bypass
+
+# Manually-triggered probe to verify which identity actually pushes to main
+# during the deploy-sdk workflow. Two questions this answers:
+#   1. What is the slug of the App minted from CIO_APP_ID / CIO_APP_SECRET?
+#      (This is the identity that must appear on the ruleset bypass list.)
+#   2. After `actions/checkout@v4` with no `token:` set, whose credentials
+#      get persisted into local git config and used by later `git push`?
+#
+# The hypothesis: a default checkout persists GITHUB_TOKEN
+# (= github-actions[bot]), which overrides the App token even when the App
+# token is exported as the GITHUB_TOKEN env var to a later step. That bot is
+# not on the ruleset bypass list, hence "Changes must be made through a pull
+# request."
+#
+# This workflow does NOT push anything. It only inspects token identities.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate App installation token
+        id: app_token
+        uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a # v2.1.0
+        with:
+          app_id: ${{ secrets.CIO_APP_ID }}
+          private_key: ${{ secrets.CIO_APP_SECRET }}
+
+      - name: Identify App-token identity (must match ruleset bypass entry)
+        env:
+          TOKEN: ${{ steps.app_token.outputs.token }}
+        run: |
+          echo "::group::App identity from CIO_APP_ID"
+          curl -sS \
+            -H "Authorization: Bearer $TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            https://api.github.com/app \
+            | jq '{slug, id, name, owner: .owner.login}'
+          echo "::endgroup::"
+
+      - name: Checkout WITHOUT app token (default — current deploy-sdk.yml behavior)
+        uses: actions/checkout@v4
+
+      - name: Decode credentials persisted by default checkout
+        run: |
+          echo "::group::Local git http config after default checkout"
+          git config --local --list | grep -iE 'http|extraheader' || echo "(none)"
+          echo "::endgroup::"
+
+          HEADER=$(git config --local http.https://github.com/.extraheader || true)
+          BASIC=$(printf '%s' "$HEADER" | sed -n 's/^AUTHORIZATION: basic //ip')
+          if [ -z "$BASIC" ]; then
+            echo "No persisted auth header found — nothing to decode."
+            exit 0
+          fi
+
+          DECODED=$(printf '%s' "$BASIC" | base64 -d 2>/dev/null || true)
+          PERSISTED=$(printf '%s' "$DECODED" | sed 's/^x-access-token://')
+
+          echo "::group::Identity of the persisted token (this is what 'git push' would use)"
+          curl -sS \
+            -H "Authorization: Bearer $PERSISTED" \
+            -H "Accept: application/vnd.github+json" \
+            https://api.github.com/app \
+            | jq '{slug, id, name}' || true
+          echo "::endgroup::"
+
+      - name: Re-checkout WITH app token (proposed fix)
+        uses: actions/checkout@v4
+        with:
+          token: ${{ steps.app_token.outputs.token }}
+          clean: true
+
+      - name: Decode credentials persisted by app-token checkout
+        run: |
+          HEADER=$(git config --local http.https://github.com/.extraheader || true)
+          BASIC=$(printf '%s' "$HEADER" | sed -n 's/^AUTHORIZATION: basic //ip')
+          DECODED=$(printf '%s' "$BASIC" | base64 -d 2>/dev/null || true)
+          PERSISTED=$(printf '%s' "$DECODED" | sed 's/^x-access-token://')
+
+          echo "::group::Identity of the persisted token after passing token: to checkout"
+          curl -sS \
+            -H "Authorization: Bearer $PERSISTED" \
+            -H "Accept: application/vnd.github+json" \
+            https://api.github.com/app \
+            | jq '{slug, id, name}'
+          echo "::endgroup::"
+
+      - name: Summary
+        run: |
+          echo "Compare the two persisted-token identities above."
+          echo "  - Default checkout should resolve to the 'github-actions' app"
+          echo "    (the identity 'github-actions[bot]', which is NOT on the bypass list)."
+          echo "  - App-token checkout should resolve to the same slug printed in"
+          echo "    the first step (the App you added to the bypass list)."
+          echo
+          echo "If those two identities differ, the hypothesis is confirmed:"
+          echo "the default checkout persists creds that override the App token"
+          echo "during 'git push' in semantic-release."
