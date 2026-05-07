@@ -1,15 +1,15 @@
-name: Validate Plugin Compatibility
+name: Validate Plugin Compatibility Matrix
 
-# Slim 3-cell PR-time smoke matrix at the latest Expo SDK. Catches real-build
-# regressions (Gradle / CocoaPods / xcodebuild) that the fast Jest scenario
-# suite can't see. The full multi-SDK matrix runs on merges to main via
-# `validate-plugin-compatibility-release.yml`, and on demand via
-# `validate-plugin-compatibility-manual.yml`.
 on:
-  pull_request:
+  workflow_call:
+    inputs:
+      ref:
+        description: 'Git ref to check out and validate against. Defaults to the calling workflow''s ref.'
+        type: string
+        required: false
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ inputs.ref || github.ref }}
   cancel-in-progress: true
 
 env:
@@ -20,26 +20,38 @@ env:
   APP_NAME_PREFIX: ExpoPluginTestApp
 
 jobs:
-  smoke:
-    name: Expo latest - ${{ matrix.platform }}${{ matrix.ios-push-provider && format(' ({0})', matrix.ios-push-provider) }}
-    runs-on: ${{ matrix.runs-on }}
+  validate:
+    name: Expo ${{ matrix.expo-version }} - ${{ matrix.platform }}${{ matrix.ios-push-provider && format(' ({0})', matrix.ios-push-provider) }}
+    runs-on: macos-15
 
     strategy:
       fail-fast: false
       matrix:
         include:
-          - platform: android
-            runs-on: ubuntu-latest
-          - platform: ios
-            runs-on: macos-15
+          - expo-version: 54
+            platform: android
+          - expo-version: 54
+            platform: ios
             ios-push-provider: apn
-          - platform: ios
-            runs-on: macos-15
+          - expo-version: 54
+            platform: ios
+            ios-push-provider: fcm
+
+          # Running on latest version helps to catch issues early for new versions not listed above
+          - expo-version: latest
+            platform: android
+          - expo-version: latest
+            platform: ios
+            ios-push-provider: apn
+          - expo-version: latest
+            platform: ios
             ios-push-provider: fcm
 
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.ref }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -53,7 +65,6 @@ jobs:
           java-version: ${{ env.JAVA_VERSION }}
 
       - name: Setup iOS
-        if: matrix.platform == 'ios'
         uses: customerio/mobile-ci-tools/github-actions/ios/setup-ios/v1@MacOS-15+iOS-26
         with:
           xcode-version: ${{ env.XCODE_VERSION }}
@@ -63,13 +74,13 @@ jobs:
 
       - name: Set APP_NAME and APP_PATH
         run: |
-          echo "APP_NAME=${{ env.APP_NAME_PREFIX }}_latest" >> $GITHUB_ENV
-          echo "APP_PATH=${{ env.APP_DIR }}/${{ env.APP_NAME_PREFIX }}_latest" >> $GITHUB_ENV
+          echo "APP_NAME=${{ env.APP_NAME_PREFIX }}_${{ matrix.expo-version }}" >> $GITHUB_ENV
+          echo "APP_PATH=${{ env.APP_DIR }}/${{ env.APP_NAME_PREFIX }}_${{ matrix.expo-version }}" >> $GITHUB_ENV
 
       - name: Create Test App
         run: |
           npm run compatibility:create-test-app -- \
-            --expo-version=latest \
+            --expo-version=${{ matrix.expo-version }} \
             --app-name=${{ env.APP_NAME }} \
             --dir-name=${{ env.APP_DIR }}
 
