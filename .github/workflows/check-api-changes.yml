@@ -3,7 +3,7 @@ name: Check API Changes
 on:
   pull_request:
   push:
-    branches: [main, beta, feature/*]
+    branches: [main]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
