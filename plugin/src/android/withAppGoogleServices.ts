@@ -8,21 +8,23 @@ import {
 import type { CustomerIOPluginOptionsAndroid } from '../types/cio-types';
 import { logger } from '../utils/logger';
 
+export function modifyAppBuildGradle(contents: string): string {
+  const regex = new RegExp(CIO_APP_GOOGLE_SNIPPET);
+  if (regex.test(contents)) {
+    logger.info('app/build.gradle snippet already exists. Skipping...');
+    return contents;
+  }
+  return contents.replace(
+    CIO_APP_APPLY_REGEX,
+    `$1\n${CIO_APP_GOOGLE_SNIPPET}`
+  );
+}
+
 export const withAppGoogleServices: ConfigPlugin<
   CustomerIOPluginOptionsAndroid
 > = (configOuter) => {
   return withAppBuildGradle(configOuter, (props) => {
-    const regex = new RegExp(CIO_APP_GOOGLE_SNIPPET);
-    const match = props.modResults.contents.match(regex);
-    if (!match) {
-      props.modResults.contents = props.modResults.contents.replace(
-        CIO_APP_APPLY_REGEX,
-        `$1\n${CIO_APP_GOOGLE_SNIPPET}`
-      );
-    } else {
-      logger.info('app/build.gradle snippet already exists. Skipping...');
-    }
-
+    props.modResults.contents = modifyAppBuildGradle(props.modResults.contents);
     return props;
   });
 };

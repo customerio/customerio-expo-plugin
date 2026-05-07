@@ -7,7 +7,7 @@ import type { CustomerIOPluginOptionsAndroid } from '../types/cio-types';
 /**
  * Adds a metadata entry to the Android manifest if it doesn't already exist
  */
-const addMetadataIfNotExists = (
+export const addMetadataIfNotExists = (
   application: ManifestApplication,
   name: string,
   value: string

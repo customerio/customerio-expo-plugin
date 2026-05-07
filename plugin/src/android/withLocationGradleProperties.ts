@@ -6,6 +6,28 @@ import type { CustomerIOPluginLocationOptions } from '../types/cio-types';
 
 const CUSTOMERIO_LOCATION_ENABLED_KEY = 'customerio_location_enabled';
 
+export function modifyGradleProperties(
+  items: PropertiesItem[]
+): PropertiesItem[] {
+  const existingIndex = items.findIndex(
+    (item) => item.type === 'property' && item.key === CUSTOMERIO_LOCATION_ENABLED_KEY
+  );
+
+  const newItem: PropertiesItem = {
+    type: 'property',
+    key: CUSTOMERIO_LOCATION_ENABLED_KEY,
+    value: 'true',
+  };
+
+  if (existingIndex >= 0) {
+    items[existingIndex] = newItem;
+  } else {
+    items.push(newItem);
+  }
+
+  return items;
+}
+
 /**
  * Adds or updates customerio_location_enabled in android/gradle.properties when location.enabled is true.
  * The Customer.io React Native SDK reads this to enable the location native module.
@@ -19,23 +41,7 @@ export const withLocationGradleProperties: ConfigPlugin<{
 
   return withGradleProperties(config, (config) => {
     const items = config.modResults as PropertiesItem[];
-    const existingIndex = items.findIndex(
-      (item) => item.type === 'property' && item.key === CUSTOMERIO_LOCATION_ENABLED_KEY
-    );
-
-    const newItem: PropertiesItem = {
-      type: 'property',
-      key: CUSTOMERIO_LOCATION_ENABLED_KEY,
-      value: 'true',
-    };
-
-    if (existingIndex >= 0) {
-      items[existingIndex] = newItem;
-    } else {
-      items.push(newItem);
-    }
-
-    config.modResults = items;
+    config.modResults = modifyGradleProperties(items);
     return config;
   });
 };
