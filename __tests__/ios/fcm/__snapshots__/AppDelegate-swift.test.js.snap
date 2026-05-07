@@ -26,6 +26,17 @@ public class AppDelegate: ExpoAppDelegate {
     reactNativeFactory = factory
     bindReactNativeFactory(factory)
 
+#if os(iOS) || os(tvOS)
+    window = UIWindow(frame: UIScreen.main.bounds)
+    factory.startReactNative(
+      withModuleName: "main",
+      in: window,
+      launchOptions: launchOptions)
+#endif
+
+      cioSdkHandler.application(application, didFinishLaunchingWithOptions: launchOptions)
+
+    
     // Deep link workaround for app killed state start
     var modifiedLaunchOptions = launchOptions
     if let launchOptions = launchOptions,
@@ -41,15 +52,6 @@ public class AppDelegate: ExpoAppDelegate {
     }
     // Deep link workaround for app killed state ends
 
-#if os(iOS) || os(tvOS)
-    window = UIWindow(frame: UIScreen.main.bounds)
-    factory.startReactNative(
-      withModuleName: "main",
-      in: window,
-      launchOptions: modifiedLaunchOptions)
-#endif
-
-      cioSdkHandler.application(application, didFinishLaunchingWithOptions: launchOptions)
 
     return super.application(application, didFinishLaunchingWithOptions: modifiedLaunchOptions)
   }
