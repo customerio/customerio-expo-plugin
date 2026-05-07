@@ -3,7 +3,7 @@ name: Test
 on:
   pull_request:
   push:
-    branches: [ main, beta, feature/* ]
+    branches: [main]
 
 jobs:
   test-deploy:
