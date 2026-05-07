@@ -23,7 +23,7 @@
           "CHANGELOG.md",
           "package.json"
         ],
-        "message": "chore: prepare for ${nextRelease.version}\n\n${nextRelease.notes}"
+        "message": "chore: prepare for ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}"
       }
     ],
     ["@semantic-release/github", {
