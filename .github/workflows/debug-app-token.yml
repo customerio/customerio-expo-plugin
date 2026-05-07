@@ -40,6 +40,16 @@ jobs:
           app-id: ${{ secrets.CIO_APP_ID }}
           private-key: ${{ secrets.CIO_APP_SECRET }}
 
+      - name: App identity (must match the ruleset bypass entry)
+        env:
+          APP_SLUG: ${{ steps.app_token.outputs.app-slug }}
+          INSTALLATION_ID: ${{ steps.app_token.outputs.installation-id }}
+        run: |
+          echo "App slug       : $APP_SLUG"
+          echo "Installation ID: $INSTALLATION_ID"
+          echo "Pushes use the identity '${APP_SLUG}[bot]'."
+          echo "Verify Settings > Rules > Rulesets > main > Bypass list contains an entry for this App."
+
       - name: Hash the App installation token
         id: app_hash
         env:
