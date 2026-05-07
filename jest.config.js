@@ -24,6 +24,18 @@ module.exports = {
       displayName: 'root-tests',
       rootDir: path.resolve(__dirname),
       testMatch: ['<rootDir>/__tests__/**/*.test.(js|ts)'],
+      testPathIgnorePatterns: ['<rootDir>/__tests__/scenarios/'],
+      transform: {
+        '^.+\\.(js|ts)$': ['ts-jest', {
+          tsconfig: path.resolve(__dirname, 'tsconfig.test.json'),
+        }],
+      },
+      testEnvironment: 'node',
+    },
+    {
+      displayName: 'scenarios',
+      rootDir: path.resolve(__dirname),
+      testMatch: ['<rootDir>/__tests__/scenarios/**/*.test.(js|ts)'],
       transform: {
         '^.+\\.(js|ts)$': ['ts-jest', {
           tsconfig: path.resolve(__dirname, 'tsconfig.test.json'),
