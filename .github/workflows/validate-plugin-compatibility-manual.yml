@@ -1,0 +1,20 @@
+name: Validate Plugin Compatibility Manual
+
+# Human-driven full-matrix run against an arbitrary branch. Disconnected from
+# the release path: even if this workflow runs green on `main`, it will not
+# trigger `deploy-sdk.yml` because the deploy gate only listens to the
+# `Validate Plugin Compatibility Release` workflow.
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch (or any git ref) to run the full matrix against'
+        required: false
+        default: 'main'
+        type: string
+
+jobs:
+  run:
+    uses: ./.github/workflows/validate-plugin-compatibility-matrix.yml
+    with:
+      ref: ${{ inputs.branch }}

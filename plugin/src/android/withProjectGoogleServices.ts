@@ -7,19 +7,24 @@ import {
 } from './../helpers/constants/android';
 import type { CustomerIOPluginOptionsAndroid } from './../types/cio-types';
 
+export function modifyProjectBuildGradleForGoogleServices(contents: string): string {
+  const regex = new RegExp(CIO_PROJECT_GOOGLE_SNIPPET);
+  if (regex.test(contents)) {
+    return contents;
+  }
+  return contents.replace(
+    CIO_PROJECT_BUILDSCRIPTS_REGEX,
+    `$1\n${CIO_PROJECT_GOOGLE_SNIPPET}`
+  );
+}
+
 export const withProjectGoogleServices: ConfigPlugin<
   CustomerIOPluginOptionsAndroid
 > = (configOuter) => {
   return withProjectBuildGradle(configOuter, (props) => {
-    const regex = new RegExp(CIO_PROJECT_GOOGLE_SNIPPET);
-    const match = props.modResults.contents.match(regex);
-    if (!match) {
-      props.modResults.contents = props.modResults.contents.replace(
-        CIO_PROJECT_BUILDSCRIPTS_REGEX,
-        `$1\n${CIO_PROJECT_GOOGLE_SNIPPET}`
-      );
-    }
-
+    props.modResults.contents = modifyProjectBuildGradleForGoogleServices(
+      props.modResults.contents
+    );
     return props;
   });
 };

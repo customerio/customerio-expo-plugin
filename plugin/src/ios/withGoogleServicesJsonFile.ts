@@ -6,6 +6,65 @@ import { logger } from '../utils/logger';
 import { FileManagement } from './../helpers/utils/fileManagement';
 import { isFcmPushProvider } from './utils';
 
+export type CopyGoogleServicePlistOptions = {
+  iosPath: string;
+  appName: string | undefined;
+  googleServicesFile: string | undefined;
+  expoIosGoogleServicesFileSet: boolean;
+  xcodeProject: XcodeProject;
+};
+
+/**
+ * Copies the FCM GoogleService-Info.plist into the iOS project (when needed) and registers it
+ * in the Xcode project's Resources group. Idempotent — no-ops if a plist is already present
+ * at either of the two well-known locations Expo / RN Firebase use.
+ */
+export function copyGoogleServicePlistFile({
+  iosPath,
+  appName,
+  googleServicesFile,
+  expoIosGoogleServicesFileSet,
+  xcodeProject,
+}: CopyGoogleServicePlistOptions): void {
+  const destination = `${iosPath}/GoogleService-Info.plist`;
+
+  if (FileManagement.exists(destination)) {
+    logger.info(`File already exists: ${destination}. Skipping...`);
+    return;
+  }
+
+  if (appName && FileManagement.exists(`${iosPath}/${appName}/GoogleService-Info.plist`)) {
+    // This is where RN Firebase potentially copies GoogleService-Info.plist
+    // Do not copy if it's already done by Firebase to avoid conflict in Resources
+    logger.info(
+      `File already exists: ${iosPath}/${appName}/GoogleService-Info.plist. Skipping...`
+    );
+    return;
+  }
+
+  if (googleServicesFile && FileManagement.exists(googleServicesFile)) {
+    if (expoIosGoogleServicesFileSet) {
+      logger.warn(
+        'Specifying both Expo ios.googleServicesFile and Customer.io ios.pushNotification.googleServicesFile can cause a conflict' +
+        ' duplicating GoogleService-Info.plist in the iOS project resources. Please remove Customer.io ios.pushNotification.googleServicesFile'
+      );
+    }
+
+    try {
+      FileManagement.copyFile(googleServicesFile, destination);
+      addFileToXcodeProject(xcodeProject, 'GoogleService-Info.plist');
+    } catch {
+      logger.error(
+        `There was an error copying your GoogleService-Info.plist file. You can copy it manually into ${destination}`
+      );
+    }
+  } else {
+    logger.error(
+      `The Google Services file provided in ${googleServicesFile} doesn't seem to exist. You can copy it manually into ${destination}`
+    );
+  }
+}
+
 export const withGoogleServicesJsonFile: ConfigPlugin<
   CustomerIOPluginOptionsIOS
 > = (config, cioProps) => {
@@ -21,54 +80,13 @@ export const withGoogleServicesJsonFile: ConfigPlugin<
       ' GoogleService-Info.plist as part of Firebase integration'
     );
 
-    // googleServicesFile
-    const iosPath = props.modRequest.platformProjectRoot;
-    const googleServicesFile = cioProps.pushNotification?.googleServicesFile;
-    const appName = props.modRequest.projectName;
-
-    if (FileManagement.exists(`${iosPath}/GoogleService-Info.plist`)) {
-      logger.info(
-        `File already exists: ${iosPath}/GoogleService-Info.plist. Skipping...`
-      );
-      return props;
-    }
-
-    if (
-      FileManagement.exists(`${iosPath}/${appName}/GoogleService-Info.plist`)
-    ) {
-      // This is where RN Firebase potentially copies GoogleService-Info.plist
-      // Do not copy if it's already done by Firebase to avoid conflict in Resources
-      logger.info(
-        `File already exists: ${iosPath}/${appName}/GoogleService-Info.plist. Skipping...`
-      );
-      return props;
-    }
-
-    if (googleServicesFile && FileManagement.exists(googleServicesFile)) {
-      if (config.ios?.googleServicesFile) {
-        logger.warn(
-          'Specifying both Expo ios.googleServicesFile and Customer.io ios.pushNotification.googleServicesFile can cause a conflict' +
-          ' duplicating GoogleService-Info.plist in the iOS project resources. Please remove Customer.io ios.pushNotification.googleServicesFile'
-        );
-      }
-
-      try {
-        FileManagement.copyFile(
-          googleServicesFile,
-          `${iosPath}/GoogleService-Info.plist`
-        );
-
-        addFileToXcodeProject(props.modResults, 'GoogleService-Info.plist');
-      } catch {
-        logger.error(
-          `There was an error copying your GoogleService-Info.plist file. You can copy it manually into ${iosPath}/GoogleService-Info.plist`
-        );
-      }
-    } else {
-      logger.error(
-        `The Google Services file provided in ${googleServicesFile} doesn't seem to exist. You can copy it manually into ${iosPath}/GoogleService-Info.plist`
-      );
-    }
+    copyGoogleServicePlistFile({
+      iosPath: props.modRequest.platformProjectRoot,
+      appName: props.modRequest.projectName,
+      googleServicesFile: cioProps.pushNotification?.googleServicesFile,
+      expoIosGoogleServicesFileSet: Boolean(config.ios?.googleServicesFile),
+      xcodeProject: props.modResults,
+    });
 
     return props;
   });
