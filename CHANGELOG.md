@@ -1,3 +1,9 @@
+## [3.5.0](https://github.com/customerio/customerio-expo-plugin/compare/3.4.0...3.5.0) (2026-05-08)
+
+### Features
+
+* **tests:** fixture-based scenario suite + CI cleanup ([#358](https://github.com/customerio/customerio-expo-plugin/issues/358)) ([2e869ff](https://github.com/customerio/customerio-expo-plugin/commit/2e869ff04b59190e68c416a1401936ad656cad80))
+
 ## [3.4.0](https://github.com/customerio/customerio-expo-plugin/compare/3.3.0...3.4.0) (2026-05-07)
 
 ### Features
