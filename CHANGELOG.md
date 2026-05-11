@@ -1,3 +1,9 @@
+## [3.5.1](https://github.com/customerio/customerio-expo-plugin/compare/3.5.0...3.5.1) (2026-05-11)
+
+### Bug Fixes
+
+* **ios:** correct PBXContainerItemProxy bucket aliasing (MBL-1710) ([#359](https://github.com/customerio/customerio-expo-plugin/issues/359)) ([6ecd751](https://github.com/customerio/customerio-expo-plugin/commit/6ecd75132e9ade892bbde185342d8ed690d969cf))
+
 ## [3.5.0](https://github.com/customerio/customerio-expo-plugin/compare/3.4.0...3.5.0) (2026-05-08)
 
 ### Features
