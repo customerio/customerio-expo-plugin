@@ -149,7 +149,36 @@ describe('ios scenarios — addNotificationServiceExtensionToXcodeProject (vanil
       );
     }
   });
+
+  // Regression for #350: a one-character typo aliased PBXContainerItemProxy
+  // to the same object reference as PBXTargetDependency, so addTarget's
+  // dependency and proxy records both landed in a shared bucket. The legacy
+  // serializer tolerated the orphan; Expo SDK 55+ strict @bacons/xcode
+  // serializer crashes. The invariant: each bucket holds records of its own
+  // isa only. If the buckets were aliased again, both assertions below fail.
+  it('populates PBXTargetDependency and PBXContainerItemProxy with well-typed records', () => {
+    const { project } = loadFixture('vanilla.pbxproj');
+    addNotificationServiceExtensionToXcodeProject(project, baseOptions);
+
+    const objects = project.hash.project.objects;
+    assertBucketIsHomogeneous(objects.PBXTargetDependency, 'PBXTargetDependency');
+    assertBucketIsHomogeneous(objects.PBXContainerItemProxy, 'PBXContainerItemProxy');
+  });
 });
+
+const assertBucketIsHomogeneous = (
+  bucket: unknown,
+  expectedIsa: string,
+): void => {
+  expect(bucket).toBeDefined();
+  const entries = Object.entries(bucket as Record<string, unknown>).filter(
+    ([key]) => !key.endsWith('_comment'),
+  );
+  expect(entries.length).toBeGreaterThan(0);
+  for (const [, value] of entries) {
+    expect(value).toMatchObject({ isa: expectedIsa });
+  }
+};
 
 // Behavior finding (do NOT change in this refactor): the helper's early-exit
 // guard `if (xcodeProject.pbxTargetByName(CIO_NOTIFICATION_TARGET_NAME))` was
