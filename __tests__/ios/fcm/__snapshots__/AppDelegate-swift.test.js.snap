@@ -1,12 +1,12 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
 exports[`Expo 53+ FCM AppDelegate tests Plugin injects CIO handler into AppDelegate.swift for FCM 1`] = `
-"import Expo
+"internal import Expo
 import React
 import ReactAppDependencyProvider
 
-@UIApplicationMain
-public class AppDelegate: ExpoAppDelegate {
+@main
+class AppDelegate: ExpoAppDelegate {
   let cioSdkHandler = CioSdkAppDelegateHandler()
 
   var window: UIWindow?
@@ -24,7 +24,6 @@ public class AppDelegate: ExpoAppDelegate {
 
     reactNativeDelegate = delegate
     reactNativeFactory = factory
-    bindReactNativeFactory(factory)
 
     // Deep link workaround for app killed state start
     var modifiedLaunchOptions = launchOptions
