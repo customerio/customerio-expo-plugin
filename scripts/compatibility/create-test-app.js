@@ -1,8 +1,21 @@
 const fs = require("fs");
 const path = require("path");
+const { execSync } = require("child_process");
 const { getArgValue, isFlagEnabled, logMessage, runCommand, runScript } = require("../utils/cli");
 
-const EXPO_VERSION = getArgValue("--expo-version", { required: true });
+// `expo-template-default`'s npm `latest` dist-tag lags Expo SDK releases by
+// weeks (e.g. SDK 55 has been out for a while but `default` still resolves
+// to the SDK 54 template), so `--template default` silently downgrades the
+// generated app a major version. Resolve `--expo-version=latest` to the
+// current Expo SDK major from `npm view expo version` and always pass the
+// pinned `default@sdk-<major>` template to create-expo-app instead.
+function resolveExpoVersion(input) {
+  if (input !== "latest") return input;
+  const full = execSync("npm view expo version", { encoding: "utf8" }).trim();
+  return full.split(".")[0];
+}
+
+const EXPO_VERSION = resolveExpoVersion(getArgValue("--expo-version", { required: true }));
 const EXPO_TEMPLATE = getArgValue("--expo-template", {
   // Determine default template based on Expo version
   // Default template is only available for Expo SDK 51 and above
@@ -44,8 +57,7 @@ function execute() {
 
   // Step 3: Create a new Expo app
   logMessage(`\n🔧 Creating new Expo app: ${APP_NAME} (Expo ${EXPO_VERSION})`);
-  const RESOLVED_EXPO_TEMPLATE =
-    EXPO_VERSION === "latest" ? EXPO_TEMPLATE : `${EXPO_TEMPLATE}@sdk-${EXPO_VERSION}`;
+  const RESOLVED_EXPO_TEMPLATE = `${EXPO_TEMPLATE}@sdk-${EXPO_VERSION}`;
   runCommand(
     `cd ${APP_DIRECTORY_PATH} && npx create-expo-app '${APP_NAME}' --template ${RESOLVED_EXPO_TEMPLATE}`,
   );

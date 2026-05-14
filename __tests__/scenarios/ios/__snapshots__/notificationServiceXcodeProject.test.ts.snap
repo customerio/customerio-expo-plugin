@@ -1,0 +1,21 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`ios scenarios — addNotificationServiceExtensionToXcodeProject (vanilla pbxproj) emits the expected PBXTargetDependency and PBXContainerItemProxy sections 1`] = `
+"/* Begin PBXTargetDependency section */
+		<UUID-1> /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = <UUID-2> /* "NotificationService" */;
+			targetProxy = <UUID-3> /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin PBXContainerItemProxy section */
+		<UUID-3> /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = <UUID-4> /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = <UUID-2>;
+			remoteInfo = "NotificationService";
+		};
+/* End PBXContainerItemProxy section */"
+`;
