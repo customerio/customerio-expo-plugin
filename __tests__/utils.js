@@ -43,20 +43,27 @@ function getExpoVersion() {
 }
 
 /**
+ * Returns true when EXPO_VERSION is `latest` or its semver is >= targetVersion.
+ * `latest` is treated as the newest supported SDK so version-gated tests still
+ * run on the matrix's `latest` row, where the resolved SDK can't be known
+ * statically without resolving the npm dist-tag.
+ */
+function isExpoVersionAtLeast(targetVersion) {
+  const sdkVersion = getExpoVersion();
+  if (sdkVersion === 'latest') return true;
+
+  const validVersion = semver.valid(sdkVersion) || semver.coerce(sdkVersion);
+  if (!validVersion) return false;
+
+  return semver.gte(validVersion, targetVersion);
+}
+
+/**
  * Check if the Expo version is 53 or higher
  * @returns {boolean} True if Expo version is 53 or higher
  */
 function isExpoVersion53OrHigher() {
-  const sdkVersion = getExpoVersion();
-
-  // If sdkVersion is not a valid semver, coerce it to a valid one if possible
-  const validVersion = semver.valid(sdkVersion) || semver.coerce(sdkVersion);
-
-  // If we couldn't get a valid version, return false
-  if (!validVersion) return false;
-
-  // Check if the version is greater than or equal to 53.0.0
-  return semver.gte(validVersion, '53.0.0');
+  return isExpoVersionAtLeast('53.0.0');
 }
 
 /**
@@ -77,6 +84,7 @@ module.exports = {
   getTestAppAndroidJavaSourcePath,
   getExpoVersion,
   isExpoVersion53OrHigher,
+  isExpoVersionAtLeast,
   isExpoVersionLatest,
   getFixturePath,
 };

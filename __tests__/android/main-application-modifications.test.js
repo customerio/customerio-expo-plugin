@@ -1,5 +1,4 @@
-const { testAppPath, getTestAppAndroidJavaSourcePath, getExpoVersion } = require('../utils');
-const semver = require('semver');
+const { testAppPath, getTestAppAndroidJavaSourcePath, isExpoVersionAtLeast } = require('../utils');
 const fs = require('fs-extra');
 const path = require('path');
 
@@ -12,7 +11,7 @@ describe('Expo 54+ MainApplication tests', () => {
     getTestAppAndroidJavaSourcePath(),
     'MainApplication.kt'
   );
-  if (semver.gte(semver.coerce(getExpoVersion()), '54.0.0')) {
+  if (isExpoVersionAtLeast('54.0.0')) {
     test('Plugin injects CIO initializer into MainApplication.kt', async () => {
       const content = await fs.readFile(mainApplicationPath, 'utf8');
       expect(content).toMatchSnapshot();
