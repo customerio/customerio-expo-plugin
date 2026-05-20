@@ -1,7 +1,6 @@
 const {
   testAppPath,
   getTestAppAndroidJavaSourcePath,
-  getExpoVersion,
   isExpoVersionAtLeast,
   isExpoVersionLatest,
 } = require('../utils');
@@ -34,7 +33,9 @@ describe('Expo 54 MainApplication tests', () => {
       expect(content).toMatchSnapshot();
     });
   } else {
-    test.skip(`Plugin injects CIO initializer into MainApplication.kt (Expo ${getExpoVersion()})`, () => {
+    // Skip name must match the active test name so jest doesn't flag the
+    // SDK-54 snapshot as obsolete on rows where the test is skipped.
+    test.skip('Plugin injects CIO initializer into MainApplication.kt', () => {
       // Snapshot pinned to Expo SDK 54 template — see comment above.
     });
   }
