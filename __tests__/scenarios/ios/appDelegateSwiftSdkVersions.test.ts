@@ -1,0 +1,247 @@
+import * as fs from 'fs';
+import { modifyAppDelegateForPushHandler } from '../../../plugin/src/ios/withCIOIosSwift';
+import type { CustomerIOPluginOptionsIOS } from '../../../plugin/src/types/cio-types';
+import { getFixturePath } from '../../utils';
+
+// Mirrors the default config that `scripts/compatibility/configure-plugin.js`
+// writes when `--add-default-config` is passed: APN provider with deep-link
+// killed-state handling enabled.
+const defaultPushOptions = {
+  pushNotification: {
+    provider: 'apn',
+    handleDeeplinkInKilledState: true,
+  },
+} as CustomerIOPluginOptionsIOS;
+
+describe('AppDelegate.swift — Expo SDK 54 vanilla baseline', () => {
+  const baseline = fs.readFileSync(
+    getFixturePath('ios', 'AppDelegate.sdk54.swift'),
+    'utf8'
+  );
+
+  it('injects CIO handler + deep-link killed-state block (default config)', () => {
+    expect(modifyAppDelegateForPushHandler(baseline, defaultPushOptions))
+      .toMatchInlineSnapshot(`
+      "import Expo
+      import React
+      import ReactAppDependencyProvider
+
+      @UIApplicationMain
+      public class AppDelegate: ExpoAppDelegate {
+        let cioSdkHandler = CioSdkAppDelegateHandler()
+
+        var window: UIWindow?
+
+        var reactNativeDelegate: ExpoReactNativeFactoryDelegate?
+        var reactNativeFactory: RCTReactNativeFactory?
+
+        public override func application(
+          _ application: UIApplication,
+          didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
+        ) -> Bool {
+          let delegate = ReactNativeDelegate()
+          let factory = ExpoReactNativeFactory(delegate: delegate)
+          delegate.dependencyProvider = RCTAppDependencyProvider()
+
+          reactNativeDelegate = delegate
+          reactNativeFactory = factory
+          bindReactNativeFactory(factory)
+
+          // Deep link workaround for app killed state start
+          var modifiedLaunchOptions = launchOptions
+          if let launchOptions = launchOptions,
+             let pushContent = launchOptions[UIApplication.LaunchOptionsKey.remoteNotification] as? [AnyHashable: Any],
+             let cio = pushContent["CIO"] as? [String: Any],
+             let push = cio["push"] as? [String: Any],
+             let link = push["link"] as? String,
+             !launchOptions.keys.contains(UIApplication.LaunchOptionsKey.url) {
+              
+              var mutableLaunchOptions = launchOptions
+              mutableLaunchOptions[UIApplication.LaunchOptionsKey.url] = URL(string: link)
+              modifiedLaunchOptions = mutableLaunchOptions
+          }
+          // Deep link workaround for app killed state ends
+
+      #if os(iOS) || os(tvOS)
+          window = UIWindow(frame: UIScreen.main.bounds)
+          factory.startReactNative(
+            withModuleName: "main",
+            in: window,
+            launchOptions: modifiedLaunchOptions)
+      #endif
+
+            cioSdkHandler.application(application, didFinishLaunchingWithOptions: launchOptions)
+
+          return super.application(application, didFinishLaunchingWithOptions: modifiedLaunchOptions)
+        }
+
+        // Linking API
+        public override func application(
+          _ app: UIApplication,
+          open url: URL,
+          options: [UIApplication.OpenURLOptionsKey: Any] = [:]
+        ) -> Bool {
+          return super.application(app, open: url, options: options) || RCTLinkingManager.application(app, open: url, options: options)
+        }
+
+        // Universal Links
+        public override func application(
+          _ application: UIApplication,
+          continue userActivity: NSUserActivity,
+          restorationHandler: @escaping ([UIUserActivityRestoring]?) -> Void
+        ) -> Bool {
+          let result = RCTLinkingManager.application(application, continue: userActivity, restorationHandler: restorationHandler)
+          return super.application(application, continue: userActivity, restorationHandler: restorationHandler) || result
+        }
+
+        // Handle device token registration
+        public override func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
+          // Call CustomerIO SDK handler
+          cioSdkHandler.application(application, didRegisterForRemoteNotificationsWithDeviceToken: deviceToken)
+          super.application(application, didRegisterForRemoteNotificationsWithDeviceToken: deviceToken)
+        }
+
+        // Handle remote notification registration errors
+        public override func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
+          // Call CustomerIO SDK handler
+          cioSdkHandler.application(application, didFailToRegisterForRemoteNotificationsWithError: error)
+          super.application(application, didFailToRegisterForRemoteNotificationsWithError: error)
+        }
+      }
+
+      class ReactNativeDelegate: ExpoReactNativeFactoryDelegate {
+        // Extension point for config-plugins
+
+        override func sourceURL(for bridge: RCTBridge) -> URL? {
+          // needed to return the correct URL for expo-dev-client.
+          bridge.bundleURL ?? bundleURL()
+        }
+
+        override func bundleURL() -> URL? {
+      #if DEBUG
+          return RCTBundleURLProvider.sharedSettings().jsBundleURL(forBundleRoot: ".expo/.virtual-metro-entry")
+      #else
+          return Bundle.main.url(forResource: "main", withExtension: "jsbundle")
+      #endif
+        }
+      }
+      "
+    `);
+  });
+});
+
+describe('AppDelegate.swift — Expo SDK 55 vanilla baseline', () => {
+  const baseline = fs.readFileSync(
+    getFixturePath('ios', 'AppDelegate.sdk55.swift'),
+    'utf8'
+  );
+
+  it('injects CIO handler + deep-link killed-state block (default config)', () => {
+    expect(modifyAppDelegateForPushHandler(baseline, defaultPushOptions))
+      .toMatchInlineSnapshot(`
+      "internal import Expo
+      import React
+      import ReactAppDependencyProvider
+
+      @main
+      class AppDelegate: ExpoAppDelegate {
+        let cioSdkHandler = CioSdkAppDelegateHandler()
+
+        var window: UIWindow?
+
+        var reactNativeDelegate: ExpoReactNativeFactoryDelegate?
+        var reactNativeFactory: RCTReactNativeFactory?
+
+        public override func application(
+          _ application: UIApplication,
+          didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
+        ) -> Bool {
+          let delegate = ReactNativeDelegate()
+          let factory = ExpoReactNativeFactory(delegate: delegate)
+          delegate.dependencyProvider = RCTAppDependencyProvider()
+
+          reactNativeDelegate = delegate
+          reactNativeFactory = factory
+
+          // Deep link workaround for app killed state start
+          var modifiedLaunchOptions = launchOptions
+          if let launchOptions = launchOptions,
+             let pushContent = launchOptions[UIApplication.LaunchOptionsKey.remoteNotification] as? [AnyHashable: Any],
+             let cio = pushContent["CIO"] as? [String: Any],
+             let push = cio["push"] as? [String: Any],
+             let link = push["link"] as? String,
+             !launchOptions.keys.contains(UIApplication.LaunchOptionsKey.url) {
+              
+              var mutableLaunchOptions = launchOptions
+              mutableLaunchOptions[UIApplication.LaunchOptionsKey.url] = URL(string: link)
+              modifiedLaunchOptions = mutableLaunchOptions
+          }
+          // Deep link workaround for app killed state ends
+
+      #if os(iOS) || os(tvOS)
+          window = UIWindow(frame: UIScreen.main.bounds)
+          factory.startReactNative(
+            withModuleName: "main",
+            in: window,
+            launchOptions: modifiedLaunchOptions)
+      #endif
+
+            cioSdkHandler.application(application, didFinishLaunchingWithOptions: launchOptions)
+
+          return super.application(application, didFinishLaunchingWithOptions: modifiedLaunchOptions)
+        }
+
+        // Linking API
+        public override func application(
+          _ app: UIApplication,
+          open url: URL,
+          options: [UIApplication.OpenURLOptionsKey: Any] = [:]
+        ) -> Bool {
+          return super.application(app, open: url, options: options) || RCTLinkingManager.application(app, open: url, options: options)
+        }
+
+        // Universal Links
+        public override func application(
+          _ application: UIApplication,
+          continue userActivity: NSUserActivity,
+          restorationHandler: @escaping ([UIUserActivityRestoring]?) -> Void
+        ) -> Bool {
+          let result = RCTLinkingManager.application(application, continue: userActivity, restorationHandler: restorationHandler)
+          return super.application(application, continue: userActivity, restorationHandler: restorationHandler) || result
+        }
+
+        // Handle device token registration
+        public override func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
+          // Call CustomerIO SDK handler
+          cioSdkHandler.application(application, didRegisterForRemoteNotificationsWithDeviceToken: deviceToken)
+          super.application(application, didRegisterForRemoteNotificationsWithDeviceToken: deviceToken)
+        }
+
+        // Handle remote notification registration errors
+        public override func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
+          // Call CustomerIO SDK handler
+          cioSdkHandler.application(application, didFailToRegisterForRemoteNotificationsWithError: error)
+          super.application(application, didFailToRegisterForRemoteNotificationsWithError: error)
+        }
+      }
+
+      class ReactNativeDelegate: ExpoReactNativeFactoryDelegate {
+        // Extension point for config-plugins
+
+        override func sourceURL(for bridge: RCTBridge) -> URL? {
+          // needed to return the correct URL for expo-dev-client.
+          bridge.bundleURL ?? bundleURL()
+        }
+
+        override func bundleURL() -> URL? {
+      #if DEBUG
+          return RCTBundleURLProvider.sharedSettings().jsBundleURL(forBundleRoot: ".expo/.virtual-metro-entry")
+      #else
+          return Bundle.main.url(forResource: "main", withExtension: "jsbundle")
+      #endif
+        }
+      }
+      "
+    `);
+  });
+});

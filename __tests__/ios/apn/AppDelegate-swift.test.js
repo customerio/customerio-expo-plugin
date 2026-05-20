@@ -1,12 +1,15 @@
-const { testAppPath, testAppName, isExpoVersion53OrHigher } = require('../../utils');
+const { testAppPath, testAppName, isExpoVersionLatest } = require('../../utils');
 const fs = require('fs-extra');
 const path = require('path');
 
 const testProjectPath = testAppPath();
 const iosPath = path.join(testProjectPath, 'ios');
 
-// Tests for Expo 53+ (Swift)
-(isExpoVersion53OrHigher() ? describe : describe.skip)('Expo 53+ AppDelegate tests', () => {
+// Full-file prebuild snapshot — only runs on the `latest` row of the
+// compatibility matrix. Pinned SDK rows (currently 54) get scenario tests
+// in __tests__/scenarios/ios/appDelegateSwiftSdkVersions.test.ts which use
+// vanilla CLI-generated fixtures instead.
+(isExpoVersionLatest() ? describe : describe.skip)('Expo latest AppDelegate tests', () => {
   const appDelegateSwiftPath = path.join(
     iosPath,
     `${testAppName()}/AppDelegate.swift`

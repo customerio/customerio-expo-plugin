@@ -59,6 +59,16 @@ function isExpoVersion53OrHigher() {
   return semver.gte(validVersion, '53.0.0');
 }
 
+/**
+ * True when the compatibility matrix invoked the tests with `--expo-version=latest`.
+ * Used to gate the prebuild-output snapshot test so the snapshot only needs to
+ * track upstream template churn for one row of the matrix; pinned SDK rows get
+ * their own scenario tests with per-version fixtures.
+ */
+function isExpoVersionLatest() {
+  return process.env.EXPO_VERSION === 'latest';
+}
+
 module.exports = {
   testAppPath,
   testAppName,
@@ -67,5 +77,6 @@ module.exports = {
   getTestAppAndroidJavaSourcePath,
   getExpoVersion,
   isExpoVersion53OrHigher,
+  isExpoVersionLatest,
   getFixturePath,
 };
