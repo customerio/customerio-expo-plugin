@@ -1,6 +1,6 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`Expo 53+ FCM AppDelegate tests Plugin injects CIO handler into AppDelegate.swift for FCM 1`] = `
+exports[`Expo latest FCM AppDelegate tests Plugin injects CIO handler into AppDelegate.swift for FCM 1`] = `
 "internal import Expo
 import React
 import ReactAppDependencyProvider
