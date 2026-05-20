@@ -91,7 +91,11 @@ export async function injectCIOPodfileCode(
   const podfile = await FileManagement.read(filename);
   const next = injectHostAppPodfileCode(podfile, iosPath, isFcmPushProvider, options);
   if (next !== podfile) {
-    FileManagement.write(filename, next);
+    // Await: the next iOS mod (withCioNotificationsXcodeProject) reads this
+    // same Podfile. Returning before the write flushes lets the next read
+    // race against the in-flight truncate, which (via FileManagement.read's
+    // empty-data fallback) rejects with null and aborts the NSE pipeline.
+    await FileManagement.write(filename, next);
   } else {
     logger.info('CustomerIO Podfile snippets already exists. Skipping...');
   }
@@ -144,6 +148,6 @@ export async function injectCIONotificationPodfileCode(
   if (next !== podfile) {
     // FileManagement.append matches what the previous direct-append did.
     // Slice off the leading content (already on disk) and append only the new tail.
-    FileManagement.append(filename, next.slice(podfile.length));
+    await FileManagement.append(filename, next.slice(podfile.length));
   }
 }

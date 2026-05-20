@@ -3,6 +3,7 @@ import * as semver from 'semver';
 
 const path = require('path');
 import { resolveRNSDK, tryReadRNVersion } from '../../utils/resolveRNSDK';
+import { logger } from '../../utils/logger';
 
 // Threshold at which React Native pod autolinking moves from
 // @react-native-community/cli (lexical, symlink-preserving) to
@@ -10,15 +11,6 @@ import { resolveRNSDK, tryReadRNVersion } from '../../utils/resolveRNSDK';
 // :path strings on pnpm/yarn-symlink layouts, so to keep CocoaPods happy
 // we must match whichever flavor will resolve the same package later.
 const RN_REALPATH_AUTOLINKING_MIN_VERSION = '0.80.0';
-
-const PLUGIN_LOG_PREFIX = '[CustomerIO Plugin]';
-
-// Always-on so the trail shows up in customer-shared `expo prebuild`
-// output without needing a separate verbose-mode opt-in.
-function pluginLog(message: string): void {
-  // eslint-disable-next-line no-console
-  console.log(`${PLUGIN_LOG_PREFIX} ${message}`);
-}
 
 /**
  * Returns the relative path from the iOS project dir to the installed
@@ -34,24 +26,26 @@ function pluginLog(message: string): void {
  *     via Node, emitting the underlying `.pnpm/...` (or yarn-classic)
  *     path. We match by realpath'ing the resolved directory.
  *
- * Decision points are logged so a customer's prebuild output is enough
- * to triage path-resolution issues without a follow-up "set
- * CUSTOMERIO_DEBUG_MODE and rerun" round-trip.
+ * Decision points are logged through the shared logger, gated by
+ * CUSTOMERIO_DEBUG_MODE. Defaulting to silent keeps the prebuild output
+ * clean for hosts that parse it (Expo's `--json` config, EAS build
+ * tooling), while still giving support a "rerun with this flag" path
+ * for triaging path-resolution issues.
  */
 export function getRelativePathToRNSDK(iosPath: string) {
   const rootAppPath = path.dirname(iosPath);
-  pluginLog(
+  logger.info(
     `Resolving customerio-reactnative for Podfile (iosPath=${iosPath}, projectRoot=${rootAppPath})`
   );
 
   const { packageDir } = resolveRNSDK(rootAppPath);
-  pluginLog(`customerio-reactnative resolved to: ${packageDir}`);
+  logger.info(`customerio-reactnative resolved to: ${packageDir}`);
 
   const rnVersion = tryReadRNVersion(rootAppPath);
-  pluginLog(`Detected react-native version: ${rnVersion ?? 'unknown'}`);
+  logger.info(`Detected react-native version: ${rnVersion ?? 'unknown'}`);
 
   const useLexical = shouldUseLexicalPath(rnVersion);
-  pluginLog(
+  logger.info(
     useLexical
       ? `RN <${RN_REALPATH_AUTOLINKING_MIN_VERSION} — using lexical/symlink path to match @react-native-community/cli autolinking`
       : `RN >=${RN_REALPATH_AUTOLINKING_MIN_VERSION} or unknown — using realpath to match expo-modules-autolinking`
@@ -64,10 +58,10 @@ export function getRelativePathToRNSDK(iosPath: string) {
     try {
       absolutePath = fs.realpathSync(packageDir);
       if (absolutePath !== packageDir) {
-        pluginLog(`Realpath differs from resolved dir: ${absolutePath}`);
+        logger.info(`Realpath differs from resolved dir: ${absolutePath}`);
       }
     } catch (err) {
-      pluginLog(
+      logger.warn(
         `realpathSync failed (${
           err instanceof Error ? err.message : String(err)
         }); falling back to symlink path`
@@ -77,7 +71,7 @@ export function getRelativePathToRNSDK(iosPath: string) {
   }
 
   const relativePath = path.relative(iosPath, absolutePath);
-  pluginLog(`Final Podfile :path => '${relativePath}'`);
+  logger.info(`Final Podfile :path => '${relativePath}'`);
   return relativePath;
 }
 
