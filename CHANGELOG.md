@@ -1,3 +1,10 @@
+## [3.5.2](https://github.com/customerio/customerio-expo-plugin/compare/3.5.1...3.5.2) (2026-05-21)
+
+### Bug Fixes
+
+* cover AppDelegate.swift per pinned SDK with fixtures ([#363](https://github.com/customerio/customerio-expo-plugin/issues/363)) ([9d49819](https://github.com/customerio/customerio-expo-plugin/commit/9d49819abe3489f2ae0ed9f3f1f78c0043f15693))
+* **logging:** keep plugin diagnostics off stdout ([#362](https://github.com/customerio/customerio-expo-plugin/issues/362)) ([cb24e14](https://github.com/customerio/customerio-expo-plugin/commit/cb24e14613a44478c2a0eec061de0120c770b7fd))
+
 ## [3.5.1](https://github.com/customerio/customerio-expo-plugin/compare/3.5.0...3.5.1) (2026-05-11)
 
 ### Bug Fixes
