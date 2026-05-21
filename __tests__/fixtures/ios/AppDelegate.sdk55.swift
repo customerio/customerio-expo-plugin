@@ -1,14 +1,9 @@
-// Jest Snapshot v1, https://goo.gl/fbAQLP
-
-exports[`Expo latest FCM AppDelegate tests Plugin injects CIO handler into AppDelegate.swift for FCM 1`] = `
-"internal import Expo
+internal import Expo
 import React
 import ReactAppDependencyProvider
 
 @main
 class AppDelegate: ExpoAppDelegate {
-  let cioSdkHandler = CioSdkAppDelegateHandler()
-
   var window: UIWindow?
 
   var reactNativeDelegate: ExpoReactNativeFactoryDelegate?
@@ -25,32 +20,15 @@ class AppDelegate: ExpoAppDelegate {
     reactNativeDelegate = delegate
     reactNativeFactory = factory
 
-    // Deep link workaround for app killed state start
-    var modifiedLaunchOptions = launchOptions
-    if let launchOptions = launchOptions,
-       let pushContent = launchOptions[UIApplication.LaunchOptionsKey.remoteNotification] as? [AnyHashable: Any],
-       let cio = pushContent["CIO"] as? [String: Any],
-       let push = cio["push"] as? [String: Any],
-       let link = push["link"] as? String,
-       !launchOptions.keys.contains(UIApplication.LaunchOptionsKey.url) {
-        
-        var mutableLaunchOptions = launchOptions
-        mutableLaunchOptions[UIApplication.LaunchOptionsKey.url] = URL(string: link)
-        modifiedLaunchOptions = mutableLaunchOptions
-    }
-    // Deep link workaround for app killed state ends
-
 #if os(iOS) || os(tvOS)
     window = UIWindow(frame: UIScreen.main.bounds)
     factory.startReactNative(
       withModuleName: "main",
       in: window,
-      launchOptions: modifiedLaunchOptions)
+      launchOptions: launchOptions)
 #endif
 
-      cioSdkHandler.application(application, didFinishLaunchingWithOptions: launchOptions)
-
-    return super.application(application, didFinishLaunchingWithOptions: modifiedLaunchOptions)
+    return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
 
   // Linking API
@@ -71,20 +49,6 @@ class AppDelegate: ExpoAppDelegate {
     let result = RCTLinkingManager.application(application, continue: userActivity, restorationHandler: restorationHandler)
     return super.application(application, continue: userActivity, restorationHandler: restorationHandler) || result
   }
-
-  // Handle device token registration
-  public override func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
-    // Call CustomerIO SDK handler
-    cioSdkHandler.application(application, didRegisterForRemoteNotificationsWithDeviceToken: deviceToken)
-    super.application(application, didRegisterForRemoteNotificationsWithDeviceToken: deviceToken)
-  }
-
-  // Handle remote notification registration errors
-  public override func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
-    // Call CustomerIO SDK handler
-    cioSdkHandler.application(application, didFailToRegisterForRemoteNotificationsWithError: error)
-    super.application(application, didFailToRegisterForRemoteNotificationsWithError: error)
-  }
 }
 
 class ReactNativeDelegate: ExpoReactNativeFactoryDelegate {
@@ -103,5 +67,3 @@ class ReactNativeDelegate: ExpoReactNativeFactoryDelegate {
 #endif
   }
 }
-"
-`;

@@ -1,7 +1,4 @@
-// Jest Snapshot v1, https://goo.gl/fbAQLP
-
-exports[`Expo latest MainApplication tests Plugin injects CIO initializer into MainApplication.kt 1`] = `
-"package io.customer.testbed.expo
+package io.customer.expo.fixture
 
 import android.app.Application
 import android.content.res.Configuration
@@ -16,8 +13,6 @@ import com.facebook.react.defaults.DefaultNewArchitectureEntryPoint
 
 import expo.modules.ApplicationLifecycleDispatcher
 import expo.modules.ExpoReactHostFactory
-
-import io.customer.sdk.expo.CustomerIOSDKInitializer
 
 class MainApplication : Application(), ReactApplication {
 
@@ -41,9 +36,6 @@ class MainApplication : Application(), ReactApplication {
     }
     loadReactNative(this)
     ApplicationLifecycleDispatcher.onApplicationCreate(this)
-  
-    // Auto Initialize Native Customer.io SDK
-    CustomerIOSDKInitializer.initialize(this)
   }
 
   override fun onConfigurationChanged(newConfig: Configuration) {
@@ -51,5 +43,3 @@ class MainApplication : Application(), ReactApplication {
     ApplicationLifecycleDispatcher.onConfigurationChanged(this, newConfig)
   }
 }
-"
-`;
