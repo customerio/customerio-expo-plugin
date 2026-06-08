@@ -1,3 +1,9 @@
+## [3.6.0](https://github.com/customerio/customerio-expo-plugin/compare/3.5.3...3.6.0) (2026-06-08)
+
+### Features
+
+* bump customerio-reactnative to 6.5.0 ([#365](https://github.com/customerio/customerio-expo-plugin/issues/365)) ([1e61e76](https://github.com/customerio/customerio-expo-plugin/commit/1e61e766812c8a7857867a84af00404ef3484e57))
+
 ## [3.5.3](https://github.com/customerio/customerio-expo-plugin/compare/3.5.2...3.5.3) (2026-05-22)
 
 ### Bug Fixes
