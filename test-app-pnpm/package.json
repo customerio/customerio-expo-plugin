@@ -12,7 +12,7 @@
   },
   "dependencies": {
     "customerio-expo-plugin": "file:../customerio-expo-plugin-latest.tgz",
-    "customerio-reactnative": "^6.5.1",
+    "customerio-reactnative": "^6.5.2",
     "expo": "~54.0.2",
     "expo-build-properties": "^1.0.8",
     "expo-status-bar": "~3.0.8",
