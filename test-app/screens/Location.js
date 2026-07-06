@@ -1,8 +1,9 @@
 import { CustomerIO } from 'customerio-reactnative';
 import * as Location from 'expo-location';
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Alert,
+  AppState,
   Linking,
   ScrollView,
   StyleSheet,
@@ -39,6 +40,114 @@ export default function LocationScreen() {
   const [lastSetLocation, setLastSetLocation] = useState(null);
   const [sdkRequestingLabel, setSdkRequestingLabel] = useState(false);
   const [useCurrentLocationLoading, setUseCurrentLocationLoading] = useState(false);
+  // Geofence: 'notDetermined' | 'foregroundOnly' | 'backgroundGranted' | 'denied' | 'backgroundDenied'
+  const [geofenceStatus, setGeofenceStatus] = useState('notDetermined');
+  // Mirrors geofenceStatus for the AppState listener, whose closure would otherwise see a stale value.
+  const geofenceStatusRef = useRef(geofenceStatus);
+  useEffect(() => {
+    geofenceStatusRef.current = geofenceStatus;
+  }, [geofenceStatus]);
+
+  // Geofence transitions only fire in the background once "Always"/"Allow all the time" is granted.
+  // The SDK never requests location permission itself, so the app owns the permission flow and tells
+  // the SDK to refresh once permission changes (the SDK's own fetch runs once per process).
+  const refreshGeofences = useCallback(() => {
+    try {
+      CustomerIO.geofence.refreshFromCurrentLocation();
+    } catch (e) {
+      Alert.alert('Error', (e && e.message) || String(e));
+    }
+  }, []);
+
+  const readGeofenceStatus = useCallback(async () => {
+    const foreground = await Location.getForegroundPermissionsAsync();
+    if (foreground.status !== 'granted') {
+      const next = foreground.canAskAgain ? 'notDetermined' : 'denied';
+      setGeofenceStatus(next);
+      return next;
+    }
+    const background = await Location.getBackgroundPermissionsAsync();
+    let next;
+    if (background.status === 'granted') {
+      next = 'backgroundGranted';
+    } else {
+      // Distinguish "can still prompt" (foregroundOnly) from "permanently blocked" (Settings only).
+      next = background.canAskAgain ? 'foregroundOnly' : 'backgroundDenied';
+    }
+    setGeofenceStatus(next);
+    return next;
+  }, []);
+
+  // Re-check on mount and whenever the app returns to the foreground (e.g. back from Settings).
+  // Refresh only when background access was *newly* granted, not on every resume.
+  useEffect(() => {
+    readGeofenceStatus();
+    const sub = AppState.addEventListener('change', async (state) => {
+      if (state !== 'active') {
+        return;
+      }
+      const previous = geofenceStatusRef.current;
+      const next = await readGeofenceStatus();
+      if (next === 'backgroundGranted' && previous !== 'backgroundGranted') {
+        refreshGeofences();
+      }
+    });
+    return () => sub.remove();
+  }, [readGeofenceStatus, refreshGeofences]);
+
+  const handleGeofencePermissionTap = async () => {
+    try {
+      if (geofenceStatus === 'denied' || geofenceStatus === 'backgroundDenied') {
+        showLocationPermissionAlert();
+        return;
+      }
+      if (geofenceStatus === 'notDetermined') {
+        const foreground = await Location.requestForegroundPermissionsAsync();
+        if (foreground.status !== 'granted') {
+          setGeofenceStatus(foreground.canAskAgain ? 'notDetermined' : 'denied');
+          return;
+        }
+        // Re-read rather than assume foregroundOnly — background may already be granted.
+        const next = await readGeofenceStatus();
+        if (next === 'backgroundGranted') {
+          refreshGeofences();
+        }
+        return;
+      }
+      if (geofenceStatus === 'foregroundOnly') {
+        Alert.alert(
+          'Allow location "Always"',
+          'Geofence transitions only fire in the background. Grant "Always" (iOS) or ' +
+          '"Allow all the time" (Android) so the SDK can monitor regions while the app is closed.',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            {
+              text: 'Continue',
+              onPress: async () => {
+                await Location.requestBackgroundPermissionsAsync();
+                const next = await readGeofenceStatus();
+                if (next === 'backgroundGranted') {
+                  refreshGeofences();
+                } else if (next === 'backgroundDenied') {
+                  showLocationPermissionAlert();
+                }
+              },
+            },
+          ]
+        );
+      }
+    } catch (e) {
+      Alert.alert('Error', (e && e.message) || String(e));
+    }
+  };
+
+  const geofencePermissionLabel = {
+    notDetermined: 'Grant location access',
+    foregroundOnly: 'Upgrade to "Always" / "Allow all the time"',
+    backgroundGranted: 'Background location granted ✓',
+    denied: 'Open Settings',
+    backgroundDenied: 'Open Settings',
+  }[geofenceStatus];
 
   const setLocation = (lat, lng, source) => {
     try {
@@ -207,6 +316,27 @@ export default function LocationScreen() {
           </View>
           <Button title="Set Location" onPress={handleManualSet} />
           <ThemedText style={styles.hint}>Enter custom coordinates</ThemedText>
+        </ThemedView>
+
+        <View style={styles.orRow}>
+          <View style={styles.orLine} />
+          <ThemedText style={styles.orText}>GEOFENCE</ThemedText>
+          <View style={styles.orLine} />
+        </View>
+
+        <ThemedView style={styles.sectionCard}>
+          <ThemedText style={styles.sectionHeading}>OPTION 5: GEOFENCE MONITORING</ThemedText>
+          <Button
+            title={geofencePermissionLabel}
+            onPress={handleGeofencePermissionTap}
+            disabled={geofenceStatus === 'backgroundGranted'}
+          />
+          <Button title="Refresh geofences from current location" onPress={refreshGeofences} />
+          <ThemedText style={styles.hint}>
+            Geofence transitions fire in the background once "Always" location is granted. The SDK
+            never requests permission itself; the app grants it, then calls
+            CustomerIO.geofence.refreshFromCurrentLocation() to (re)evaluate nearby geofences.
+          </ThemedText>
         </ThemedView>
 
         <ThemedView style={styles.statusCard}>
