@@ -35,7 +35,7 @@ export function withCIOIos(
   if (platformConfig?.pushNotification) {
     validatePushNotificationOptions(platformConfig.pushNotification);
     if (isSwiftProject) {
-      config = withCIOIosSwift(config, sdkConfig, platformConfig, location);
+      config = withCIOIosSwift(config, sdkConfig, platformConfig, location, geofence);
     } else {
       // Auto initialization is only supported in Swift projects (Expo SDK 53+)
       // Legacy Objective-C projects only support push notifications
@@ -68,7 +68,7 @@ export function withCIOIos(
       });
     }
   } else if (sdkConfig && isSwiftProject) {
-    config = withCIOIosSwift(config, sdkConfig, platformConfig, location);
+    config = withCIOIosSwift(config, sdkConfig, platformConfig, location, geofence);
     if (optionalModulesEnabled) {
       config = withCioXcodeProject(config, {
         ...platformConfig,

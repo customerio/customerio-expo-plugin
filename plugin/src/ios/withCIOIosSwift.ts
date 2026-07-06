@@ -20,6 +20,7 @@ import { patchNativeSDKInitializer } from '../helpers/utils/patchPluginNativeCod
 import type {
   CustomerIOPluginOptionsIOS,
   CustomerIOPluginLocationOptions,
+  CustomerIOPluginGeofenceOptions,
   NativeSDKConfig,
 } from '../types/cio-types';
 import { logger } from '../utils/logger';
@@ -39,6 +40,7 @@ const copyAndConfigureAppDelegateHandler = (
   sdkConfig?: NativeSDKConfig,
   props?: CustomerIOPluginOptionsIOS,
   location?: CustomerIOPluginLocationOptions,
+  geofence?: CustomerIOPluginGeofenceOptions,
 ): ExportedConfigWithProps<XcodeProject> => {
   // Destination path in the iOS project
   const projectName = config.modRequest.projectName || '';
@@ -65,6 +67,7 @@ const copyAndConfigureAppDelegateHandler = (
       sdkConfig,
       props,
       location,
+      geofence,
     });
   } else if (sdkConfig) {
     // Copy only CustomerIOSDKInitializer.swift for auto-init without push notifications
@@ -75,6 +78,7 @@ const copyAndConfigureAppDelegateHandler = (
       projectName,
       sdkConfig,
       location,
+      geofence,
     });
   }
 
@@ -89,6 +93,7 @@ const copyAndConfigurePushAppDelegateHandler = ({
   sdkConfig,
   props,
   location,
+  geofence,
 }: {
   xcodeProject: XcodeProject;
   group: XcodeProject['pbxCreateGroup'];
@@ -97,6 +102,7 @@ const copyAndConfigurePushAppDelegateHandler = ({
   sdkConfig: NativeSDKConfig | undefined;
   props: CustomerIOPluginOptionsIOS;
   location?: CustomerIOPluginLocationOptions;
+  geofence?: CustomerIOPluginGeofenceOptions;
 }) => {
   const useFcm = isFcmPushProvider(props);
 
@@ -175,7 +181,7 @@ const copyAndConfigurePushAppDelegateHandler = ({
   // Add auto initialization if sdkConfig is provided
   if (sdkConfig) {
     // Also copy CustomerIOSDKInitializer.swift for auto-initialization
-    copyAndConfigureNativeSDKInitializer({ xcodeProject, group, iosProjectRoot, projectName, sdkConfig, location });
+    copyAndConfigureNativeSDKInitializer({ xcodeProject, group, iosProjectRoot, projectName, sdkConfig, location, geofence });
 
     // Inject auto initialization call before MessagingPush initialization
     handlerFileContent = handlerFileContent.replace(CIO_MESSAGING_PUSH_APP_DELEGATE_INIT_REGEX, CIO_NATIVE_SDK_INITIALIZE_SNIPPET + '$1');
@@ -191,6 +197,7 @@ const copyAndConfigureNativeSDKInitializer = ({
   projectName,
   sdkConfig,
   location,
+  geofence,
 }: {
   xcodeProject: XcodeProject;
   group: XcodeProject['pbxCreateGroup'];
@@ -198,10 +205,19 @@ const copyAndConfigureNativeSDKInitializer = ({
   projectName: string;
   sdkConfig: NativeSDKConfig;
   location?: CustomerIOPluginLocationOptions;
+  geofence?: CustomerIOPluginGeofenceOptions;
 }) => {
-  const locationOptions = location
-    ? { enabled: location.enabled === true, trackingMode: sdkConfig?.location?.trackingMode }
-    : undefined;
+  const geofenceEnabled = geofence?.enabled === true;
+  // Geofence implies location: register the location module whenever location or geofence is enabled.
+  const locationOptions = {
+    enabled: location?.enabled === true || geofenceEnabled,
+    trackingMode: sdkConfig?.location?.trackingMode,
+  };
+  const geofenceOptions = {
+    enabled: geofenceEnabled,
+    locationMode: sdkConfig?.geofence?.locationMode,
+    allowBackgroundDelivery: sdkConfig?.ios?.allowBackgroundDelivery,
+  };
   const filename = 'CustomerIOSDKInitializer.swift';
   const sourcePath = path.join(getIosNativeFilesPath(), filename);
   // Add the CustomerIOSDKInitializer.swift file to the same Xcode group as CioSdkAppDelegateHandler
@@ -212,7 +228,7 @@ const copyAndConfigureNativeSDKInitializer = ({
     sourceFilePath: sourcePath,
     targetFileName: filename,
     transform: (content) =>
-      patchNativeSDKInitializer(content, PLATFORM.IOS, sdkConfig, locationOptions),
+      patchNativeSDKInitializer(content, PLATFORM.IOS, sdkConfig, locationOptions, geofenceOptions),
     customerIOGroup: group,
   });
 };
@@ -222,10 +238,11 @@ export const withCIOIosSwift = (
   sdkConfig?: NativeSDKConfig,
   props?: CustomerIOPluginOptionsIOS,
   location?: CustomerIOPluginLocationOptions,
+  geofence?: CustomerIOPluginGeofenceOptions,
 ) => {
   // First, copy required swift files to iOS folder and add it to Xcode project
   configOuter = withXcodeProject(configOuter, async (config) => {
-    return copyAndConfigureAppDelegateHandler(config, sdkConfig, props, location);
+    return copyAndConfigureAppDelegateHandler(config, sdkConfig, props, location, geofence);
   });
 
   // Modify the AppDelegate based on configuration

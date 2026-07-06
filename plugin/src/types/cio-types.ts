@@ -96,6 +96,15 @@ export type CustomerIOPluginOptionsAndroid = {
 export type LocationTrackingMode = 'OFF' | 'MANUAL' | 'ON_APP_START';
 
 /**
+ * Geofence location mode for the Customer.io SDK geofence module.
+ * Geofence is off by default. Only used when geofence is enabled (plugin option geofence.enabled: true).
+ * 'AUTOMATIC' (SDK refreshes geofences on its own, default) or 'MANUAL' (host app drives refreshes via
+ * CustomerIO.geofence.refreshFromCurrentLocation()).
+ * @public
+ */
+export type GeofenceLocationMode = 'AUTOMATIC' | 'MANUAL';
+
+/**
  * SDK configuration options for auto initialization
  * @public
  */
@@ -109,12 +118,29 @@ export type NativeSDKConfig = {
   siteId?: string; // Optional, if only siteId defined, migrationSiteId = siteId
   migrationSiteId?: string; // Optional, if only migrationSiteId defined, siteId should be null
   /**
-   * Location module config. Location is off by default; only applied when plugin option location.enabled is true.
-   * trackingMode: 'MANUAL' (host app controls when location is captured, default),
+   * Location module config. Location is off by default. Applied whenever the location module is
+   * registered — when location.enabled is true, or when geofence.enabled is true (geofence implies
+   * location). trackingMode: 'MANUAL' (host app controls when location is captured, default),
    * 'ON_APP_START' (SDK captures once per launch when app becomes active), or 'OFF'.
    */
   location?: {
     trackingMode?: LocationTrackingMode;
+  };
+  /**
+   * Geofence module config. Geofence is off by default; only applied when plugin option geofence.enabled is true.
+   * Geofence implies location, so the location module is registered automatically when geofence is enabled.
+   * locationMode: 'AUTOMATIC' (default) or 'MANUAL'.
+   */
+  geofence?: {
+    locationMode?: GeofenceLocationMode;
+  };
+  /**
+   * iOS-only SDK config.
+   * allowBackgroundDelivery: enables background delivery of geofence transitions. Defaults to true when
+   * geofence is enabled, false otherwise. Set explicitly to override.
+   */
+  ios?: {
+    allowBackgroundDelivery?: boolean;
   };
 };
 

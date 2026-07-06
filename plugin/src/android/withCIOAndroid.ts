@@ -39,7 +39,7 @@ export function withCIOAndroid(
 
   // Add auto initialization if sdkConfig is provided
   if (sdkConfig) {
-    config = withMainApplicationModifications(config, { sdkConfig, location });
+    config = withMainApplicationModifications(config, { sdkConfig, location, geofence });
   }
 
   // Update project strings for user agent metadata
