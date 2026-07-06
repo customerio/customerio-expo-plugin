@@ -62,7 +62,7 @@
     "registry": "https://registry.npmjs.org/"
   },
   "peerDependencies": {
-    "customerio-reactnative": "6.7.0"
+    "customerio-reactnative": "6.5.2"
   },
   "devDependencies": {
     "dotenv": "^16.4.5",

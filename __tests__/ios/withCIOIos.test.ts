@@ -41,6 +41,10 @@ jest.mock('../../plugin/src/ios/withGeofenceAppDelegate', () => ({
   withGeofenceAppDelegate: (config: ExpoConfig) =>
     mockWithGeofenceAppDelegate(config),
 }));
+// TEMP (pre-release native SDKs): stub the branch override so it stays out of these assertions.
+jest.mock('../../plugin/src/ios/withPrereleaseNativeSdkPodfile', () => ({
+  withPrereleaseNativeSdkPodfile: (config: ExpoConfig) => config,
+}));
 jest.mock('../../plugin/src/ios/utils', () => ({
   isExpoVersion53OrHigher: jest.fn(() => true),
 }));

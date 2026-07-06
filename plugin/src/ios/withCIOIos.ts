@@ -15,6 +15,7 @@ import { withAppDelegateModifications } from './withAppDelegateModifications';
 import { withCIOIosSwift } from './withCIOIosSwift';
 import { withGeofenceAppDelegate } from './withGeofenceAppDelegate';
 import { withGoogleServicesJsonFile } from './withGoogleServicesJsonFile';
+import { withPrereleaseNativeSdkPodfile } from './withPrereleaseNativeSdkPodfile';
 import { withCioNotificationsXcodeProject } from './withNotificationsXcodeProject';
 import { withCioXcodeProject } from './withXcodeProject';
 
@@ -91,6 +92,11 @@ export function withCIOIos(
   if (geofenceEnabled && isSwiftProject) {
     config = withGeofenceAppDelegate(config);
   }
+
+  // TEMP (pre-release native SDKs): repoint the CustomerIO iOS SDK at a branch. Added last so it
+  // runs after the CustomerIO Podfile block is written. Feature-agnostic on purpose — see
+  // prereleaseNativeSdk.ts. Revert once the native SDK ships.
+  config = withPrereleaseNativeSdkPodfile(config, platformConfig);
 
   return config;
 }

@@ -9,6 +9,7 @@ import type {
 import { withAndroidManifestUpdates } from './withAndroidManifestUpdates';
 import { withAppGoogleServices } from './withAppGoogleServices';
 import { withGeofenceGradleProperties } from './withGeofenceGradleProperties';
+import { withPrereleaseNativeSdkWorkaround } from './withPrereleaseNativeSdkWorkaround';
 import { withGoogleServicesJSON } from './withGoogleServicesJSON';
 import { withLocationGradleProperties } from './withLocationGradleProperties';
 import { withMainApplicationModifications } from './withMainApplicationModifications';
@@ -58,6 +59,10 @@ export function withCIOAndroid(
   if (geofence?.enabled === true) {
     config = withGeofenceGradleProperties(config, { geofence });
   }
+
+  // TEMP (pre-release native SDKs): resolve the native SDK from branch snapshots. Feature-agnostic
+  // on purpose — see prereleaseNativeSdk.ts. Revert once the native SDK ships.
+  config = withPrereleaseNativeSdkWorkaround(config);
 
   return config;
 }
