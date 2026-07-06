@@ -92,6 +92,49 @@ describe('buildHostAppPodSnippet', () => {
     );
   });
 
+  it('uses :subspecs => with push + geofence when geofence enabled', () => {
+    const options: InjectCIOPodfileOptions = {
+      geofenceEnabled: true,
+      hasPush: true,
+    };
+    const fcmSnippet = buildHostAppPodSnippet(IOS_PATH, true, options);
+    expectsPodLine(
+      fcmSnippet,
+      `pod 'customerio-reactnative', :subspecs => ['fcm', 'geofence'], :path => '${RESOLVED_PATH}'`
+    );
+
+    const apnSnippet = buildHostAppPodSnippet(IOS_PATH, false, options);
+    expectsPodLine(
+      apnSnippet,
+      `pod 'customerio-reactnative', :subspecs => ['apn', 'geofence'], :path => '${RESOLVED_PATH}'`
+    );
+  });
+
+  it('emits only the geofence subspec line when geofenceEnabled and !hasPush', () => {
+    const options: InjectCIOPodfileOptions = {
+      geofenceEnabled: true,
+      hasPush: false,
+    };
+    const snippet = buildHostAppPodSnippet(IOS_PATH, true, options);
+    expectsPodLine(
+      snippet,
+      `pod 'customerio-reactnative', :subspecs => ['geofence'], :path => '${RESOLVED_PATH}'`
+    );
+  });
+
+  it('omits the redundant location subspec when geofence is enabled (geofence implies location)', () => {
+    const options: InjectCIOPodfileOptions = {
+      locationEnabled: true,
+      geofenceEnabled: true,
+      hasPush: true,
+    };
+    const snippet = buildHostAppPodSnippet(IOS_PATH, false, options);
+    expectsPodLine(
+      snippet,
+      `pod 'customerio-reactnative', :subspecs => ['apn', 'geofence'], :path => '${RESOLVED_PATH}'`
+    );
+  });
+
   it('does not emit any Ruby lambda or install-time resolver block', () => {
     const snippet = buildHostAppPodSnippet(IOS_PATH, false);
     // Lambda was the previous shape; we resolve at prebuild now and bake.

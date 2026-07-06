@@ -5,6 +5,11 @@
 ```ts
 
 // @public
+export type CustomerIOPluginGeofenceOptions = {
+    enabled?: boolean;
+};
+
+// @public
 export type CustomerIOPluginLocationOptions = {
     enabled?: boolean;
 };
@@ -15,6 +20,7 @@ export type CustomerIOPluginOptions = {
     android: CustomerIOPluginOptionsAndroid;
     ios: CustomerIOPluginOptionsIOS;
     location?: CustomerIOPluginLocationOptions;
+    geofence?: CustomerIOPluginGeofenceOptions;
 };
 
 // @public
