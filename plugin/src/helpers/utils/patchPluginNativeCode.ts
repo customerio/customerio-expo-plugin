@@ -3,11 +3,15 @@ import { getPluginVersion } from '../../utils/plugin';
 import { validateNativeSDKConfig } from '../../utils/validation';
 import { PLATFORM, type Platform } from '../constants/common';
 import {
+  type GeofenceInitOptions,
+  patchGeofencePlaceholders,
+} from './patchGeofenceCode';
+import {
   type LocationInitOptions,
   patchLocationPlaceholders,
 } from './patchLocationCode';
 
-export type { LocationInitOptions };
+export type { GeofenceInitOptions, LocationInitOptions };
 
 /**
  * Shared utility function to perform common SDK config replacements
@@ -17,7 +21,8 @@ export function patchNativeSDKInitializer(
   rawContent: string,
   platform: Platform,
   sdkConfig: NativeSDKConfig,
-  locationOptions?: LocationInitOptions
+  locationOptions?: LocationInitOptions,
+  geofenceOptions?: GeofenceInitOptions
 ): string {
   // Validate SDK configuration to ensure all fields are present and 
   // correct at the time of patching in prebuild
@@ -106,6 +111,7 @@ export function patchNativeSDKInitializer(
   );
 
   content = patchLocationPlaceholders(content, platform, locationOptions);
+  content = patchGeofencePlaceholders(content, platform, geofenceOptions);
 
   return content;
 }

@@ -254,6 +254,104 @@ describe('Native SDK Configuration Patching', () => {
       });
     });
 
+    describe('iOS geofence module', () => {
+      test('when geofence not enabled, omits geofence import and module', () => {
+        const result = patchNativeSDKInitializer(
+          swiftTemplateContent,
+          PLATFORM.IOS,
+          baseSdkConfig
+        );
+        expect(result).not.toContain('CioLocationGeofence');
+        expect(result).not.toContain('GeofenceModule');
+        expect(result).not.toContain('allowBackgroundDelivery');
+      });
+
+      test('when geofence enabled without a locationMode, omits it (SDK default) and turns on background delivery', () => {
+        const result = patchNativeSDKInitializer(
+          swiftTemplateContent,
+          PLATFORM.IOS,
+          baseSdkConfig,
+          { enabled: true, trackingMode: 'MANUAL' },
+          { enabled: true }
+        );
+        expect(result).toContain('import CioLocationGeofence');
+        expect(result).toContain('_ = builder.addModule(GeofenceModule(config: GeofenceModuleConfig()))');
+        expect(result).not.toContain('GeofenceModuleConfig(locationMode:');
+        expect(result).toContain('_ = builder.allowBackgroundDelivery(true)');
+      });
+
+      test('when geofence locationMode MANUAL, uses .manual', () => {
+        const result = patchNativeSDKInitializer(
+          swiftTemplateContent,
+          PLATFORM.IOS,
+          baseSdkConfig,
+          { enabled: true },
+          { enabled: true, locationMode: 'MANUAL' }
+        );
+        expect(result).toContain('GeofenceModuleConfig(locationMode: .manual)');
+      });
+
+      test('when allowBackgroundDelivery explicitly false, uses false', () => {
+        const result = patchNativeSDKInitializer(
+          swiftTemplateContent,
+          PLATFORM.IOS,
+          baseSdkConfig,
+          { enabled: true },
+          { enabled: true, allowBackgroundDelivery: false }
+        );
+        expect(result).toContain('_ = builder.allowBackgroundDelivery(false)');
+      });
+
+      test('geofence enabled also registers the location module (geofence implies location)', () => {
+        const result = patchNativeSDKInitializer(
+          swiftTemplateContent,
+          PLATFORM.IOS,
+          baseSdkConfig,
+          { enabled: true, trackingMode: 'MANUAL' },
+          { enabled: true }
+        );
+        expect(result).toContain('LocationModule(config: LocationConfig(mode: .manual))');
+        expect(result).toContain('GeofenceModule');
+      });
+    });
+
+    describe('Android geofence module', () => {
+      test('when geofence not enabled, omits geofence import and module', () => {
+        const result = patchNativeSDKInitializer(
+          kotlinTemplateContent,
+          PLATFORM.ANDROID,
+          baseSdkConfig
+        );
+        expect(result).not.toContain('io.customer.geofence');
+        expect(result).not.toContain('ModuleGeofence');
+      });
+
+      test('when geofence enabled, adds ModuleGeofence guarded by CIO_GEOFENCE_ENABLED', () => {
+        const result = patchNativeSDKInitializer(
+          kotlinTemplateContent,
+          PLATFORM.ANDROID,
+          baseSdkConfig,
+          { enabled: true },
+          { enabled: true, locationMode: 'AUTOMATIC' }
+        );
+        expect(result).toContain('import io.customer.geofence.ModuleGeofence');
+        expect(result).toContain('BuildConfig.CIO_GEOFENCE_ENABLED');
+        expect(result).toContain('GeofenceLocationMode.AUTOMATIC');
+        expect(result).toContain('ModuleGeofence(');
+      });
+    });
+
+    test('leaves no unreplaced geofence placeholders on either platform', () => {
+      const iosDisabled = patchNativeSDKInitializer(swiftTemplateContent, PLATFORM.IOS, baseSdkConfig);
+      const iosEnabled = patchNativeSDKInitializer(swiftTemplateContent, PLATFORM.IOS, baseSdkConfig, { enabled: true }, { enabled: true });
+      const androidDisabled = patchNativeSDKInitializer(kotlinTemplateContent, PLATFORM.ANDROID, baseSdkConfig);
+      const androidEnabled = patchNativeSDKInitializer(kotlinTemplateContent, PLATFORM.ANDROID, baseSdkConfig, { enabled: true }, { enabled: true });
+      for (const out of [iosDisabled, iosEnabled, androidDisabled, androidEnabled]) {
+        expect(out).not.toContain('{{GEOFENCE_MODULE_IMPORT}}');
+        expect(out).not.toContain('{{GEOFENCE_MODULE_INIT}}');
+      }
+    });
+
     describe('snapshots', () => {
       test('iOS complete', () => {
         const config = {

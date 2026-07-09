@@ -79,6 +79,9 @@ export type CustomerIOPluginPushNotificationOptions = {
 };
 
 // @public
+export type GeofenceLocationMode = 'AUTOMATIC' | 'MANUAL';
+
+// @public
 export type LocationTrackingMode = 'OFF' | 'MANUAL' | 'ON_APP_START';
 
 // @public
@@ -93,6 +96,12 @@ export type NativeSDKConfig = {
     migrationSiteId?: string;
     location?: {
         trackingMode?: LocationTrackingMode;
+    };
+    geofence?: {
+        locationMode?: GeofenceLocationMode;
+    };
+    ios?: {
+        allowBackgroundDelivery?: boolean;
     };
 };
 
