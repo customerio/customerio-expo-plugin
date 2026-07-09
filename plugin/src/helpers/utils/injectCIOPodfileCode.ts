@@ -7,7 +7,9 @@ import { FileManagement } from './fileManagement';
 export type InjectCIOPodfileOptions = {
   /** When true, add the location subspec. When false/omit, use single push subspec only. */
   locationEnabled?: boolean;
-  /** When false and locationEnabled, inject only :subspecs => ['location']. When true, use push + location. */
+  /** When true, add the geofence subspec (implies location). */
+  geofenceEnabled?: boolean;
+  /** When false, omit the push provider subspec (location/geofence-only). When true/omit, include it. */
   hasPush?: boolean;
 };
 
@@ -29,17 +31,25 @@ export function buildHostAppPodSnippet(
 ): string {
   const resolvedPath = getRelativePathToRNSDK(iosPath);
   const locationEnabled = options?.locationEnabled === true;
+  const geofenceEnabled = options?.geofenceEnabled === true;
   const hasPush = options?.hasPush !== false;
-
-  if (!locationEnabled) {
-    const subspec = isFcmPushProvider ? 'fcm' : 'apn';
-    return `pod 'customerio-reactnative/${subspec}', :path => '${resolvedPath}'`;
-  }
-  if (!hasPush) {
-    return `pod 'customerio-reactnative', :subspecs => ['location'], :path => '${resolvedPath}'`;
-  }
   const pushSubspec = isFcmPushProvider ? 'fcm' : 'apn';
-  return `pod 'customerio-reactnative', :subspecs => ['${pushSubspec}', 'location'], :path => '${resolvedPath}'`;
+
+  // No optional modules: keep the single push-provider subspec form. hasPush is intentionally
+  // not checked here — callers only pass hasPush:false alongside an enabled location/geofence module.
+  if (!locationEnabled && !geofenceEnabled) {
+    return `pod 'customerio-reactnative/${pushSubspec}', :path => '${resolvedPath}'`;
+  }
+
+  // Geofence pulls in Location transitively (and defines CIO_LOCATION_ENABLED), so the
+  // 'location' subspec is redundant when geofence is enabled.
+  const subspecs = [
+    ...(hasPush ? [pushSubspec] : []),
+    ...(locationEnabled && !geofenceEnabled ? ['location'] : []),
+    ...(geofenceEnabled ? ['geofence'] : []),
+  ];
+  const subspecList = subspecs.map((s) => `'${s}'`).join(', ');
+  return `pod 'customerio-reactnative', :subspecs => [${subspecList}], :path => '${resolvedPath}'`;
 }
 
 const HOST_APP_BLOCK_START = '# --- CustomerIO Host App START ---';

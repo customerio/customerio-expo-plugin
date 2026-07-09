@@ -129,6 +129,17 @@ export type CustomerIOPluginLocationOptions = {
 };
 
 /**
+ * Geofence is off by default. When true, enables the Customer.io SDK geofence native module (iOS Podfile geofence subspec,
+ * Android gradle.properties flag) and injects the iOS AppDelegate background-delivery bootstrap. Geofence implies location,
+ * so enabling it also enables the location module. Permissions and privacy keys (Info.plist, AndroidManifest)
+ * remain the host app's responsibility.
+ * @public
+ */
+export type CustomerIOPluginGeofenceOptions = {
+  enabled?: boolean;
+};
+
+/**
  * Combined plugin options for both iOS and Android platforms
  * @public
  */
@@ -141,6 +152,12 @@ export type CustomerIOPluginOptions = {
    * gradle.properties). Host apps must add their own location permissions and privacy usage strings.
    */
   location?: CustomerIOPluginLocationOptions;
+  /**
+   * Geofence is off by default. When geofence.enabled is true, the plugin adds SDK build-time setup (Podfile geofence subspec,
+   * gradle.properties) and the iOS AppDelegate background-delivery bootstrap. Geofence implies location. Host apps must add
+   * their own location permissions and privacy usage strings.
+   */
+  geofence?: CustomerIOPluginGeofenceOptions;
 };
 
 /**
