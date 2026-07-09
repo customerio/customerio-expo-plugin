@@ -1,72 +1,57 @@
 import type { ConfigPlugin } from '@expo/config-plugins';
-import { withAppDelegate } from '@expo/config-plugins';
+import { withAppDelegate, withXcodeProject } from '@expo/config-plugins';
+import path from 'path';
 
+import { getIosNativeFilesPath } from '../utils/plugin';
+import { copyFileToXcode, getOrCreateCustomerIOGroup } from '../utils/xcode';
 import { logger } from '../utils/logger';
 
-// Per-step idempotency markers. The two injections are guarded independently: the import marker
-// is added by addGeofenceImport and the bootstrap marker by injectGeofenceBootstrap. Keying both
-// steps off a single symbol would let a partial application (import added, bootstrap injection
-// failed) look "done" on the next prebuild, permanently skipping the missing bootstrap.
-const GEOFENCE_IMPORT_MARKER = 'import CioLocationGeofence';
-const GEOFENCE_BOOTSTRAP_MARKER = 'GeofenceModule.bootstrapForBackgroundDelivery';
-
-const GEOFENCE_IMPORT_SNIPPET = `#if canImport(CioLocationGeofence)
-import CioLocationGeofence
-#endif`;
-
-const GEOFENCE_BOOTSTRAP_SNIPPET = `    #if canImport(CioLocationGeofence)
-    // iOS can cold-launch the app for a geofence transition without the JS runtime, so bootstrap
-    // background delivery here rather than relying on CustomerIO.initialize. Safe alongside normal init.
-    GeofenceModule.bootstrapForBackgroundDelivery(launchOptions: launchOptions)
-    #endif
-`;
+const HANDLER_CLASS = 'CioGeofenceAppDelegateHandler';
+const HANDLER_FILE = `${HANDLER_CLASS}.swift`;
+const HANDLER_PROPERTY = `let cioGeofenceHandler = ${HANDLER_CLASS}()`;
+const HANDLER_CALL = `cioGeofenceHandler.application(application, didFinishLaunchingWithOptions: launchOptions)`;
 
 /**
- * Adds the geofence module import after the last top-level import statement.
- * The import is compiled out via `#if canImport` when the geofence subspec is absent.
+ * Adds the `let cioGeofenceHandler = CioGeofenceAppDelegateHandler()` property to the AppDelegate
+ * class. Idempotent. The handler type ships with the plugin and lives in the app target, so no import
+ * is needed here.
  */
-const addGeofenceImport = (contents: string): string => {
-  if (contents.includes(GEOFENCE_IMPORT_MARKER)) {
+const addHandlerProperty = (contents: string): string => {
+  if (contents.includes(HANDLER_PROPERTY)) {
     return contents;
   }
 
-  const importRegex = /^(?:@_exported\s+)?(?:internal\s+)?import\s+.+$/gm;
-  let lastMatchEnd = -1;
-  let match: RegExpExecArray | null;
-  while ((match = importRegex.exec(contents)) !== null) {
-    lastMatchEnd = match.index + match[0].length;
-  }
-
-  if (lastMatchEnd < 0) {
-    logger.warn('Could not find an import statement in AppDelegate.swift; skipping geofence import');
+  const classRegex = /class\s+AppDelegate\s*:\s*[^\n{]*\{/;
+  const match = contents.match(classRegex);
+  if (!match) {
+    logger.warn('Could not find AppDelegate class declaration; skipping geofence handler property');
     return contents;
   }
 
+  const insertPosition = (match.index ?? 0) + match[0].length;
   return (
-    contents.substring(0, lastMatchEnd) +
-    `\n\n${GEOFENCE_IMPORT_SNIPPET}` +
-    contents.substring(lastMatchEnd)
+    contents.substring(0, insertPosition) +
+    `\n  ${HANDLER_PROPERTY}\n` +
+    contents.substring(insertPosition)
   );
 };
 
 /**
- * Injects the geofence background-delivery bootstrap at the top of didFinishLaunchingWithOptions,
- * before React Native is started (the Expo template calls `factory.startReactNative(...)` later in
- * this method). Cold-wake delivery must not depend on the JS runtime, so it has to run first —
- * matching the SDK's reference AppDelegate integration.
+ * Injects the single geofence handler call at the top of didFinishLaunchingWithOptions, before
+ * React Native is started (the Expo template calls `factory.startReactNative(...)` later in this
+ * method). Idempotent.
  */
-const injectGeofenceBootstrap = (contents: string): string => {
-  if (contents.includes(GEOFENCE_BOOTSTRAP_MARKER)) {
+const addHandlerCall = (contents: string): string => {
+  if (contents.includes(HANDLER_CALL)) {
     return contents;
   }
 
   const methodRegex =
     /(func\s+application\s*\(\s*_\s+application\s*:\s*UIApplication\s*,\s*didFinishLaunchingWithOptions[\s\S]*?\)\s*->\s*Bool\s*\{)/;
   const match = contents.match(methodRegex);
-
   if (!match) {
     logger.warn(
-      'Could not find didFinishLaunchingWithOptions in AppDelegate.swift; skipping geofence bootstrap'
+      'Could not find didFinishLaunchingWithOptions in AppDelegate.swift; skipping geofence handler call'
     );
     return contents;
   }
@@ -74,28 +59,51 @@ const injectGeofenceBootstrap = (contents: string): string => {
   const insertPosition = (match.index ?? 0) + match[0].length;
   return (
     contents.substring(0, insertPosition) +
-    `\n${GEOFENCE_BOOTSTRAP_SNIPPET}` +
+    `\n    ${HANDLER_CALL}\n` +
     contents.substring(insertPosition)
   );
 };
 
 /**
- * Pure string transform: adds the geofence import and background-delivery bootstrap
- * to the Swift AppDelegate. Each step is independently idempotent, so a re-run after a
- * partial application injects only the missing piece.
+ * Pure string transform: adds the geofence handler property and its didFinishLaunchingWithOptions
+ * call to the Swift AppDelegate. Each step is independently idempotent.
  *
  * Exported for tests.
  */
 export function modifyAppDelegateForGeofenceBootstrap(contents: string): string {
-  return injectGeofenceBootstrap(addGeofenceImport(contents));
+  return addHandlerCall(addHandlerProperty(contents));
 }
 
+/** Copies CioGeofenceAppDelegateHandler.swift into the app target and registers it with Xcode. */
+const withGeofenceHandlerFile: ConfigPlugin = (config) =>
+  withXcodeProject(config, (xcodeConfig) => {
+    const projectName = xcodeConfig.modRequest.projectName || '';
+    if (!projectName) {
+      logger.warn('Project name is undefined; cannot copy CioGeofenceAppDelegateHandler.swift');
+      return xcodeConfig;
+    }
+
+    const iosProjectRoot = path.join(xcodeConfig.modRequest.projectRoot, 'ios');
+    const group = getOrCreateCustomerIOGroup(xcodeConfig.modResults, projectName);
+    copyFileToXcode({
+      xcodeProject: xcodeConfig.modResults,
+      iosProjectRoot,
+      projectName,
+      sourceFilePath: path.join(getIosNativeFilesPath(), HANDLER_FILE),
+      targetFileName: HANDLER_FILE,
+      transform: (content) => content,
+      customerIOGroup: group,
+    });
+    return xcodeConfig;
+  });
+
 /**
- * Injects the geofence background-delivery bootstrap into the Swift AppDelegate.
- * Runs whenever geofence is enabled, independent of push/auto-init, so cold-wake
- * background geofence transitions are delivered even when the JS runtime isn't running.
+ * Wires geofence cold-wake background delivery: ships CioGeofenceAppDelegateHandler.swift and adds a
+ * single call to it from the Swift AppDelegate. Runs whenever geofence is enabled, independent of
+ * push/auto-init. Geofence is gated to Swift projects (Expo SDK 53+) at the plugin entry point.
  */
 export const withGeofenceAppDelegate: ConfigPlugin = (config) => {
+  config = withGeofenceHandlerFile(config);
   return withAppDelegate(config, (appDelegateConfig) => {
     appDelegateConfig.modResults.contents = modifyAppDelegateForGeofenceBootstrap(
       appDelegateConfig.modResults.contents
