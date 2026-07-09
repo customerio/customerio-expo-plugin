@@ -16,6 +16,10 @@
       },
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "This app uses location to test Customer.io location features.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "This app uses location in the background to test Customer.io geofence features.",
+        "UIBackgroundModes": [
+          "location"
+        ],
         "CFBundleURLTypes": [
           {
             "CFBundleURLSchemes": [
@@ -35,6 +39,12 @@
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "package": "io.customer.testbed.expo",
+      "permissions": [
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_BACKGROUND_LOCATION",
+        "android.permission.RECEIVE_BOOT_COMPLETED"
+      ],
       "intentFilters": [
         {
           "action": "VIEW",
@@ -89,6 +99,9 @@
             "logLevel": "debug",
             "location": {
               "trackingMode": "MANUAL"
+            },
+            "geofence": {
+              "locationMode": "AUTOMATIC"
             }
           },
           "android": {
@@ -120,6 +133,9 @@
             }
           },
           "location": {
+            "enabled": true
+          },
+          "geofence": {
             "enabled": true
           }
         }
