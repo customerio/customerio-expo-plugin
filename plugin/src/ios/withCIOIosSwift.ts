@@ -96,7 +96,7 @@ const copyAndConfigurePushAppDelegateHandler = ({
   geofence,
 }: {
   xcodeProject: XcodeProject;
-  group: XcodeProject['pbxCreateGroup'];
+  group: string;
   iosProjectRoot: string;
   projectName: string;
   sdkConfig: NativeSDKConfig | undefined;
@@ -200,7 +200,7 @@ const copyAndConfigureNativeSDKInitializer = ({
   geofence,
 }: {
   xcodeProject: XcodeProject;
-  group: XcodeProject['pbxCreateGroup'];
+  group: string;
   iosProjectRoot: string;
   projectName: string;
   sdkConfig: NativeSDKConfig;
