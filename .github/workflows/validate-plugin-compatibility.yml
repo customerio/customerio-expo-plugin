@@ -15,7 +15,7 @@ concurrency:
 env:
   NODE_VERSION: "20"
   JAVA_VERSION: "17"
-  XCODE_VERSION: "26.2"
+  XCODE_VERSION: "26.5"
   APP_DIR: ci-test-apps
   APP_NAME_PREFIX: ExpoPluginTestApp
 
@@ -31,10 +31,10 @@ jobs:
           - platform: android
             runs-on: ubuntu-latest
           - platform: ios
-            runs-on: macos-15
+            runs-on: macos-26
             ios-push-provider: apn
           - platform: ios
-            runs-on: macos-15
+            runs-on: macos-26
             ios-push-provider: fcm
 
     steps:
