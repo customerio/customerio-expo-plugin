@@ -10,6 +10,10 @@ import CioLocationGeofence
 /// the app's AppDelegate. Keeping the logic here means the AppDelegate edit stays a one-liner and the
 /// geofence wiring can evolve without re-touching the app's AppDelegate.
 @objc public class CioGeofenceAppDelegateHandler: NSObject {
+    // Main-actor isolated because the plugin injects the call into the host AppDelegate's
+    // (main-actor) didFinishLaunchingWithOptions, and GeofenceModule.bootstrapForBackgroundDelivery
+    // is itself @MainActor. Mirrors the SDK's reference AppDelegate, which calls it directly.
+    @MainActor
     @objc public func application(
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
