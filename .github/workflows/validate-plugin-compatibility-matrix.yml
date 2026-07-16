@@ -15,7 +15,7 @@ concurrency:
 env:
   NODE_VERSION: "20"
   JAVA_VERSION: "17"
-  XCODE_VERSION: "26.2"
+  XCODE_VERSION: "26.5"
   APP_DIR: ci-test-apps
   APP_NAME_PREFIX: ExpoPluginTestApp
 
@@ -33,11 +33,11 @@ jobs:
             runs-on: ubuntu-latest
           - expo-version: 54
             platform: ios
-            runs-on: macos-15
+            runs-on: macos-26
             ios-push-provider: apn
           - expo-version: 54
             platform: ios
-            runs-on: macos-15
+            runs-on: macos-26
             ios-push-provider: fcm
 
           # Running on latest version helps to catch issues early for new versions not listed above
@@ -46,11 +46,11 @@ jobs:
             runs-on: ubuntu-latest
           - expo-version: latest
             platform: ios
-            runs-on: macos-15
+            runs-on: macos-26
             ios-push-provider: apn
           - expo-version: latest
             platform: ios
-            runs-on: macos-15
+            runs-on: macos-26
             ios-push-provider: fcm
 
     steps:
@@ -73,7 +73,7 @@ jobs:
 
       - name: Setup iOS
         if: matrix.platform == 'ios'
-        uses: customerio/mobile-ci-tools/github-actions/ios/setup-ios/v1@MacOS-15+iOS-26
+        uses: customerio/mobile-ci-tools/github-actions/ios/setup-ios/v1@MacOS-26+iOS-26
         with:
           xcode-version: ${{ env.XCODE_VERSION }}
 
