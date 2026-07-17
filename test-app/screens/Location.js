@@ -131,6 +131,11 @@ export default function LocationScreen() {
     try {
       const background = await Location.requestBackgroundPermissionsAsync();
       const next = await refreshLocationStatus();
+      // A concurrent refresh (e.g. AppState resume on return from Settings) superseded
+      // this read and owns the outcome — don't act on the stale request payload.
+      if (next === null) {
+        return;
+      }
       // Trust the freshly-read status: the OS may already show background granted
       // (e.g. enabled in Settings) even when the request result comes back denied.
       if (next === 'backgroundGranted' || background.status === 'granted') {
