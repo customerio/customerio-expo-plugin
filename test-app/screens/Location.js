@@ -24,8 +24,10 @@ const PRESETS = [
   { label: '0, 0', lat: 0, lng: 0 },
 ];
 
-const isGrantedStatus = (status) =>
-  status === 'foregroundOnly' || status === 'backgroundGranted';
+// Higher = more access. Used to fetch only when the permission level increases
+// (e.g. gaining "Always" in Settings), never on a downgrade between states.
+const grantRank = (status) =>
+  status === 'backgroundGranted' ? 2 : status === 'foregroundOnly' ? 1 : 0;
 
 function showLocationPermissionAlert() {
   Alert.alert(
@@ -103,10 +105,10 @@ export default function LocationScreen() {
       }
       const previous = locationStatusRef.current;
       const status = await refreshLocationStatus();
-      // Fetch only when gaining access from a non-granted state — not on a downgrade
-      // between granted states. The SDK's auto-fetch hook runs once per process, so a
-      // grant made in Settings needs an explicit request to register geofences.
-      if (status && isGrantedStatus(status) && !isGrantedStatus(previous)) {
+      // Fetch whenever the permission level increased (a grant made in Settings),
+      // including foregroundOnly → backgroundGranted; skip downgrades. The SDK's
+      // auto-fetch hook runs once per process, so Settings grants need an explicit fetch.
+      if (status && grantRank(status) > grantRank(previous)) {
         refreshGeofences();
       }
     });
