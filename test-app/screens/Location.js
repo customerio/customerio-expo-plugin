@@ -126,6 +126,14 @@ export default function LocationScreen() {
     );
   };
 
+  const onBackgroundGranted = () => {
+    refreshGeofences();
+    Alert.alert(
+      'Success',
+      'Background location granted — fetching location to start geofence'
+    );
+  };
+
   // Escalate to background ("Always"/"Allow all the time") after foreground is granted.
   const requestBackgroundLocation = async () => {
     try {
@@ -136,19 +144,16 @@ export default function LocationScreen() {
       if (next === null) {
         return;
       }
-      // Trust the freshly-read status: the OS may already show background granted
-      // (e.g. enabled in Settings) even when the request result comes back denied.
-      if (next === 'backgroundGranted' || background.status === 'granted') {
-        refreshGeofences();
-        Alert.alert(
-          'Success',
-          'Background location granted — fetching location to start geofence'
-        );
-      } else if (next === 'denied' || !background.canAskAgain) {
+      // Decide off the freshly-read status, not the request result: the OS may already
+      // report background granted (e.g. enabled in Settings) when the request came back denied.
+      if (next === 'backgroundGranted') {
+        onBackgroundGranted();
+      } else if (!background.canAskAgain) {
+        // OS won't prompt again (e.g. Android 11+) — send the user to Settings.
         showOpenSettingsDialog();
       } else {
-        // iOS resolves the "Always" prompt asynchronously; the button updates on
-        // resume, which fetches if granted. Point the user to Settings otherwise.
+        // iOS resolves the "Always" prompt asynchronously; the resume refresh fetches
+        // if it becomes granted. Otherwise point the user to Settings.
         Alert.alert(
           'Info',
           'Requesting background location — enable "Always" / "Allow all the time" in Settings if no prompt appears'
@@ -186,8 +191,15 @@ export default function LocationScreen() {
       default: {
         // notDetermined: request foreground first, then escalate to background.
         const foreground = await Location.requestForegroundPermissionsAsync();
-        await refreshLocationStatus();
-        if (foreground.status === 'granted') {
+        const next = await refreshLocationStatus();
+        if (next === null) {
+          return;
+        }
+        if (next === 'backgroundGranted') {
+          // Already fully granted (e.g. in Settings) — nothing more to ask.
+          onBackgroundGranted();
+        } else if (next === 'foregroundOnly') {
+          // Foreground granted — register now, then offer to escalate to background.
           refreshGeofences();
           showBackgroundRationale();
         } else if (!foreground.canAskAgain) {
