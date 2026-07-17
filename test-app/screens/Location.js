@@ -131,7 +131,9 @@ export default function LocationScreen() {
     try {
       const background = await Location.requestBackgroundPermissionsAsync();
       const next = await refreshLocationStatus();
-      if (background.status === 'granted') {
+      // Trust the freshly-read status: the OS may already show background granted
+      // (e.g. enabled in Settings) even when the request result comes back denied.
+      if (next === 'backgroundGranted' || background.status === 'granted') {
         refreshGeofences();
         Alert.alert(
           'Success',
