@@ -192,14 +192,17 @@ export default function LocationScreen() {
         // notDetermined: request foreground first, then escalate to background.
         const foreground = await Location.requestForegroundPermissionsAsync();
         const next = await refreshLocationStatus();
-        if (next === null) {
-          return;
-        }
-        if (next === 'backgroundGranted') {
+        // The permission dialog triggers an AppState resume whose refresh can supersede
+        // ours (next === null); fall back to the last authoritative status so the
+        // already-granted short-circuit below stays correct.
+        const status = next ?? locationStatusRef.current;
+        if (status === 'backgroundGranted') {
           // Already fully granted (e.g. in Settings) — nothing more to ask.
           onBackgroundGranted();
-        } else if (next === 'foregroundOnly') {
-          // Foreground granted — register now, then offer to escalate to background.
+        } else if (foreground.status === 'granted') {
+          // Drive escalation off the request result, not the refresh: a superseded
+          // refresh must not cost the one-tap flow to "Always". Refresh is idempotent,
+          // so the concurrent resume path refreshing too is harmless.
           refreshGeofences();
           showBackgroundRationale();
         } else if (!foreground.canAskAgain) {
