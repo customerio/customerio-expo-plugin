@@ -30,7 +30,8 @@ describe('ios scenarios — appendLiveActivityWidgetTargetToPodfile', () => {
         pod 'CustomerIOLiveActivitiesTemplates'
         pod 'CustomerIOLiveActivitiesAttributes'
       end
-      # --- CustomerIO Live Activity END ---"
+      # --- CustomerIO Live Activity END ---
+      "
     `);
   });
 
@@ -51,7 +52,8 @@ describe('ios scenarios — appendLiveActivityWidgetTargetToPodfile', () => {
         pod 'CustomerIOLiveActivitiesTemplates'
         pod 'CustomerIOLiveActivitiesAttributes'
       end
-      # --- CustomerIO Live Activity END ---"
+      # --- CustomerIO Live Activity END ---
+      "
     `);
   });
 

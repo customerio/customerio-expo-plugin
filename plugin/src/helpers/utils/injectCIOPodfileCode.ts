@@ -191,7 +191,10 @@ end
 ${LIVE_ACTIVITY_BLOCK_END}
 `.trim();
 
-  return `${podfileContent}${snippetToAppend}`;
+  // Separate from any preceding CIO block (the notification block is appended trimmed, without a
+  // trailing newline) and leave a trailing newline so a following block starts on its own line.
+  const separator = podfileContent.endsWith('\n') ? '' : '\n';
+  return `${podfileContent}${separator}${snippetToAppend}\n`;
 }
 
 export async function injectCIOLiveActivityWidgetPodfileCode(
