@@ -122,6 +122,9 @@ export const DEFAULT_BUNDLE_VERSION = '1';
 export const DEFAULT_BUNDLE_SHORT_VERSION = '1.0';
 export const CIO_TARGET_NAME = 'CustomerIOSDK';
 export const CIO_NOTIFICATION_TARGET_NAME = 'NotificationService';
+export const CIO_LIVE_ACTIVITY_WIDGET_TARGET_NAME = 'CIOLiveActivityWidget';
+// Live Activities require iOS 16.2+; used as the injected widget extension's deployment target.
+export const DEFAULT_LIVE_ACTIVITY_DEPLOYMENT_TARGET = '16.2';
 
 export const CIO_APPDELEGATEHEADER_IMPORT_SNIPPET = `#import <UserNotifications/UserNotifications.h>`;
 export const CIO_APPDELEGATEHEADER_USER_NOTIFICATION_CENTER_SNIPPET =

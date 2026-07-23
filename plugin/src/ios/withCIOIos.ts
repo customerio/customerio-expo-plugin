@@ -8,11 +8,13 @@ import type {
 } from '../types/cio-types';
 import { mergeConfigWithEnvValues } from '../utils/config';
 import { logger } from '../utils/logger';
-import { validatePushNotificationOptions } from '../utils/validation';
+import { validateLiveActivityOptions, validatePushNotificationOptions } from '../utils/validation';
 import { isExpoVersion53OrHigher } from './utils';
 import { withAppDelegateModifications } from './withAppDelegateModifications';
 import { withCIOIosSwift } from './withCIOIosSwift';
+import { withCioLiveActivityWidgetXcodeProject } from './withCioLiveActivityWidgetXcodeProject';
 import { withGoogleServicesJsonFile } from './withGoogleServicesJsonFile';
+import { withLiveActivityInfoPlist } from './withLiveActivityInfoPlist';
 import { withCioNotificationsXcodeProject } from './withNotificationsXcodeProject';
 import { withCioXcodeProject } from './withXcodeProject';
 
@@ -25,6 +27,11 @@ export function withCIOIos(
   const isSwiftProject = isExpoVersion53OrHigher(config);
   const platformConfig = mergeDeprecatedPropertiesAndLogWarnings(props);
   const locationEnabled = location?.enabled === true;
+  const liveActivityEnabled = platformConfig?.liveActivity?.enabled === true;
+
+  if (liveActivityEnabled) {
+    validateLiveActivityOptions(platformConfig?.liveActivity);
+  }
 
   if (platformConfig?.pushNotification) {
     validatePushNotificationOptions(platformConfig.pushNotification);
@@ -44,6 +51,7 @@ export function withCIOIos(
       podfileOptions: {
         locationEnabled,
         hasPush: true,
+        liveActivityEnabled,
       },
     });
     config = withGoogleServicesJsonFile(config, platformConfig);
@@ -62,18 +70,26 @@ export function withCIOIos(
     }
   } else if (sdkConfig && isSwiftProject) {
     config = withCIOIosSwift(config, sdkConfig, platformConfig, location);
-    if (locationEnabled) {
+    if (locationEnabled || liveActivityEnabled) {
       config = withCioXcodeProject(config, {
         ...platformConfig,
-        podfileOptions: { locationEnabled: true, hasPush: false },
+        podfileOptions: { locationEnabled, hasPush: false, liveActivityEnabled },
       });
     }
-  } else if (locationEnabled) {
-    // Location-only: no push, no config. Still add Podfile location subspec so CIO_LOCATION_ENABLED is set and native location code is included.
+  } else if (locationEnabled || liveActivityEnabled) {
+    // No push, no config. Still add the Podfile subspecs so the relevant native modules
+    // (location / live activities) are compiled in.
     config = withCioXcodeProject(config, {
       ...platformConfig,
-      podfileOptions: { locationEnabled: true, hasPush: false },
+      podfileOptions: { locationEnabled, hasPush: false, liveActivityEnabled },
     });
+  }
+
+  // Live Activities: set the host Info.plist flag and inject the widget extension target,
+  // independent of push. Requires iOS 16.2+.
+  if (liveActivityEnabled && platformConfig) {
+    config = withLiveActivityInfoPlist(config);
+    config = withCioLiveActivityWidgetXcodeProject(config, platformConfig);
   }
 
   return config;

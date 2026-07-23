@@ -26,6 +26,8 @@ export type CustomerIOPluginOptionsIOS = {
 
   pushNotification?: CustomerIOPluginPushNotificationOptions;
 
+  liveActivity?: CustomerIOPluginLiveActivityOptions;
+
   /**
    * @deprecated No longer has any effect. Use autoTrackPushEvents to control if push metrics should be automatically tracked by SDK.
    */
@@ -141,6 +143,23 @@ export type CustomerIOPluginOptions = {
    * gradle.properties). Host apps must add their own location permissions and privacy usage strings.
    */
   location?: CustomerIOPluginLocationOptions;
+};
+
+/**
+ * iOS Live Activities configuration. Off by default. When `enabled` is true, the plugin sets
+ * `NSSupportsLiveActivities` in the host Info.plist, adds the `liveactivities` pod subspec to the
+ * host app, and injects a WidgetKit app-extension target that renders the SDK's built-in Live
+ * Activity templates. Requires iOS 16.2+. Custom (app-defined) templates remain the host app's
+ * responsibility (add them in a separate widget target), matching the native SDK behavior.
+ * @public
+ */
+export type CustomerIOPluginLiveActivityOptions = {
+  enabled?: boolean;
+  /**
+   * Deployment target for the injected widget extension. Defaults to '16.2' (the Live Activities
+   * floor). Set higher (e.g. '17.2') if your templates use newer APIs.
+   */
+  deploymentTarget?: string;
 };
 
 /**

@@ -119,6 +119,59 @@ describe('ios scenarios — injectHostAppPodfileCode', () => {
     `);
   });
 
+  it('injects subspecs (push + liveactivities) when liveActivityEnabled and hasPush', () => {
+    expect(
+      injectHostAppPodfileCode(baseline, IOS_PATH, false, {
+        liveActivityEnabled: true,
+        hasPush: true,
+      })
+    ).toMatchInlineSnapshot(`
+      "platform :ios, '13.0'
+      target 'TestApp' do
+        use_expo_modules!
+        config = use_native_modules!
+        use_react_native!(
+          :path => config[:reactNativePath],
+        )
+      end
+
+      # --- CustomerIO Host App START ---
+        pod 'customerio-reactnative', :subspecs => ['apn', 'liveactivities'], :path => '../node_modules/customerio-reactnative'
+      # --- CustomerIO Host App END ---
+      post_install do |installer|
+        react_native_post_install(installer)
+      end
+      "
+    `);
+  });
+
+  it('injects push + location + liveactivities subspecs when all are enabled', () => {
+    expect(
+      injectHostAppPodfileCode(baseline, IOS_PATH, true, {
+        locationEnabled: true,
+        hasPush: true,
+        liveActivityEnabled: true,
+      })
+    ).toMatchInlineSnapshot(`
+      "platform :ios, '13.0'
+      target 'TestApp' do
+        use_expo_modules!
+        config = use_native_modules!
+        use_react_native!(
+          :path => config[:reactNativePath],
+        )
+      end
+
+      # --- CustomerIO Host App START ---
+        pod 'customerio-reactnative', :subspecs => ['fcm', 'location', 'liveactivities'], :path => '../node_modules/customerio-reactnative'
+      # --- CustomerIO Host App END ---
+      post_install do |installer|
+        react_native_post_install(installer)
+      end
+      "
+    `);
+  });
+
   it('is a no-op when the host-app block is already present', () => {
     const once = injectHostAppPodfileCode(baseline, IOS_PATH, false);
     expect(injectHostAppPodfileCode(once, IOS_PATH, false)).toEqual(once);

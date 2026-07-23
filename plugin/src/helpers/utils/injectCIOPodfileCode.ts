@@ -1,6 +1,6 @@
 import type { CustomerIOPluginOptionsIOS } from '../../types/cio-types';
 import { logger } from '../../utils/logger';
-import { getRelativePathToRNSDK } from '../constants/ios';
+import { CIO_LIVE_ACTIVITY_WIDGET_TARGET_NAME, getRelativePathToRNSDK } from '../constants/ios';
 import { injectCodeByRegex } from './codeInjection';
 import { FileManagement } from './fileManagement';
 
@@ -9,6 +9,8 @@ export type InjectCIOPodfileOptions = {
   locationEnabled?: boolean;
   /** When false and locationEnabled, inject only :subspecs => ['location']. When true, use push + location. */
   hasPush?: boolean;
+  /** When true, add the `liveactivities` subspec (enables -DCIO_LIVEACTIVITIES_ENABLED). */
+  liveActivityEnabled?: boolean;
 };
 
 /** Builds the host-app pod snippet for the Podfile.
@@ -29,23 +31,36 @@ export function buildHostAppPodSnippet(
 ): string {
   const resolvedPath = getRelativePathToRNSDK(iosPath);
   const locationEnabled = options?.locationEnabled === true;
+  const liveActivityEnabled = options?.liveActivityEnabled === true;
   const hasPush = options?.hasPush !== false;
-
-  if (!locationEnabled) {
-    const subspec = isFcmPushProvider ? 'fcm' : 'apn';
-    return `pod 'customerio-reactnative/${subspec}', :path => '${resolvedPath}'`;
-  }
-  if (!hasPush) {
-    return `pod 'customerio-reactnative', :subspecs => ['location'], :path => '${resolvedPath}'`;
-  }
   const pushSubspec = isFcmPushProvider ? 'fcm' : 'apn';
-  return `pod 'customerio-reactnative', :subspecs => ['${pushSubspec}', 'location'], :path => '${resolvedPath}'`;
+
+  // Simple single-subspec form only when no optional modules are enabled.
+  if (!locationEnabled && !liveActivityEnabled) {
+    return `pod 'customerio-reactnative/${pushSubspec}', :path => '${resolvedPath}'`;
+  }
+
+  // Otherwise use the explicit :subspecs array form, including whichever modules are enabled.
+  const subspecs: string[] = [];
+  if (hasPush) {
+    subspecs.push(pushSubspec);
+  }
+  if (locationEnabled) {
+    subspecs.push('location');
+  }
+  if (liveActivityEnabled) {
+    subspecs.push('liveactivities');
+  }
+  const subspecList = subspecs.map((subspec) => `'${subspec}'`).join(', ');
+  return `pod 'customerio-reactnative', :subspecs => [${subspecList}], :path => '${resolvedPath}'`;
 }
 
 const HOST_APP_BLOCK_START = '# --- CustomerIO Host App START ---';
 const HOST_APP_BLOCK_END = '# --- CustomerIO Host App END ---';
 const NOTIFICATION_BLOCK_START = '# --- CustomerIO Notification START ---';
 const NOTIFICATION_BLOCK_END = '# --- CustomerIO Notification END ---';
+const LIVE_ACTIVITY_BLOCK_START = '# --- CustomerIO Live Activity START ---';
+const LIVE_ACTIVITY_BLOCK_END = '# --- CustomerIO Live Activity END ---';
 
 /**
  * Pure string transform: given the existing Podfile contents, returns the
@@ -148,6 +163,45 @@ export async function injectCIONotificationPodfileCode(
   if (next !== podfile) {
     // FileManagement.append matches what the previous direct-append did.
     // Slice off the leading content (already on disk) and append only the new tail.
+    await FileManagement.append(filename, next.slice(podfile.length));
+  }
+}
+
+/**
+ * Pure string transform: given the existing Podfile contents, returns the Podfile with the Live
+ * Activity widget target block appended at the end. The widget links the Customer.io iOS SDK's Live
+ * Activity template + attributes pods (published to CocoaPods on release). Idempotent — returns
+ * input unchanged if the block is already present. Exported for tests.
+ */
+export function appendLiveActivityWidgetTargetToPodfile(
+  podfileContent: string,
+  useFrameworks: CustomerIOPluginOptionsIOS['useFrameworks'],
+): string {
+  if (podfileContent.match(new RegExp(LIVE_ACTIVITY_BLOCK_START))) {
+    return podfileContent;
+  }
+
+  const snippetToAppend = `
+${LIVE_ACTIVITY_BLOCK_START}
+target '${CIO_LIVE_ACTIVITY_WIDGET_TARGET_NAME}' do
+  ${useFrameworks === 'static' ? 'use_frameworks! :linkage => :static' : ''}
+  pod 'CustomerIOLiveActivitiesTemplates'
+  pod 'CustomerIOLiveActivitiesAttributes'
+end
+${LIVE_ACTIVITY_BLOCK_END}
+`.trim();
+
+  return `${podfileContent}${snippetToAppend}`;
+}
+
+export async function injectCIOLiveActivityWidgetPodfileCode(
+  iosPath: string,
+  useFrameworks: CustomerIOPluginOptionsIOS['useFrameworks'],
+) {
+  const filename = `${iosPath}/Podfile`;
+  const podfile = await FileManagement.read(filename);
+  const next = appendLiveActivityWidgetTargetToPodfile(podfile, useFrameworks);
+  if (next !== podfile) {
     await FileManagement.append(filename, next.slice(podfile.length));
   }
 }

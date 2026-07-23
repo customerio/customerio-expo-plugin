@@ -7,6 +7,8 @@ const mockWithCIOIosSwift = jest.fn((config: ExpoConfig) => config);
 const mockWithAppDelegateModifications = jest.fn((config: ExpoConfig) => config);
 const mockWithCioNotificationsXcodeProject = jest.fn((config: ExpoConfig) => config);
 const mockWithGoogleServicesJsonFile = jest.fn((config: ExpoConfig) => config);
+const mockWithLiveActivityInfoPlist = jest.fn((config: ExpoConfig) => config);
+const mockWithCioLiveActivityWidgetXcodeProject = jest.fn((config: ExpoConfig) => config);
 const mockWithEntitlementsPlist = jest.fn((config: ExpoConfig, callback: (c: unknown) => unknown) => {
   callback({ ios: { bundleIdentifier: 'com.test.app' }, modResults: {} });
   return config;
@@ -35,6 +37,14 @@ jest.mock('../../plugin/src/ios/withNotificationsXcodeProject', () => ({
 jest.mock('../../plugin/src/ios/withGoogleServicesJsonFile', () => ({
   withGoogleServicesJsonFile: (config: ExpoConfig) =>
     mockWithGoogleServicesJsonFile(config),
+}));
+jest.mock('../../plugin/src/ios/withLiveActivityInfoPlist', () => ({
+  withLiveActivityInfoPlist: (config: ExpoConfig) =>
+    mockWithLiveActivityInfoPlist(config),
+}));
+jest.mock('../../plugin/src/ios/withCioLiveActivityWidgetXcodeProject', () => ({
+  withCioLiveActivityWidgetXcodeProject: (config: ExpoConfig) =>
+    mockWithCioLiveActivityWidgetXcodeProject(config),
 }));
 jest.mock('../../plugin/src/ios/utils', () => ({
   isExpoVersion53OrHigher: jest.fn(() => true),
@@ -65,7 +75,11 @@ describe('withCIOIos', () => {
       expect(mockWithCioNotificationsXcodeProject).not.toHaveBeenCalled();
       expect(mockWithCioXcodeProject).toHaveBeenCalledTimes(1);
       expect(mockWithCioXcodeProject).toHaveBeenCalledWith(mockConfig, {
-        podfileOptions: { locationEnabled: true, hasPush: false },
+        podfileOptions: {
+          locationEnabled: true,
+          hasPush: false,
+          liveActivityEnabled: false,
+        },
       });
     });
 
@@ -159,6 +173,63 @@ describe('withCIOIos', () => {
       withCIOIos(mockConfig, undefined, { iosPath: '/test/ios' });
 
       expect(mockWithEntitlementsPlist).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('live activities', () => {
+    it('injects the widget target and Info.plist, adding the liveactivities subspec (no push/config)', () => {
+      const props: CustomerIOPluginOptionsIOS = {
+        iosPath: '/test/ios',
+        liveActivity: { enabled: true },
+      };
+
+      withCIOIos(mockConfig, undefined, props);
+
+      expect(mockWithLiveActivityInfoPlist).toHaveBeenCalledTimes(1);
+      expect(mockWithCioLiveActivityWidgetXcodeProject).toHaveBeenCalledTimes(1);
+      expect(mockWithCioNotificationsXcodeProject).not.toHaveBeenCalled();
+      expect(mockWithCioXcodeProject).toHaveBeenCalledWith(mockConfig, {
+        ...props,
+        podfileOptions: {
+          locationEnabled: false,
+          hasPush: false,
+          liveActivityEnabled: true,
+        },
+      });
+    });
+
+    it('adds the liveactivities subspec alongside push when both are enabled', () => {
+      const props: CustomerIOPluginOptionsIOS = {
+        iosPath: '/test/ios',
+        pushNotification: { provider: 'apn' },
+        liveActivity: { enabled: true },
+      };
+
+      withCIOIos(mockConfig, undefined, props);
+
+      expect(mockWithLiveActivityInfoPlist).toHaveBeenCalledTimes(1);
+      expect(mockWithCioLiveActivityWidgetXcodeProject).toHaveBeenCalledTimes(1);
+      expect(mockWithCioXcodeProject).toHaveBeenCalledWith(
+        mockConfig,
+        expect.objectContaining({
+          podfileOptions: {
+            locationEnabled: false,
+            hasPush: true,
+            liveActivityEnabled: true,
+          },
+        }),
+      );
+    });
+
+    it('does not inject the widget when liveActivity.enabled is false', () => {
+      withCIOIos(mockConfig, undefined, {
+        iosPath: '/test/ios',
+        liveActivity: { enabled: false },
+      });
+
+      expect(mockWithLiveActivityInfoPlist).not.toHaveBeenCalled();
+      expect(mockWithCioLiveActivityWidgetXcodeProject).not.toHaveBeenCalled();
+      expect(mockWithCioXcodeProject).not.toHaveBeenCalled();
     });
   });
 });
