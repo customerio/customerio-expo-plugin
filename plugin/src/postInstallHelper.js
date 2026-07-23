@@ -73,10 +73,20 @@ function runPostInstall() {
     }
 
     reactNativePackage.expoVersion = expoPackageJson.version;
-    fs.writeFileSync(
-      reactNativePackageJsonFile,
-      JSON.stringify(reactNativePackage, null, 2)
+    // Write atomically: write to a temp file in the same directory, then rename
+    // it into place. rename(2) is atomic on the same filesystem, so a concurrent
+    // reader during npm's parallel install (notably customerio-reactnative's own
+    // `node src/postInstall.js` reading this package.json at Node startup) always
+    // sees either the old or the new complete manifest — never a half-written
+    // one. A plain writeFileSync truncates-then-writes and can be observed
+    // mid-write, which surfaces as `ERR_INVALID_PACKAGE_CONFIG` and
+    // intermittently fails installs (e.g. EAS Workflow repack jobs).
+    const tmpFile = path.join(
+      path.dirname(reactNativePackageJsonFile),
+      `.package.json.${process.pid}.${Date.now()}.tmp`
     );
+    fs.writeFileSync(tmpFile, JSON.stringify(reactNativePackage, null, 2));
+    fs.renameSync(tmpFile, reactNativePackageJsonFile);
   } catch (error) {
     console.warn(
       'customerio-expo-plugin postinstall: failed to write expoVersion into customerio-reactnative/package.json. ' +
