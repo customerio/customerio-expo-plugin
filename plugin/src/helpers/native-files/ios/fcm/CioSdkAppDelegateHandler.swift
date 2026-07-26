@@ -1,5 +1,10 @@
 import Foundation
 import CioMessagingPushFCM
+// Live Activities pods are only present when the feature is enabled in the plugin config.
+#if canImport(CioLiveActivities)
+import CioDataPipelines
+import CioLiveActivities
+#endif
 import CioFirebaseWrapper
 @_spi(Internal) import CioMessagingPush
 import FirebaseCore
@@ -67,5 +72,19 @@ public class CioSdkAppDelegateHandler: NSObject {
     
   public func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
     
+  }
+
+  /// Reports an `opened` metric when the app is launched from a tapped Live Activity, and returns
+  /// the URL that should actually be routed.
+  ///
+  /// For a Customer.io widget URL this is the customer's deep link (`nil` when the activity carried
+  /// none, so there is nothing to open). Any other URL is returned unchanged, leaving the app's
+  /// existing deep-link handling untouched.
+  public func application(_ application: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey: Any] = [:]) -> URL? {
+    #if canImport(CioLiveActivities)
+    return CustomerIO.liveActivities.handleWidgetUrl(url)
+    #else
+    return url
+    #endif
   }
 }

@@ -274,6 +274,7 @@ export function modifyAppDelegateForPushHandler(
   );
   next = addDidRegisterForRemoteNotificationsWithDeviceToken(next);
   next = addDidFailToRegisterForRemoteNotificationsWithError(next);
+  next = addOpenURLHandling(next);
 
   if (props.pushNotification?.handleDeeplinkInKilledState === true) {
     next = addHandleDeeplinkInKilledState(next);
@@ -370,6 +371,55 @@ const modifyDidFinishLaunchingWithOptions = (content: string, codeToInject: stri
  * If the method already exists, it adds the handler call to the existing method
  * If the method doesn't exist, it adds a new method implementation
  */
+/**
+ * Route a tapped Live Activity through the Customer.io handler before the app's own deep-link
+ * handling runs.
+ *
+ * The handler reports the `opened` metric and returns the URL to actually open: for a Customer.io
+ * widget URL that's the customer's deep link, and any other URL comes back unchanged. The injected
+ * `guard let url = ...` shadows the parameter, so the rest of an existing implementation keeps
+ * working verbatim against the routed URL; `nil` means the activity carried no deep link and there
+ * is nothing left to open.
+ */
+const addOpenURLHandling = (content: string): string => {
+  // Match either parameter spelling (`_ app` in Expo's template, `_ application` elsewhere) across
+  // the multi-line signature Expo generates.
+  const methodRegex =
+    /func\s+application\s*\(\s*_\s+(app|application)\s*:\s*UIApplication\s*,\s*open\s+url\s*:\s*URL\s*,\s*options\s*:[^)]*\)\s*->\s*Bool\s*{/;
+  const match = content.match(methodRegex);
+
+  if (match) {
+    const appParam = match[1];
+    const insertAt = (match.index ?? 0) + match[0].length;
+    return (
+      content.substring(0, insertAt) +
+      '\n    // Call CustomerIO SDK handler\n' +
+      `    guard let url = cioSdkHandler.application(${appParam}, open: url, options: options) else { return true }\n` +
+      content.substring(insertAt)
+    );
+  }
+
+  // No implementation to wrap, so add one that only reports and forwards to super.
+  const classEndRegex = /^}(\s*$|\s*\/\/)/m;
+  const classEndMatch = content.match(classEndRegex);
+  if (!classEndMatch) {
+    logger.warn('Could not find end of AppDelegate class');
+    return content;
+  }
+
+  const position = classEndMatch.index ?? 0;
+  return (
+    content.substring(0, position) +
+    '\n  // Report a Live Activity tap and route the deep link it carries\n' +
+    '  public override func application(_ app: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey: Any] = [:]) -> Bool {\n' +
+    '    // Call CustomerIO SDK handler\n' +
+    '    guard let url = cioSdkHandler.application(app, open: url, options: options) else { return true }\n' +
+    '    return super.application(app, open: url, options: options)\n' +
+    '  }\n' +
+    content.substring(position)
+  );
+};
+
 const addDidRegisterForRemoteNotificationsWithDeviceToken = (
   content: string
 ): string => {
