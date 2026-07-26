@@ -89,6 +89,18 @@
             "logLevel": "debug",
             "location": {
               "trackingMode": "MANUAL"
+            },
+            "liveNotifications": {
+              "types": [
+                "io.customer.livenotifications.segments",
+                "io.customer.livenotifications.countdowntimer"
+              ],
+              "branding": {
+                "companyName": "Customer.io Expo Testbed",
+                "accentColorHex": "#00A0DF",
+                "backgroundColorHex": "#101010",
+                "textColorHex": "#FFFFFF"
+              }
             }
           },
           "android": {

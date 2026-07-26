@@ -19,6 +19,7 @@ export default function RootLayout() {
         <Stack.Screen name="nav-test" options={{ title: "Navigation Test" }} />
         <Stack.Screen name="inline-examples" options={{ title: "Inline Examples" }} />
         <Stack.Screen name="location" options={{ title: "Location" }} />
+        <Stack.Screen name="live-activities" options={{ title: "Live Activities" }} />
       </Stack>
       <StatusBar style="auto" />
     </ThemeProvider>
