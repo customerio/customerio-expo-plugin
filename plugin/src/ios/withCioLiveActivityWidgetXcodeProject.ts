@@ -9,6 +9,7 @@ import {
 import { replaceCodeByRegex } from '../helpers/utils/codeInjection';
 import { FileManagement } from '../helpers/utils/fileManagement';
 import { injectCIOLiveActivityWidgetPodfileCode } from '../helpers/utils/injectCIOPodfileCode';
+import { installIosLiveNotificationLogo } from '../helpers/utils/liveNotificationLogo';
 import {
   generateWidgetBundleSwift,
   resolveLiveNotificationTypes,
@@ -23,6 +24,7 @@ import { getIosNativeFilesPath } from '../utils/plugin';
 
 const PLIST_FILENAME = `${CIO_LIVE_ACTIVITY_WIDGET_TARGET_NAME}-Info.plist`;
 const WIDGET_BUNDLE_FILENAME = 'CIOLiveActivityWidgetBundle.swift';
+const ASSET_CATALOG_FILENAME = 'Assets.xcassets';
 
 // Widget source files registered in the Xcode group AND copied to the target directory. The Swift
 // file is compiled (Sources phase); the Info.plist is referenced via INFOPLIST_FILE (set by
@@ -38,6 +40,8 @@ export type AddLiveActivityWidgetTargetOptions = {
   appleTeamId?: string;
   bundleIdentifier?: string;
   iosDeploymentTarget?: string;
+  /** Asset catalog filename to compile into the widget, when a branding logo was installed. */
+  assetCatalogFilename?: string;
 };
 
 /**
@@ -90,6 +94,7 @@ export const withCioLiveActivityWidgetXcodeProject: ConfigPlugin<{
           iosDeploymentTarget,
           useFrameworks,
           liveNotifications,
+          projectRoot: modRequest.projectRoot,
         },
         config.modResults
       );
@@ -110,6 +115,7 @@ type AddLiveActivityWidgetInternalOptions = {
   iosDeploymentTarget: string;
   useFrameworks?: CustomerIOPluginOptionsIOS['useFrameworks'];
   liveNotifications?: LiveNotificationsSDKConfig;
+  projectRoot: string;
 };
 
 const addLiveActivityWidget = async (
@@ -157,10 +163,19 @@ const addLiveActivityWidget = async (
     bundleShortVersion: options.bundleShortVersion,
   });
 
+  // iOS branding is SwiftUI compiled into the widget, so a local logo has to become a real asset
+  // in this target — the generated bundle references it by name.
+  const assetCatalogPath = installIosLiveNotificationLogo(
+    options.liveNotifications?.branding,
+    widgetPath,
+    options.projectRoot
+  );
+
   addLiveActivityWidgetToXcodeProject(xcodeProject, {
     appleTeamId: options.appleTeamId,
     bundleIdentifier: options.bundleIdentifier,
     iosDeploymentTarget,
+    assetCatalogFilename: assetCatalogPath ? ASSET_CATALOG_FILENAME : undefined,
   });
 };
 
@@ -221,11 +236,13 @@ export function addLiveActivityWidgetToXcodeProject(
     return xcodeProject;
   }
 
-  const { appleTeamId, bundleIdentifier, iosDeploymentTarget } = options;
+  const { appleTeamId, bundleIdentifier, iosDeploymentTarget, assetCatalogFilename } =
+    options;
+  const resourceFiles = assetCatalogFilename ? [assetCatalogFilename] : [];
 
   // Create new PBXGroup for the widget files.
   const widgetGroup = xcodeProject.addPbxGroup(
-    WIDGET_GROUP_FILES,
+    [...WIDGET_GROUP_FILES, ...resourceFiles],
     CIO_LIVE_ACTIVITY_WIDGET_TARGET_NAME,
     CIO_LIVE_ACTIVITY_WIDGET_TARGET_NAME
   );
@@ -260,7 +277,7 @@ export function addLiveActivityWidgetToXcodeProject(
     widgetTarget.uuid
   );
   xcodeProject.addBuildPhase(
-    [],
+    resourceFiles,
     'PBXResourcesBuildPhase',
     'Resources',
     widgetTarget.uuid

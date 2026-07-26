@@ -8,6 +8,7 @@ import type {
 import { withAndroidManifestUpdates } from './withAndroidManifestUpdates';
 import { withAppGoogleServices } from './withAppGoogleServices';
 import { withGoogleServicesJSON } from './withGoogleServicesJSON';
+import { withLiveNotificationLogo } from './withLiveNotificationLogo';
 import { withLocationGradleProperties } from './withLocationGradleProperties';
 import { withMainApplicationModifications } from './withMainApplicationModifications';
 import { withNotificationChannelMetadata } from './withNotificationChannelMetadata';
@@ -37,6 +38,9 @@ export function withCIOAndroid(
   // Add auto initialization if sdkConfig is provided
   if (sdkConfig) {
     config = withMainApplicationModifications(config, { sdkConfig, location });
+    // The generated initializer resolves the branding logo by drawable name, so the file has to be
+    // copied into the project for it to render.
+    config = withLiveNotificationLogo(config, sdkConfig);
   }
 
   // Update project strings for user agent metadata
