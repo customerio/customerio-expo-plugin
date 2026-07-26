@@ -33,7 +33,7 @@ function withCustomerIOPlugin(
   config = withExpoVersion(config);
 
   // Apply platform specific modifications
-  config = withCIOIos(config, props.config, props.ios, props.location);
+  config = withCIOIos(config, props.config, props.ios, props.location, props.liveNotifications);
   config = withCIOAndroid(config, props.config, props.android, props.location);
 
   return config;

@@ -1,4 +1,4 @@
-import type { CustomerIOPluginLiveActivityOptions, CustomerIOPluginPushNotificationOptions, NativeSDKConfig, RichPushConfig } from '../types/cio-types';
+import type { CustomerIOPluginPushNotificationOptions, NativeSDKConfig, RichPushConfig } from '../types/cio-types';
 import { logger } from './logger';
 
 /**
@@ -125,19 +125,7 @@ function validatePushNotificationOptions(options: CustomerIOPluginPushNotificati
   return isValid;
 }
 
-function validateLiveActivityOptions(options: CustomerIOPluginLiveActivityOptions | undefined): boolean {
-  const context = 'LiveActivity';
-
-  let isValid = true;
-
-  isValid = validateBoolean(options?.enabled, 'enabled', context) && isValid;
-  isValid = validateString(options?.deploymentTarget, 'deploymentTarget', context) && isValid;
-
-  return isValid;
-}
-
 export {
-  validateLiveActivityOptions,
   validateNativeSDKConfig,
   validatePushNotificationOptions,
   validateRequired,

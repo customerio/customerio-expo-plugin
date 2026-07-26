@@ -3,12 +3,14 @@ import { withEntitlementsPlist } from '@expo/config-plugins';
 import type {
   CustomerIOPluginOptionsIOS,
   CustomerIOPluginPushNotificationOptions,
+  CustomerIOPluginLiveActivityOptions,
   CustomerIOPluginLocationOptions,
   NativeSDKConfig,
 } from '../types/cio-types';
+import { isLiveNotificationsEnabled } from '../helpers/utils/liveNotificationsEnabled';
 import { mergeConfigWithEnvValues } from '../utils/config';
 import { logger } from '../utils/logger';
-import { validateLiveActivityOptions, validatePushNotificationOptions } from '../utils/validation';
+import { validatePushNotificationOptions } from '../utils/validation';
 import { isExpoVersion53OrHigher } from './utils';
 import { withAppDelegateModifications } from './withAppDelegateModifications';
 import { withCIOIosSwift } from './withCIOIosSwift';
@@ -23,15 +25,15 @@ export function withCIOIos(
   sdkConfig?: NativeSDKConfig,
   props?: CustomerIOPluginOptionsIOS,
   location?: CustomerIOPluginLocationOptions,
+  liveNotifications?: CustomerIOPluginLiveActivityOptions,
 ) {
   const isSwiftProject = isExpoVersion53OrHigher(config);
   const platformConfig = mergeDeprecatedPropertiesAndLogWarnings(props);
   const locationEnabled = location?.enabled === true;
-  const liveActivityEnabled = platformConfig?.liveActivity?.enabled === true;
-
-  if (liveActivityEnabled) {
-    validateLiveActivityOptions(platformConfig?.liveActivity);
-  }
+  const liveActivityEnabled = isLiveNotificationsEnabled(
+    liveNotifications,
+    sdkConfig
+  );
 
   if (platformConfig?.pushNotification) {
     validatePushNotificationOptions(platformConfig.pushNotification);
@@ -89,7 +91,10 @@ export function withCIOIos(
   // independent of push. Requires iOS 16.2+.
   if (liveActivityEnabled && platformConfig) {
     config = withLiveActivityInfoPlist(config);
-    config = withCioLiveActivityWidgetXcodeProject(config, platformConfig);
+    config = withCioLiveActivityWidgetXcodeProject(config, {
+      props: platformConfig,
+      liveNotifications: sdkConfig?.liveNotifications,
+    });
   }
 
   return config;

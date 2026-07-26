@@ -2,6 +2,7 @@ import type { NativeSDKConfig } from '../../types/cio-types';
 import { getPluginVersion } from '../../utils/plugin';
 import { validateNativeSDKConfig } from '../../utils/validation';
 import { PLATFORM, type Platform } from '../constants/common';
+import { patchLiveNotificationPlaceholders } from './patchLiveNotificationCode';
 import {
   type LocationInitOptions,
   patchLocationPlaceholders,
@@ -106,6 +107,14 @@ export function patchNativeSDKInitializer(
   );
 
   content = patchLocationPlaceholders(content, platform, locationOptions);
+
+  // Live Notifications config lives on the SDK config itself, so it needs no separate plumbing:
+  // its presence is what enables the feature on the auto-initialization path.
+  content = patchLiveNotificationPlaceholders(
+    content,
+    platform,
+    sdkConfig.liveNotifications
+  );
 
   return content;
 }

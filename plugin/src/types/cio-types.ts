@@ -26,8 +26,6 @@ export type CustomerIOPluginOptionsIOS = {
 
   pushNotification?: CustomerIOPluginPushNotificationOptions;
 
-  liveActivity?: CustomerIOPluginLiveActivityOptions;
-
   /**
    * @deprecated No longer has any effect. Use autoTrackPushEvents to control if push metrics should be automatically tracked by SDK.
    */
@@ -118,6 +116,11 @@ export type NativeSDKConfig = {
   location?: {
     trackingMode?: LocationTrackingMode;
   };
+  /**
+   * Live Notifications config. Its presence enables the feature; there is no
+   * separate `enabled` flag to set when you use auto initialization.
+   */
+  liveNotifications?: LiveNotificationsSDKConfig;
 };
 
 /**
@@ -143,23 +146,92 @@ export type CustomerIOPluginOptions = {
    * gradle.properties). Host apps must add their own location permissions and privacy usage strings.
    */
   location?: CustomerIOPluginLocationOptions;
+  /**
+   * Live Notifications build-time setup. Only needed for apps that initialize the SDK from
+   * JavaScript — with auto initialization, `config.liveNotifications` turns the feature on by
+   * itself.
+   */
+  liveNotifications?: CustomerIOPluginLiveActivityOptions;
 };
 
 /**
- * iOS Live Activities configuration. Off by default. When `enabled` is true, the plugin sets
+ * Live Notifications build-time setup, off by default. When enabled the plugin sets
  * `NSSupportsLiveActivities` in the host Info.plist, adds the `liveactivities` pod subspec to the
  * host app, and injects a WidgetKit app-extension target that renders the SDK's built-in Live
  * Activity templates. Requires iOS 16.2+. Custom (app-defined) templates remain the host app's
  * responsibility (add them in a separate widget target), matching the native SDK behavior.
+ * Android needs no build-time setup.
  * @public
  */
 export type CustomerIOPluginLiveActivityOptions = {
-  enabled?: boolean;
   /**
-   * Deployment target for the injected widget extension. Defaults to '16.2' (the Live Activities
-   * floor). Set higher (e.g. '17.2') if your templates use newer APIs.
+   * Turn on Live Notifications build-time setup (iOS widget extension, the
+   * `NSSupportsLiveActivities` Info.plist key, and the Podfile subspec).
+   *
+   * Only needed when you initialize the SDK from JavaScript. With auto
+   * initialization, `config.liveNotifications` implies this and you can omit it.
    */
-  deploymentTarget?: string;
+  enabled?: boolean;
+};
+
+/**
+ * Reverse-DNS identifiers for the built-in Live Notification activity types.
+ *
+ * These are the same strings both native SDKs and the backend use, so a type
+ * listed here matches what Customer.io sends as `notificationType`.
+ * @public
+ */
+export const LIVE_NOTIFICATION_TYPES = {
+  segments: 'io.customer.livenotifications.segments',
+  countdownTimer: 'io.customer.livenotifications.countdowntimer',
+} as const;
+
+/**
+ * Branding applied to every Live Notification template.
+ *
+ * The `logo` and colors are baked into the generated iOS widget at prebuild and
+ * passed to the Android SDK at initialization, so one block covers both
+ * platforms. Android renders `accentColorHex`; iOS renders all three colors.
+ * @public
+ */
+export type LiveNotificationBranding = {
+  /** Brand name. Reserved for future templates; not rendered today. */
+  companyName?: string;
+  /**
+   * Logo image: either a path relative to your project root
+   * (e.g. `./assets/brand-logo.png`) or an `http(s)` URL.
+   *
+   * A local path is copied into the Android drawables and the iOS widget's
+   * asset catalog. A URL is downloaded at render time on Android and is **not
+   * supported on iOS**, where the widget is compiled ahead of time.
+   */
+  logo?: string;
+  /** Lock-screen background color as `#RRGGBB`. iOS only. */
+  backgroundColorHex?: string;
+  /** Primary text color as `#RRGGBB`. iOS only. */
+  textColorHex?: string;
+  /** Accent color as `#RRGGBB`. Android notification tint; iOS progress fill. */
+  accentColorHex?: string;
+};
+
+/**
+ * Live Notifications (Android) / Live Activities (iOS) configuration applied at
+ * SDK initialization. Its presence enables the feature — you don't also need
+ * `liveNotifications.enabled`.
+ * @public
+ */
+export type LiveNotificationsSDKConfig = {
+  /**
+   * Built-in activity types to enable, as reverse-DNS identifiers (see
+   * {@link LIVE_NOTIFICATION_TYPES}). Each one is registered for push-to-start
+   * and rendered by the generated iOS widget.
+   *
+   * Unrecognized identifiers are ignored with a warning, so a template added in
+   * a newer SDK can't break a build on an older plugin.
+   */
+  types?: string[];
+  /** Branding shared by every template. */
+  branding?: LiveNotificationBranding;
 };
 
 /**

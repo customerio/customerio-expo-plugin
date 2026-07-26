@@ -9,7 +9,15 @@ import {
 import { replaceCodeByRegex } from '../helpers/utils/codeInjection';
 import { FileManagement } from '../helpers/utils/fileManagement';
 import { injectCIOLiveActivityWidgetPodfileCode } from '../helpers/utils/injectCIOPodfileCode';
-import type { CustomerIOPluginOptionsIOS } from '../types/cio-types';
+import {
+  generateWidgetBundleSwift,
+  resolveLiveNotificationTypes,
+  validateLiveNotificationBranding,
+} from '../helpers/utils/patchLiveNotificationCode';
+import type {
+  CustomerIOPluginOptionsIOS,
+  LiveNotificationsSDKConfig,
+} from '../types/cio-types';
 import { logger } from '../utils/logger';
 import { getIosNativeFilesPath } from '../utils/plugin';
 
@@ -38,15 +46,17 @@ export type AddLiveActivityWidgetTargetOptions = {
  * files, appends the widget Podfile target block, and registers the target/group/build-phases in
  * the parsed Xcode project. Idempotent — bails if the target already exists.
  */
-export const withCioLiveActivityWidgetXcodeProject: ConfigPlugin<
-  CustomerIOPluginOptionsIOS
-> = (configOuter, props) => {
+export const withCioLiveActivityWidgetXcodeProject: ConfigPlugin<{
+  props: CustomerIOPluginOptionsIOS;
+  liveNotifications?: LiveNotificationsSDKConfig;
+}> = (configOuter, { props, liveNotifications }) => {
   return withXcodeProject(configOuter, async (config) => {
     const { modRequest, ios, version: bundleShortVersion } = config;
     const { appleTeamId, useFrameworks } = props;
-    const iosDeploymentTarget =
-      props.liveActivity?.deploymentTarget ||
-      DEFAULT_LIVE_ACTIVITY_DEPLOYMENT_TARGET;
+    // Fixed: the bundle only renders SDK-provided SwiftUI, whose floor is set by the Templates pod.
+    const iosDeploymentTarget = DEFAULT_LIVE_ACTIVITY_DEPLOYMENT_TARGET;
+
+    validateLiveNotificationBranding(liveNotifications?.branding);
 
     if (ios === undefined) {
       throw new Error(
@@ -79,6 +89,7 @@ export const withCioLiveActivityWidgetXcodeProject: ConfigPlugin<
           appleTeamId,
           iosDeploymentTarget,
           useFrameworks,
+          liveNotifications,
         },
         config.modResults
       );
@@ -98,6 +109,7 @@ type AddLiveActivityWidgetInternalOptions = {
   appleTeamId?: string;
   iosDeploymentTarget: string;
   useFrameworks?: CustomerIOPluginOptionsIOS['useFrameworks'];
+  liveNotifications?: LiveNotificationsSDKConfig;
 };
 
 const addLiveActivityWidget = async (
@@ -123,9 +135,21 @@ const addLiveActivityWidget = async (
   const getTargetFile = (filename: string) => `${widgetPath}/${filename}`;
   const sourceDir = `${getIosNativeFilesPath()}/widget`;
 
-  WIDGET_GROUP_FILES.forEach((filename) => {
-    FileManagement.copyFile(`${sourceDir}/${filename}`, getTargetFile(filename));
-  });
+  WIDGET_GROUP_FILES.filter((filename) => filename !== WIDGET_BUNDLE_FILENAME).forEach(
+    (filename) => {
+      FileManagement.copyFile(`${sourceDir}/${filename}`, getTargetFile(filename));
+    }
+  );
+
+  // The widget bundle is generated, not copied: it must render exactly the enabled types, and iOS
+  // branding is SwiftUI compiled into the widget, so it can only be applied here.
+  FileManagement.writeFile(
+    getTargetFile(WIDGET_BUNDLE_FILENAME),
+    generateWidgetBundleSwift(
+      resolveLiveNotificationTypes(options.liveNotifications?.types),
+      options.liveNotifications?.branding
+    )
+  );
 
   updateWidgetInfoPlist({
     infoPlistTargetFile: getTargetFile(PLIST_FILENAME),
