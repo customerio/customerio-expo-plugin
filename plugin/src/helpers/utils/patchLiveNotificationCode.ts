@@ -301,6 +301,7 @@ function patchAndroid(
     .map((type) => `                        LiveNotificationType.${KNOWN_TYPES[type].androidEnum},`)
     .join('\n');
 
+  // The placeholder already sits at the chain's indentation, so the first line adds none.
   const lines = [
     '.enableLiveNotificationTypes(',
     enumArgs,
@@ -312,7 +313,7 @@ function patchAndroid(
     lines.push(brandingCall);
   }
 
-  const init = lines.join('\n').replace(/^/, '                    ');
+  const init = lines.join('\n');
 
   const imports = ['import io.customer.messagingpush.livenotification.LiveNotificationType'];
   if (brandingCall) {
