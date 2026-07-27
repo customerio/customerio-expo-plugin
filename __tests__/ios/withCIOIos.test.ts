@@ -180,10 +180,9 @@ describe('withCIOIos', () => {
     it('injects the widget target and Info.plist, adding the liveactivities subspec (no push/config)', () => {
       const props: CustomerIOPluginOptionsIOS = {
         iosPath: '/test/ios',
-        liveActivity: { enabled: true },
       };
 
-      withCIOIos(mockConfig, undefined, props);
+      withCIOIos(mockConfig, undefined, props, undefined, { enabled: true });
 
       expect(mockWithLiveActivityInfoPlist).toHaveBeenCalledTimes(1);
       expect(mockWithCioLiveActivityWidgetXcodeProject).toHaveBeenCalledTimes(1);
@@ -202,10 +201,9 @@ describe('withCIOIos', () => {
       const props: CustomerIOPluginOptionsIOS = {
         iosPath: '/test/ios',
         pushNotification: { provider: 'apn' },
-        liveActivity: { enabled: true },
       };
 
-      withCIOIos(mockConfig, undefined, props);
+      withCIOIos(mockConfig, undefined, props, undefined, { enabled: true });
 
       expect(mockWithLiveActivityInfoPlist).toHaveBeenCalledTimes(1);
       expect(mockWithCioLiveActivityWidgetXcodeProject).toHaveBeenCalledTimes(1);
@@ -221,11 +219,14 @@ describe('withCIOIos', () => {
       );
     });
 
-    it('does not inject the widget when liveActivity.enabled is false', () => {
-      withCIOIos(mockConfig, undefined, {
-        iosPath: '/test/ios',
-        liveActivity: { enabled: false },
-      });
+    it('does not inject the widget when liveNotifications.enabled is false', () => {
+      withCIOIos(
+        mockConfig,
+        undefined,
+        { iosPath: '/test/ios' },
+        undefined,
+        { enabled: false },
+      );
 
       expect(mockWithLiveActivityInfoPlist).not.toHaveBeenCalled();
       expect(mockWithCioLiveActivityWidgetXcodeProject).not.toHaveBeenCalled();
