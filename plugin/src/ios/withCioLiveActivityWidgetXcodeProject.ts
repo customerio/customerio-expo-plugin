@@ -1,5 +1,6 @@
 import type { ConfigPlugin, XcodeProject } from '@expo/config-plugins';
 import { withXcodeProject } from '@expo/config-plugins';
+import * as semver from 'semver';
 
 import {
   CIO_LIVE_ACTIVITY_WIDGET_TARGET_NAME,
@@ -9,6 +10,11 @@ import {
 import { replaceCodeByRegex } from '../helpers/utils/codeInjection';
 import { FileManagement } from '../helpers/utils/fileManagement';
 import { injectCIOLiveActivityWidgetPodfileCode } from '../helpers/utils/injectCIOPodfileCode';
+import {
+  installCustomLiveActivityWidget,
+  resolveCustomLiveActivityWidget,
+  type ResolvedCustomWidget,
+} from '../helpers/utils/liveNotificationCustomWidget';
 import { installIosLiveNotificationLogo } from '../helpers/utils/liveNotificationLogo';
 import {
   generateWidgetBundleSwift,
@@ -26,11 +32,30 @@ const PLIST_FILENAME = `${CIO_LIVE_ACTIVITY_WIDGET_TARGET_NAME}-Info.plist`;
 const WIDGET_BUNDLE_FILENAME = 'CIOLiveActivityWidgetBundle.swift';
 const ASSET_CATALOG_FILENAME = 'Assets.xcassets';
 
-// Widget source files registered in the Xcode group AND copied to the target directory. The Swift
-// file is compiled (Sources phase); the Info.plist is referenced via INFOPLIST_FILE (set by
-// `addTarget`) but still listed in the group so it appears in the Xcode navigator.
-const WIDGET_SOURCE_FILES = [WIDGET_BUNDLE_FILENAME];
-const WIDGET_GROUP_FILES = [WIDGET_BUNDLE_FILENAME, PLIST_FILENAME];
+// Files the plugin itself writes into the widget directory. A source file copied in from the app
+// must not shadow one of them — everything lands in this one flat directory.
+const GENERATED_WIDGET_FILENAMES = [
+  WIDGET_BUNDLE_FILENAME,
+  PLIST_FILENAME,
+  ASSET_CATALOG_FILENAME,
+];
+
+// Widget files registered in the Xcode group; `customFilenames` are the app's own SwiftUI files (see
+// `liveNotifications.customWidget`), so both lists are computed rather than fixed. Swift files are
+// compiled (Sources phase); the Info.plist is referenced via INFOPLIST_FILE (set by `addTarget`) but
+// still listed in the group so it appears in the Xcode navigator.
+const widgetSourceFiles = (customFilenames: string[] = []): string[] => [
+  WIDGET_BUNDLE_FILENAME,
+  ...customFilenames,
+];
+const widgetGroupFiles = (
+  customFilenames: string[] = [],
+  resourceFiles: string[] = []
+): string[] => [
+  ...widgetSourceFiles(customFilenames),
+  PLIST_FILENAME,
+  ...resourceFiles,
+];
 
 const TARGETED_DEVICE_FAMILY = `"1,2"`;
 // WidgetKit + SwiftUI + ActivityKit need Swift 5; the NSE target uses 4.2 for its ObjC-heavy code.
@@ -42,13 +67,19 @@ export type AddLiveActivityWidgetTargetOptions = {
   iosDeploymentTarget?: string;
   /** Asset catalog filename to compile into the widget, when a branding logo was installed. */
   assetCatalogFilename?: string;
+  /** Swift files copied in from the app (`liveNotifications.customWidget`), to compile too. */
+  customSourceFilenames?: string[];
 };
 
 /**
  * Injects a WidgetKit app-extension target that renders the Customer.io built-in Live Activity
- * templates. Clones the NotificationServiceExtension injection pattern: copies the widget template
- * files, appends the widget Podfile target block, and registers the target/group/build-phases in
- * the parsed Xcode project. Idempotent — bails if the target already exists.
+ * templates, plus the app's own SwiftUI when `liveNotifications.customWidget` names some. Clones the
+ * NotificationServiceExtension injection pattern: copies the widget template files, appends the
+ * widget Podfile target block, and registers the target/group/build-phases in the parsed Xcode
+ * project.
+ *
+ * Only the *contents* of the widget directory are re-synced once the target exists — see
+ * {@link addLiveActivityWidget}.
  */
 export const withCioLiveActivityWidgetXcodeProject: ConfigPlugin<{
   props: CustomerIOPluginOptionsIOS;
@@ -57,8 +88,9 @@ export const withCioLiveActivityWidgetXcodeProject: ConfigPlugin<{
   return withXcodeProject(configOuter, async (config) => {
     const { modRequest, ios, version: bundleShortVersion } = config;
     const { appleTeamId, useFrameworks } = props;
-    // Fixed: the bundle only renders SDK-provided SwiftUI, whose floor is set by the Templates pod.
-    const iosDeploymentTarget = DEFAULT_LIVE_ACTIVITY_DEPLOYMENT_TARGET;
+    const iosDeploymentTarget = resolveWidgetDeploymentTarget(
+      liveNotifications?.widgetDeploymentTarget
+    );
 
     validateLiveNotificationBranding(liveNotifications?.branding);
 
@@ -118,6 +150,16 @@ type AddLiveActivityWidgetInternalOptions = {
   projectRoot: string;
 };
 
+/**
+ * Writes the widget directory and registers the target.
+ *
+ * **A re-run against a project that already has the target only refreshes file contents.** The
+ * group and build-phase entries were written by the first run and are keyed by file name, so a file
+ * that is *added* or *renamed* afterwards cannot be registered here — that needs
+ * `expo prebuild --clean`. Contents are still rewritten (the generated bundle, the app's custom
+ * SwiftUI, the branding asset) so the common case, iterating on a widget's SwiftUI, works without a
+ * clean prebuild.
+ */
 const addLiveActivityWidget = async (
   options: AddLiveActivityWidgetInternalOptions,
   xcodeProject: XcodeProject
@@ -126,36 +168,65 @@ const addLiveActivityWidget = async (
 
   await injectCIOLiveActivityWidgetPodfileCode(iosPath, useFrameworks);
 
-  // Bail out early if the target is already present. The pbxproj helper is idempotent too, but this
-  // also avoids redundant file copies when prebuild re-runs against an already-prepared project.
+  const widgetPath = `${iosPath}/${CIO_LIVE_ACTIVITY_WIDGET_TARGET_NAME}`;
+  const getTargetFile = (filename: string) => `${widgetPath}/${filename}`;
+  FileManagement.mkdir(widgetPath, { recursive: true });
+
+  const customWidget = resolveCustomLiveActivityWidget({
+    liveNotifications: options.liveNotifications,
+    projectRoot: options.projectRoot,
+    reservedFilenames: GENERATED_WIDGET_FILENAMES,
+  });
+
+  const writeWidgetSources = (): {
+    customSourceFilenames: string[];
+    assetCatalogPath: string | null;
+  } => {
+    // The widget bundle is generated, not copied: it must render exactly the enabled types, and iOS
+    // branding is SwiftUI compiled into the widget, so it can only be applied here.
+    FileManagement.writeFile(
+      getTargetFile(WIDGET_BUNDLE_FILENAME),
+      generateWidgetBundleSwift(
+        resolveLiveNotificationTypes(options.liveNotifications?.types),
+        options.liveNotifications?.branding,
+        customWidget?.structName
+      )
+    );
+
+    // iOS branding is SwiftUI compiled into the widget, so a local logo has to become a real asset
+    // in this target — the generated bundle references it by name.
+    const assetCatalogPath = installIosLiveNotificationLogo(
+      options.liveNotifications?.branding,
+      widgetPath,
+      options.projectRoot
+    );
+
+    return {
+      customSourceFilenames: customWidget
+        ? installCustomLiveActivityWidget(customWidget, widgetPath)
+        : [],
+      assetCatalogPath,
+    };
+  };
+
   if (xcodeProject.pbxTargetByName(CIO_LIVE_ACTIVITY_WIDGET_TARGET_NAME)) {
     logger.warn(
-      `${CIO_LIVE_ACTIVITY_WIDGET_TARGET_NAME} already exists in project. Skipping...`
+      `${CIO_LIVE_ACTIVITY_WIDGET_TARGET_NAME} already exists in project. Refreshing its generated files ` +
+        'only — files added or renamed since it was created cannot be registered on an existing target. ' +
+        'Run `expo prebuild --clean` to regenerate it from scratch.'
     );
+    writeWidgetSources();
+    warnAboutUnregisteredSources(xcodeProject, customWidget);
     return;
   }
 
-  const widgetPath = `${iosPath}/${CIO_LIVE_ACTIVITY_WIDGET_TARGET_NAME}`;
-  FileManagement.mkdir(widgetPath, { recursive: true });
-
-  const getTargetFile = (filename: string) => `${widgetPath}/${filename}`;
   const sourceDir = `${getIosNativeFilesPath()}/widget`;
-
-  WIDGET_GROUP_FILES.filter((filename) => filename !== WIDGET_BUNDLE_FILENAME).forEach(
-    (filename) => {
-      FileManagement.copyFile(`${sourceDir}/${filename}`, getTargetFile(filename));
-    }
+  FileManagement.copyFile(
+    `${sourceDir}/${PLIST_FILENAME}`,
+    getTargetFile(PLIST_FILENAME)
   );
 
-  // The widget bundle is generated, not copied: it must render exactly the enabled types, and iOS
-  // branding is SwiftUI compiled into the widget, so it can only be applied here.
-  FileManagement.writeFile(
-    getTargetFile(WIDGET_BUNDLE_FILENAME),
-    generateWidgetBundleSwift(
-      resolveLiveNotificationTypes(options.liveNotifications?.types),
-      options.liveNotifications?.branding
-    )
-  );
+  const { customSourceFilenames, assetCatalogPath } = writeWidgetSources();
 
   updateWidgetInfoPlist({
     infoPlistTargetFile: getTargetFile(PLIST_FILENAME),
@@ -163,21 +234,72 @@ const addLiveActivityWidget = async (
     bundleShortVersion: options.bundleShortVersion,
   });
 
-  // iOS branding is SwiftUI compiled into the widget, so a local logo has to become a real asset
-  // in this target — the generated bundle references it by name.
-  const assetCatalogPath = installIosLiveNotificationLogo(
-    options.liveNotifications?.branding,
-    widgetPath,
-    options.projectRoot
-  );
-
   addLiveActivityWidgetToXcodeProject(xcodeProject, {
     appleTeamId: options.appleTeamId,
     bundleIdentifier: options.bundleIdentifier,
     iosDeploymentTarget,
     assetCatalogFilename: assetCatalogPath ? ASSET_CATALOG_FILENAME : undefined,
+    customSourceFilenames,
   });
 };
+
+/**
+ * The widget's deployment target. 16.2 is the floor for Live Activities and for the SDK's own
+ * templates; an app can raise it because its `customWidget` SwiftUI is compiled into this same
+ * target, and that is the only place its floor can be set. Exported for tests.
+ */
+export function resolveWidgetDeploymentTarget(configured: string | undefined): string {
+  const requested = configured?.trim();
+  if (!requested) {
+    return DEFAULT_LIVE_ACTIVITY_DEPLOYMENT_TARGET;
+  }
+
+  const parsed = semver.coerce(requested);
+  const floor = semver.coerce(DEFAULT_LIVE_ACTIVITY_DEPLOYMENT_TARGET);
+  if (!parsed || (floor && semver.lt(parsed, floor))) {
+    logger.warn(
+      `liveNotifications.widgetDeploymentTarget "${requested}" is not a version at or above ` +
+        `${DEFAULT_LIVE_ACTIVITY_DEPLOYMENT_TARGET}, which is where ActivityKit starts. Using ` +
+        `${DEFAULT_LIVE_ACTIVITY_DEPLOYMENT_TARGET}.`
+    );
+    return DEFAULT_LIVE_ACTIVITY_DEPLOYMENT_TARGET;
+  }
+
+  return requested;
+}
+
+/**
+ * On a refresh-only run, a custom source file whose name isn't already in the project was added or
+ * renamed after the target was created, so nothing compiles it. Name it rather than leaving the
+ * failure to show up as a missing symbol at build time.
+ */
+function warnAboutUnregisteredSources(
+  xcodeProject: XcodeProject,
+  customWidget: ResolvedCustomWidget | null
+): void {
+  if (!customWidget) return;
+
+  const unregistered = customWidget.filenames.filter(
+    (filename) => !hasFileReference(xcodeProject, filename)
+  );
+  if (unregistered.length === 0) return;
+
+  logger.warn(
+    `${unregistered.join(', ')} ${unregistered.length === 1 ? 'is' : 'are'} not registered on the existing ` +
+      `${CIO_LIVE_ACTIVITY_WIDGET_TARGET_NAME} target, so ${unregistered.length === 1 ? 'it' : 'they'} will not ` +
+      'be compiled. Run `expo prebuild --clean` to pick up new or renamed custom widget files.'
+  );
+}
+
+function hasFileReference(xcodeProject: XcodeProject, filename: string): boolean {
+  const references = xcodeProject.hash.project.objects.PBXFileReference ?? {};
+  return Object.keys(references).some((key) => {
+    const reference = references[key];
+    if (typeof reference !== 'object' || reference === null) return false;
+    const value = String(reference.path ?? reference.name ?? '').replace(/"/g, '');
+    return value === filename || value.endsWith(`/${filename}`);
+  });
+}
 
 /**
  * Pure string transform: substitutes the `{{BUNDLE_VERSION}}` and `{{BUNDLE_SHORT_VERSION}}`
@@ -236,13 +358,18 @@ export function addLiveActivityWidgetToXcodeProject(
     return xcodeProject;
   }
 
-  const { appleTeamId, bundleIdentifier, iosDeploymentTarget, assetCatalogFilename } =
-    options;
+  const {
+    appleTeamId,
+    bundleIdentifier,
+    iosDeploymentTarget,
+    assetCatalogFilename,
+    customSourceFilenames = [],
+  } = options;
   const resourceFiles = assetCatalogFilename ? [assetCatalogFilename] : [];
 
   // Create new PBXGroup for the widget files.
   const widgetGroup = xcodeProject.addPbxGroup(
-    [...WIDGET_GROUP_FILES, ...resourceFiles],
+    widgetGroupFiles(customSourceFilenames, resourceFiles),
     CIO_LIVE_ACTIVITY_WIDGET_TARGET_NAME,
     CIO_LIVE_ACTIVITY_WIDGET_TARGET_NAME
   );
@@ -271,7 +398,7 @@ export function addLiveActivityWidgetToXcodeProject(
 
   // Add build phases to the new target.
   xcodeProject.addBuildPhase(
-    WIDGET_SOURCE_FILES,
+    widgetSourceFiles(customSourceFilenames),
     'PBXSourcesBuildPhase',
     'Sources',
     widgetTarget.uuid

@@ -2,6 +2,7 @@
 const xcode = require('xcode');
 import {
   addLiveActivityWidgetToXcodeProject,
+  resolveWidgetDeploymentTarget,
   type AddLiveActivityWidgetTargetOptions,
 } from '../../../plugin/src/ios/withCioLiveActivityWidgetXcodeProject';
 import { getFixturePath } from '../../utils';
@@ -52,6 +53,50 @@ const buildPhaseTypesForTarget = (
     }
     return 'unknown';
   });
+};
+
+/** File names compiled by the target's Sources phase, resolved through PBXBuildFile → PBXFileReference. */
+const sourceFileNamesForTarget = (
+  project: ReturnType<typeof xcode.project>,
+  targetName: string,
+): string[] => {
+  const target = findTarget(project, targetName);
+  if (!target) return [];
+  const sections = project.hash.project.objects;
+  const phaseUuid = target.buildPhases.find(
+    (bp) => sections.PBXSourcesBuildPhase?.[bp.value],
+  )?.value;
+  if (!phaseUuid) return [];
+
+  const files = sections.PBXSourcesBuildPhase[phaseUuid].files as {
+    value: string;
+  }[];
+  return files.map((file) => {
+    const fileRef = sections.PBXBuildFile[file.value].fileRef as string;
+    const reference = sections.PBXFileReference[fileRef] as {
+      path?: string;
+      name?: string;
+    };
+    return String(reference.path ?? reference.name ?? '').replace(/"/g, '');
+  });
+};
+
+/** Children of the widget's PBXGroup, as they appear in the Xcode navigator. */
+const groupChildNamesFor = (
+  project: ReturnType<typeof xcode.project>,
+  groupName: string,
+): string[] => {
+  const groups = project.hash.project.objects.PBXGroup;
+  const group = Object.keys(groups)
+    .map((key) => groups[key])
+    .find(
+      (candidate): candidate is { children: { comment?: string }[] } =>
+        typeof candidate === 'object' &&
+        candidate !== null &&
+        String((candidate as { name?: string }).name ?? '').replace(/"/g, '') ===
+          groupName,
+    );
+  return (group?.children ?? []).map((child) => String(child.comment ?? ''));
 };
 
 const buildSettingsForTarget = (
@@ -122,6 +167,47 @@ describe('ios scenarios — addLiveActivityWidgetToXcodeProject (vanilla pbxproj
     }
   });
 
+  it('compiles only the generated bundle when no custom widget is configured', () => {
+    const { project } = loadFixture('vanilla.pbxproj');
+    addLiveActivityWidgetToXcodeProject(project, baseOptions);
+
+    expect(sourceFileNamesForTarget(project, WIDGET_TARGET_NAME)).toEqual([
+      'CIOLiveActivityWidgetBundle.swift',
+    ]);
+  });
+
+  // The app's own SwiftUI has to be compiled by the generated target — that is the whole point of
+  // handing the plugin a source file instead of owning a widget target.
+  it("compiles the app's custom widget sources alongside the generated bundle", () => {
+    const { project } = loadFixture('vanilla.pbxproj');
+    addLiveActivityWidgetToXcodeProject(project, {
+      ...baseOptions,
+      customSourceFilenames: ['RideshareLiveActivity.swift', 'RideshareViews.swift'],
+    });
+
+    expect(sourceFileNamesForTarget(project, WIDGET_TARGET_NAME)).toEqual([
+      'CIOLiveActivityWidgetBundle.swift',
+      'RideshareLiveActivity.swift',
+      'RideshareViews.swift',
+    ]);
+  });
+
+  it('lists the custom sources in the widget group so they show up in Xcode', () => {
+    const { project } = loadFixture('vanilla.pbxproj');
+    addLiveActivityWidgetToXcodeProject(project, {
+      ...baseOptions,
+      customSourceFilenames: ['RideshareLiveActivity.swift'],
+      assetCatalogFilename: 'Assets.xcassets',
+    });
+
+    expect(groupChildNamesFor(project, WIDGET_TARGET_NAME)).toEqual([
+      'CIOLiveActivityWidgetBundle.swift',
+      'RideshareLiveActivity.swift',
+      'CIOLiveActivityWidget-Info.plist',
+      'Assets.xcassets',
+    ]);
+  });
+
   it('honors an explicit deployment target override', () => {
     const { project } = loadFixture('vanilla.pbxproj');
     addLiveActivityWidgetToXcodeProject(project, {
@@ -134,6 +220,34 @@ describe('ios scenarios — addLiveActivityWidgetToXcodeProject (vanilla pbxproj
       expect(buildSettings.IPHONEOS_DEPLOYMENT_TARGET).toEqual('17.2');
     }
   });
+});
+
+// The app's own SwiftUI is compiled into this target, so its floor has to be settable — but not
+// below where ActivityKit exists.
+describe('ios scenarios — resolveWidgetDeploymentTarget', () => {
+  it('defaults to the Live Activities floor', () => {
+    expect(resolveWidgetDeploymentTarget(undefined)).toEqual('16.2');
+    expect(resolveWidgetDeploymentTarget('   ')).toEqual('16.2');
+  });
+
+  it('honors a higher configured target', () => {
+    expect(resolveWidgetDeploymentTarget('17.0')).toEqual('17.0');
+    expect(resolveWidgetDeploymentTarget(' 18.1 ')).toEqual('18.1');
+  });
+
+  it.each(['16.1', '15.0', 'not-a-version'])(
+    'falls back to 16.2 for %s, with a warning',
+    (configured) => {
+      const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+
+      expect(resolveWidgetDeploymentTarget(configured)).toEqual('16.2');
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining('widgetDeploymentTarget'),
+      );
+
+      warn.mockRestore();
+    },
+  );
 });
 
 describe('ios scenarios — addLiveActivityWidgetToXcodeProject (multi-target host)', () => {

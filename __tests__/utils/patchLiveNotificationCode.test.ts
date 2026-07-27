@@ -4,6 +4,7 @@ import {
   generateWidgetBundleSwift,
   isRemoteLogo,
   patchLiveNotificationPlaceholders,
+  resolveCustomLiveNotificationType,
   resolveLiveNotificationTypes,
   validateLiveNotificationBranding,
 } from '../../plugin/src/helpers/utils/patchLiveNotificationCode';
@@ -91,6 +92,29 @@ describe('Live Notifications config', () => {
     });
   });
 
+  describe('resolveCustomLiveNotificationType()', () => {
+    test('keeps the app identifier, trimmed', () => {
+      expect(resolveCustomLiveNotificationType('  com.myapp.rideshare ')).toBe(
+        'com.myapp.rideshare'
+      );
+    });
+
+    test.each([undefined, '', '   '])('treats %p as unconfigured', (value) => {
+      expect(resolveCustomLiveNotificationType(value)).toBeUndefined();
+    });
+
+    // Registering CIOCustomAttributes under a built-in identifier would make every event for that
+    // template resolve to whichever attributes type was registered first.
+    test('refuses a built-in identifier with a warning', () => {
+      const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+
+      expect(resolveCustomLiveNotificationType(SEGMENTS)).toBeUndefined();
+      expect(warn).toHaveBeenCalledWith(expect.stringContaining(SEGMENTS));
+
+      warn.mockRestore();
+    });
+  });
+
   describe('isLiveNotificationsEnabled()', () => {
     const cdpApiKey = 'key';
 
@@ -130,6 +154,41 @@ describe('Live Notifications config', () => {
         })
       ).toBe(false);
       warn.mockRestore();
+    });
+
+    // A custom template needs the same native artifacts as a built-in one, so either half of the
+    // custom config turns the setup on — the missing half is then reported while generating.
+    test('a custom type alone is enough, with no built-in types', () => {
+      expect(
+        isLiveNotificationsEnabled(undefined, {
+          cdpApiKey,
+          liveNotifications: { types: [], customType: 'com.myapp.rideshare' },
+        })
+      ).toBe(true);
+    });
+
+    test('a custom widget alone is enough, with no built-in types', () => {
+      expect(
+        isLiveNotificationsEnabled(undefined, {
+          cdpApiKey,
+          liveNotifications: {
+            types: [],
+            customWidget: {
+              sourceFile: './ios-widgets/RideshareLiveActivity.swift',
+              structName: 'RideshareLiveActivity',
+            },
+          },
+        })
+      ).toBe(true);
+    });
+
+    test('off when the custom type is blank and no built-in type is listed', () => {
+      expect(
+        isLiveNotificationsEnabled(undefined, {
+          cdpApiKey,
+          liveNotifications: { types: [], customType: '   ' },
+        })
+      ).toBe(false);
     });
   });
 
@@ -206,6 +265,37 @@ describe('Live Notifications config', () => {
       expect(result).not.toContain('{{LIVE_NOTIFICATION');
       expect(result).not.toContain('LiveActivitiesModule');
     });
+
+    // On the auto-initialization path this generated code *is* the runtime registration, so without
+    // it a custom activity would never get a push-to-start token.
+    test('registers the SDK attributes type under the app custom identifier', () => {
+      const result = patchLiveNotificationPlaceholders(IOS_TEMPLATE, PLATFORM.IOS, {
+        types: [SEGMENTS],
+        customType: 'com.myapp.rideshare',
+      });
+
+      expect(result).toContain('.register(CIOSegmentsAttributes.self)');
+      expect(result).toContain(
+        '.register(CIOCustomAttributes.self, identifier: "com.myapp.rideshare")'
+      );
+      expect(result.indexOf('addModule')).toBeLessThan(
+        result.indexOf('CustomerIO.initialize')
+      );
+    });
+
+    test('registers a custom type on its own, with no built-in types enabled', () => {
+      const result = patchLiveNotificationPlaceholders(IOS_TEMPLATE, PLATFORM.IOS, {
+        types: [],
+        customType: 'com.myapp.rideshare',
+      });
+
+      expect(result).toContain('if #available(iOS 16.2, *)');
+      expect(result).toContain(
+        '.register(CIOCustomAttributes.self, identifier: "com.myapp.rideshare")'
+      );
+      expect(result).not.toContain('CIOSegmentsAttributes');
+      expect(result).not.toContain('{{LIVE_NOTIFICATION');
+    });
   });
 
   describe('patchLiveNotificationPlaceholders() - Android', () => {
@@ -273,6 +363,40 @@ describe('Live Notifications config', () => {
       expect(result).not.toContain('LiveNotificationBranding');
     });
 
+    test('allowlists a custom type alongside the built-in ones', () => {
+      const result = patchLiveNotificationPlaceholders(
+        ANDROID_TEMPLATE,
+        PLATFORM.ANDROID,
+        { types: [SEGMENTS], customType: 'com.myapp.rideshare' }
+      );
+
+      expect(result).toContain('.enableLiveNotificationTypes(');
+      expect(result).toContain(
+        '.enableCustomLiveNotificationTypes("com.myapp.rideshare")'
+      );
+    });
+
+    // The enum overload is what needs the import; a custom type is passed as a plain string, so an
+    // unused import would be left behind.
+    test('a custom type alone omits the built-in enum call and its import', () => {
+      const result = patchLiveNotificationPlaceholders(
+        ANDROID_TEMPLATE,
+        PLATFORM.ANDROID,
+        { types: [], customType: 'com.myapp.rideshare' }
+      );
+
+      expect(result).toContain(
+        '.enableCustomLiveNotificationTypes("com.myapp.rideshare")'
+      );
+      expect(result).not.toContain('.enableLiveNotificationTypes(');
+      expect(result).not.toContain(
+        'import io.customer.messagingpush.livenotification.LiveNotificationType'
+      );
+      // No import to add means the placeholder's whole line goes, not just its contents.
+      expect(result).not.toContain('\n\n\n');
+      expect(result).not.toContain('{{LIVE_NOTIFICATION');
+    });
+
     // Apps that don't use the feature must get exactly the output they got before it existed.
     test('collapses the builder chain back to one line when unconfigured', () => {
       const result = patchLiveNotificationPlaceholders(
@@ -324,6 +448,42 @@ describe('Live Notifications config', () => {
 
       expect(swift).not.toContain('Image(');
       expect(swift).toContain('progressCompleteStyle: Color(hex: 0x00A0DF)');
+    });
+
+    // Branding is compiled into the SDK's templates; a view the app wrote styles itself, so its
+    // entry must stay a bare initializer or the widget won't compile.
+    test("adds the app's widget struct with no branding argument", () => {
+      const swift = generateWidgetBundleSwift(
+        [SEGMENTS],
+        { accentColorHex: '#00A0DF' },
+        'RideshareLiveActivity'
+      );
+
+      expect(swift).toContain('CIOSegmentsLiveActivity(branding: CIOSegmentsBranding(');
+      expect(swift).toContain('RideshareLiveActivity()');
+      expect(swift).not.toContain('RideshareLiveActivity(branding');
+    });
+
+    test('renders a custom widget on its own, with no built-in templates', () => {
+      const swift = generateWidgetBundleSwift([], undefined, 'RideshareLiveActivity');
+
+      expect(swift).toContain('RideshareLiveActivity()');
+      expect(swift).not.toContain('CIOSegmentsLiveActivity');
+      expect(swift).not.toContain('CIOCountdownTimerLiveActivity');
+    });
+
+    // A WidgetBundle body has to return at least one widget, so an unrenderable config can't be
+    // emitted as an empty bundle — it wouldn't compile.
+    test('falls back to the built-in templates when nothing resolved', () => {
+      const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+
+      const swift = generateWidgetBundleSwift([], undefined, undefined);
+
+      expect(swift).toContain('CIOSegmentsLiveActivity()');
+      expect(swift).toContain('CIOCountdownTimerLiveActivity()');
+      expect(warn).toHaveBeenCalledWith(expect.stringContaining('falling back'));
+
+      warn.mockRestore();
     });
   });
 });

@@ -2,7 +2,10 @@ import type {
   CustomerIOPluginLiveNotificationsOptions,
   NativeSDKConfig,
 } from '../../types/cio-types';
-import { resolveLiveNotificationTypes } from './patchLiveNotificationCode';
+import {
+  resolveCustomLiveNotificationType,
+  resolveLiveNotificationTypes,
+} from './patchLiveNotificationCode';
 
 /**
  * Whether to generate the iOS build-time setup for Live Notifications: the widget extension
@@ -31,6 +34,16 @@ export function isLiveNotificationsEnabled(
     return false;
   }
 
-  // An explicit but entirely unrecognized `types` list leaves nothing to generate.
-  return resolveLiveNotificationTypes(configured.types).length > 0;
+  if (resolveLiveNotificationTypes(configured.types).length > 0) {
+    return true;
+  }
+
+  // A custom template on its own is enough: the widget extension renders the app's own SwiftUI, and
+  // the app still needs the Info.plist key and the Podfile subspec for it. Either half turns it on
+  // so that a config missing the other half is reported while generating, rather than silently
+  // producing nothing.
+  return (
+    resolveCustomLiveNotificationType(configured.customType) !== undefined ||
+    (configured.customWidget?.structName?.trim() ?? '') !== ''
+  );
 }

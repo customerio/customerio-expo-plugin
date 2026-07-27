@@ -158,9 +158,11 @@ export type CustomerIOPluginOptions = {
  * Live Notifications build-time setup, off by default. When enabled the plugin sets
  * `NSSupportsLiveActivities` in the host Info.plist, adds the `liveactivities` pod subspec to the
  * host app, and injects a WidgetKit app-extension target that renders the SDK's built-in Live
- * Activity templates. Requires iOS 16.2+. Custom (app-defined) templates remain the host app's
- * responsibility (add them in a separate widget target), matching the native SDK behavior.
- * Android needs no build-time setup.
+ * Activity templates. Requires iOS 16.2+. Android needs no build-time setup.
+ *
+ * A custom (app-defined) template is rendered by that same generated target: name it with
+ * {@link LiveNotificationsSDKConfig.customType} and hand the plugin your SwiftUI file with
+ * {@link LiveNotificationsSDKConfig.customWidget}. You don't need a widget target of your own.
  * @public
  */
 export type CustomerIOPluginLiveNotificationsOptions = {
@@ -215,6 +217,49 @@ export type LiveNotificationBranding = {
 };
 
 /**
+ * The SwiftUI that renders your custom Live Activity, compiled into the widget extension the
+ * plugin generates. Required alongside {@link LiveNotificationsSDKConfig.customType} — without it
+ * the widget has nothing to draw for that type.
+ *
+ * Write a plain WidgetKit widget over the SDK's `CIOCustomAttributes` (shipped by the native iOS
+ * SDK, so there is no extra pod to add and no attributes type for you to define):
+ *
+ * ```swift
+ * import CioLiveActivities_Attributes
+ * import SwiftUI
+ * import WidgetKit
+ *
+ * struct RideshareLiveActivity: Widget {
+ *     var body: some WidgetConfiguration {
+ *         ActivityConfiguration(for: CIOCustomAttributes.self) { context in
+ *             Text(context.state.data["status"] ?? "")
+ *         } dynamicIsland: { _ in DynamicIsland { } }
+ *     }
+ * }
+ * ```
+ *
+ * Both a path and a name are needed because the plugin never parses Swift: it copies the file into
+ * the widget target and instantiates `structName` in the generated `WidgetBundle`.
+ * @public
+ */
+export type LiveNotificationCustomWidget = {
+  /**
+   * Path to your SwiftUI file, relative to the project root (e.g.
+   * `'./ios-widgets/RideshareLiveActivity.swift'`), or absolute.
+   *
+   * Pass an array when the widget spans several files; all of them are compiled into the widget
+   * extension. They are copied into one directory, so their file names must be unique and must not
+   * collide with the files the plugin generates there.
+   */
+  sourceFile: string | string[];
+  /**
+   * Name of the `Widget` struct to instantiate in the generated `WidgetBundle`, e.g.
+   * `'RideshareLiveActivity'`.
+   */
+  structName: string;
+};
+
+/**
  * Live Notifications (Android) / Live Activities (iOS) configuration applied at
  * SDK initialization. Its presence enables the feature — you don't also need
  * `liveNotifications.enabled`.
@@ -230,8 +275,32 @@ export type LiveNotificationsSDKConfig = {
    * a newer SDK can't break a build on an older plugin.
    */
   types?: string[];
-  /** Branding shared by every template. */
+  /** Branding shared by every built-in template. Your `customWidget` styles itself. */
   branding?: LiveNotificationBranding;
+  /**
+   * Your own reverse-DNS identifier for a custom activity type, e.g. `'com.myapp.rideshare'`.
+   * Setting it enables the custom template on both platforms: iOS registers the SDK's
+   * `CIOCustomAttributes` under this name — which is what gives a custom activity push-to-start
+   * and metrics — and Android allowlists it for its render callback.
+   *
+   * Singular by design: iOS resolves an activity's type from its Swift attributes type, and every
+   * custom activity shares one. A second identifier could not be told apart, so one identifier is
+   * the limit rather than a silent mis-attribution.
+   *
+   * On iOS, pair it with `customWidget`; that SwiftUI is what renders the activity.
+   */
+  customType?: string;
+  /** The SwiftUI rendering `customType` on iOS. Required when `customType` is set. */
+  customWidget?: LiveNotificationCustomWidget;
+  /**
+   * iOS deployment target for the generated widget extension. Defaults to `'16.2'`, the floor for
+   * Live Activities and for the SDK's own templates.
+   *
+   * Raise it when the SwiftUI in your `customWidget` needs newer APIs — it is compiled into
+   * this target, so this is the only place that floor can be set. Values below `'16.2'` are
+   * rejected with a warning, since ActivityKit does not exist there.
+   */
+  widgetDeploymentTarget?: string;
 };
 
 /**
