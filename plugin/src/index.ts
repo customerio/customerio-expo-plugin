@@ -34,7 +34,7 @@ function withCustomerIOPlugin(
 
   // Apply platform specific modifications
   config = withCIOIos(config, props.config, props.ios, props.location, props.liveNotifications);
-  config = withCIOAndroid(config, props.config, props.android, props.location);
+  config = withCIOAndroid(config, props.config, props.android, props.location, props.liveNotifications);
 
   return config;
 }

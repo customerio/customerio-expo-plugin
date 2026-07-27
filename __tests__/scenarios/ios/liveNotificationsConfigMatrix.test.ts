@@ -34,6 +34,7 @@ const SEGMENTS = 'io.customer.livenotifications.segments';
 const COUNTDOWN = 'io.customer.livenotifications.countdowntimer';
 const CUSTOM_TYPE = 'com.myapp.rideshare';
 const STRUCT = 'RideshareLiveActivity';
+const BRANDING = { backgroundColorHex: '#101010', accentColorHex: '#00A0DF' };
 const WIDGET_SOURCE = `import SwiftUI\nstruct ${STRUCT}: Widget { var body: some WidgetConfiguration { fatalError() } }\n`;
 
 const cdpApiKey = 'test-key';
@@ -72,7 +73,9 @@ const bundleFor = (options: {
   });
   return generateWidgetBundleSwift(
     resolveLiveNotificationTypes(options.liveNotifications?.types),
-    options.liveNotifications?.branding,
+    // Branding is a build-time option, not SDK config: it is compiled into this bundle, so it has
+    // to be readable on the JavaScript-initialization path too.
+    options.build?.branding,
     resolved?.structName,
     options.autoInitializes
   );
@@ -220,5 +223,79 @@ describe('Live Notifications config matrix — JavaScript initialization', () =>
     });
     expect(resolved?.structName).toEqual(STRUCT);
     expect(warn).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * Branding cuts across the grid because it is the one value both platforms consume at build time:
+ * iOS compiles it into the widget's SwiftUI, and Android has it generated into the initializer.
+ * That is why it lives in the build-time options — SDK config only exists on the automatic path, and
+ * a widget already compiled cannot be branded afterwards.
+ */
+describe('Live Notifications config matrix — branding', () => {
+  test('auto initialization: branding is compiled into the built-in widgets', () => {
+    const bundle = bundleFor({
+      liveNotifications: { types: [SEGMENTS] },
+      build: buildOptions({ branding: BRANDING }),
+      autoInitializes: true,
+    });
+
+    expect(bundle).toContain(
+      'CIOSegmentsLiveActivity(branding: CIOSegmentsBranding(background: Color(hex: 0x101010)'
+    );
+    expect(bundle).toContain('progressCompleteStyle: Color(hex: 0x00A0DF)');
+    // The hex helper is only emitted when a generated color actually needs it.
+    expect(bundle).toContain('init(hex: UInt32)');
+  });
+
+  test('JavaScript initialization: branding still reaches the widget', () => {
+    // The point of the move. There is no SDK config on this path, so branding read from there would
+    // leave a JavaScript-initialized app permanently stuck with the SDK's default styling.
+    const bundle = bundleFor({
+      build: buildOptions({ enabled: true, branding: BRANDING }),
+      autoInitializes: false,
+    });
+
+    expect(bundle).toContain('CIOSegmentsLiveActivity(branding: CIOSegmentsBranding(');
+    expect(bundle).toContain('CIOCountdownTimerLiveActivity(branding: CIOCountdownTimerBranding(');
+    expect(bundle).toContain('background: Color(hex: 0x101010)');
+  });
+
+  test('a custom template takes no branding argument, on either path', () => {
+    // The app wrote that SwiftUI, so it styles itself; passing branding in would not compile.
+    for (const autoInitializes of [true, false]) {
+      const bundle = bundleFor({
+        liveNotifications: autoInitializes
+          ? { types: [SEGMENTS], customType: CUSTOM_TYPE }
+          : undefined,
+        build: buildOptions({
+          enabled: true,
+          branding: BRANDING,
+          customWidget: customWidget(),
+        }),
+        autoInitializes,
+      });
+
+      expect(bundle).toContain(`${STRUCT}()`);
+      expect(bundle).not.toContain(`${STRUCT}(branding`);
+      expect(bundle).toContain('CIOSegmentsLiveActivity(branding:');
+    }
+  });
+
+  test('no branding: the widgets use the SDK default styling and no hex helper is emitted', () => {
+    const bundle = bundleFor({
+      build: buildOptions({ enabled: true }),
+      autoInitializes: false,
+    });
+
+    expect(bundle).toContain('CIOSegmentsLiveActivity()');
+    expect(bundle).not.toContain('init(hex: UInt32)');
+  });
+
+  test('branding alone cannot switch the feature on', () => {
+    // Same reasoning as `customWidget`: it describes how templates look, never whether they run.
+    expect(isLiveNotificationsEnabled(buildOptions({ branding: BRANDING }), undefined)).toBe(
+      false
+    );
   });
 });

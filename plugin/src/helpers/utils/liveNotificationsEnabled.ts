@@ -19,7 +19,9 @@ import {
  *   `liveNotifications.enabled` to get the native artifacts while registering its types at
  *   runtime.
  *
- * Android needs nothing at build time; it reads its types and branding from the SDK config.
+ * Android needs no target of its own at build time — it reads its types from the SDK config and its
+ * branding from the build-time options, and the only file the plugin writes for it is the branding
+ * logo drawable.
  */
 export function isLiveNotificationsEnabled(
   liveNotifications: CustomerIOPluginLiveNotificationsOptions | undefined,

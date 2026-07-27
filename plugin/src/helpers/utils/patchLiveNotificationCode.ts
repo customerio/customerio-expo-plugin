@@ -289,11 +289,16 @@ function usesGeneratedColors(
  * A configured `customType` is registered here too. On this path the generated initializer *is* the
  * runtime registration — the React Native wrapper only registers what it is handed at
  * `initialize()` — so without it a custom activity would never get a push-to-start token.
+ *
+ * `branding` arrives separately because it lives in the build-time options rather than SDK config
+ * (it has to reach the iOS widget on both initialization paths). Only Android consumes it here;
+ * iOS branding is compiled into the generated widget instead.
  */
 export function patchLiveNotificationPlaceholders(
   content: string,
   platform: Platform,
-  liveNotifications?: LiveNotificationsSDKConfig
+  liveNotifications?: LiveNotificationsSDKConfig,
+  branding?: LiveNotificationBranding
 ): string {
   const types = liveNotifications
     ? resolveLiveNotificationTypes(liveNotifications.types)
@@ -304,10 +309,10 @@ export function patchLiveNotificationPlaceholders(
     return clearPlaceholders(content, platform);
   }
 
-  validateLiveNotificationBranding(liveNotifications?.branding);
+  validateLiveNotificationBranding(branding);
 
   return platform === PLATFORM.ANDROID
-    ? patchAndroid(content, types, liveNotifications?.branding, customType)
+    ? patchAndroid(content, types, branding, customType)
     : patchIos(content, types, customType);
 }
 

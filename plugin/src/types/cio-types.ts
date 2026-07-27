@@ -147,9 +147,12 @@ export type CustomerIOPluginOptions = {
    */
   location?: CustomerIOPluginLocationOptions;
   /**
-   * Live Notifications build-time setup. Only needed for apps that initialize the SDK from
-   * JavaScript — with auto initialization, `config.liveNotifications` turns the feature on by
-   * itself.
+   * Live Notifications build-time setup: the branding compiled into the iOS widget, the SwiftUI for
+   * a custom template, and the `enabled` switch.
+   *
+   * Only `enabled` is specific to initializing the SDK from JavaScript — with auto initialization
+   * `config.liveNotifications` turns the feature on by itself. The rest applies on both paths,
+   * because it describes artifacts the plugin builds rather than anything the SDK registers.
    */
   liveNotifications?: CustomerIOPluginLiveNotificationsOptions;
 };
@@ -164,6 +167,10 @@ export type CustomerIOPluginOptions = {
  * {@link LiveNotificationsSDKConfig.customType} and hand the plugin your SwiftUI file with
  * {@link CustomerIOPluginLiveNotificationsOptions.customWidget}. You don't need a widget target of
  * your own.
+ *
+ * Everything here except `enabled` is consumed at build time on both initialization paths — that is
+ * why {@link CustomerIOPluginLiveNotificationsOptions.branding} and `customWidget` live here rather
+ * than under `config.liveNotifications`, which exists only when the SDK initializes automatically.
  * @public
  */
 export type CustomerIOPluginLiveNotificationsOptions = {
@@ -188,6 +195,21 @@ export type CustomerIOPluginLiveNotificationsOptions = {
    * `CustomerIO.initialize` when you initialize from JavaScript.
    */
   customWidget?: LiveNotificationCustomWidget;
+  /**
+   * Branding shared by every built-in template. Your `customWidget` styles itself.
+   *
+   * Lives here rather than under `config.liveNotifications` because neither platform reads it at
+   * runtime from the plugin: on iOS it is SwiftUI compiled into the generated widget extension, and
+   * on Android it is generated into your initializer. Keeping it here is what lets it reach the iOS
+   * widget whether you initialize the SDK automatically or from JavaScript — SDK config only exists
+   * on the automatic path, and there is no way to brand a compiled widget later.
+   *
+   * With automatic initialization this is the only place to set it. If you initialize from
+   * JavaScript, set it here *and* pass branding to `CustomerIO.initialize`: this value is what the
+   * plugin compiles into the iOS widget, and the value you pass at runtime is what Android applies —
+   * the plugin generates no initializer on that path, so it cannot forward it for you.
+   */
+  branding?: LiveNotificationBranding;
 };
 
 /**
@@ -203,11 +225,12 @@ export const LIVE_NOTIFICATION_TYPES = {
 } as const;
 
 /**
- * Branding applied to every Live Notification template.
+ * Branding applied to every built-in Live Notification template. Set it with
+ * {@link CustomerIOPluginLiveNotificationsOptions.branding}.
  *
- * The `logo` and colors are baked into the generated iOS widget at prebuild and
- * passed to the Android SDK at initialization, so one block covers both
- * platforms. Android renders `accentColorHex`; iOS renders all three colors.
+ * The `logo` and colors are baked into the generated iOS widget at prebuild and passed to the
+ * Android SDK at initialization, so one block covers both platforms. Android renders
+ * `accentColorHex`; iOS renders all three colors.
  * @public
  */
 export type LiveNotificationBranding = {
@@ -289,8 +312,6 @@ export type LiveNotificationsSDKConfig = {
    * a newer SDK can't break a build on an older plugin.
    */
   types?: string[];
-  /** Branding shared by every built-in template. Your `customWidget` styles itself. */
-  branding?: LiveNotificationBranding;
   /**
    * Your own reverse-DNS identifier for a custom activity type, e.g. `'com.myapp.rideshare'`.
    * Setting it enables the custom template on both platforms: iOS registers the SDK's

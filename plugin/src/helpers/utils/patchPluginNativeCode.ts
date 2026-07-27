@@ -1,4 +1,7 @@
-import type { NativeSDKConfig } from '../../types/cio-types';
+import type {
+  LiveNotificationBranding,
+  NativeSDKConfig,
+} from '../../types/cio-types';
 import { getPluginVersion } from '../../utils/plugin';
 import { validateNativeSDKConfig } from '../../utils/validation';
 import { PLATFORM, type Platform } from '../constants/common';
@@ -13,12 +16,17 @@ export type { LocationInitOptions };
 /**
  * Shared utility function to perform common SDK config replacements
  * for both iOS and Android template files
+ *
+ * `liveNotificationBranding` comes from the build-time plugin options rather than `sdkConfig`, since
+ * it also has to reach the generated iOS widget on the JavaScript-initialization path. Only the
+ * Android initializer applies it; iOS compiles branding into the widget instead.
  */
 export function patchNativeSDKInitializer(
   rawContent: string,
   platform: Platform,
   sdkConfig: NativeSDKConfig,
-  locationOptions?: LocationInitOptions
+  locationOptions?: LocationInitOptions,
+  liveNotificationBranding?: LiveNotificationBranding
 ): string {
   // Validate SDK configuration to ensure all fields are present and 
   // correct at the time of patching in prebuild
@@ -108,12 +116,14 @@ export function patchNativeSDKInitializer(
 
   content = patchLocationPlaceholders(content, platform, locationOptions);
 
-  // Live Notifications config lives on the SDK config itself, so it needs no separate plumbing:
-  // its presence is what enables the feature on the auto-initialization path.
+  // The types and `customType` live on the SDK config itself — their presence is what enables the
+  // feature on the auto-initialization path. Branding is passed alongside because it is build-time
+  // configuration; see this function's doc comment.
   content = patchLiveNotificationPlaceholders(
     content,
     platform,
-    sdkConfig.liveNotifications
+    sdkConfig.liveNotifications,
+    liveNotificationBranding
   );
 
   return content;

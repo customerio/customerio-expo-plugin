@@ -83,9 +83,13 @@ export type AddLiveActivityWidgetTargetOptions = {
  */
 export const withCioLiveActivityWidgetXcodeProject: ConfigPlugin<{
   props: CustomerIOPluginOptionsIOS;
-  /** SDK config (automatic initialization): the enabled types, branding, and `customType`. */
+  /** SDK config (automatic initialization): the enabled types and `customType`. */
   liveNotifications?: LiveNotificationsSDKConfig;
-  /** Build-time plugin options, which carry `customWidget` on either initialization path. */
+  /**
+   * Build-time plugin options, which carry `customWidget` and `branding` on either initialization
+   * path. Both are compiled into this widget, so neither can come from SDK config — that only
+   * exists when the app initializes automatically.
+   */
   buildOptions?: CustomerIOPluginLiveNotificationsOptions;
 }> = (configOuter, { props, liveNotifications, buildOptions }) => {
   return withXcodeProject(configOuter, async (config) => {
@@ -95,7 +99,7 @@ export const withCioLiveActivityWidgetXcodeProject: ConfigPlugin<{
     // annotations (`if #available(iOS 17, *)`), which work fine at this deployment target.
     const iosDeploymentTarget = DEFAULT_LIVE_ACTIVITY_DEPLOYMENT_TARGET;
 
-    validateLiveNotificationBranding(liveNotifications?.branding);
+    validateLiveNotificationBranding(buildOptions?.branding);
 
     if (ios === undefined) {
       throw new Error(
@@ -198,7 +202,7 @@ const addLiveActivityWidget = async (
       getTargetFile(WIDGET_BUNDLE_FILENAME),
       generateWidgetBundleSwift(
         resolveLiveNotificationTypes(options.liveNotifications?.types),
-        options.liveNotifications?.branding,
+        options.buildOptions?.branding,
         customWidget?.structName,
         options.autoInitializes
       )
@@ -207,7 +211,7 @@ const addLiveActivityWidget = async (
     // iOS branding is SwiftUI compiled into the widget, so a local logo has to become a real asset
     // in this target — the generated bundle references it by name.
     const assetCatalogPath = installIosLiveNotificationLogo(
-      options.liveNotifications?.branding,
+      options.buildOptions?.branding,
       widgetPath,
       options.projectRoot
     );

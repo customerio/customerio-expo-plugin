@@ -6,6 +6,7 @@ import { PLATFORM } from '../helpers/constants/common';
 import { patchNativeSDKInitializer } from '../helpers/utils/patchPluginNativeCode';
 import type {
   CustomerIOPluginLocationOptions,
+  LiveNotificationBranding,
   NativeSDKConfig,
 } from '../types/cio-types';
 import { addCodeToMethod, addImportToFile, copyTemplateFile } from '../utils/android';
@@ -14,11 +15,16 @@ import { logger } from '../utils/logger';
 type MainApplicationModParams = {
   sdkConfig: NativeSDKConfig;
   location?: CustomerIOPluginLocationOptions;
+  /**
+   * Live Notification branding, from the build-time plugin options rather than `sdkConfig` — it also
+   * has to reach the generated iOS widget, which only exists at build time.
+   */
+  liveNotificationBranding?: LiveNotificationBranding;
 };
 
-export const withMainApplicationModifications: ConfigPlugin<MainApplicationModParams> = (configOuter, { sdkConfig, location }) => {
+export const withMainApplicationModifications: ConfigPlugin<MainApplicationModParams> = (configOuter, { sdkConfig, location, liveNotificationBranding }) => {
   return withMainApplication(configOuter, async (config) => {
-    const content = setupCustomerIOSDKInitializer(config, sdkConfig, location);
+    const content = setupCustomerIOSDKInitializer(config, sdkConfig, location, liveNotificationBranding);
     config.modResults.contents = content;
     return config;
   });
@@ -67,13 +73,20 @@ const setupCustomerIOSDKInitializer = (
   config: ExportedConfigWithProps<ApplicationProjectFile>,
   sdkConfig: NativeSDKConfig,
   location?: CustomerIOPluginLocationOptions,
+  liveNotificationBranding?: LiveNotificationBranding,
 ): string => {
   const locationOptions = getLocationInitOptions(location, sdkConfig);
 
   try {
     // Always regenerate the CustomerIOSDKInitializer file to reflect config changes
     copyTemplateFile(config, SDK_INITIALIZER_FILE, SDK_INITIALIZER_PACKAGE, (content) =>
-      patchNativeSDKInitializer(content, PLATFORM.ANDROID, sdkConfig, locationOptions)
+      patchNativeSDKInitializer(
+        content,
+        PLATFORM.ANDROID,
+        sdkConfig,
+        locationOptions,
+        liveNotificationBranding
+      )
     );
     return injectCustomerIOInitializerIntoMainApplication(config.modResults.contents);
   } catch (error) {

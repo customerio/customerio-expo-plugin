@@ -127,11 +127,11 @@ describe('Live Notifications config', () => {
       ).toBe(true);
     });
 
-    test('auto initialization: branding-only config still enables every built-in', () => {
+    test('auto initialization: a config without types still enables every built-in', () => {
       expect(
         isLiveNotificationsEnabled(undefined, {
           cdpApiKey,
-          liveNotifications: { branding: { accentColorHex: '#00A0DF' } },
+          liveNotifications: {},
         })
       ).toBe(true);
     });
@@ -330,13 +330,11 @@ describe('Live Notifications config', () => {
       const result = patchLiveNotificationPlaceholders(
         ANDROID_TEMPLATE,
         PLATFORM.ANDROID,
+        { types: [SEGMENTS] },
         {
-          types: [SEGMENTS],
-          branding: {
-            companyName: 'Acme',
-            logo: './assets/brand-logo.png',
-            accentColorHex: '#00A0DF',
-          },
+          companyName: 'Acme',
+          logo: './assets/brand-logo.png',
+          accentColorHex: '#00A0DF',
         }
       );
 
@@ -351,10 +349,8 @@ describe('Live Notifications config', () => {
       const result = patchLiveNotificationPlaceholders(
         ANDROID_TEMPLATE,
         PLATFORM.ANDROID,
-        {
-          types: [SEGMENTS],
-          branding: { logo: 'https://cdn.example.com/logo.png' },
-        }
+        { types: [SEGMENTS] },
+        { logo: 'https://cdn.example.com/logo.png' }
       );
 
       expect(result).toContain(

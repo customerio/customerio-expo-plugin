@@ -2,6 +2,7 @@ import type { ExpoConfig } from '@expo/config-types';
 
 import type {
   CustomerIOPluginOptionsAndroid,
+  CustomerIOPluginLiveNotificationsOptions,
   CustomerIOPluginLocationOptions,
   NativeSDKConfig,
 } from '../types/cio-types';
@@ -21,6 +22,7 @@ export function withCIOAndroid(
   sdkConfig?: NativeSDKConfig,
   props?: CustomerIOPluginOptionsAndroid,
   location?: CustomerIOPluginLocationOptions,
+  liveNotifications?: CustomerIOPluginLiveNotificationsOptions,
 ): ExpoConfig {
   // Only run notification setup if props are provided
   if (props) {
@@ -37,10 +39,23 @@ export function withCIOAndroid(
 
   // Add auto initialization if sdkConfig is provided
   if (sdkConfig) {
-    config = withMainApplicationModifications(config, { sdkConfig, location });
-    // The generated initializer resolves the branding logo by drawable name, so the file has to be
-    // copied into the project for it to render.
-    config = withLiveNotificationLogo(config, sdkConfig);
+    config = withMainApplicationModifications(config, {
+      sdkConfig,
+      location,
+      liveNotificationBranding: liveNotifications?.branding,
+    });
+  }
+
+  // Outside the `sdkConfig` block on purpose: a local branding logo has to become a drawable even
+  // when the app initializes from JavaScript, because the branding it passes to `CustomerIO.initialize`
+  // names that drawable and nothing else would put it in the project.
+  //
+  // Deliberately not gated on `isLiveNotificationsEnabled` either: that flag decides whether to
+  // generate the *iOS* build-time artifacts, and Android needs none of them. An Android app can use
+  // Live Notifications entirely from JavaScript without ever setting it, so requiring it here would
+  // reintroduce the missing-drawable gap on exactly the path this is meant to cover.
+  if (liveNotifications?.branding) {
+    config = withLiveNotificationLogo(config, liveNotifications.branding);
   }
 
   // Update project strings for user agent metadata
