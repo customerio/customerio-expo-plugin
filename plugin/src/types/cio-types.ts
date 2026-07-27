@@ -162,7 +162,8 @@ export type CustomerIOPluginOptions = {
  *
  * A custom (app-defined) template is rendered by that same generated target: name it with
  * {@link LiveNotificationsSDKConfig.customType} and hand the plugin your SwiftUI file with
- * {@link LiveNotificationsSDKConfig.customWidget}. You don't need a widget target of your own.
+ * {@link CustomerIOPluginLiveNotificationsOptions.customWidget}. You don't need a widget target of
+ * your own.
  * @public
  */
 export type CustomerIOPluginLiveNotificationsOptions = {
@@ -174,6 +175,19 @@ export type CustomerIOPluginLiveNotificationsOptions = {
    * initialization, `config.liveNotifications` implies this and you can omit it.
    */
   enabled?: boolean;
+  /**
+   * The SwiftUI that renders your custom activity type on iOS.
+   *
+   * Lives here rather than under `config.liveNotifications` because it is purely build-time —
+   * a source file to compile into the generated widget extension and a struct to instantiate in
+   * its `WidgetBundle`. It has no runtime meaning, and keeping it here is what makes it usable
+   * whether you initialize the SDK automatically or from JavaScript.
+   *
+   * The activity's identifier is separate and belongs to SDK config: set
+   * `config.liveNotifications.customType` for automatic initialization, or pass it to
+   * `CustomerIO.initialize` when you initialize from JavaScript.
+   */
+  customWidget?: LiveNotificationCustomWidget;
 };
 
 /**
@@ -287,20 +301,10 @@ export type LiveNotificationsSDKConfig = {
    * custom activity shares one. A second identifier could not be told apart, so one identifier is
    * the limit rather than a silent mis-attribution.
    *
-   * On iOS, pair it with `customWidget`; that SwiftUI is what renders the activity.
+   * On iOS, pair it with the top-level `liveNotifications.customWidget`; that SwiftUI is what
+   * renders the activity.
    */
   customType?: string;
-  /** The SwiftUI rendering `customType` on iOS. Required when `customType` is set. */
-  customWidget?: LiveNotificationCustomWidget;
-  /**
-   * iOS deployment target for the generated widget extension. Defaults to `'16.2'`, the floor for
-   * Live Activities and for the SDK's own templates.
-   *
-   * Raise it when the SwiftUI in your `customWidget` needs newer APIs — it is compiled into
-   * this target, so this is the only place that floor can be set. Values below `'16.2'` are
-   * rejected with a warning, since ActivityKit does not exist there.
-   */
-  widgetDeploymentTarget?: string;
 };
 
 /**

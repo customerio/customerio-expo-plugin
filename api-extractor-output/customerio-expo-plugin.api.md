@@ -7,6 +7,7 @@
 // @public
 export type CustomerIOPluginLiveNotificationsOptions = {
     enabled?: boolean;
+    customWidget?: LiveNotificationCustomWidget;
 };
 
 // @public
@@ -104,8 +105,6 @@ export type LiveNotificationsSDKConfig = {
     types?: string[];
     branding?: LiveNotificationBranding;
     customType?: string;
-    customWidget?: LiveNotificationCustomWidget;
-    widgetDeploymentTarget?: string;
 };
 
 // @public

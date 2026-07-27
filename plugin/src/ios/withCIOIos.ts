@@ -94,6 +94,9 @@ export function withCIOIos(
     config = withCioLiveActivityWidgetXcodeProject(config, {
       props: platformConfig,
       liveNotifications: sdkConfig?.liveNotifications,
+      // `customWidget` lives in the build-time options rather than SDK config, so it reaches the
+      // widget whether the app initializes automatically or from JavaScript.
+      buildOptions: liveNotifications,
     });
   }
 

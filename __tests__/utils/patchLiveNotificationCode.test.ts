@@ -167,19 +167,30 @@ describe('Live Notifications config', () => {
       ).toBe(true);
     });
 
-    test('a custom widget alone is enough, with no built-in types', () => {
+    test('a custom type alone is enough, with no built-in types', () => {
       expect(
         isLiveNotificationsEnabled(undefined, {
           cdpApiKey,
-          liveNotifications: {
-            types: [],
+          liveNotifications: { types: [], customType: 'com.myapp.rideshare' },
+        })
+      ).toBe(true);
+    });
+
+    test('a custom widget alone does not enable it — it is a build-time option', () => {
+      // `customWidget` says how to render, never whether the feature is on. A
+      // JavaScript-initialized app pairs it with `enabled`; an auto-initialized one with
+      // `config.liveNotifications.customType`.
+      expect(
+        isLiveNotificationsEnabled(
+          {
             customWidget: {
               sourceFile: './ios-widgets/RideshareLiveActivity.swift',
               structName: 'RideshareLiveActivity',
             },
           },
-        })
-      ).toBe(true);
+          undefined
+        )
+      ).toBe(false);
     });
 
     test('off when the custom type is blank and no built-in type is listed', () => {

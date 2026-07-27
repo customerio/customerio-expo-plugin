@@ -2,7 +2,6 @@
 const xcode = require('xcode');
 import {
   addLiveActivityWidgetToXcodeProject,
-  resolveWidgetDeploymentTarget,
   type AddLiveActivityWidgetTargetOptions,
 } from '../../../plugin/src/ios/withCioLiveActivityWidgetXcodeProject';
 import { getFixturePath } from '../../utils';
@@ -224,31 +223,6 @@ describe('ios scenarios — addLiveActivityWidgetToXcodeProject (vanilla pbxproj
 
 // The app's own SwiftUI is compiled into this target, so its floor has to be settable — but not
 // below where ActivityKit exists.
-describe('ios scenarios — resolveWidgetDeploymentTarget', () => {
-  it('defaults to the Live Activities floor', () => {
-    expect(resolveWidgetDeploymentTarget(undefined)).toEqual('16.2');
-    expect(resolveWidgetDeploymentTarget('   ')).toEqual('16.2');
-  });
-
-  it('honors a higher configured target', () => {
-    expect(resolveWidgetDeploymentTarget('17.0')).toEqual('17.0');
-    expect(resolveWidgetDeploymentTarget(' 18.1 ')).toEqual('18.1');
-  });
-
-  it.each(['16.1', '15.0', 'not-a-version'])(
-    'falls back to 16.2 for %s, with a warning',
-    (configured) => {
-      const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
-
-      expect(resolveWidgetDeploymentTarget(configured)).toEqual('16.2');
-      expect(warn).toHaveBeenCalledWith(
-        expect.stringContaining('widgetDeploymentTarget'),
-      );
-
-      warn.mockRestore();
-    },
-  );
-});
 
 describe('ios scenarios — addLiveActivityWidgetToXcodeProject (multi-target host)', () => {
   it('adds the widget target without disturbing other pre-existing extension targets', () => {

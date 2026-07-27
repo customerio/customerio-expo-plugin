@@ -205,14 +205,21 @@ export function iosWidgetBundleEntries(
 export function generateWidgetBundleSwift(
   types: string[],
   branding: LiveNotificationBranding | undefined,
-  customStructName?: string
+  customStructName?: string,
+  autoInitializes = true
 ): string {
   let resolvedTypes = types;
-  if (types.length === 0 && !customStructName) {
-    // A `WidgetBundle` body has to return at least one widget, so an empty bundle isn't something
-    // that can be emitted — it wouldn't compile. This is only reachable from a misconfiguration
-    // (an unrecognized `types` list, or a `customWidget` that couldn't be resolved), which has
-    // already been warned about, so fall back to the built-ins to keep the target buildable.
+  if (!autoInitializes) {
+    // JavaScript initialization: the app chooses its types at runtime, so the plugin never learns
+    // them and the widget has to be able to render any built-in. Doing this only when nothing else
+    // resolved would leave an app that configures a `customWidget` with a widget that renders the
+    // custom type and none of the built-ins it also enables.
+    resolvedTypes = ALL_LIVE_NOTIFICATION_TYPES;
+  } else if (types.length === 0 && !customStructName) {
+    // A `WidgetBundle` body has to return at least one widget, so an empty bundle cannot be
+    // emitted — it wouldn't compile. This app told us its types, so reaching here is a
+    // misconfiguration (an unrecognized `types` list, or a `customWidget` that didn't resolve)
+    // worth reporting before falling back.
     console.warn(
       '[customerio-expo-plugin] No Live Notification type resolved for the generated iOS widget; ' +
         'falling back to the built-in templates so the widget extension still compiles.'

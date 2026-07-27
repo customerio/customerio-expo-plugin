@@ -6,7 +6,7 @@ import {
   installCustomLiveActivityWidget,
   resolveCustomLiveActivityWidget,
 } from '../../plugin/src/helpers/utils/liveNotificationCustomWidget';
-import type { LiveNotificationsSDKConfig } from '../../plugin/src/types/cio-types';
+import type { LiveNotificationCustomWidget } from '../../plugin/src/types/cio-types';
 
 // These tests run against a real project tree: the resolver's whole job is deciding what is safe to
 // copy into the generated widget target, and that depends on what is actually on disk.
@@ -33,9 +33,20 @@ struct RideshareLiveActivity: Widget {
 let projectRoot: string;
 let warn: jest.SpyInstance;
 
-const resolve = (liveNotifications: LiveNotificationsSDKConfig | undefined) =>
+/**
+ * Splits the test's combined shape into the two config surfaces the resolver now reads:
+ * `customType` is SDK config, `customWidget` is a build-time option.
+ */
+const resolve = (
+  input:
+    | { customType?: string; customWidget?: LiveNotificationCustomWidget }
+    | undefined,
+  autoInitializes = true
+) =>
   resolveCustomLiveActivityWidget({
-    liveNotifications,
+    liveNotifications: input?.customType ? { customType: input.customType } : undefined,
+    buildOptions: input?.customWidget ? { customWidget: input.customWidget } : undefined,
+    autoInitializes,
     projectRoot,
     reservedFilenames: RESERVED,
   });
@@ -99,7 +110,7 @@ describe('resolveCustomLiveActivityWidget()', () => {
   });
 
   test('returns nothing when no custom widget is configured', () => {
-    expect(resolve({ types: [] })).toBeNull();
+    expect(resolve({})).toBeNull();
     expect(resolve(undefined)).toBeNull();
     expect(warn).not.toHaveBeenCalled();
   });
@@ -124,7 +135,9 @@ describe('resolveCustomLiveActivityWidget()', () => {
         },
       })
     ).not.toBeNull();
-    expect(warn).toHaveBeenCalledWith(expect.stringContaining('without liveNotifications.customType'));
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining('config.liveNotifications.customType is not set')
+    );
   });
 
   test('skips a missing file rather than failing prebuild', () => {

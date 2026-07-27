@@ -1,6 +1,5 @@
 import type { ConfigPlugin, XcodeProject } from '@expo/config-plugins';
 import { withXcodeProject } from '@expo/config-plugins';
-import * as semver from 'semver';
 
 import {
   CIO_LIVE_ACTIVITY_WIDGET_TARGET_NAME,
@@ -22,6 +21,7 @@ import {
   validateLiveNotificationBranding,
 } from '../helpers/utils/patchLiveNotificationCode';
 import type {
+  CustomerIOPluginLiveNotificationsOptions,
   CustomerIOPluginOptionsIOS,
   LiveNotificationsSDKConfig,
 } from '../types/cio-types';
@@ -83,14 +83,17 @@ export type AddLiveActivityWidgetTargetOptions = {
  */
 export const withCioLiveActivityWidgetXcodeProject: ConfigPlugin<{
   props: CustomerIOPluginOptionsIOS;
+  /** SDK config (automatic initialization): the enabled types, branding, and `customType`. */
   liveNotifications?: LiveNotificationsSDKConfig;
-}> = (configOuter, { props, liveNotifications }) => {
+  /** Build-time plugin options, which carry `customWidget` on either initialization path. */
+  buildOptions?: CustomerIOPluginLiveNotificationsOptions;
+}> = (configOuter, { props, liveNotifications, buildOptions }) => {
   return withXcodeProject(configOuter, async (config) => {
     const { modRequest, ios, version: bundleShortVersion } = config;
     const { appleTeamId, useFrameworks } = props;
-    const iosDeploymentTarget = resolveWidgetDeploymentTarget(
-      liveNotifications?.widgetDeploymentTarget
-    );
+    // Fixed at the ActivityKit floor. Custom SwiftUI needing newer APIs uses availability
+    // annotations (`if #available(iOS 17, *)`), which work fine at this deployment target.
+    const iosDeploymentTarget = DEFAULT_LIVE_ACTIVITY_DEPLOYMENT_TARGET;
 
     validateLiveNotificationBranding(liveNotifications?.branding);
 
@@ -126,6 +129,8 @@ export const withCioLiveActivityWidgetXcodeProject: ConfigPlugin<{
           iosDeploymentTarget,
           useFrameworks,
           liveNotifications,
+          buildOptions,
+          autoInitializes: liveNotifications !== undefined,
           projectRoot: modRequest.projectRoot,
         },
         config.modResults
@@ -147,6 +152,9 @@ type AddLiveActivityWidgetInternalOptions = {
   iosDeploymentTarget: string;
   useFrameworks?: CustomerIOPluginOptionsIOS['useFrameworks'];
   liveNotifications?: LiveNotificationsSDKConfig;
+  buildOptions?: CustomerIOPluginLiveNotificationsOptions;
+  /** True when the app initializes the SDK automatically (an SDK config is present). */
+  autoInitializes: boolean;
   projectRoot: string;
 };
 
@@ -174,6 +182,8 @@ const addLiveActivityWidget = async (
 
   const customWidget = resolveCustomLiveActivityWidget({
     liveNotifications: options.liveNotifications,
+    buildOptions: options.buildOptions,
+    autoInitializes: options.autoInitializes,
     projectRoot: options.projectRoot,
     reservedFilenames: GENERATED_WIDGET_FILENAMES,
   });
@@ -189,7 +199,8 @@ const addLiveActivityWidget = async (
       generateWidgetBundleSwift(
         resolveLiveNotificationTypes(options.liveNotifications?.types),
         options.liveNotifications?.branding,
-        customWidget?.structName
+        customWidget?.structName,
+        options.autoInitializes
       )
     );
 
@@ -242,31 +253,6 @@ const addLiveActivityWidget = async (
     customSourceFilenames,
   });
 };
-
-/**
- * The widget's deployment target. 16.2 is the floor for Live Activities and for the SDK's own
- * templates; an app can raise it because its `customWidget` SwiftUI is compiled into this same
- * target, and that is the only place its floor can be set. Exported for tests.
- */
-export function resolveWidgetDeploymentTarget(configured: string | undefined): string {
-  const requested = configured?.trim();
-  if (!requested) {
-    return DEFAULT_LIVE_ACTIVITY_DEPLOYMENT_TARGET;
-  }
-
-  const parsed = semver.coerce(requested);
-  const floor = semver.coerce(DEFAULT_LIVE_ACTIVITY_DEPLOYMENT_TARGET);
-  if (!parsed || (floor && semver.lt(parsed, floor))) {
-    logger.warn(
-      `liveNotifications.widgetDeploymentTarget "${requested}" is not a version at or above ` +
-        `${DEFAULT_LIVE_ACTIVITY_DEPLOYMENT_TARGET}, which is where ActivityKit starts. Using ` +
-        `${DEFAULT_LIVE_ACTIVITY_DEPLOYMENT_TARGET}.`
-    );
-    return DEFAULT_LIVE_ACTIVITY_DEPLOYMENT_TARGET;
-  }
-
-  return requested;
-}
 
 /**
  * On a refresh-only run, a custom source file whose name isn't already in the project was added or

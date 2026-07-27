@@ -1,6 +1,9 @@
 import path from 'path';
 
-import type { LiveNotificationsSDKConfig } from '../../types/cio-types';
+import type {
+  CustomerIOPluginLiveNotificationsOptions,
+  LiveNotificationsSDKConfig,
+} from '../../types/cio-types';
 import { logger } from '../../utils/logger';
 import { FileManagement } from './fileManagement';
 
@@ -26,7 +29,16 @@ export type ResolvedCustomWidget = {
 };
 
 export type ResolveCustomWidgetOptions = {
+  /** SDK config, read only for `customType` — present only on the auto-initialization path. */
   liveNotifications: LiveNotificationsSDKConfig | undefined;
+  /** Build-time options carrying `customWidget`, available on either initialization path. */
+  buildOptions: CustomerIOPluginLiveNotificationsOptions | undefined;
+  /**
+   * Whether the app initializes the SDK automatically. Only then does the plugin generate the code
+   * that registers `customType`, so only then can a missing `customType` be diagnosed here — a
+   * JavaScript-initialized app supplies it at runtime, where the plugin cannot see it.
+   */
+  autoInitializes: boolean;
   /** Project root the configured relative paths resolve against. */
   projectRoot: string;
   /**
@@ -52,14 +64,16 @@ const SKIPPED = 'No custom Live Activity template will be rendered.';
 export function resolveCustomLiveActivityWidget(
   options: ResolveCustomWidgetOptions
 ): ResolvedCustomWidget | null {
-  const { liveNotifications, projectRoot, reservedFilenames } = options;
+  const { liveNotifications, buildOptions, autoInitializes, projectRoot, reservedFilenames } =
+    options;
   const customType = liveNotifications?.customType?.trim();
-  const customWidget = liveNotifications?.customWidget;
+  const customWidget = buildOptions?.customWidget;
 
   if (!customWidget) {
     if (customType) {
       logger.warn(
-        `${TAG} liveNotifications.customType "${customType}" is set without liveNotifications.customWidget, ` +
+        `${TAG} config.liveNotifications.customType "${customType}" is set without the top-level ` +
+          `liveNotifications.customWidget, ` +
           `so the generated widget has no SwiftUI to render it with. Point customWidget.sourceFile at your ` +
           `SwiftUI file and set customWidget.structName.`
       );
@@ -76,13 +90,15 @@ export function resolveCustomLiveActivityWidget(
     return null;
   }
 
-  if (!customType) {
-    // Legitimate when the app initializes the SDK from JavaScript (it registers the identifier at
-    // runtime), a mistake otherwise — either way the widget itself compiles, so only warn.
+  if (!customType && autoInitializes) {
+    // Only diagnosable on this path. With automatic initialization the generated code is what
+    // registers the identifier, so its absence means the widget draws a type nothing registers.
+    // A JavaScript-initialized app passes it to `CustomerIO.initialize` instead, which is correct
+    // and invisible here — warning there would fire on a supported setup.
     logger.warn(
-      `${TAG} liveNotifications.customWidget is set without liveNotifications.customType. The widget compiles, ` +
-        `but nothing registers the custom activity type: set customType to your own reverse-DNS identifier, ` +
-        `or register it when you initialize the SDK from JavaScript.`
+      `${TAG} config.liveNotifications.customType is not set, so the generated initializer registers ` +
+        `no custom activity type and the widget would draw one nothing starts. Set it to your own ` +
+        `reverse-DNS identifier.`
     );
   }
 

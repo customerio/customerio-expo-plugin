@@ -38,12 +38,12 @@ export function isLiveNotificationsEnabled(
     return true;
   }
 
-  // A custom template on its own is enough: the widget extension renders the app's own SwiftUI, and
-  // the app still needs the Info.plist key and the Podfile subspec for it. Either half turns it on
-  // so that a config missing the other half is reported while generating, rather than silently
-  // producing nothing.
-  return (
-    resolveCustomLiveNotificationType(configured.customType) !== undefined ||
-    (configured.customWidget?.structName?.trim() ?? '') !== ''
-  );
+  // A custom type on its own is enough: the widget extension renders the app's own SwiftUI, and the
+  // app still needs the Info.plist key and the Podfile subspec for it. Turning it on here is also
+  // what surfaces a `customType` configured without a `customWidget` to render it, rather than
+  // silently producing nothing.
+  //
+  // `customWidget` alone does not appear here: it is a build-time option that a
+  // JavaScript-initialized app pairs with `enabled`, already handled above.
+  return resolveCustomLiveNotificationType(configured.customType) !== undefined;
 }
