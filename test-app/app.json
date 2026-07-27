@@ -100,7 +100,8 @@
                 "accentColorHex": "#00A0DF",
                 "backgroundColorHex": "#101010",
                 "textColorHex": "#FFFFFF"
-              }
+              },
+              "customType": "com.customerio.testbed.rideshare"
             }
           },
           "android": {
@@ -133,6 +134,12 @@
           },
           "location": {
             "enabled": true
+          },
+          "liveNotifications": {
+            "customWidget": {
+              "sourceFile": "./ios-widgets/RideshareLiveActivity.swift",
+              "structName": "RideshareLiveActivity"
+            }
           }
         }
       ],

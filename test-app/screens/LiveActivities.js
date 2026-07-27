@@ -4,13 +4,17 @@ import { Alert, Button, ScrollView, StyleSheet, View } from 'react-native';
 import { ThemedText } from '../components/themed-text';
 import { ThemedView } from '../components/themed-view';
 
-// Activity types are registered by the plugin's native auto-init from
-// `config.liveNotifications.types` in app.json — no JavaScript initialization needed.
+// Activity types are registered by the plugin's native auto-init from app.json — the built-ins from
+// `config.liveNotifications.types` and the custom one from `config.liveNotifications.customType` —
+// so no JavaScript initialization is needed. On iOS all three are rendered by the single widget
+// extension the plugin generates: the SDK ships the SwiftUI for the built-ins, and
+// `liveNotifications.customWidget` points at the app's own file for the custom one.
 
 export default function LiveActivitiesScreen() {
   const [segmentsId, setSegmentsId] = useState(null);
   const [segmentsComplete, setSegmentsComplete] = useState(0);
   const [countdownId, setCountdownId] = useState(null);
+  const [customId, setCustomId] = useState(null);
 
   const segmentsTotal = 4;
 
@@ -92,6 +96,48 @@ export default function LiveActivitiesScreen() {
     }
   };
 
+  // MARK: - Custom
+
+  // The identifier comes from `config.liveNotifications.customType`; the SwiftUI that draws it comes
+  // from the top-level `liveNotifications.customWidget`. Values are strings — a bridge payload has no
+  // schema, so the widget parses what it needs.
+  const rideshare = (status, etaMinutes) => ({
+    type: LiveActivityTemplate.Custom,
+    data: { driverName: 'Alex', status, etaMinutes: String(etaMinutes) },
+  });
+
+  const startCustom = async () => {
+    try {
+      const id = await CustomerIO.liveActivities.start(rideshare('On the way', 5));
+      setCustomId(id);
+      Alert.alert('Success', `Rideshare started (${id})`);
+    } catch (e) {
+      Alert.alert('Error', (e && e.message) || String(e));
+    }
+  };
+
+  const updateCustom = async () => {
+    if (!customId) return;
+    try {
+      await CustomerIO.liveActivities.update(customId, rideshare('Almost there', 2));
+      Alert.alert('Success', 'Rideshare updated');
+    } catch (e) {
+      Alert.alert('Error', (e && e.message) || String(e));
+    }
+  };
+
+  const endCustom = async () => {
+    if (!customId) return;
+    try {
+      // A final content-state so the card reads as finished rather than freezing mid-trip.
+      await CustomerIO.liveActivities.end(customId, rideshare('Arrived', 0));
+      setCustomId(null);
+      Alert.alert('Info', 'Rideshare ended');
+    } catch (e) {
+      Alert.alert('Error', (e && e.message) || String(e));
+    }
+  };
+
   return (
     <ScrollView contentContainerStyle={styles.scrollContent}>
       <ThemedView style={styles.container}>
@@ -121,6 +167,20 @@ export default function LiveActivitiesScreen() {
           <Button title="End Countdown" onPress={endCountdown} disabled={!countdownId} />
           <ThemedText style={styles.hint}>
             {countdownId ? 'Running' : 'Not started'}
+          </ThemedText>
+        </ThemedView>
+
+        <ThemedView style={styles.sectionCard}>
+          <ThemedText style={styles.sectionHeading}>CUSTOM (RIDESHARE)</ThemedText>
+          <ThemedText style={styles.hint}>
+            An app-defined template rendered by RideshareLiveActivity.swift, in the same widget
+            bundle as the two built-ins above.
+          </ThemedText>
+          <Button title="Start Custom" onPress={startCustom} />
+          <Button title="Update Custom" onPress={updateCustom} disabled={!customId} />
+          <Button title="End Custom" onPress={endCustom} disabled={!customId} />
+          <ThemedText style={styles.hint}>
+            {customId ? 'Running' : 'Not started'}
           </ThemedText>
         </ThemedView>
       </ThemedView>
