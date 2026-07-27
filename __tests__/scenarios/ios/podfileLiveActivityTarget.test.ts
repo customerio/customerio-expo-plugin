@@ -27,8 +27,8 @@ describe('ios scenarios — appendLiveActivityWidgetTargetToPodfile', () => {
       # --- CustomerIO Live Activity START ---
       target 'CIOLiveActivityWidget' do
         use_frameworks! :linkage => :static
-        pod 'CustomerIOLiveActivitiesTemplates'
-        pod 'CustomerIOLiveActivitiesAttributes'
+        pod 'CustomerIOLiveActivitiesTemplates', :git => 'https://github.com/customerio/customerio-ios.git', :branch => 'feat/live-activities'
+        pod 'CustomerIOLiveActivitiesAttributes', :git => 'https://github.com/customerio/customerio-ios.git', :branch => 'feat/live-activities'
       end
       # --- CustomerIO Live Activity END ---
       "
@@ -49,8 +49,8 @@ describe('ios scenarios — appendLiveActivityWidgetTargetToPodfile', () => {
       # --- CustomerIO Live Activity START ---
       target 'CIOLiveActivityWidget' do
         
-        pod 'CustomerIOLiveActivitiesTemplates'
-        pod 'CustomerIOLiveActivitiesAttributes'
+        pod 'CustomerIOLiveActivitiesTemplates', :git => 'https://github.com/customerio/customerio-ios.git', :branch => 'feat/live-activities'
+        pod 'CustomerIOLiveActivitiesAttributes', :git => 'https://github.com/customerio/customerio-ios.git', :branch => 'feat/live-activities'
       end
       # --- CustomerIO Live Activity END ---
       "

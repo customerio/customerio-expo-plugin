@@ -55,6 +55,58 @@ export function buildHostAppPodSnippet(
   return `pod 'customerio-reactnative', :subspecs => [${subspecList}], :path => '${resolvedPath}'`;
 }
 
+// TEMPORARY (REL-1): Live Activities are not on the CocoaPods trunk yet. The `liveactivities`
+// subspec depends on `CustomerIO/LiveActivities`, and the widget links the templates and attributes
+// pods directly — none of which exist in a released `CustomerIO` podspec. Resolve the whole
+// Customer.io iOS SDK from the branch that carries them instead.
+//
+// Every pod the host app pulls has to be listed: CocoaPods refuses to mix a git-sourced pod with
+// trunk-sourced pods that share its dependency graph. Delete this and the two call sites once Live
+// Activities ship in a released native SDK.
+const UNRELEASED_IOS_SDK_GIT = 'https://github.com/customerio/customerio-ios.git';
+const UNRELEASED_IOS_SDK_BRANCH = 'feat/live-activities';
+
+/**
+ * The pods the host app actually resolves, which is what may be listed: a `pod` line *adds* a
+ * dependency, so naming one the app doesn't use changes its build. That matters most for the push
+ * provider — listing the FCM pod in an APN app would pull Firebase in, the very thing the
+ * `customerio-reactnative` podspec splits its subspecs to avoid.
+ */
+function hostUnreleasedPods(
+  isFcmPushProvider: boolean,
+  locationEnabled: boolean
+): string[] {
+  return [
+    // `CustomerIO` and its transitive modules are in the graph on every configuration.
+    'CustomerIO',
+    'CustomerIOCommon',
+    'CustomerIODataPipelines',
+    'CustomerIOTrackingMigration',
+    'CustomerIOMessagingPush',
+    'CustomerIOMessagingInApp',
+    isFcmPushProvider ? 'CustomerIOMessagingPushFCM' : 'CustomerIOMessagingPushAPN',
+    ...(locationEnabled ? ['CustomerIOLocation'] : []),
+    'CustomerIOLiveActivities',
+    'CustomerIOLiveActivitiesAttributes',
+    'CustomerIOLiveActivitiesTemplates',
+  ];
+}
+
+const WIDGET_UNRELEASED_PODS = [
+  'CustomerIOLiveActivitiesTemplates',
+  'CustomerIOLiveActivitiesAttributes',
+];
+
+/** `pod` lines resolving `pods` from the unreleased Live Activities branch, one per line. */
+function unreleasedPodLines(pods: string[], indent: string): string {
+  return pods
+    .map(
+      (pod) =>
+        `${indent}pod '${pod}', :git => '${UNRELEASED_IOS_SDK_GIT}', :branch => '${UNRELEASED_IOS_SDK_BRANCH}'`
+    )
+    .join('\n');
+}
+
 const HOST_APP_BLOCK_START = '# --- CustomerIO Host App START ---';
 const HOST_APP_BLOCK_END = '# --- CustomerIO Host App END ---';
 const NOTIFICATION_BLOCK_START = '# --- CustomerIO Notification START ---';
@@ -84,9 +136,18 @@ export function injectHostAppPodfileCode(
   const lineInPodfileToInjectSnippetBefore = /post_install do \|installer\|/;
   const podLine = buildHostAppPodSnippet(iosPath, isFcmPushProvider, options);
 
+  // TEMPORARY (REL-1): only Live Activities need the unreleased branch, so apps without them keep
+  // resolving from the CocoaPods trunk and their Podfile is byte-identical to before.
+  const unreleasedPods = options?.liveNotificationsEnabled
+    ? `\n${unreleasedPodLines(
+        hostUnreleasedPods(isFcmPushProvider, options.locationEnabled === true),
+        '  '
+      )}`
+    : '';
+
   const snippetToInjectInPodfile = `
 ${HOST_APP_BLOCK_START}
-  ${podLine}
+  ${podLine}${unreleasedPods}
 ${HOST_APP_BLOCK_END}
 `.trim();
 
@@ -185,8 +246,7 @@ export function appendLiveActivityWidgetTargetToPodfile(
 ${LIVE_ACTIVITY_BLOCK_START}
 target '${CIO_LIVE_ACTIVITY_WIDGET_TARGET_NAME}' do
   ${useFrameworks === 'static' ? 'use_frameworks! :linkage => :static' : ''}
-  pod 'CustomerIOLiveActivitiesTemplates'
-  pod 'CustomerIOLiveActivitiesAttributes'
+${unreleasedPodLines(WIDGET_UNRELEASED_PODS, '  ')}
 end
 ${LIVE_ACTIVITY_BLOCK_END}
 `.trim();
