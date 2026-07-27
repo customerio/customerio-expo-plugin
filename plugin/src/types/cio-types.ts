@@ -151,7 +151,7 @@ export type CustomerIOPluginOptions = {
    * JavaScript — with auto initialization, `config.liveNotifications` turns the feature on by
    * itself.
    */
-  liveNotifications?: CustomerIOPluginLiveActivityOptions;
+  liveNotifications?: CustomerIOPluginLiveNotificationsOptions;
 };
 
 /**
@@ -163,7 +163,7 @@ export type CustomerIOPluginOptions = {
  * Android needs no build-time setup.
  * @public
  */
-export type CustomerIOPluginLiveActivityOptions = {
+export type CustomerIOPluginLiveNotificationsOptions = {
   /**
    * Turn on Live Notifications build-time setup (iOS widget extension, the
    * `NSSupportsLiveActivities` Info.plist key, and the Podfile subspec).

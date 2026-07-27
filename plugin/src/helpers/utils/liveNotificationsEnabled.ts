@@ -1,5 +1,5 @@
 import type {
-  CustomerIOPluginLiveActivityOptions,
+  CustomerIOPluginLiveNotificationsOptions,
   NativeSDKConfig,
 } from '../../types/cio-types';
 import { resolveLiveNotificationTypes } from './patchLiveNotificationCode';
@@ -19,7 +19,7 @@ import { resolveLiveNotificationTypes } from './patchLiveNotificationCode';
  * Android needs nothing at build time; it reads its types and branding from the SDK config.
  */
 export function isLiveNotificationsEnabled(
-  liveNotifications: CustomerIOPluginLiveActivityOptions | undefined,
+  liveNotifications: CustomerIOPluginLiveNotificationsOptions | undefined,
   sdkConfig: NativeSDKConfig | undefined
 ): boolean {
   if (liveNotifications?.enabled === true) {

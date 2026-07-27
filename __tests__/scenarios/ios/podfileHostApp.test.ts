@@ -119,10 +119,10 @@ describe('ios scenarios — injectHostAppPodfileCode', () => {
     `);
   });
 
-  it('injects subspecs (push + liveactivities) when liveActivityEnabled and hasPush', () => {
+  it('injects subspecs (push + liveactivities) when liveNotificationsEnabled and hasPush', () => {
     expect(
       injectHostAppPodfileCode(baseline, IOS_PATH, false, {
-        liveActivityEnabled: true,
+        liveNotificationsEnabled: true,
         hasPush: true,
       })
     ).toMatchInlineSnapshot(`
@@ -150,7 +150,7 @@ describe('ios scenarios — injectHostAppPodfileCode', () => {
       injectHostAppPodfileCode(baseline, IOS_PATH, true, {
         locationEnabled: true,
         hasPush: true,
-        liveActivityEnabled: true,
+        liveNotificationsEnabled: true,
       })
     ).toMatchInlineSnapshot(`
       "platform :ios, '13.0'

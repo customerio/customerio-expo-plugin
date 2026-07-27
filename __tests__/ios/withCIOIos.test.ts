@@ -78,7 +78,7 @@ describe('withCIOIos', () => {
         podfileOptions: {
           locationEnabled: true,
           hasPush: false,
-          liveActivityEnabled: false,
+          liveNotificationsEnabled: false,
         },
       });
     });
@@ -192,7 +192,7 @@ describe('withCIOIos', () => {
         podfileOptions: {
           locationEnabled: false,
           hasPush: false,
-          liveActivityEnabled: true,
+          liveNotificationsEnabled: true,
         },
       });
     });
@@ -213,7 +213,7 @@ describe('withCIOIos', () => {
           podfileOptions: {
             locationEnabled: false,
             hasPush: true,
-            liveActivityEnabled: true,
+            liveNotificationsEnabled: true,
           },
         }),
       );

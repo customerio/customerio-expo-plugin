@@ -10,7 +10,7 @@ export type InjectCIOPodfileOptions = {
   /** When false and locationEnabled, inject only :subspecs => ['location']. When true, use push + location. */
   hasPush?: boolean;
   /** When true, add the `liveactivities` subspec (enables -DCIO_LIVEACTIVITIES_ENABLED). */
-  liveActivityEnabled?: boolean;
+  liveNotificationsEnabled?: boolean;
 };
 
 /** Builds the host-app pod snippet for the Podfile.
@@ -31,12 +31,12 @@ export function buildHostAppPodSnippet(
 ): string {
   const resolvedPath = getRelativePathToRNSDK(iosPath);
   const locationEnabled = options?.locationEnabled === true;
-  const liveActivityEnabled = options?.liveActivityEnabled === true;
+  const liveNotificationsEnabled = options?.liveNotificationsEnabled === true;
   const hasPush = options?.hasPush !== false;
   const pushSubspec = isFcmPushProvider ? 'fcm' : 'apn';
 
   // Simple single-subspec form only when no optional modules are enabled.
-  if (!locationEnabled && !liveActivityEnabled) {
+  if (!locationEnabled && !liveNotificationsEnabled) {
     return `pod 'customerio-reactnative/${pushSubspec}', :path => '${resolvedPath}'`;
   }
 
@@ -48,7 +48,7 @@ export function buildHostAppPodSnippet(
   if (locationEnabled) {
     subspecs.push('location');
   }
-  if (liveActivityEnabled) {
+  if (liveNotificationsEnabled) {
     subspecs.push('liveactivities');
   }
   const subspecList = subspecs.map((subspec) => `'${subspec}'`).join(', ');

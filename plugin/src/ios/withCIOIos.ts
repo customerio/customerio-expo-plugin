@@ -3,7 +3,7 @@ import { withEntitlementsPlist } from '@expo/config-plugins';
 import type {
   CustomerIOPluginOptionsIOS,
   CustomerIOPluginPushNotificationOptions,
-  CustomerIOPluginLiveActivityOptions,
+  CustomerIOPluginLiveNotificationsOptions,
   CustomerIOPluginLocationOptions,
   NativeSDKConfig,
 } from '../types/cio-types';
@@ -25,12 +25,12 @@ export function withCIOIos(
   sdkConfig?: NativeSDKConfig,
   props?: CustomerIOPluginOptionsIOS,
   location?: CustomerIOPluginLocationOptions,
-  liveNotifications?: CustomerIOPluginLiveActivityOptions,
+  liveNotifications?: CustomerIOPluginLiveNotificationsOptions,
 ) {
   const isSwiftProject = isExpoVersion53OrHigher(config);
   const platformConfig = mergeDeprecatedPropertiesAndLogWarnings(props);
   const locationEnabled = location?.enabled === true;
-  const liveActivityEnabled = isLiveNotificationsEnabled(
+  const liveNotificationsEnabled = isLiveNotificationsEnabled(
     liveNotifications,
     sdkConfig
   );
@@ -53,7 +53,7 @@ export function withCIOIos(
       podfileOptions: {
         locationEnabled,
         hasPush: true,
-        liveActivityEnabled,
+        liveNotificationsEnabled,
       },
     });
     config = withGoogleServicesJsonFile(config, platformConfig);
@@ -72,24 +72,24 @@ export function withCIOIos(
     }
   } else if (sdkConfig && isSwiftProject) {
     config = withCIOIosSwift(config, sdkConfig, platformConfig, location);
-    if (locationEnabled || liveActivityEnabled) {
+    if (locationEnabled || liveNotificationsEnabled) {
       config = withCioXcodeProject(config, {
         ...platformConfig,
-        podfileOptions: { locationEnabled, hasPush: false, liveActivityEnabled },
+        podfileOptions: { locationEnabled, hasPush: false, liveNotificationsEnabled },
       });
     }
-  } else if (locationEnabled || liveActivityEnabled) {
+  } else if (locationEnabled || liveNotificationsEnabled) {
     // No push, no config. Still add the Podfile subspecs so the relevant native modules
     // (location / live activities) are compiled in.
     config = withCioXcodeProject(config, {
       ...platformConfig,
-      podfileOptions: { locationEnabled, hasPush: false, liveActivityEnabled },
+      podfileOptions: { locationEnabled, hasPush: false, liveNotificationsEnabled },
     });
   }
 
   // Live Activities: set the host Info.plist flag and inject the widget extension target,
   // independent of push. Requires iOS 16.2+.
-  if (liveActivityEnabled && platformConfig) {
+  if (liveNotificationsEnabled && platformConfig) {
     config = withLiveActivityInfoPlist(config);
     config = withCioLiveActivityWidgetXcodeProject(config, {
       props: platformConfig,
