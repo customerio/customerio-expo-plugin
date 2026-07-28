@@ -176,6 +176,12 @@ export default function LiveActivitiesScreen() {
             An app-defined template rendered by RideshareLiveActivity.swift, in the same widget
             bundle as the two built-ins above.
           </ThemedText>
+          <ThemedText style={styles.hint}>
+            iOS only in this app. A custom type has no built-in template, so Android renders it
+            through CustomerIOLiveNotificationsCallback — which is native Kotlin set before SDK
+            initialization, not reachable from JavaScript. These buttons will report success on
+            Android and show nothing.
+          </ThemedText>
           <Button title="Start Custom" onPress={startCustom} />
           <Button title="Update Custom" onPress={updateCustom} disabled={!customId} />
           <Button title="End Custom" onPress={endCustom} disabled={!customId} />
