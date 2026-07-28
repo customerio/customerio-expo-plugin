@@ -177,24 +177,22 @@ describe('withCIOIos', () => {
   });
 
   describe('live activities', () => {
-    it('injects the widget target and Info.plist, adding the liveactivities subspec (no push/config)', () => {
+    it('generates nothing without push, since Live Notifications cannot work without it', () => {
+      // Android hosts the feature in its push module and iOS registers push-to-start against the
+      // device token push supplies, so a widget built here could never receive an activity — and
+      // its taps would not be routed either, because the openURL handler is installed only on the
+      // push path. Generating half of it is worse than generating none.
       const props: CustomerIOPluginOptionsIOS = {
         iosPath: '/test/ios',
       };
 
       withCIOIos(mockConfig, undefined, props, undefined, { enabled: true });
 
-      expect(mockWithLiveActivityInfoPlist).toHaveBeenCalledTimes(1);
-      expect(mockWithCioLiveActivityWidgetXcodeProject).toHaveBeenCalledTimes(1);
+      expect(mockWithLiveActivityInfoPlist).not.toHaveBeenCalled();
+      expect(mockWithCioLiveActivityWidgetXcodeProject).not.toHaveBeenCalled();
       expect(mockWithCioNotificationsXcodeProject).not.toHaveBeenCalled();
-      expect(mockWithCioXcodeProject).toHaveBeenCalledWith(mockConfig, {
-        ...props,
-        podfileOptions: {
-          locationEnabled: false,
-          hasPush: false,
-          liveNotificationsEnabled: true,
-        },
-      });
+      // No Podfile changes either: the liveactivities subspec would pull pods nothing can use.
+      expect(mockWithCioXcodeProject).not.toHaveBeenCalled();
     });
 
     it('adds the liveactivities subspec alongside push when both are enabled', () => {

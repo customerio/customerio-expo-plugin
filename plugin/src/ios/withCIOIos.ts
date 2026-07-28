@@ -32,7 +32,8 @@ export function withCIOIos(
   const locationEnabled = location?.enabled === true;
   const liveNotificationsEnabled = isLiveNotificationsEnabled(
     liveNotifications,
-    sdkConfig
+    sdkConfig,
+    platformConfig?.pushNotification !== undefined
   );
 
   if (platformConfig?.pushNotification) {

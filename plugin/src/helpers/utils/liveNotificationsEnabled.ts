@@ -2,6 +2,7 @@ import type {
   CustomerIOPluginLiveNotificationsOptions,
   NativeSDKConfig,
 } from '../../types/cio-types';
+import { logger } from '../../utils/logger';
 import {
   resolveCustomLiveNotificationType,
   resolveLiveNotificationTypes,
@@ -22,8 +23,38 @@ import {
  * Android needs no target of its own at build time — it reads its types from the SDK config and its
  * branding from the build-time options, and the only file the plugin writes for it is the branding
  * logo drawable.
+ *
+ * **Push is a precondition.** Live Notifications cannot work without it: on Android the feature
+ * lives inside the push module and is reached through `ModuleMessagingPushFCM`, and on iOS the
+ * Live Activities module registers push-to-start against the device token push supplies. An app that
+ * asks for Live Notifications without configuring `ios.pushNotification` is warned and gets none of
+ * the build-time setup — generating a widget extension that can never receive an activity, and whose
+ * taps are never routed, is worse than generating nothing.
  */
 export function isLiveNotificationsEnabled(
+  liveNotifications: CustomerIOPluginLiveNotificationsOptions | undefined,
+  sdkConfig: NativeSDKConfig | undefined,
+  hasPushNotification: boolean
+): boolean {
+  if (!requested(liveNotifications, sdkConfig)) {
+    return false;
+  }
+
+  if (!hasPushNotification) {
+    logger.warn(
+      '[customerio-expo-plugin] Live Notifications need push notifications, so no Live Notification ' +
+        'setup was generated. Configure ios.pushNotification alongside them: Android hosts the ' +
+        'feature in its push module, and iOS registers push-to-start against the device token push ' +
+        'provides.'
+    );
+    return false;
+  }
+
+  return true;
+}
+
+/** Whether the app asked for Live Notifications at all, ignoring whether they can work. */
+function requested(
   liveNotifications: CustomerIOPluginLiveNotificationsOptions | undefined,
   sdkConfig: NativeSDKConfig | undefined
 ): boolean {

@@ -73,6 +73,7 @@ const UNRELEASED_IOS_SDK_BRANCH = 'feat/live-activities';
  * `customerio-reactnative` podspec splits its subspecs to avoid.
  */
 function hostUnreleasedPods(
+  hasPush: boolean,
   isFcmPushProvider: boolean,
   locationEnabled: boolean
 ): string[] {
@@ -82,9 +83,15 @@ function hostUnreleasedPods(
     'CustomerIOCommon',
     'CustomerIODataPipelines',
     'CustomerIOTrackingMigration',
-    'CustomerIOMessagingPush',
     'CustomerIOMessagingInApp',
-    isFcmPushProvider ? 'CustomerIOMessagingPushFCM' : 'CustomerIOMessagingPushAPN',
+    // Push pods only when push is configured. The subspec list already omits the push subspec
+    // without it, so naming these anyway would link push SDKs the app never asked for.
+    ...(hasPush
+      ? [
+          'CustomerIOMessagingPush',
+          isFcmPushProvider ? 'CustomerIOMessagingPushFCM' : 'CustomerIOMessagingPushAPN',
+        ]
+      : []),
     ...(locationEnabled ? ['CustomerIOLocation'] : []),
     'CustomerIOLiveActivities',
     'CustomerIOLiveActivitiesAttributes',
@@ -140,7 +147,11 @@ export function injectHostAppPodfileCode(
   // resolving from the CocoaPods trunk and their Podfile is byte-identical to before.
   const unreleasedPods = options?.liveNotificationsEnabled
     ? `\n${unreleasedPodLines(
-        hostUnreleasedPods(isFcmPushProvider, options.locationEnabled === true),
+        hostUnreleasedPods(
+          options.hasPush === true,
+          isFcmPushProvider,
+          options.locationEnabled === true
+        ),
         '  '
       )}`
     : '';
