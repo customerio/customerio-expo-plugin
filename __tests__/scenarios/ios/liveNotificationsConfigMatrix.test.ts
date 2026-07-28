@@ -100,12 +100,12 @@ afterEach(() => {
 
 describe('Live Notifications config matrix — feature off', () => {
   test('auto initialization, no liveNotifications config: nothing is generated', () => {
-    expect(isLiveNotificationsEnabled(undefined, sdkConfig(undefined), true)).toBe(false);
+    expect(isLiveNotificationsEnabled(undefined, sdkConfig(undefined))).toBe(false);
   });
 
   test('JavaScript initialization without enabled: nothing is generated', () => {
-    expect(isLiveNotificationsEnabled(buildOptions(), undefined, true)).toBe(false);
-    expect(isLiveNotificationsEnabled(buildOptions({ enabled: false }), undefined, true)).toBe(
+    expect(isLiveNotificationsEnabled(buildOptions(), undefined)).toBe(false);
+    expect(isLiveNotificationsEnabled(buildOptions({ enabled: false }), undefined)).toBe(
       false
     );
   });
@@ -114,54 +114,15 @@ describe('Live Notifications config matrix — feature off', () => {
     // It describes how to render, never whether the feature is on — otherwise a leftover widget
     // config would silently add a target to an app that had turned Live Notifications off.
     expect(
-      isLiveNotificationsEnabled(buildOptions({ customWidget: customWidget() }), undefined, true)
+      isLiveNotificationsEnabled(buildOptions({ customWidget: customWidget() }), undefined)
     ).toBe(false);
-  });
-});
-
-/**
- * Push is a fourth dimension over the grid, and a precondition rather than a variation: Android
- * hosts Live Notifications inside its push module, and iOS registers push-to-start against the
- * device token push supplies. Without it there is nothing for a widget to render.
- */
-describe('Live Notifications config matrix — push precondition', () => {
-  test('auto initialization without push: skipped with a warning', () => {
-    expect(
-      isLiveNotificationsEnabled(undefined, sdkConfig({ types: [SEGMENTS] }), false)
-    ).toBe(false);
-    expect(warn).toHaveBeenCalledWith(
-      expect.stringContaining('Live Notifications need push notifications')
-    );
-  });
-
-  test('JavaScript initialization without push: skipped with a warning', () => {
-    expect(isLiveNotificationsEnabled(buildOptions({ enabled: true }), undefined, false)).toBe(
-      false
-    );
-    expect(warn).toHaveBeenCalledWith(
-      expect.stringContaining('Live Notifications need push notifications')
-    );
-  });
-
-  test('a custom type without push is skipped too', () => {
-    expect(
-      isLiveNotificationsEnabled(undefined, sdkConfig({ types: [], customType: CUSTOM_TYPE }), false)
-    ).toBe(false);
-  });
-
-  test('not requested and no push: no warning, since nothing was asked for', () => {
-    // The warning has to be about a configuration the app actually wanted. Firing it for every
-    // push-less app would train people to ignore it.
-    expect(isLiveNotificationsEnabled(undefined, sdkConfig(undefined), false)).toBe(false);
-    expect(isLiveNotificationsEnabled(buildOptions(), undefined, false)).toBe(false);
-    expect(warn).not.toHaveBeenCalled();
   });
 });
 
 describe('Live Notifications config matrix — auto initialization', () => {
   test('built-in templates: the bundle renders exactly the configured types', () => {
     const config = { types: [SEGMENTS] };
-    expect(isLiveNotificationsEnabled(undefined, sdkConfig(config), true)).toBe(true);
+    expect(isLiveNotificationsEnabled(undefined, sdkConfig(config))).toBe(true);
 
     const bundle = bundleFor({ liveNotifications: config, autoInitializes: true });
     expect(bundle).toContain('CIOSegmentsLiveActivity()');
@@ -173,7 +134,7 @@ describe('Live Notifications config matrix — auto initialization', () => {
 
   test('custom template: the bundle renders only the app struct', () => {
     const config = { types: [], customType: CUSTOM_TYPE };
-    expect(isLiveNotificationsEnabled(undefined, sdkConfig(config), true)).toBe(true);
+    expect(isLiveNotificationsEnabled(undefined, sdkConfig(config))).toBe(true);
 
     const bundle = bundleFor({
       liveNotifications: config,
@@ -230,7 +191,7 @@ describe('Live Notifications config matrix — auto initialization', () => {
 describe('Live Notifications config matrix — JavaScript initialization', () => {
   test('built-in templates: every built-in is rendered, with no warning', () => {
     const build = buildOptions({ enabled: true });
-    expect(isLiveNotificationsEnabled(build, undefined, true)).toBe(true);
+    expect(isLiveNotificationsEnabled(build, undefined)).toBe(true);
 
     const bundle = bundleFor({ build, autoInitializes: false });
     expect(bundle).toContain('CIOSegmentsLiveActivity()');
@@ -333,7 +294,7 @@ describe('Live Notifications config matrix — branding', () => {
 
   test('branding alone cannot switch the feature on', () => {
     // Same reasoning as `customWidget`: it describes how templates look, never whether they run.
-    expect(isLiveNotificationsEnabled(buildOptions({ branding: BRANDING }), undefined, true)).toBe(
+    expect(isLiveNotificationsEnabled(buildOptions({ branding: BRANDING }), undefined)).toBe(
       false
     );
   });

@@ -222,6 +222,7 @@ export const withCIOIosSwift = (
   sdkConfig?: NativeSDKConfig,
   props?: CustomerIOPluginOptionsIOS,
   location?: CustomerIOPluginLocationOptions,
+  liveNotificationsEnabled = false,
 ) => {
   // First, copy required swift files to iOS folder and add it to Xcode project
   configOuter = withXcodeProject(configOuter, async (config) => {
@@ -238,12 +239,20 @@ export const withCIOIosSwift = (
       );
       return config;
     });
-  } else if (sdkConfig) {
-    // Without push notifications: directly inject auto initialization into AppDelegate
+  } else if (sdkConfig || liveNotificationsEnabled) {
+    // Without push notifications: inject auto initialization directly, plus the Live Activity tap
+    // route when the feature is on. `CioSdkAppDelegateHandler` is not an option here — it imports
+    // the push module, which this configuration does not install — so the tap goes straight to the
+    // Live Activities module instead.
     return withAppDelegate(configOuter, async (config) => {
-      config.modResults.contents = modifyAppDelegateForNativeSDKInitializer(
-        config.modResults.contents
-      );
+      let next = config.modResults.contents;
+      if (sdkConfig) {
+        next = modifyAppDelegateForNativeSDKInitializer(next);
+      }
+      if (liveNotificationsEnabled) {
+        next = modifyAppDelegateForLiveActivityUrl(next);
+      }
+      config.modResults.contents = next;
       return config;
     });
   } else {
@@ -262,9 +271,12 @@ export function modifyAppDelegateForPushHandler(
 ): string {
   if (contents.includes(CIO_SDK_APP_DELEGATE_HANDLER_CLASS)) {
     logger.info(
-      'CustomerIO Swift AppDelegate changes already exist. Skipping...'
+      'CustomerIO Swift AppDelegate changes already exist. Adding anything newer...'
     );
-    return contents;
+    // Don't return the file untouched: an AppDelegate integrated by an earlier plugin version has
+    // the handler but not the Live Activity tap route, and skipping outright leaves every upgraded
+    // app without it. `addOpenURLHandling` is idempotent, so re-running it is safe.
+    return addOpenURLHandling(contents);
   }
 
   let next = addHandlerPropertyDeclaration(contents);
@@ -281,6 +293,58 @@ export function modifyAppDelegateForPushHandler(
   }
 
   return next;
+}
+
+/**
+ * Pure string transform: routes opened URLs to the Live Activities module on the no-push path.
+ *
+ * The push path delegates this to `CioSdkAppDelegateHandler`, but that file imports the push module,
+ * which a Live-Notifications-without-push app does not install. Calling the module directly keeps
+ * the tap reporting its `opened` metric and returning the customer's deep link either way.
+ *
+ * Idempotent, and a no-op if the push handler already owns the method.
+ */
+export function modifyAppDelegateForLiveActivityUrl(contents: string): string {
+  if (contents.includes(LIVE_ACTIVITY_URL_CALL) || contents.includes(`${CIO_OPEN_URL_MARKER}app, open:`)) {
+    return contents;
+  }
+
+  let next = contents;
+  if (!next.includes(LIVE_ACTIVITY_IMPORT)) {
+    next = next.replace(/^(import [^\n]+\n)/, `$1${LIVE_ACTIVITY_IMPORT}\n`);
+  }
+
+  const methodRegex =
+    /func\s+application\s*\(\s*_\s+(app|application)\s*:\s*UIApplication\s*,\s*open\s+url\s*:\s*URL\s*,\s*options\s*:[^)]*\)\s*->\s*Bool\s*{/;
+  const match = next.match(methodRegex);
+
+  if (match) {
+    const insertAt = (match.index ?? 0) + match[0].length;
+    return (
+      next.substring(0, insertAt) +
+      '\n    // Report a Live Activity tap and route the deep link it carries\n' +
+      `    guard let url = ${LIVE_ACTIVITY_URL_CALL}(url) else { return true }\n` +
+      next.substring(insertAt)
+    );
+  }
+
+  const classEndRegex = /^}(\s*$|\s*\/\/)/m;
+  const classEndMatch = next.match(classEndRegex);
+  if (!classEndMatch) {
+    logger.warn('Could not find end of AppDelegate class');
+    return next;
+  }
+
+  const position = classEndMatch.index ?? 0;
+  return (
+    next.substring(0, position) +
+    '\n  // Report a Live Activity tap and route the deep link it carries\n' +
+    '  public override func application(_ app: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey: Any] = [:]) -> Bool {\n' +
+    `    guard let url = ${LIVE_ACTIVITY_URL_CALL}(url) else { return true }\n` +
+    '    return super.application(app, open: url, options: options)\n' +
+    '  }\n' +
+    next.substring(position)
+  );
 }
 
 /**
@@ -381,7 +445,18 @@ const modifyDidFinishLaunchingWithOptions = (content: string, codeToInject: stri
  * working verbatim against the routed URL; `nil` means the activity carried no deep link and there
  * is nothing left to open.
  */
+const CIO_OPEN_URL_MARKER = 'cioSdkHandler.application(';
+const LIVE_ACTIVITY_IMPORT = 'import CioLiveActivities';
+const LIVE_ACTIVITY_URL_CALL = 'CustomerIO.liveActivities.handleWidgetUrl';
+
 const addOpenURLHandling = (content: string): string => {
+  // Already wired — by this run or by an earlier prebuild. Injecting again would duplicate the guard
+  // inside the same method.
+  if (content.includes(`${CIO_OPEN_URL_MARKER}app, open:`) ||
+      content.includes(`${CIO_OPEN_URL_MARKER}application, open:`)) {
+    return content;
+  }
+
   // Match either parameter spelling (`_ app` in Expo's template, `_ application` elsewhere) across
   // the multi-line signature Expo generates.
   const methodRegex =

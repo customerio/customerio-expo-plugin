@@ -123,7 +123,7 @@ describe('Live Notifications config', () => {
         isLiveNotificationsEnabled(undefined, {
           cdpApiKey,
           liveNotifications: { types: [SEGMENTS] },
-        }, true)
+        })
       ).toBe(true);
     });
 
@@ -132,17 +132,17 @@ describe('Live Notifications config', () => {
         isLiveNotificationsEnabled(undefined, {
           cdpApiKey,
           liveNotifications: {},
-        }, true)
+        })
       ).toBe(true);
     });
 
     test('JavaScript initialization: enabled flag with no SDK config', () => {
-      expect(isLiveNotificationsEnabled({ enabled: true }, undefined, true)).toBe(true);
+      expect(isLiveNotificationsEnabled({ enabled: true }, undefined)).toBe(true);
     });
 
     test('off when neither is set', () => {
-      expect(isLiveNotificationsEnabled(undefined, { cdpApiKey }, true)).toBe(false);
-      expect(isLiveNotificationsEnabled({}, { cdpApiKey }, true)).toBe(false);
+      expect(isLiveNotificationsEnabled(undefined, { cdpApiKey })).toBe(false);
+      expect(isLiveNotificationsEnabled({}, { cdpApiKey })).toBe(false);
     });
 
     test('off when every configured type is unrecognized', () => {
@@ -151,7 +151,7 @@ describe('Live Notifications config', () => {
         isLiveNotificationsEnabled(undefined, {
           cdpApiKey,
           liveNotifications: { types: ['io.example.unknown'] },
-        }, true)
+        })
       ).toBe(false);
       warn.mockRestore();
     });
@@ -163,7 +163,7 @@ describe('Live Notifications config', () => {
         isLiveNotificationsEnabled(undefined, {
           cdpApiKey,
           liveNotifications: { types: [], customType: 'com.myapp.rideshare' },
-        }, true)
+        })
       ).toBe(true);
     });
 
@@ -172,7 +172,7 @@ describe('Live Notifications config', () => {
         isLiveNotificationsEnabled(undefined, {
           cdpApiKey,
           liveNotifications: { types: [], customType: 'com.myapp.rideshare' },
-        }, true)
+        })
       ).toBe(true);
     });
 
@@ -188,7 +188,7 @@ describe('Live Notifications config', () => {
               structName: 'RideshareLiveActivity',
             },
           },
-          undefined, true
+          undefined
         )
       ).toBe(false);
     });
@@ -198,7 +198,7 @@ describe('Live Notifications config', () => {
         isLiveNotificationsEnabled(undefined, {
           cdpApiKey,
           liveNotifications: { types: [], customType: '   ' },
-        }, true)
+        })
       ).toBe(false);
     });
   });

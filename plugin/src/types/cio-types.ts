@@ -263,6 +263,7 @@ export type LiveNotificationBranding = {
  *
  * ```swift
  * import CioLiveActivities_Attributes
+ * import CioLiveActivities_Templates
  * import SwiftUI
  * import WidgetKit
  *
@@ -270,10 +271,20 @@ export type LiveNotificationBranding = {
  *     var body: some WidgetConfiguration {
  *         ActivityConfiguration(for: CIOCustomAttributes.self) { context in
  *             Text(context.state.data["status"] ?? "")
- *         } dynamicIsland: { _ in DynamicIsland { } }
+ *                 .cioWidgetUrl(context.state.cioMetadata)
+ *         } dynamicIsland: { context in
+ *             DynamicIsland { }
+ *                 .cioWidgetUrl(context.state.cioMetadata)
+ *         }
  *     }
  * }
  * ```
+ *
+ * **`.cioWidgetUrl(context.state.cioMetadata)` is required on both the lock-screen view and the
+ * Dynamic Island.** It is the one thing the plugin cannot add for you — it never parses or rewrites
+ * your SwiftUI. That modifier carries the tap URL the SDK reports `opened` from and resolves your
+ * deep link with, so a custom template without it renders correctly and silently loses attribution
+ * and routing on every tap. The SDK's built-in templates apply it in exactly these two places.
  *
  * Both a path and a name are needed because the plugin never parses Swift: it copies the file into
  * the widget target and instantiates `structName` in the generated `WidgetBundle`.

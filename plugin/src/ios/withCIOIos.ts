@@ -32,14 +32,13 @@ export function withCIOIos(
   const locationEnabled = location?.enabled === true;
   const liveNotificationsEnabled = isLiveNotificationsEnabled(
     liveNotifications,
-    sdkConfig,
-    platformConfig?.pushNotification !== undefined
+    sdkConfig
   );
 
   if (platformConfig?.pushNotification) {
     validatePushNotificationOptions(platformConfig.pushNotification);
     if (isSwiftProject) {
-      config = withCIOIosSwift(config, sdkConfig, platformConfig, location);
+      config = withCIOIosSwift(config, sdkConfig, platformConfig, location, liveNotificationsEnabled);
     } else {
       // Auto initialization is only supported in Swift projects (Expo SDK 53+)
       // Legacy Objective-C projects only support push notifications
@@ -72,7 +71,7 @@ export function withCIOIos(
       });
     }
   } else if (sdkConfig && isSwiftProject) {
-    config = withCIOIosSwift(config, sdkConfig, platformConfig, location);
+    config = withCIOIosSwift(config, sdkConfig, platformConfig, location, liveNotificationsEnabled);
     if (locationEnabled || liveNotificationsEnabled) {
       config = withCioXcodeProject(config, {
         ...platformConfig,
