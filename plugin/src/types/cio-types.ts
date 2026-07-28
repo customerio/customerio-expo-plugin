@@ -263,7 +263,6 @@ export type LiveNotificationBranding = {
  *
  * ```swift
  * import CioLiveActivities_Attributes
- * import CioLiveActivities_Templates
  * import SwiftUI
  * import WidgetKit
  *
