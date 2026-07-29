@@ -4,12 +4,6 @@ import {
   CioRegion,
   CustomerIO,
 } from 'customerio-reactnative';
-// Visual Notification Inbox components. Imported here on purpose: these are Fabric views backed by
-// new native modules (Compose on Android, SwiftUI on iOS), so rendering them is what proves
-// autolinking and pod linkage reach the inbox code under pnpm — the whole point of this app.
-import {
-  NotificationInboxBellView,
-} from 'customerio-reactnative';
 import { registerRootComponent } from 'expo';
 import { useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
@@ -55,24 +49,8 @@ function App() {
         .then((status) => console.log(`${SMOKE_TAG} push permission:`, status))
         .catch((err) => console.warn(`${SMOKE_TAG} push permission error:`, err));
 
-      // Visual Notification Inbox: exercise the headless API and the listener bridge. The views
-      // themselves are rendered below — together they cover both halves of the inbox surface.
-      CustomerIO.inAppMessaging
-        .inbox()
-        .getMessages()
-        .then((messages) =>
-          console.log(`${SMOKE_TAG} inbox getMessages OK:`, messages.length)
-        )
-        .catch((err) => console.warn(`${SMOKE_TAG} inbox getMessages error:`, err));
-
-      const inboxListener = CustomerIO.inAppMessaging.registerInboxEventListener(
-        (event) => console.log(`${SMOKE_TAG} inbox event:`, event)
-      );
-      console.log(`${SMOKE_TAG} inbox listener registered`);
-
       return () => {
         inAppListener?.remove?.();
-        inboxListener?.remove?.();
       };
     } catch (err) {
       console.error(`${SMOKE_TAG} FAILED — native module not linked?`, err);
@@ -86,13 +64,6 @@ function App() {
       <Text style={styles.subtitle}>
         Smoke-tests SDK bridge on launch. Watch the console for {SMOKE_TAG} lines.
       </Text>
-      {/* Inbox bell: a Fabric view over the native component, and the only inbox UI the SDK
-          exposes besides the message list. Tapping it opens the SDK's own panel. If autolinking or
-          pod linkage misses the inbox module, this fails to render rather than failing silently. */}
-      <NotificationInboxBellView
-        style={styles.bell}
-        onTap={() => console.log(`${SMOKE_TAG} inbox bell tapped`)}
-      />
       <StatusBar style="auto" />
     </View>
   );
@@ -116,13 +87,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#555',
     textAlign: 'center',
-  },
-  bell: {
-    marginTop: 24,
-    // 88 not 72: the native composition insets its 56 bell by 16 per side, so a smaller
-    // box squeezes the circle onto the glyph.
-    width: 88,
-    height: 88,
   },
 });
 

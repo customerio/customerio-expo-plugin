@@ -22,9 +22,6 @@ print_blue "\nInstalling dependencies with pnpm (workspace)..."
 pnpm install
 
 print_blue "\nRunning expo prebuild in apps/mobile..."
-# Pods are installed by prebuild: the CIO branch pins are applied by the app's own config plugin
-# (apps/mobile/plugins/with-cio-inbox-pods.js), so the Podfile is already pinned when prebuild runs
-# `pod install`. That plugin covers every prebuild path — this script, `prebuild:ios`, and EAS.
 pnpm --filter @cio-test/mobile exec expo prebuild --clean
 
 cd ..

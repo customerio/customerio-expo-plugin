@@ -40,8 +40,7 @@
             "useFrameworks": "static"
           }
         }
-      ],
-      "./plugins/with-cio-inbox-pods"
+      ]
     ]
   }
 }

@@ -1,18 +1,3 @@
 packages:
   - "apps/*"
   - "packages/*"
-
-# WIP (inbox): apps/mobile takes customerio-reactnative from a git branch while the Visual Inbox is
-# unreleased. A git-hosted package has to build itself on install — the published tarball ships built
-# `lib/`, a git checkout does not — and pnpm 10 blocks that by default, failing the install with
-# ERR_PNPM_GIT_DEP_PREPARE_NOT_ALLOWED.
-#
-# `onlyBuiltDependencies: ["customerio-reactnative"]` does NOT work here: on a cold store pnpm matches
-# the entry against the package's resolved spec, so it wants
-# `customerio-reactnative@https://codeload.github.com/.../tar.gz/<sha>` — which pins a commit and would
-# break on every push to the SDK branch. (A warm store hides this: an already-built git dep is reused
-# and never re-prepared.) Allowing builds outright is the only stable form.
-#
-# Safe enough here: this is a throwaway test app whose entire purpose is installing and building
-# native dependencies. Drop this once the dependency goes back to a published version.
-dangerouslyAllowAllBuilds: true
