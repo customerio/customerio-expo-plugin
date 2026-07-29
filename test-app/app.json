@@ -131,7 +131,8 @@
             "useFrameworks": "static"
           }
         }
-      ]
+      ],
+      "./plugins/with-cio-inbox-pods"
     ],
     "experiments": {
       "typedRoutes": true,
