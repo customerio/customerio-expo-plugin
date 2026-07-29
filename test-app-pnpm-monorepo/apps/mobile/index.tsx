@@ -4,6 +4,13 @@ import {
   CioRegion,
   CustomerIO,
 } from 'customerio-reactnative';
+// Visual Notification Inbox components. Imported here on purpose: these are Fabric views backed by
+// new native modules (Compose on Android, SwiftUI on iOS), so rendering them is what proves
+// autolinking and pod linkage reach the inbox code under pnpm — the whole point of this app.
+import {
+  NotificationInboxBellView,
+  NotificationInboxOverlayView,
+} from 'customerio-reactnative';
 import { registerRootComponent } from 'expo';
 import { useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
@@ -49,8 +56,23 @@ function App() {
         .then((status) => console.log(`${SMOKE_TAG} push permission:`, status))
         .catch((err) => console.warn(`${SMOKE_TAG} push permission error:`, err));
 
+      // Visual Notification Inbox: exercise the headless API and the listener bridge. The views
+      // themselves are rendered below — together they cover both halves of the inbox surface.
+      CustomerIO.inAppMessaging.inbox
+        .getMessages()
+        .then((messages) =>
+          console.log(`${SMOKE_TAG} inbox getMessages OK:`, messages.length)
+        )
+        .catch((err) => console.warn(`${SMOKE_TAG} inbox getMessages error:`, err));
+
+      const inboxListener = CustomerIO.inAppMessaging.registerInboxEventListener(
+        (event) => console.log(`${SMOKE_TAG} inbox event:`, event)
+      );
+      console.log(`${SMOKE_TAG} inbox listener registered`);
+
       return () => {
         inAppListener?.remove?.();
+        inboxListener?.remove?.();
       };
     } catch (err) {
       console.error(`${SMOKE_TAG} FAILED — native module not linked?`, err);
@@ -64,7 +86,18 @@ function App() {
       <Text style={styles.subtitle}>
         Smoke-tests SDK bridge on launch. Watch the console for {SMOKE_TAG} lines.
       </Text>
+      {/* Inbox bell: a Fabric view over the native component. If autolinking or pod linkage
+          misses the inbox module, this fails to render rather than failing silently. */}
+      <NotificationInboxBellView
+        style={styles.bell}
+        onTap={() => console.log(`${SMOKE_TAG} inbox bell tapped`)}
+      />
       <StatusBar style="auto" />
+      {/* Drop-in overlay, mounted last so it layers above. iOS 16+; renders nothing below that. */}
+      <NotificationInboxOverlayView
+        style={StyleSheet.absoluteFill}
+        pointerEvents="box-none"
+      />
     </View>
   );
 }
@@ -87,6 +120,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#555',
     textAlign: 'center',
+  },
+  bell: {
+    marginTop: 24,
+    width: 72,
+    height: 72,
   },
 });
 

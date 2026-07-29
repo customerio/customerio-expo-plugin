@@ -1,3 +1,11 @@
 packages:
   - "apps/*"
   - "packages/*"
+
+# WIP (inbox): apps/mobile takes customerio-reactnative from a git branch while the Visual Inbox is
+# unreleased. A git-hosted package has to build itself on install — the published tarball ships built
+# `lib/`, a git checkout does not — and pnpm 10 refuses to run that build unless the package is
+# allowlisted here. Without this, install fails with ERR_PNPM_GIT_DEP_PREPARE_NOT_ALLOWED.
+# Drop this once the dependency goes back to a published version.
+onlyBuiltDependencies:
+  - "customerio-reactnative"
