@@ -9,7 +9,6 @@ import {
 // autolinking and pod linkage reach the inbox code under pnpm — the whole point of this app.
 import {
   NotificationInboxBellView,
-  NotificationInboxOverlayView,
 } from 'customerio-reactnative';
 import { registerRootComponent } from 'expo';
 import { useEffect } from 'react';
@@ -58,7 +57,8 @@ function App() {
 
       // Visual Notification Inbox: exercise the headless API and the listener bridge. The views
       // themselves are rendered below — together they cover both halves of the inbox surface.
-      CustomerIO.inAppMessaging.inbox
+      CustomerIO.inAppMessaging
+        .inbox()
         .getMessages()
         .then((messages) =>
           console.log(`${SMOKE_TAG} inbox getMessages OK:`, messages.length)
@@ -86,18 +86,14 @@ function App() {
       <Text style={styles.subtitle}>
         Smoke-tests SDK bridge on launch. Watch the console for {SMOKE_TAG} lines.
       </Text>
-      {/* Inbox bell: a Fabric view over the native component. If autolinking or pod linkage
-          misses the inbox module, this fails to render rather than failing silently. */}
+      {/* Inbox bell: a Fabric view over the native component, and the only inbox UI the SDK
+          exposes besides the message list. Tapping it opens the SDK's own panel. If autolinking or
+          pod linkage misses the inbox module, this fails to render rather than failing silently. */}
       <NotificationInboxBellView
         style={styles.bell}
         onTap={() => console.log(`${SMOKE_TAG} inbox bell tapped`)}
       />
       <StatusBar style="auto" />
-      {/* Drop-in overlay, mounted last so it layers above. iOS 16+; renders nothing below that. */}
-      <NotificationInboxOverlayView
-        style={StyleSheet.absoluteFill}
-        pointerEvents="box-none"
-      />
     </View>
   );
 }
@@ -123,8 +119,10 @@ const styles = StyleSheet.create({
   },
   bell: {
     marginTop: 24,
-    width: 72,
-    height: 72,
+    // 88 not 72: the native composition insets its 56 bell by 16 per side, so a smaller
+    // box squeezes the circle onto the glyph.
+    width: 88,
+    height: 88,
   },
 });
 
