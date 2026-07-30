@@ -95,6 +95,15 @@ export function withCIOIos(
   } else if (optionalModulesEnabled) {
     // No push, no config. Still add the Podfile subspecs so the relevant native modules are
     // compiled in and their flags set (CIO_LOCATION_ENABLED / CIO_GEOFENCE_ENABLED, live activities).
+    //
+    // Live Notifications additionally needs the AppDelegate to route a tapped activity's URL through
+    // the SDK. Without it the activity still renders, but the `opened` metric is never reported and
+    // the deep link the activity carries is never forwarded. `withCIOIosSwift` is built for exactly
+    // this shape — no push and no SDK config — and calls the Live Activities module directly, since
+    // `CioSdkAppDelegateHandler` imports the push module this configuration does not install.
+    if (liveNotificationsEnabled && isSwiftProject) {
+      config = withCIOIosSwift(config, sdkConfig, platformConfig, location, geofence, liveNotificationsEnabled);
+    }
     config = withCioXcodeProject(config, {
       ...platformConfig,
       podfileOptions: {

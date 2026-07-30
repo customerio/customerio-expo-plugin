@@ -249,14 +249,16 @@ describe('withCIOIos', () => {
   describe('live activities', () => {
     it('injects the widget target and Info.plist, adding the liveactivities subspec (no push/config)', () => {
       // Live Notifications without push is supported: an app can obtain a device token elsewhere and
-      // hand it to Customer.io for backend-driven activities. The tap route is installed on this path
-      // too (see withCIOIosSwift), so nothing here is half-wired.
+      // hand it to Customer.io for backend-driven activities. withCIOIosSwift has to run on this path
+      // too — it is what routes a tapped activity's URL through the SDK, so without it the `opened`
+      // metric is lost and the deep link is never forwarded.
       const props: CustomerIOPluginOptionsIOS = {
         iosPath: '/test/ios',
       };
 
       withCIOIos(mockConfig, undefined, props, undefined, undefined, { enabled: true });
 
+      expect(mockWithCIOIosSwift).toHaveBeenCalledTimes(1);
       expect(mockWithLiveActivityInfoPlist).toHaveBeenCalledTimes(1);
       expect(mockWithCioLiveActivityWidgetXcodeProject).toHaveBeenCalledTimes(1);
       expect(mockWithCioNotificationsXcodeProject).not.toHaveBeenCalled();
@@ -317,6 +319,7 @@ describe('withCIOIos', () => {
     it('injects the widget and Info.plist when there is no ios props block at all', () => {
       withCIOIos(mockConfig, undefined, undefined, undefined, undefined, { enabled: true });
 
+      expect(mockWithCIOIosSwift).toHaveBeenCalledTimes(1);
       expect(mockWithLiveActivityInfoPlist).toHaveBeenCalledTimes(1);
       expect(mockWithCioLiveActivityWidgetXcodeProject).toHaveBeenCalledTimes(1);
       expect(mockWithCioXcodeProject).toHaveBeenCalledWith(mockConfig, {
