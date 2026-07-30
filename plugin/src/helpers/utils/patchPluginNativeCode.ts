@@ -6,6 +6,10 @@ import { getPluginVersion } from '../../utils/plugin';
 import { validateNativeSDKConfig } from '../../utils/validation';
 import { PLATFORM, type Platform } from '../constants/common';
 import {
+  type GeofenceInitOptions,
+  patchGeofencePlaceholders,
+} from './patchGeofenceCode';
+import {
   type CustomRendererRegistration,
   patchLiveNotificationPlaceholders,
 } from './patchLiveNotificationCode';
@@ -14,7 +18,7 @@ import {
   patchLocationPlaceholders,
 } from './patchLocationCode';
 
-export type { LocationInitOptions };
+export type { GeofenceInitOptions, LocationInitOptions };
 
 /**
  * Shared utility function to perform common SDK config replacements
@@ -29,6 +33,7 @@ export function patchNativeSDKInitializer(
   platform: Platform,
   sdkConfig: NativeSDKConfig,
   locationOptions?: LocationInitOptions,
+  geofenceOptions?: GeofenceInitOptions,
   liveNotificationBranding?: LiveNotificationBranding,
   customRenderer?: CustomRendererRegistration
 ): string {
@@ -119,6 +124,7 @@ export function patchNativeSDKInitializer(
   );
 
   content = patchLocationPlaceholders(content, platform, locationOptions);
+  content = patchGeofencePlaceholders(content, platform, geofenceOptions);
 
   // The types and `customType` live on the SDK config itself — their presence is what enables the
   // feature on the auto-initialization path. Branding is passed alongside because it is build-time

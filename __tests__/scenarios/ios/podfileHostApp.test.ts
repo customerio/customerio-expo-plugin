@@ -137,16 +137,6 @@ describe('ios scenarios — injectHostAppPodfileCode', () => {
 
       # --- CustomerIO Host App START ---
         pod 'customerio-reactnative', :subspecs => ['apn', 'liveactivities'], :path => '../node_modules/customerio-reactnative'
-        pod 'CustomerIO', :git => 'https://github.com/customerio/customerio-ios.git', :branch => 'feat/live-activities'
-        pod 'CustomerIOCommon', :git => 'https://github.com/customerio/customerio-ios.git', :branch => 'feat/live-activities'
-        pod 'CustomerIODataPipelines', :git => 'https://github.com/customerio/customerio-ios.git', :branch => 'feat/live-activities'
-        pod 'CustomerIOTrackingMigration', :git => 'https://github.com/customerio/customerio-ios.git', :branch => 'feat/live-activities'
-        pod 'CustomerIOMessagingInApp', :git => 'https://github.com/customerio/customerio-ios.git', :branch => 'feat/live-activities'
-        pod 'CustomerIOMessagingPush', :git => 'https://github.com/customerio/customerio-ios.git', :branch => 'feat/live-activities'
-        pod 'CustomerIOMessagingPushAPN', :git => 'https://github.com/customerio/customerio-ios.git', :branch => 'feat/live-activities'
-        pod 'CustomerIOLiveActivities', :git => 'https://github.com/customerio/customerio-ios.git', :branch => 'feat/live-activities'
-        pod 'CustomerIOLiveActivitiesAttributes', :git => 'https://github.com/customerio/customerio-ios.git', :branch => 'feat/live-activities'
-        pod 'CustomerIOLiveActivitiesTemplates', :git => 'https://github.com/customerio/customerio-ios.git', :branch => 'feat/live-activities'
       # --- CustomerIO Host App END ---
       post_install do |installer|
         react_native_post_install(installer)
@@ -174,17 +164,6 @@ describe('ios scenarios — injectHostAppPodfileCode', () => {
 
       # --- CustomerIO Host App START ---
         pod 'customerio-reactnative', :subspecs => ['fcm', 'location', 'liveactivities'], :path => '../node_modules/customerio-reactnative'
-        pod 'CustomerIO', :git => 'https://github.com/customerio/customerio-ios.git', :branch => 'feat/live-activities'
-        pod 'CustomerIOCommon', :git => 'https://github.com/customerio/customerio-ios.git', :branch => 'feat/live-activities'
-        pod 'CustomerIODataPipelines', :git => 'https://github.com/customerio/customerio-ios.git', :branch => 'feat/live-activities'
-        pod 'CustomerIOTrackingMigration', :git => 'https://github.com/customerio/customerio-ios.git', :branch => 'feat/live-activities'
-        pod 'CustomerIOMessagingInApp', :git => 'https://github.com/customerio/customerio-ios.git', :branch => 'feat/live-activities'
-        pod 'CustomerIOMessagingPush', :git => 'https://github.com/customerio/customerio-ios.git', :branch => 'feat/live-activities'
-        pod 'CustomerIOMessagingPushFCM', :git => 'https://github.com/customerio/customerio-ios.git', :branch => 'feat/live-activities'
-        pod 'CustomerIOLocation', :git => 'https://github.com/customerio/customerio-ios.git', :branch => 'feat/live-activities'
-        pod 'CustomerIOLiveActivities', :git => 'https://github.com/customerio/customerio-ios.git', :branch => 'feat/live-activities'
-        pod 'CustomerIOLiveActivitiesAttributes', :git => 'https://github.com/customerio/customerio-ios.git', :branch => 'feat/live-activities'
-        pod 'CustomerIOLiveActivitiesTemplates', :git => 'https://github.com/customerio/customerio-ios.git', :branch => 'feat/live-activities'
       # --- CustomerIO Host App END ---
       post_install do |installer|
         react_native_post_install(installer)

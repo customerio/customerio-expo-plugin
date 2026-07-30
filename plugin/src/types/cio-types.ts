@@ -96,6 +96,15 @@ export type CustomerIOPluginOptionsAndroid = {
 export type LocationTrackingMode = 'OFF' | 'MANUAL' | 'ON_APP_START';
 
 /**
+ * Geofence location mode for the Customer.io SDK geofence module.
+ * Geofence is off by default. Only used when geofence is enabled (plugin option geofence.enabled: true).
+ * 'AUTOMATIC' (SDK refreshes geofences on its own, default) or 'MANUAL' (host app drives refreshes via
+ * CustomerIO.geofence.refreshFromCurrentLocation()).
+ * @public
+ */
+export type GeofenceLocationMode = 'AUTOMATIC' | 'MANUAL';
+
+/**
  * SDK configuration options for auto initialization
  * @public
  */
@@ -109,12 +118,29 @@ export type NativeSDKConfig = {
   siteId?: string; // Optional, if only siteId defined, migrationSiteId = siteId
   migrationSiteId?: string; // Optional, if only migrationSiteId defined, siteId should be null
   /**
-   * Location module config. Location is off by default; only applied when plugin option location.enabled is true.
-   * trackingMode: 'MANUAL' (host app controls when location is captured, default),
+   * Location module config. Location is off by default. Applied whenever the location module is
+   * registered — when location.enabled is true, or when geofence.enabled is true (geofence implies
+   * location). trackingMode: 'MANUAL' (host app controls when location is captured, default),
    * 'ON_APP_START' (SDK captures once per launch when app becomes active), or 'OFF'.
    */
   location?: {
     trackingMode?: LocationTrackingMode;
+  };
+  /**
+   * Geofence module config. Geofence is off by default; only applied when plugin option geofence.enabled is true.
+   * Geofence implies location, so the location module is registered automatically when geofence is enabled.
+   * locationMode: 'AUTOMATIC' (default) or 'MANUAL'.
+   */
+  geofence?: {
+    locationMode?: GeofenceLocationMode;
+  };
+  /**
+   * iOS-only SDK config.
+   * allowBackgroundDelivery: enables background delivery of geofence transitions. Defaults to true when
+   * geofence is enabled, false otherwise. Set explicitly to override.
+   */
+  ios?: {
+    allowBackgroundDelivery?: boolean;
   };
   /**
    * Live Notifications config. Its presence enables the feature; there is no
@@ -134,6 +160,17 @@ export type CustomerIOPluginLocationOptions = {
 };
 
 /**
+ * Geofence is off by default. When true, enables the Customer.io SDK geofence native module (iOS Podfile geofence subspec,
+ * Android gradle.properties flag) and injects the iOS AppDelegate background-delivery bootstrap. Geofence implies location,
+ * so enabling it also enables the location module. Permissions and privacy keys (Info.plist, AndroidManifest)
+ * remain the host app's responsibility.
+ * @public
+ */
+export type CustomerIOPluginGeofenceOptions = {
+  enabled?: boolean;
+};
+
+/**
  * Combined plugin options for both iOS and Android platforms
  * @public
  */
@@ -146,6 +183,12 @@ export type CustomerIOPluginOptions = {
    * gradle.properties). Host apps must add their own location permissions and privacy usage strings.
    */
   location?: CustomerIOPluginLocationOptions;
+  /**
+   * Geofence is off by default. When geofence.enabled is true, the plugin adds SDK build-time setup (Podfile geofence subspec,
+   * gradle.properties) and the iOS AppDelegate background-delivery bootstrap. Geofence implies location. Host apps must add
+   * their own location permissions and privacy usage strings.
+   */
+  geofence?: CustomerIOPluginGeofenceOptions;
   /**
    * Live Notifications build-time setup: the branding compiled into the iOS widget, the SwiftUI for
    * a custom template, and the `enabled` switch.

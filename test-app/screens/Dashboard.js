@@ -51,6 +51,10 @@ export default function DashboardScreen() {
     router.push('/inline-examples');
   };
 
+  const handleNavigateToVisualInboxButtonPressed = () => {
+    router.push('/visual-inbox');
+  };
+
   const handleNavigateToLocationButtonPressed = () => {
     router.push('/location');
   };
@@ -132,6 +136,10 @@ export default function DashboardScreen() {
         <Button
           title="Inline Examples"
           onPress={handleNavigateToInlineExamplesButtonPressed}
+        />
+        <Button
+          title="Visual Inbox"
+          onPress={handleNavigateToVisualInboxButtonPressed}
         />
       </ThemedView>
 

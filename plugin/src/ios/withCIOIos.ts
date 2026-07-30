@@ -5,6 +5,7 @@ import type {
   CustomerIOPluginPushNotificationOptions,
   CustomerIOPluginLiveNotificationsOptions,
   CustomerIOPluginLocationOptions,
+  CustomerIOPluginGeofenceOptions,
   NativeSDKConfig,
 } from '../types/cio-types';
 import { isLiveNotificationsEnabled } from '../helpers/utils/liveNotificationsEnabled';
@@ -15,6 +16,7 @@ import { isExpoVersion53OrHigher } from './utils';
 import { withAppDelegateModifications } from './withAppDelegateModifications';
 import { withCIOIosSwift } from './withCIOIosSwift';
 import { withCioLiveActivityWidgetXcodeProject } from './withCioLiveActivityWidgetXcodeProject';
+import { withGeofenceAppDelegate } from './withGeofenceAppDelegate';
 import { withGoogleServicesJsonFile } from './withGoogleServicesJsonFile';
 import { withLiveActivityInfoPlist } from './withLiveActivityInfoPlist';
 import { withCioNotificationsXcodeProject } from './withNotificationsXcodeProject';
@@ -25,20 +27,26 @@ export function withCIOIos(
   sdkConfig?: NativeSDKConfig,
   props?: CustomerIOPluginOptionsIOS,
   location?: CustomerIOPluginLocationOptions,
+  geofence?: CustomerIOPluginGeofenceOptions,
   liveNotifications?: CustomerIOPluginLiveNotificationsOptions,
 ) {
   const isSwiftProject = isExpoVersion53OrHigher(config);
   const platformConfig = mergeDeprecatedPropertiesAndLogWarnings(props);
   const locationEnabled = location?.enabled === true;
+  const geofenceEnabled = geofence?.enabled === true;
   const liveNotificationsEnabled = isLiveNotificationsEnabled(
     liveNotifications,
     sdkConfig
   );
+  // Location, geofence and live notifications all reach iOS the same way: the Podfile switches from
+  // the single push subspec to the explicit :subspecs array as soon as any of them is on.
+  const optionalModulesEnabled =
+    locationEnabled || geofenceEnabled || liveNotificationsEnabled;
 
   if (platformConfig?.pushNotification) {
     validatePushNotificationOptions(platformConfig.pushNotification);
     if (isSwiftProject) {
-      config = withCIOIosSwift(config, sdkConfig, platformConfig, location, liveNotificationsEnabled);
+      config = withCIOIosSwift(config, sdkConfig, platformConfig, location, geofence, liveNotificationsEnabled);
     } else {
       // Auto initialization is only supported in Swift projects (Expo SDK 53+)
       // Legacy Objective-C projects only support push notifications
@@ -52,6 +60,7 @@ export function withCIOIos(
       ...platformConfig,
       podfileOptions: {
         locationEnabled,
+        geofenceEnabled,
         hasPush: true,
         liveNotificationsEnabled,
       },
@@ -71,19 +80,29 @@ export function withCIOIos(
       });
     }
   } else if (sdkConfig && isSwiftProject) {
-    config = withCIOIosSwift(config, sdkConfig, platformConfig, location, liveNotificationsEnabled);
-    if (locationEnabled || liveNotificationsEnabled) {
+    config = withCIOIosSwift(config, sdkConfig, platformConfig, location, geofence, liveNotificationsEnabled);
+    if (optionalModulesEnabled) {
       config = withCioXcodeProject(config, {
         ...platformConfig,
-        podfileOptions: { locationEnabled, hasPush: false, liveNotificationsEnabled },
+        podfileOptions: {
+          locationEnabled,
+          geofenceEnabled,
+          hasPush: false,
+          liveNotificationsEnabled,
+        },
       });
     }
-  } else if (locationEnabled || liveNotificationsEnabled) {
-    // No push, no config. Still add the Podfile subspecs so the relevant native modules
-    // (location / live activities) are compiled in.
+  } else if (optionalModulesEnabled) {
+    // No push, no config. Still add the Podfile subspecs so the relevant native modules are
+    // compiled in and their flags set (CIO_LOCATION_ENABLED / CIO_GEOFENCE_ENABLED, live activities).
     config = withCioXcodeProject(config, {
       ...platformConfig,
-      podfileOptions: { locationEnabled, hasPush: false, liveNotificationsEnabled },
+      podfileOptions: {
+        locationEnabled,
+        geofenceEnabled,
+        hasPush: false,
+        liveNotificationsEnabled,
+      },
     });
   }
 
@@ -98,6 +117,14 @@ export function withCIOIos(
       // widget whether the app initializes automatically or from JavaScript.
       buildOptions: liveNotifications,
     });
+  }
+
+  // Geofence requires the iOS AppDelegate background-delivery bootstrap so cold-wake
+  // transitions are delivered even when the JS runtime isn't running. Inject it whenever
+  // geofence is enabled, independent of push/auto-init. Geofence is gated to Swift
+  // projects (Expo SDK 53+) at the plugin entry point.
+  if (geofenceEnabled && isSwiftProject) {
+    config = withGeofenceAppDelegate(config);
   }
 
   return config;

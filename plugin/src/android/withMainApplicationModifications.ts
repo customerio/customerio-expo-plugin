@@ -8,6 +8,7 @@ import { patchNativeSDKInitializer } from '../helpers/utils/patchPluginNativeCod
 import type {
   CustomerIOPluginLiveNotificationsOptions,
   CustomerIOPluginLocationOptions,
+  CustomerIOPluginGeofenceOptions,
   NativeSDKConfig,
 } from '../types/cio-types';
 import { addCodeToMethod, addImportToFile, copyTemplateFile } from '../utils/android';
@@ -16,6 +17,7 @@ import { logger } from '../utils/logger';
 type MainApplicationModParams = {
   sdkConfig: NativeSDKConfig;
   location?: CustomerIOPluginLocationOptions;
+  geofence?: CustomerIOPluginGeofenceOptions;
   /**
    * Live Notification build-time options rather than `sdkConfig`: branding also has to reach the
    * generated iOS widget, and `customRenderer` names Kotlin that only exists at build time.
@@ -23,9 +25,9 @@ type MainApplicationModParams = {
   liveNotifications?: CustomerIOPluginLiveNotificationsOptions;
 };
 
-export const withMainApplicationModifications: ConfigPlugin<MainApplicationModParams> = (configOuter, { sdkConfig, location, liveNotifications }) => {
+export const withMainApplicationModifications: ConfigPlugin<MainApplicationModParams> = (configOuter, { sdkConfig, location, geofence, liveNotifications }) => {
   return withMainApplication(configOuter, async (config) => {
-    const content = setupCustomerIOSDKInitializer(config, sdkConfig, location, liveNotifications);
+    const content = setupCustomerIOSDKInitializer(config, sdkConfig, location, geofence, liveNotifications);
     config.modResults.contents = content;
     return config;
   });
@@ -33,14 +35,28 @@ export const withMainApplicationModifications: ConfigPlugin<MainApplicationModPa
 
 /**
  * Build location options for native initializer from plugin config.
- * trackingMode comes from config.location.trackingMode (only used when location.enabled is true).
+ * trackingMode comes from config.location.trackingMode. Geofence implies location, so the
+ * location module is registered whenever location or geofence is enabled.
  */
 const getLocationInitOptions = (
   location?: CustomerIOPluginLocationOptions,
+  geofence?: CustomerIOPluginGeofenceOptions,
   sdkConfig?: NativeSDKConfig
 ) => ({
-  enabled: location?.enabled === true,
+  enabled: location?.enabled === true || geofence?.enabled === true,
   trackingMode: sdkConfig?.location?.trackingMode,
+});
+
+/**
+ * Build geofence options for native initializer from plugin config.
+ * locationMode comes from config.geofence.locationMode (only used when geofence.enabled is true).
+ */
+const getGeofenceInitOptions = (
+  geofence?: CustomerIOPluginGeofenceOptions,
+  sdkConfig?: NativeSDKConfig
+) => ({
+  enabled: geofence?.enabled === true,
+  locationMode: sdkConfig?.geofence?.locationMode,
 });
 
 const SDK_INITIALIZER_CLASS = 'CustomerIOSDKInitializer';
@@ -74,9 +90,11 @@ const setupCustomerIOSDKInitializer = (
   config: ExportedConfigWithProps<ApplicationProjectFile>,
   sdkConfig: NativeSDKConfig,
   location?: CustomerIOPluginLocationOptions,
+  geofence?: CustomerIOPluginGeofenceOptions,
   liveNotifications?: CustomerIOPluginLiveNotificationsOptions,
 ): string => {
-  const locationOptions = getLocationInitOptions(location, sdkConfig);
+  const locationOptions = getLocationInitOptions(location, geofence, sdkConfig);
+  const geofenceOptions = getGeofenceInitOptions(geofence, sdkConfig);
   // Resolved silently: withLiveNotificationCustomRenderer runs the same resolution and owns the
   // warnings, so a misconfigured renderer is reported once rather than per mod.
   const customRenderer = resolveCustomLiveNotificationRenderer({
@@ -94,6 +112,7 @@ const setupCustomerIOSDKInitializer = (
         PLATFORM.ANDROID,
         sdkConfig,
         locationOptions,
+        geofenceOptions,
         liveNotifications?.branding,
         customRenderer
       )

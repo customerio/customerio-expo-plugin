@@ -16,6 +16,10 @@
       },
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "This app uses location to test Customer.io location features.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "This app uses location in the background to test Customer.io geofence features.",
+        "UIBackgroundModes": [
+          "location"
+        ],
         "CFBundleURLTypes": [
           {
             "CFBundleURLSchemes": [
@@ -35,6 +39,12 @@
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "package": "io.customer.testbed.expo",
+      "permissions": [
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_BACKGROUND_LOCATION",
+        "android.permission.RECEIVE_BOOT_COMPLETED"
+      ],
       "intentFilters": [
         {
           "action": "VIEW",
@@ -96,6 +106,9 @@
                 "io.customer.livenotifications.countdowntimer"
               ],
               "customType": "com.customerio.testbed.rideshare"
+            },
+            "geofence": {
+              "locationMode": "AUTOMATIC"
             }
           },
           "android": {
@@ -112,7 +125,7 @@
           "ios": {
             "useFrameworks": "static",
             "pushNotification": {
-              "provider": "apn",
+              "provider": "fcm",
               "useRichPush": true,
               "appGroupId": "group.io.customer.testbed.expo.apn.cio",
               "handleDeeplinkInKilledState": true,
@@ -123,7 +136,8 @@
               "env": {
                 "cdpApiKey": "test-cdp-api-key",
                 "region": "us"
-              }
+              },
+              "googleServicesFile": "./files/GoogleService-Info.plist"
             }
           },
           "location": {
@@ -144,6 +158,9 @@
               "sourceFile": "./android-renderers/RideshareLiveNotification.kt",
               "className": "RideshareLiveNotificationCallback"
             }
+          },
+          "geofence": {
+            "enabled": true
           }
         }
       ],

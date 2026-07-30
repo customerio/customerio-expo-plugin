@@ -4,10 +4,12 @@ import type {
   CustomerIOPluginOptionsAndroid,
   CustomerIOPluginLiveNotificationsOptions,
   CustomerIOPluginLocationOptions,
+  CustomerIOPluginGeofenceOptions,
   NativeSDKConfig,
 } from '../types/cio-types';
 import { withAndroidManifestUpdates } from './withAndroidManifestUpdates';
 import { withAppGoogleServices } from './withAppGoogleServices';
+import { withGeofenceGradleProperties } from './withGeofenceGradleProperties';
 import { withGoogleServicesJSON } from './withGoogleServicesJSON';
 import { withLiveNotificationCallbackRegistration } from './withLiveNotificationCallbackRegistration';
 import { withLiveNotificationCustomRenderer } from './withLiveNotificationCustomRenderer';
@@ -24,6 +26,7 @@ export function withCIOAndroid(
   sdkConfig?: NativeSDKConfig,
   props?: CustomerIOPluginOptionsAndroid,
   location?: CustomerIOPluginLocationOptions,
+  geofence?: CustomerIOPluginGeofenceOptions,
   liveNotifications?: CustomerIOPluginLiveNotificationsOptions,
 ): ExpoConfig {
   // Only run notification setup if props are provided
@@ -44,6 +47,7 @@ export function withCIOAndroid(
     config = withMainApplicationModifications(config, {
       sdkConfig,
       location,
+      geofence,
       liveNotifications,
     });
   } else {
@@ -82,6 +86,11 @@ export function withCIOAndroid(
   // Enable SDK location module when location.enabled is true
   if (location?.enabled === true) {
     config = withLocationGradleProperties(config, { location });
+  }
+
+  // Enable SDK geofence module when geofence.enabled is true (geofence implies location).
+  if (geofence?.enabled === true) {
+    config = withGeofenceGradleProperties(config, { geofence });
   }
 
   return config;

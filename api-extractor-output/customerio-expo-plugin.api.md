@@ -5,6 +5,11 @@
 ```ts
 
 // @public
+export type CustomerIOPluginGeofenceOptions = {
+    enabled?: boolean;
+};
+
+// @public
 export type CustomerIOPluginLiveNotificationsOptions = {
     enabled?: boolean;
     customWidget?: LiveNotificationCustomWidget;
@@ -23,6 +28,7 @@ export type CustomerIOPluginOptions = {
     android: CustomerIOPluginOptionsAndroid;
     ios: CustomerIOPluginOptionsIOS;
     location?: CustomerIOPluginLocationOptions;
+    geofence?: CustomerIOPluginGeofenceOptions;
     liveNotifications?: CustomerIOPluginLiveNotificationsOptions;
 };
 
@@ -82,6 +88,9 @@ export type CustomerIOPluginPushNotificationOptions = {
 };
 
 // @public
+export type GeofenceLocationMode = 'AUTOMATIC' | 'MANUAL';
+
+// @public
 export const LIVE_NOTIFICATION_TYPES: {
     readonly segments: "io.customer.livenotifications.segments";
     readonly countdownTimer: "io.customer.livenotifications.countdowntimer";
@@ -129,6 +138,12 @@ export type NativeSDKConfig = {
     migrationSiteId?: string;
     location?: {
         trackingMode?: LocationTrackingMode;
+    };
+    geofence?: {
+        locationMode?: GeofenceLocationMode;
+    };
+    ios?: {
+        allowBackgroundDelivery?: boolean;
     };
     liveNotifications?: LiveNotificationsSDKConfig;
 };
