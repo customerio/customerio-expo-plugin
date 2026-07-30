@@ -1,6 +1,6 @@
 import type { CustomerIOPluginOptionsIOS } from '../../types/cio-types';
 import { logger } from '../../utils/logger';
-import { getRelativePathToRNSDK } from '../constants/ios';
+import { CIO_LIVE_ACTIVITY_WIDGET_TARGET_NAME, getRelativePathToRNSDK } from '../constants/ios';
 import { injectCodeByRegex } from './codeInjection';
 import { FileManagement } from './fileManagement';
 
@@ -11,6 +11,8 @@ export type InjectCIOPodfileOptions = {
   geofenceEnabled?: boolean;
   /** When false, omit the push provider subspec (location/geofence-only). When true/omit, include it. */
   hasPush?: boolean;
+  /** When true, add the `liveactivities` subspec (enables -DCIO_LIVEACTIVITIES_ENABLED). */
+  liveNotificationsEnabled?: boolean;
 };
 
 /** Builds the host-app pod snippet for the Podfile.
@@ -32,21 +34,24 @@ export function buildHostAppPodSnippet(
   const resolvedPath = getRelativePathToRNSDK(iosPath);
   const locationEnabled = options?.locationEnabled === true;
   const geofenceEnabled = options?.geofenceEnabled === true;
+  const liveNotificationsEnabled = options?.liveNotificationsEnabled === true;
   const hasPush = options?.hasPush !== false;
   const pushSubspec = isFcmPushProvider ? 'fcm' : 'apn';
 
   // No optional modules: keep the single push-provider subspec form. hasPush is intentionally
-  // not checked here — callers only pass hasPush:false alongside an enabled location/geofence module.
-  if (!locationEnabled && !geofenceEnabled) {
+  // not checked here — callers only pass hasPush:false alongside an enabled optional module.
+  if (!locationEnabled && !geofenceEnabled && !liveNotificationsEnabled) {
     return `pod 'customerio-reactnative/${pushSubspec}', :path => '${resolvedPath}'`;
   }
 
+  // Otherwise the explicit :subspecs array form, naming whichever modules are enabled.
   // Geofence pulls in Location transitively (and defines CIO_LOCATION_ENABLED), so the
   // 'location' subspec is redundant when geofence is enabled.
   const subspecs = [
     ...(hasPush ? [pushSubspec] : []),
     ...(locationEnabled && !geofenceEnabled ? ['location'] : []),
     ...(geofenceEnabled ? ['geofence'] : []),
+    ...(liveNotificationsEnabled ? ['liveactivities'] : []),
   ];
   const subspecList = subspecs.map((s) => `'${s}'`).join(', ');
   return `pod 'customerio-reactnative', :subspecs => [${subspecList}], :path => '${resolvedPath}'`;
@@ -56,6 +61,8 @@ const HOST_APP_BLOCK_START = '# --- CustomerIO Host App START ---';
 const HOST_APP_BLOCK_END = '# --- CustomerIO Host App END ---';
 const NOTIFICATION_BLOCK_START = '# --- CustomerIO Notification START ---';
 const NOTIFICATION_BLOCK_END = '# --- CustomerIO Notification END ---';
+const LIVE_ACTIVITY_BLOCK_START = '# --- CustomerIO Live Activity START ---';
+const LIVE_ACTIVITY_BLOCK_END = '# --- CustomerIO Live Activity END ---';
 
 /**
  * Pure string transform: given the existing Podfile contents, returns the
@@ -158,6 +165,59 @@ export async function injectCIONotificationPodfileCode(
   if (next !== podfile) {
     // FileManagement.append matches what the previous direct-append did.
     // Slice off the leading content (already on disk) and append only the new tail.
+    await FileManagement.append(filename, next.slice(podfile.length));
+  }
+}
+
+/**
+ * Pods the generated widget extension links directly. A widget target does not inherit the host
+ * app's pods, so it has to name them itself.
+ *
+ * Deliberately unversioned: CocoaPods resolves the whole Podfile at once, so these unify with the
+ * version the host app already pulls through `customerio-reactnative`, and cannot drift from it.
+ */
+const WIDGET_PODS = [
+  'CustomerIOLiveActivitiesTemplates',
+  'CustomerIOLiveActivitiesAttributes',
+];
+
+/**
+ * Pure string transform: given the existing Podfile contents, returns the Podfile with the Live
+ * Activity widget target block appended at the end. The widget links the Customer.io iOS SDK's Live
+ * Activity template + attributes pods (published to CocoaPods on release). Idempotent — returns
+ * input unchanged if the block is already present. Exported for tests.
+ */
+export function appendLiveActivityWidgetTargetToPodfile(
+  podfileContent: string,
+  useFrameworks: CustomerIOPluginOptionsIOS['useFrameworks'],
+): string {
+  if (podfileContent.match(new RegExp(LIVE_ACTIVITY_BLOCK_START))) {
+    return podfileContent;
+  }
+
+  const snippetToAppend = `
+${LIVE_ACTIVITY_BLOCK_START}
+target '${CIO_LIVE_ACTIVITY_WIDGET_TARGET_NAME}' do
+  ${useFrameworks === 'static' ? 'use_frameworks! :linkage => :static' : ''}
+${WIDGET_PODS.map((pod) => `  pod '${pod}'`).join('\n')}
+end
+${LIVE_ACTIVITY_BLOCK_END}
+`.trim();
+
+  // Separate from any preceding CIO block (the notification block is appended trimmed, without a
+  // trailing newline) and leave a trailing newline so a following block starts on its own line.
+  const separator = podfileContent.endsWith('\n') ? '' : '\n';
+  return `${podfileContent}${separator}${snippetToAppend}\n`;
+}
+
+export async function injectCIOLiveActivityWidgetPodfileCode(
+  iosPath: string,
+  useFrameworks: CustomerIOPluginOptionsIOS['useFrameworks'],
+) {
+  const filename = `${iosPath}/Podfile`;
+  const podfile = await FileManagement.read(filename);
+  const next = appendLiveActivityWidgetTargetToPodfile(podfile, useFrameworks);
+  if (next !== podfile) {
     await FileManagement.append(filename, next.slice(podfile.length));
   }
 }

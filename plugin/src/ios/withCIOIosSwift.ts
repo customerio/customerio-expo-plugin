@@ -239,6 +239,7 @@ export const withCIOIosSwift = (
   props?: CustomerIOPluginOptionsIOS,
   location?: CustomerIOPluginLocationOptions,
   geofence?: CustomerIOPluginGeofenceOptions,
+  liveNotificationsEnabled = false,
 ) => {
   // First, copy required swift files to iOS folder and add it to Xcode project
   configOuter = withXcodeProject(configOuter, async (config) => {
@@ -255,12 +256,20 @@ export const withCIOIosSwift = (
       );
       return config;
     });
-  } else if (sdkConfig) {
-    // Without push notifications: directly inject auto initialization into AppDelegate
+  } else if (sdkConfig || liveNotificationsEnabled) {
+    // Without push notifications: inject auto initialization directly, plus the Live Activity tap
+    // route when the feature is on. `CioSdkAppDelegateHandler` is not an option here — it imports
+    // the push module, which this configuration does not install — so the tap goes straight to the
+    // Live Activities module instead.
     return withAppDelegate(configOuter, async (config) => {
-      config.modResults.contents = modifyAppDelegateForNativeSDKInitializer(
-        config.modResults.contents
-      );
+      let next = config.modResults.contents;
+      if (sdkConfig) {
+        next = modifyAppDelegateForNativeSDKInitializer(next);
+      }
+      if (liveNotificationsEnabled) {
+        next = modifyAppDelegateForLiveActivityUrl(next);
+      }
+      config.modResults.contents = next;
       return config;
     });
   } else {
@@ -279,9 +288,12 @@ export function modifyAppDelegateForPushHandler(
 ): string {
   if (contents.includes(CIO_SDK_APP_DELEGATE_HANDLER_CLASS)) {
     logger.info(
-      'CustomerIO Swift AppDelegate changes already exist. Skipping...'
+      'CustomerIO Swift AppDelegate changes already exist. Adding anything newer...'
     );
-    return contents;
+    // Don't return the file untouched: an AppDelegate integrated by an earlier plugin version has
+    // the handler but not the Live Activity tap route, and skipping outright leaves every upgraded
+    // app without it. `addOpenURLHandling` is idempotent, so re-running it is safe.
+    return addOpenURLHandling(contents);
   }
 
   let next = addHandlerPropertyDeclaration(contents);
@@ -291,12 +303,62 @@ export function modifyAppDelegateForPushHandler(
   );
   next = addDidRegisterForRemoteNotificationsWithDeviceToken(next);
   next = addDidFailToRegisterForRemoteNotificationsWithError(next);
+  next = addOpenURLHandling(next);
 
   if (props.pushNotification?.handleDeeplinkInKilledState === true) {
     next = addHandleDeeplinkInKilledState(next);
   }
 
   return next;
+}
+
+/**
+ * Pure string transform: routes opened URLs to the Live Activities module on the no-push path.
+ *
+ * The push path delegates this to `CioSdkAppDelegateHandler`, but that file imports the push module,
+ * which a Live-Notifications-without-push app does not install. Calling the module directly keeps
+ * the tap reporting its `opened` metric and returning the customer's deep link either way.
+ *
+ * Idempotent, and a no-op if the push handler already owns the method.
+ */
+export function modifyAppDelegateForLiveActivityUrl(contents: string): string {
+  if (contents.includes(LIVE_ACTIVITY_URL_CALL) || hasCioOpenUrlHandling(contents)) {
+    return contents;
+  }
+
+  const next = addSwiftImports(contents, LIVE_ACTIVITY_IMPORTS);
+
+  const methodRegex =
+    /func\s+application\s*\(\s*_\s+(app|application)\s*:\s*UIApplication\s*,\s*open\s+url\s*:\s*URL\s*,\s*options\s*:[^)]*\)\s*->\s*Bool\s*{/;
+  const match = next.match(methodRegex);
+
+  if (match) {
+    const insertAt = (match.index ?? 0) + match[0].length;
+    return (
+      next.substring(0, insertAt) +
+      '\n    // Report a Live Activity tap and route the deep link it carries\n' +
+      `    guard let url = ${LIVE_ACTIVITY_URL_CALL}(url) else { return true }\n` +
+      next.substring(insertAt)
+    );
+  }
+
+  const classEndRegex = /^}(\s*$|\s*\/\/)/m;
+  const classEndMatch = next.match(classEndRegex);
+  if (!classEndMatch) {
+    logger.warn('Could not find end of AppDelegate class');
+    return next;
+  }
+
+  const position = classEndMatch.index ?? 0;
+  return (
+    next.substring(0, position) +
+    '\n  // Report a Live Activity tap and route the deep link it carries\n' +
+    '  public override func application(_ app: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey: Any] = [:]) -> Bool {\n' +
+    `    guard let url = ${LIVE_ACTIVITY_URL_CALL}(url) else { return true }\n` +
+    '    return super.application(app, open: url, options: options)\n' +
+    '  }\n' +
+    next.substring(position)
+  );
 }
 
 /**
@@ -387,6 +449,157 @@ const modifyDidFinishLaunchingWithOptions = (content: string, codeToInject: stri
  * If the method already exists, it adds the handler call to the existing method
  * If the method doesn't exist, it adds a new method implementation
  */
+/**
+ * Route a tapped Live Activity through the Customer.io handler before the app's own deep-link
+ * handling runs.
+ *
+ * The handler reports the `opened` metric and returns the URL to actually open: for a Customer.io
+ * widget URL that's the customer's deep link, and any other URL comes back unchanged. The injected
+ * `guard let url = ...` shadows the parameter, so the rest of an existing implementation keeps
+ * working verbatim against the routed URL; `nil` means the activity carried no deep link and there
+ * is nothing left to open.
+ */
+const CIO_OPEN_URL_MARKER = 'cioSdkHandler.application(';
+/**
+ * Both are required to compile the injected call.
+ *
+ * `CustomerIO` itself is declared in `CioInternalCommon`, which `CioDataPipelines` re-exports with
+ * `@_exported`. `CioLiveActivities` only adds the `liveActivities` extension and imports
+ * `CioInternalCommon` plainly, so importing it alone leaves `CustomerIO` out of scope. The push-path
+ * handler imports the same pair for this reason.
+ */
+const LIVE_ACTIVITY_IMPORTS = [
+  'import CioDataPipelines',
+  'import CioLiveActivities',
+];
+const LIVE_ACTIVITY_URL_CALL = 'CustomerIO.liveActivities.handleWidgetUrl';
+
+/**
+ * Whether the push path already owns `application(_:open:options:)`.
+ *
+ * Both parameter spellings have to be checked: Expo's template names it `_ app`, other templates use
+ * `_ application`, and the injected marker carries whichever one the AppDelegate had. Shared by both
+ * injectors so they can't disagree — checking only one spelling lets the other path add a second
+ * guard inside the same method on a re-prebuild.
+ */
+function hasCioOpenUrlHandling(contents: string): boolean {
+  return (
+    contents.includes(`${CIO_OPEN_URL_MARKER}app, open:`) ||
+    contents.includes(`${CIO_OPEN_URL_MARKER}application, open:`)
+  );
+}
+
+/**
+ * The whole method {@link modifyAppDelegateForLiveActivityUrl} appends when the template has no
+ * `application(_:open:options:)` of its own. Removing the entire method — rather than just its guard —
+ * puts the file back as it was, so the push injector takes its normal "no implementation to wrap"
+ * path instead of grafting onto a method the Live Activity injector invented.
+ */
+const LIVE_ACTIVITY_URL_METHOD_REGEX =
+  /\n[ \t]*\/\/ Report a Live Activity tap and route the deep link it carries\n[ \t]*public override func application\(_ app: UIApplication, open url: URL, options: \[UIApplication\.OpenURLOptionsKey: Any\] = \[:\]\) -> Bool \{\n[ \t]*guard let url = CustomerIO\.liveActivities\.handleWidgetUrl\(url\) else \{ return true \}\n[ \t]*return super\.application\(app, open: url, options: options\)\n[ \t]*\}\n/g;
+
+/**
+ * The comment + guard pair {@link modifyAppDelegateForLiveActivityUrl} injects into a method that
+ * already existed.
+ *
+ * Both patterns are kept in sync with the injector by the round-trip test rather than by shared
+ * constants, because a removal has to match the emitted text exactly, indentation included.
+ */
+const LIVE_ACTIVITY_URL_GUARD_REGEX =
+  /\n[ \t]*\/\/ Report a Live Activity tap and route the deep link it carries\n[ \t]*guard let url = CustomerIO\.liveActivities\.handleWidgetUrl\(url\) else \{ return true \}/g;
+
+/**
+ * Strips the no-push Live Activity guard so the push handler can take over.
+ *
+ * An app can be prebuilt with Live Notifications and no push, which installs the direct call, and
+ * later add a push provider. `CioSdkAppDelegateHandler` routes activity URLs too, so leaving the
+ * direct call in place would report the same tap twice — and the push guard is inserted into the very
+ * method that already holds it, whether that method came from Expo's template or was created by the
+ * Live Activity injector.
+ *
+ * Leaves the imports alone: they stay valid while the feature is on, and `addSwiftImports` is
+ * idempotent.
+ */
+function removeLiveActivityUrlGuard(contents: string): string {
+  if (!contents.includes(LIVE_ACTIVITY_URL_CALL)) {
+    return contents;
+  }
+  // Whole-method shape first: it contains the guard shape's text, so the narrower pattern would
+  // otherwise strip the guard and leave an empty method behind.
+  return contents
+    .replace(LIVE_ACTIVITY_URL_METHOD_REGEX, '')
+    .replace(LIVE_ACTIVITY_URL_GUARD_REGEX, '');
+}
+
+/**
+ * Add Swift imports after the file's last existing import.
+ *
+ * Matches an optional leading modifier because React Native 0.83 emits `internal import Expo` as the
+ * first line of AppDelegate.swift. An expression anchored to a bare `import` at the start of the
+ * file silently matches nothing there, which leaves the injected call referencing symbols that were
+ * never imported — a failure that only surfaces at compile time.
+ */
+function addSwiftImports(contents: string, imports: string[]): string {
+  const missing = imports.filter((line) => !contents.includes(line));
+  if (missing.length === 0) return contents;
+
+  const matches = [...contents.matchAll(/^(?:\w+[ \t]+)?import[ \t]+\S+.*$/gm)];
+  if (matches.length === 0) return contents;
+
+  const last = matches[matches.length - 1];
+  const insertAt = (last.index ?? 0) + last[0].length;
+  return `${contents.slice(0, insertAt)}\n${missing.join('\n')}${contents.slice(insertAt)}`;
+}
+
+const addOpenURLHandling = (content: string): string => {
+  // Already wired — by this run or by an earlier prebuild. Injecting again would duplicate the guard
+  // inside the same method.
+  if (hasCioOpenUrlHandling(content)) {
+    return content;
+  }
+
+  // The push handler supersedes the no-push Live Activity call, so drop that one first — otherwise
+  // enabling push on an already-prebuilt project stacks a second guard in the same method.
+  content = removeLiveActivityUrlGuard(content);
+
+  // Match either parameter spelling (`_ app` in Expo's template, `_ application` elsewhere) across
+  // the multi-line signature Expo generates.
+  const methodRegex =
+    /func\s+application\s*\(\s*_\s+(app|application)\s*:\s*UIApplication\s*,\s*open\s+url\s*:\s*URL\s*,\s*options\s*:[^)]*\)\s*->\s*Bool\s*{/;
+  const match = content.match(methodRegex);
+
+  if (match) {
+    const appParam = match[1];
+    const insertAt = (match.index ?? 0) + match[0].length;
+    return (
+      content.substring(0, insertAt) +
+      '\n    // Call CustomerIO SDK handler\n' +
+      `    guard let url = cioSdkHandler.application(${appParam}, open: url, options: options) else { return true }\n` +
+      content.substring(insertAt)
+    );
+  }
+
+  // No implementation to wrap, so add one that only reports and forwards to super.
+  const classEndRegex = /^}(\s*$|\s*\/\/)/m;
+  const classEndMatch = content.match(classEndRegex);
+  if (!classEndMatch) {
+    logger.warn('Could not find end of AppDelegate class');
+    return content;
+  }
+
+  const position = classEndMatch.index ?? 0;
+  return (
+    content.substring(0, position) +
+    '\n  // Report a Live Activity tap and route the deep link it carries\n' +
+    '  public override func application(_ app: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey: Any] = [:]) -> Bool {\n' +
+    '    // Call CustomerIO SDK handler\n' +
+    '    guard let url = cioSdkHandler.application(app, open: url, options: options) else { return true }\n' +
+    '    return super.application(app, open: url, options: options)\n' +
+    '  }\n' +
+    content.substring(position)
+  );
+};
+
 const addDidRegisterForRemoteNotificationsWithDeviceToken = (
   content: string
 ): string => {

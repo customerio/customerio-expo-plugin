@@ -8,6 +8,8 @@ const mockWithAppDelegateModifications = jest.fn((config: ExpoConfig) => config)
 const mockWithCioNotificationsXcodeProject = jest.fn((config: ExpoConfig) => config);
 const mockWithGoogleServicesJsonFile = jest.fn((config: ExpoConfig) => config);
 const mockWithGeofenceAppDelegate = jest.fn((config: ExpoConfig) => config);
+const mockWithLiveActivityInfoPlist = jest.fn((config: ExpoConfig) => config);
+const mockWithCioLiveActivityWidgetXcodeProject = jest.fn((config: ExpoConfig) => config);
 const mockWithEntitlementsPlist = jest.fn((config: ExpoConfig, callback: (c: unknown) => unknown) => {
   callback({ ios: { bundleIdentifier: 'com.test.app' }, modResults: {} });
   return config;
@@ -41,6 +43,14 @@ jest.mock('../../plugin/src/ios/withGeofenceAppDelegate', () => ({
   withGeofenceAppDelegate: (config: ExpoConfig) =>
     mockWithGeofenceAppDelegate(config),
 }));
+jest.mock('../../plugin/src/ios/withLiveActivityInfoPlist', () => ({
+  withLiveActivityInfoPlist: (config: ExpoConfig) =>
+    mockWithLiveActivityInfoPlist(config),
+}));
+jest.mock('../../plugin/src/ios/withCioLiveActivityWidgetXcodeProject', () => ({
+  withCioLiveActivityWidgetXcodeProject: (config: ExpoConfig) =>
+    mockWithCioLiveActivityWidgetXcodeProject(config),
+}));
 jest.mock('../../plugin/src/ios/utils', () => ({
   isExpoVersion53OrHigher: jest.fn(() => true),
 }));
@@ -70,7 +80,12 @@ describe('withCIOIos', () => {
       expect(mockWithCioNotificationsXcodeProject).not.toHaveBeenCalled();
       expect(mockWithCioXcodeProject).toHaveBeenCalledTimes(1);
       expect(mockWithCioXcodeProject).toHaveBeenCalledWith(mockConfig, {
-        podfileOptions: { locationEnabled: true, geofenceEnabled: false, hasPush: false },
+        podfileOptions: {
+          locationEnabled: true,
+          geofenceEnabled: false,
+          hasPush: false,
+          liveNotificationsEnabled: false,
+        },
       });
       expect(mockWithGeofenceAppDelegate).not.toHaveBeenCalled();
     });
@@ -177,7 +192,12 @@ describe('withCIOIos', () => {
       expect(mockWithCIOIosSwift).not.toHaveBeenCalled();
       expect(mockWithCioXcodeProject).toHaveBeenCalledTimes(1);
       expect(mockWithCioXcodeProject).toHaveBeenCalledWith(mockConfig, {
-        podfileOptions: { locationEnabled: false, geofenceEnabled: true, hasPush: false },
+        podfileOptions: {
+          locationEnabled: false,
+          geofenceEnabled: true,
+          hasPush: false,
+          liveNotificationsEnabled: false,
+        },
       });
       expect(mockWithGeofenceAppDelegate).toHaveBeenCalledTimes(1);
     });
@@ -193,7 +213,12 @@ describe('withCIOIos', () => {
       withCIOIos(mockConfig, undefined, undefined, { enabled: true }, geofence);
 
       expect(mockWithCioXcodeProject).toHaveBeenCalledWith(mockConfig, {
-        podfileOptions: { locationEnabled: true, geofenceEnabled: true, hasPush: false },
+        podfileOptions: {
+          locationEnabled: true,
+          geofenceEnabled: true,
+          hasPush: false,
+          liveNotificationsEnabled: false,
+        },
       });
       expect(mockWithGeofenceAppDelegate).toHaveBeenCalledTimes(1);
     });
@@ -220,4 +245,145 @@ describe('withCIOIos', () => {
       expect(mockWithGeofenceAppDelegate).toHaveBeenCalledTimes(1);
     });
   });
+
+  describe('live activities', () => {
+    it('injects the widget target and Info.plist, adding the liveactivities subspec (no push/config)', () => {
+      // Live Notifications without push is supported: an app can obtain a device token elsewhere and
+      // hand it to Customer.io for backend-driven activities. withCIOIosSwift has to run on this path
+      // too — it is what routes a tapped activity's URL through the SDK, so without it the `opened`
+      // metric is lost and the deep link is never forwarded.
+      const props: CustomerIOPluginOptionsIOS = {
+        iosPath: '/test/ios',
+      };
+
+      withCIOIos(mockConfig, undefined, props, undefined, undefined, { enabled: true });
+
+      expect(mockWithCIOIosSwift).toHaveBeenCalledTimes(1);
+      expect(mockWithLiveActivityInfoPlist).toHaveBeenCalledTimes(1);
+      expect(mockWithCioLiveActivityWidgetXcodeProject).toHaveBeenCalledTimes(1);
+      expect(mockWithCioNotificationsXcodeProject).not.toHaveBeenCalled();
+      expect(mockWithGeofenceAppDelegate).not.toHaveBeenCalled();
+      expect(mockWithCioXcodeProject).toHaveBeenCalledWith(mockConfig, {
+        ...props,
+        podfileOptions: {
+          locationEnabled: false,
+          geofenceEnabled: false,
+          hasPush: false,
+          liveNotificationsEnabled: true,
+        },
+      });
+    });
+
+    it('adds the liveactivities subspec alongside push when both are enabled', () => {
+      const props: CustomerIOPluginOptionsIOS = {
+        iosPath: '/test/ios',
+        pushNotification: { provider: 'apn' },
+      };
+
+      withCIOIos(mockConfig, undefined, props, undefined, undefined, { enabled: true });
+
+      expect(mockWithLiveActivityInfoPlist).toHaveBeenCalledTimes(1);
+      expect(mockWithCioLiveActivityWidgetXcodeProject).toHaveBeenCalledTimes(1);
+      expect(mockWithCioXcodeProject).toHaveBeenCalledWith(
+        mockConfig,
+        expect.objectContaining({
+          podfileOptions: {
+            locationEnabled: false,
+            geofenceEnabled: false,
+            hasPush: true,
+            liveNotificationsEnabled: true,
+          },
+        }),
+      );
+    });
+
+    it('does not inject the widget when liveNotifications.enabled is false', () => {
+      withCIOIos(
+        mockConfig,
+        undefined,
+        { iosPath: '/test/ios' },
+        undefined,
+        undefined,
+        { enabled: false },
+      );
+
+      expect(mockWithLiveActivityInfoPlist).not.toHaveBeenCalled();
+      expect(mockWithCioLiveActivityWidgetXcodeProject).not.toHaveBeenCalled();
+      expect(mockWithCioXcodeProject).not.toHaveBeenCalled();
+    });
+
+    // app.json is untyped, so `ios` being required in CustomerIOPluginOptions doesn't stop an app
+    // from omitting it. Gating the widget on its presence added the subspec but skipped the plist key
+    // and the target, so nothing could start or render an activity — silently. Location and geofence
+    // already work without an `ios` block; this keeps Live Notifications consistent with them.
+    it('injects the widget and Info.plist when there is no ios props block at all', () => {
+      withCIOIos(mockConfig, undefined, undefined, undefined, undefined, { enabled: true });
+
+      expect(mockWithCIOIosSwift).toHaveBeenCalledTimes(1);
+      expect(mockWithLiveActivityInfoPlist).toHaveBeenCalledTimes(1);
+      expect(mockWithCioLiveActivityWidgetXcodeProject).toHaveBeenCalledTimes(1);
+      expect(mockWithCioXcodeProject).toHaveBeenCalledWith(mockConfig, {
+        podfileOptions: {
+          locationEnabled: false,
+          geofenceEnabled: false,
+          hasPush: false,
+          liveNotificationsEnabled: true,
+        },
+      });
+    });
+
+    it('injects the widget on the auto-init path with no ios props block', () => {
+      const sdkConfig = {
+        cdpApiKey: 'key',
+        liveNotifications: { types: ['io.customer.livenotifications.segments'] },
+      };
+
+      withCIOIos(mockConfig, sdkConfig, undefined);
+
+      expect(mockWithCIOIosSwift).toHaveBeenCalledTimes(1);
+      expect(mockWithLiveActivityInfoPlist).toHaveBeenCalledTimes(1);
+      expect(mockWithCioLiveActivityWidgetXcodeProject).toHaveBeenCalledTimes(1);
+    });
+
+    // `enabled: false` is an explicit opt-out, so it has to win over an SDK config that would
+    // otherwise imply the feature. Without this an app could not turn the build-time setup off
+    // without also deleting its type list.
+    it('treats enabled:false as a kill switch over config.liveNotifications', () => {
+      const sdkConfig = {
+        cdpApiKey: 'key',
+        liveNotifications: { types: ['io.customer.livenotifications.segments'] },
+      };
+
+      withCIOIos(mockConfig, sdkConfig, { iosPath: '/test/ios' }, undefined, undefined, {
+        enabled: false,
+      });
+
+      expect(mockWithLiveActivityInfoPlist).not.toHaveBeenCalled();
+      expect(mockWithCioLiveActivityWidgetXcodeProject).not.toHaveBeenCalled();
+      expect(mockWithCioXcodeProject).not.toHaveBeenCalled();
+    });
+  });
+
+    it('adds both subspecs when geofence and live activities are enabled together', () => {
+      const props: CustomerIOPluginOptionsIOS = {
+        iosPath: '/test/ios',
+        pushNotification: { provider: 'apn' },
+      };
+
+      withCIOIos(mockConfig, undefined, props, undefined, { enabled: true }, { enabled: true });
+
+      expect(mockWithGeofenceAppDelegate).toHaveBeenCalledTimes(1);
+      expect(mockWithLiveActivityInfoPlist).toHaveBeenCalledTimes(1);
+      expect(mockWithCioXcodeProject).toHaveBeenCalledWith(
+        mockConfig,
+        expect.objectContaining({
+          podfileOptions: {
+            locationEnabled: false,
+            geofenceEnabled: true,
+            hasPush: true,
+            liveNotificationsEnabled: true,
+          },
+        }),
+      );
+    });
 });

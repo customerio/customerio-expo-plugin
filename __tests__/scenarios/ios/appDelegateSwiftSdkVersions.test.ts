@@ -81,6 +81,9 @@ describe('AppDelegate.swift — Expo SDK 54 vanilla baseline', () => {
           open url: URL,
           options: [UIApplication.OpenURLOptionsKey: Any] = [:]
         ) -> Bool {
+          // Call CustomerIO SDK handler
+          guard let url = cioSdkHandler.application(app, open: url, options: options) else { return true }
+
           return super.application(app, open: url, options: options) || RCTLinkingManager.application(app, open: url, options: options)
         }
 
@@ -197,6 +200,9 @@ describe('AppDelegate.swift — Expo SDK 55 vanilla baseline', () => {
           open url: URL,
           options: [UIApplication.OpenURLOptionsKey: Any] = [:]
         ) -> Bool {
+          // Call CustomerIO SDK handler
+          guard let url = cioSdkHandler.application(app, open: url, options: options) else { return true }
+
           return super.application(app, open: url, options: options) || RCTLinkingManager.application(app, open: url, options: options)
         }
 

@@ -53,6 +53,13 @@ describe('ios scenarios — modifyAppDelegateForPushHandler', () => {
           cioSdkHandler.application(application, didFailToRegisterForRemoteNotificationsWithError: error)
           super.application(application, didFailToRegisterForRemoteNotificationsWithError: error)
         }
+
+        // Report a Live Activity tap and route the deep link it carries
+        public override func application(_ app: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey: Any] = [:]) -> Bool {
+          // Call CustomerIO SDK handler
+          guard let url = cioSdkHandler.application(app, open: url, options: options) else { return true }
+          return super.application(app, open: url, options: options)
+        }
       }
       "
     `);
@@ -110,6 +117,13 @@ describe('ios scenarios — modifyAppDelegateForPushHandler', () => {
           // Call CustomerIO SDK handler
           cioSdkHandler.application(application, didFailToRegisterForRemoteNotificationsWithError: error)
           super.application(application, didFailToRegisterForRemoteNotificationsWithError: error)
+        }
+
+        // Report a Live Activity tap and route the deep link it carries
+        public override func application(_ app: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey: Any] = [:]) -> Bool {
+          // Call CustomerIO SDK handler
+          guard let url = cioSdkHandler.application(app, open: url, options: options) else { return true }
+          return super.application(app, open: url, options: options)
         }
       }
       "

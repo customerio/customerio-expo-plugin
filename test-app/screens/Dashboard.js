@@ -59,6 +59,10 @@ export default function DashboardScreen() {
     router.push('/location');
   };
 
+  const handleNavigateToLiveActivitiesButtonPressed = () => {
+    router.push('/live-activities');
+  };
+
   const handleLogoutButtonPressed = () => {
     CustomerIO.clearIdentify();
   };
@@ -143,6 +147,13 @@ export default function DashboardScreen() {
         <Button
           title="Location"
           onPress={handleNavigateToLocationButtonPressed}
+        />
+      </ThemedView>
+
+      <ThemedView style={styles.section}>
+        <Button
+          title="Live Activities"
+          onPress={handleNavigateToLiveActivitiesButtonPressed}
         />
       </ThemedView>
 

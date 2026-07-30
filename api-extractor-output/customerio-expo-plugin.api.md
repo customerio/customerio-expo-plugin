@@ -10,6 +10,14 @@ export type CustomerIOPluginGeofenceOptions = {
 };
 
 // @public
+export type CustomerIOPluginLiveNotificationsOptions = {
+    enabled?: boolean;
+    customWidget?: LiveNotificationCustomWidget;
+    customRenderer?: LiveNotificationCustomRenderer;
+    branding?: LiveNotificationBranding;
+};
+
+// @public
 export type CustomerIOPluginLocationOptions = {
     enabled?: boolean;
 };
@@ -21,6 +29,7 @@ export type CustomerIOPluginOptions = {
     ios: CustomerIOPluginOptionsIOS;
     location?: CustomerIOPluginLocationOptions;
     geofence?: CustomerIOPluginGeofenceOptions;
+    liveNotifications?: CustomerIOPluginLiveNotificationsOptions;
 };
 
 // @public
@@ -82,6 +91,39 @@ export type CustomerIOPluginPushNotificationOptions = {
 export type GeofenceLocationMode = 'AUTOMATIC' | 'MANUAL';
 
 // @public
+export const LIVE_NOTIFICATION_TYPES: {
+    readonly segments: "io.customer.livenotifications.segments";
+    readonly countdownTimer: "io.customer.livenotifications.countdowntimer";
+};
+
+// @public
+export type LiveNotificationBranding = {
+    companyName?: string;
+    logo?: string;
+    backgroundColorHex?: string;
+    textColorHex?: string;
+    accentColorHex?: string;
+};
+
+// @public
+export type LiveNotificationCustomRenderer = {
+    sourceFile: string | string[];
+    className: string;
+};
+
+// @public
+export type LiveNotificationCustomWidget = {
+    sourceFile: string | string[];
+    structName: string;
+};
+
+// @public
+export type LiveNotificationsSDKConfig = {
+    types?: string[];
+    customType?: string;
+};
+
+// @public
 export type LocationTrackingMode = 'OFF' | 'MANUAL' | 'ON_APP_START';
 
 // @public
@@ -103,6 +145,7 @@ export type NativeSDKConfig = {
     ios?: {
         allowBackgroundDelivery?: boolean;
     };
+    liveNotifications?: LiveNotificationsSDKConfig;
 };
 
 // @public

@@ -1,5 +1,9 @@
 import type { ExpoConfig } from '@expo/config-types';
-import { withCIOIosSwift } from '../../plugin/src/ios/withCIOIosSwift';
+import {
+  modifyAppDelegateForLiveActivityUrl,
+  modifyAppDelegateForPushHandler,
+  withCIOIosSwift,
+} from '../../plugin/src/ios/withCIOIosSwift';
 import type { CustomerIOPluginOptionsIOS, NativeSDKConfig } from '../../plugin/src/types/cio-types';
 
 // Mock dependencies
@@ -392,4 +396,147 @@ public class AppDelegate: ExpoAppDelegate {
       expect(occurrences).toBe(1);
     });
   });
+
+describe('modifyAppDelegateForLiveActivityUrl (Live Notifications without push)', () => {
+  // React Native 0.83 / Expo SDK 55 emit `internal import Expo` as the very first line. An
+  // expression anchored to a bare `import` at offset 0 matches nothing here, so the imports were
+  // silently skipped and the injected `CustomerIO.` reference failed to compile.
+  const RN_083_APP_DELEGATE = `internal import Expo
+import React
+import ReactAppDependencyProvider
+
+@UIApplicationMain
+public class AppDelegate: ExpoAppDelegate {
+  public override func application(_ app: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey: Any] = [:]) -> Bool {
+    return super.application(app, open: url, options: options)
+  }
+}
+`;
+
+  test('injects both imports after a leading modifier import', () => {
+    const out = modifyAppDelegateForLiveActivityUrl(RN_083_APP_DELEGATE);
+
+    // CustomerIO is declared in CioInternalCommon, which only CioDataPipelines re-exports.
+    expect(out).toContain('import CioDataPipelines');
+    expect(out).toContain('import CioLiveActivities');
+    expect(out).toContain('CustomerIO.liveActivities.handleWidgetUrl(url)');
+    // Placed after the existing imports, not before them.
+    expect(out.indexOf('import CioDataPipelines')).toBeGreaterThan(
+      out.indexOf('internal import Expo')
+    );
+  });
+
+  test('is idempotent', () => {
+    const once = modifyAppDelegateForLiveActivityUrl(RN_083_APP_DELEGATE);
+    const twice = modifyAppDelegateForLiveActivityUrl(once);
+
+    expect(twice).toBe(once);
+    expect(
+      (twice.match(/CustomerIO\.liveActivities\.handleWidgetUrl/g) || []).length
+    ).toBe(1);
+    expect((twice.match(/import CioDataPipelines/g) || []).length).toBe(1);
+  });
+
+  test('defers to the push handler when it already owns the method', () => {
+    const withPushHandler = `import Expo
+
+public class AppDelegate: ExpoAppDelegate {
+  public override func application(_ app: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey: Any] = [:]) -> Bool {
+    guard let url = cioSdkHandler.application(app, open: url, options: options) else { return true }
+    return super.application(app, open: url, options: options)
+  }
+}
+`;
+
+    expect(modifyAppDelegateForLiveActivityUrl(withPushHandler)).toBe(withPushHandler);
+  });
+
+  // The push path preserves whichever parameter spelling the AppDelegate used, so a template naming
+  // it `_ application` leaves an `application, open:` marker. Checking only the `app,` spelling meant
+  // an app that dropped push and re-ran prebuild got a second guard inside the same method.
+  test('defers to the push handler that used the `application` parameter spelling', () => {
+    const withPushHandler = `import Expo
+
+public class AppDelegate: ExpoAppDelegate {
+  public override func application(_ application: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey: Any] = [:]) -> Bool {
+    guard let url = cioSdkHandler.application(application, open: url, options: options) else { return true }
+    return super.application(application, open: url, options: options)
+  }
+}
+`;
+
+    expect(modifyAppDelegateForLiveActivityUrl(withPushHandler)).toBe(withPushHandler);
+  });
+});
+
+// An app can be prebuilt with Live Notifications and no push, then add a push provider. The push
+// handler routes activity URLs itself, so the direct call has to go — otherwise the tap is reported
+// twice and the same method carries two guards. These round-trip through the real injector so the
+// removal cannot drift from the text it removes.
+describe('enabling push after a Live-Notifications-only prebuild', () => {
+  const APP_DELEGATE_WITH_METHOD = `internal import Expo
+import React
+
+@UIApplicationMain
+public class AppDelegate: ExpoAppDelegate {
+  public override func application(_ app: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey: Any] = [:]) -> Bool {
+    return super.application(app, open: url, options: options)
+  }
+}
+`;
+
+  // The injector creates the method itself when the template has none. The push regex still matches
+  // that generated method, so this shape stacks guards too.
+  const APP_DELEGATE_WITHOUT_METHOD = `internal import Expo
+import React
+
+@UIApplicationMain
+public class AppDelegate: ExpoAppDelegate {
+  public override func applicationDidBecomeActive(_ application: UIApplication) {}
+}
+`;
+
+  const props: CustomerIOPluginOptionsIOS = {
+    iosPath: '/test/ios',
+    pushNotification: { provider: 'apn' },
+  };
+
+  it.each([
+    ['a template that already had the method', APP_DELEGATE_WITH_METHOD],
+    ['a method the Live Activity injector created', APP_DELEGATE_WITHOUT_METHOD],
+  ])('replaces the Live Activity guard with the push handler for %s', (_label, template) => {
+    const liveNotificationsOnly = modifyAppDelegateForLiveActivityUrl(template);
+    expect(liveNotificationsOnly).toContain('CustomerIO.liveActivities.handleWidgetUrl');
+
+    const withPush = modifyAppDelegateForPushHandler(liveNotificationsOnly, props);
+
+    // Exactly one guard, and it is the push handler's.
+    expect(
+      (withPush.match(/CustomerIO\.liveActivities\.handleWidgetUrl/g) || []).length
+    ).toBe(0);
+    expect((withPush.match(/cioSdkHandler\.application\([a-z]+, open:/g) || []).length).toBe(1);
+  });
+
+  it('leaves no orphaned comment when the guard came from an existing method', () => {
+    const withPush = modifyAppDelegateForPushHandler(
+      modifyAppDelegateForLiveActivityUrl(APP_DELEGATE_WITH_METHOD),
+      props
+    );
+
+    // Only meaningful for this shape: the push injector re-emits the same comment when it has to
+    // create the method itself.
+    expect(withPush).not.toContain('Report a Live Activity tap');
+  });
+
+  it('is idempotent once push has taken over', () => {
+    const once = modifyAppDelegateForPushHandler(
+      modifyAppDelegateForLiveActivityUrl(APP_DELEGATE_WITH_METHOD),
+      props
+    );
+    const twice = modifyAppDelegateForPushHandler(once, props);
+
+    expect(twice).toBe(once);
+  });
+});
+
 });

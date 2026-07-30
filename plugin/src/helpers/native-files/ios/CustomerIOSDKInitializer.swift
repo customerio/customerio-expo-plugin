@@ -3,6 +3,7 @@ import CioInternalCommon
 import CioMessagingInApp
 {{LOCATION_MODULE_IMPORT}}
 {{GEOFENCE_MODULE_IMPORT}}
+{{LIVE_NOTIFICATION_MODULE_IMPORT}}
 
 class CustomerIOSDKInitializer {
     static func initialize() {
@@ -27,6 +28,7 @@ class CustomerIOSDKInitializer {
 
         {{LOCATION_MODULE_INIT}}
         {{GEOFENCE_MODULE_INIT}}
+        {{LIVE_NOTIFICATION_MODULE_INIT}}
         CustomerIO.initialize(withConfig: builder.build())
 
         if let siteId = siteId {

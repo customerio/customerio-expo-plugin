@@ -78,6 +78,16 @@ platform :ios do
       profile: ENV["sigh_io.customer.testbed.expo.apn.richpush_adhoc_profile-path"]
     )
 
+    # The Live Activity widget extension the plugin generates. Its target name comes from
+    # CIO_LIVE_ACTIVITY_WIDGET_TARGET_NAME, and its bundle id is that name suffixed onto the host
+    # app's. Without this the widget is the one embedded binary left without a profile, and the
+    # archive fails on it rather than on anything the app itself did.
+    update_project_provisioning(
+      xcodeproj: xcodeproj_path,
+      target_filter: "CIOLiveActivityWidget",
+      profile: ENV["sigh_io.customer.testbed.expo.apn.CIOLiveActivityWidget_adhoc_profile-path"]
+    )
+
     update_project_team(
       path: xcodeproj_path,
       teamid: "2YC97BQN3N"

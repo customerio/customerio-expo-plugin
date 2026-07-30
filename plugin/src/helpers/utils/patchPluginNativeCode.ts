@@ -1,4 +1,7 @@
-import type { NativeSDKConfig } from '../../types/cio-types';
+import type {
+  LiveNotificationBranding,
+  NativeSDKConfig,
+} from '../../types/cio-types';
 import { getPluginVersion } from '../../utils/plugin';
 import { validateNativeSDKConfig } from '../../utils/validation';
 import { PLATFORM, type Platform } from '../constants/common';
@@ -6,6 +9,10 @@ import {
   type GeofenceInitOptions,
   patchGeofencePlaceholders,
 } from './patchGeofenceCode';
+import {
+  type CustomRendererRegistration,
+  patchLiveNotificationPlaceholders,
+} from './patchLiveNotificationCode';
 import {
   type LocationInitOptions,
   patchLocationPlaceholders,
@@ -16,13 +23,19 @@ export type { GeofenceInitOptions, LocationInitOptions };
 /**
  * Shared utility function to perform common SDK config replacements
  * for both iOS and Android template files
+ *
+ * `liveNotificationBranding` comes from the build-time plugin options rather than `sdkConfig`, since
+ * it also has to reach the generated iOS widget on the JavaScript-initialization path. Only the
+ * Android initializer applies it; iOS compiles branding into the widget instead.
  */
 export function patchNativeSDKInitializer(
   rawContent: string,
   platform: Platform,
   sdkConfig: NativeSDKConfig,
   locationOptions?: LocationInitOptions,
-  geofenceOptions?: GeofenceInitOptions
+  geofenceOptions?: GeofenceInitOptions,
+  liveNotificationBranding?: LiveNotificationBranding,
+  customRenderer?: CustomRendererRegistration
 ): string {
   // Validate SDK configuration to ensure all fields are present and 
   // correct at the time of patching in prebuild
@@ -112,6 +125,17 @@ export function patchNativeSDKInitializer(
 
   content = patchLocationPlaceholders(content, platform, locationOptions);
   content = patchGeofencePlaceholders(content, platform, geofenceOptions);
+
+  // The types and `customType` live on the SDK config itself — their presence is what enables the
+  // feature on the auto-initialization path. Branding is passed alongside because it is build-time
+  // configuration; see this function's doc comment.
+  content = patchLiveNotificationPlaceholders(
+    content,
+    platform,
+    sdkConfig.liveNotifications,
+    liveNotificationBranding,
+    customRenderer
+  );
 
   return content;
 }
