@@ -145,7 +145,14 @@ export const withCioLiveActivityWidgetXcodeProject: ConfigPlugin<{
         config.modResults
       );
     } catch (error: unknown) {
-      logger.error(String(error));
+      // Fail the prebuild rather than logging and carrying on. By the time this runs, other mods have
+      // already set `NSSupportsLiveActivities` and added the `liveactivities` pod subspec, so
+      // swallowing this leaves a project that advertises Live Activities support with no extension to
+      // render them — an app that looks correctly configured and silently never shows an activity.
+      // The two config errors above already throw; this makes runtime failures behave the same way.
+      throw new Error(
+        `Adding the Customer.io Live Activity widget failed: ${String(error)}`
+      );
     }
 
     return config;
