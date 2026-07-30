@@ -1,6 +1,6 @@
 import type { CustomerIOPluginOptionsIOS } from '../../types/cio-types';
 import { logger } from '../../utils/logger';
-import { getRelativePathToRNSDK } from '../constants/ios';
+import { CIO_LIVE_ACTIVITY_WIDGET_TARGET_NAME, getRelativePathToRNSDK } from '../constants/ios';
 import { injectCodeByRegex } from './codeInjection';
 import { FileManagement } from './fileManagement';
 
@@ -9,6 +9,8 @@ export type InjectCIOPodfileOptions = {
   locationEnabled?: boolean;
   /** When false and locationEnabled, inject only :subspecs => ['location']. When true, use push + location. */
   hasPush?: boolean;
+  /** When true, add the `liveactivities` subspec (enables -DCIO_LIVEACTIVITIES_ENABLED). */
+  liveNotificationsEnabled?: boolean;
 };
 
 /** Builds the host-app pod snippet for the Podfile.
@@ -29,23 +31,95 @@ export function buildHostAppPodSnippet(
 ): string {
   const resolvedPath = getRelativePathToRNSDK(iosPath);
   const locationEnabled = options?.locationEnabled === true;
+  const liveNotificationsEnabled = options?.liveNotificationsEnabled === true;
   const hasPush = options?.hasPush !== false;
-
-  if (!locationEnabled) {
-    const subspec = isFcmPushProvider ? 'fcm' : 'apn';
-    return `pod 'customerio-reactnative/${subspec}', :path => '${resolvedPath}'`;
-  }
-  if (!hasPush) {
-    return `pod 'customerio-reactnative', :subspecs => ['location'], :path => '${resolvedPath}'`;
-  }
   const pushSubspec = isFcmPushProvider ? 'fcm' : 'apn';
-  return `pod 'customerio-reactnative', :subspecs => ['${pushSubspec}', 'location'], :path => '${resolvedPath}'`;
+
+  // Simple single-subspec form only when no optional modules are enabled.
+  if (!locationEnabled && !liveNotificationsEnabled) {
+    return `pod 'customerio-reactnative/${pushSubspec}', :path => '${resolvedPath}'`;
+  }
+
+  // Otherwise use the explicit :subspecs array form, including whichever modules are enabled.
+  const subspecs: string[] = [];
+  if (hasPush) {
+    subspecs.push(pushSubspec);
+  }
+  if (locationEnabled) {
+    subspecs.push('location');
+  }
+  if (liveNotificationsEnabled) {
+    subspecs.push('liveactivities');
+  }
+  const subspecList = subspecs.map((subspec) => `'${subspec}'`).join(', ');
+  return `pod 'customerio-reactnative', :subspecs => [${subspecList}], :path => '${resolvedPath}'`;
+}
+
+// TEMPORARY (REL-1): Live Activities are not on the CocoaPods trunk yet. The `liveactivities`
+// subspec depends on `CustomerIO/LiveActivities`, and the widget links the templates and attributes
+// pods directly — none of which exist in a released `CustomerIO` podspec. Resolve the whole
+// Customer.io iOS SDK from the branch that carries them instead.
+//
+// Every pod the host app pulls has to be listed: CocoaPods refuses to mix a git-sourced pod with
+// trunk-sourced pods that share its dependency graph. Delete this and the two call sites once Live
+// Activities ship in a released native SDK.
+const UNRELEASED_IOS_SDK_GIT = 'https://github.com/customerio/customerio-ios.git';
+const UNRELEASED_IOS_SDK_BRANCH = 'feat/live-activities';
+
+/**
+ * The pods the host app actually resolves, which is what may be listed: a `pod` line *adds* a
+ * dependency, so naming one the app doesn't use changes its build. That matters most for the push
+ * provider — listing the FCM pod in an APN app would pull Firebase in, the very thing the
+ * `customerio-reactnative` podspec splits its subspecs to avoid.
+ */
+function hostUnreleasedPods(
+  hasPush: boolean,
+  isFcmPushProvider: boolean,
+  locationEnabled: boolean
+): string[] {
+  return [
+    // `CustomerIO` and its transitive modules are in the graph on every configuration.
+    'CustomerIO',
+    'CustomerIOCommon',
+    'CustomerIODataPipelines',
+    'CustomerIOTrackingMigration',
+    'CustomerIOMessagingInApp',
+    // Push pods only when push is configured. The subspec list already omits the push subspec
+    // without it, so naming these anyway would link push SDKs the app never asked for.
+    ...(hasPush
+      ? [
+          'CustomerIOMessagingPush',
+          isFcmPushProvider ? 'CustomerIOMessagingPushFCM' : 'CustomerIOMessagingPushAPN',
+        ]
+      : []),
+    ...(locationEnabled ? ['CustomerIOLocation'] : []),
+    'CustomerIOLiveActivities',
+    'CustomerIOLiveActivitiesAttributes',
+    'CustomerIOLiveActivitiesTemplates',
+  ];
+}
+
+const WIDGET_UNRELEASED_PODS = [
+  'CustomerIOLiveActivitiesTemplates',
+  'CustomerIOLiveActivitiesAttributes',
+];
+
+/** `pod` lines resolving `pods` from the unreleased Live Activities branch, one per line. */
+function unreleasedPodLines(pods: string[], indent: string): string {
+  return pods
+    .map(
+      (pod) =>
+        `${indent}pod '${pod}', :git => '${UNRELEASED_IOS_SDK_GIT}', :branch => '${UNRELEASED_IOS_SDK_BRANCH}'`
+    )
+    .join('\n');
 }
 
 const HOST_APP_BLOCK_START = '# --- CustomerIO Host App START ---';
 const HOST_APP_BLOCK_END = '# --- CustomerIO Host App END ---';
 const NOTIFICATION_BLOCK_START = '# --- CustomerIO Notification START ---';
 const NOTIFICATION_BLOCK_END = '# --- CustomerIO Notification END ---';
+const LIVE_ACTIVITY_BLOCK_START = '# --- CustomerIO Live Activity START ---';
+const LIVE_ACTIVITY_BLOCK_END = '# --- CustomerIO Live Activity END ---';
 
 /**
  * Pure string transform: given the existing Podfile contents, returns the
@@ -69,9 +143,22 @@ export function injectHostAppPodfileCode(
   const lineInPodfileToInjectSnippetBefore = /post_install do \|installer\|/;
   const podLine = buildHostAppPodSnippet(iosPath, isFcmPushProvider, options);
 
+  // TEMPORARY (REL-1): only Live Activities need the unreleased branch, so apps without them keep
+  // resolving from the CocoaPods trunk and their Podfile is byte-identical to before.
+  const unreleasedPods = options?.liveNotificationsEnabled
+    ? `\n${unreleasedPodLines(
+        hostUnreleasedPods(
+          options.hasPush === true,
+          isFcmPushProvider,
+          options.locationEnabled === true
+        ),
+        '  '
+      )}`
+    : '';
+
   const snippetToInjectInPodfile = `
 ${HOST_APP_BLOCK_START}
-  ${podLine}
+  ${podLine}${unreleasedPods}
 ${HOST_APP_BLOCK_END}
 `.trim();
 
@@ -148,6 +235,47 @@ export async function injectCIONotificationPodfileCode(
   if (next !== podfile) {
     // FileManagement.append matches what the previous direct-append did.
     // Slice off the leading content (already on disk) and append only the new tail.
+    await FileManagement.append(filename, next.slice(podfile.length));
+  }
+}
+
+/**
+ * Pure string transform: given the existing Podfile contents, returns the Podfile with the Live
+ * Activity widget target block appended at the end. The widget links the Customer.io iOS SDK's Live
+ * Activity template + attributes pods (published to CocoaPods on release). Idempotent — returns
+ * input unchanged if the block is already present. Exported for tests.
+ */
+export function appendLiveActivityWidgetTargetToPodfile(
+  podfileContent: string,
+  useFrameworks: CustomerIOPluginOptionsIOS['useFrameworks'],
+): string {
+  if (podfileContent.match(new RegExp(LIVE_ACTIVITY_BLOCK_START))) {
+    return podfileContent;
+  }
+
+  const snippetToAppend = `
+${LIVE_ACTIVITY_BLOCK_START}
+target '${CIO_LIVE_ACTIVITY_WIDGET_TARGET_NAME}' do
+  ${useFrameworks === 'static' ? 'use_frameworks! :linkage => :static' : ''}
+${unreleasedPodLines(WIDGET_UNRELEASED_PODS, '  ')}
+end
+${LIVE_ACTIVITY_BLOCK_END}
+`.trim();
+
+  // Separate from any preceding CIO block (the notification block is appended trimmed, without a
+  // trailing newline) and leave a trailing newline so a following block starts on its own line.
+  const separator = podfileContent.endsWith('\n') ? '' : '\n';
+  return `${podfileContent}${separator}${snippetToAppend}\n`;
+}
+
+export async function injectCIOLiveActivityWidgetPodfileCode(
+  iosPath: string,
+  useFrameworks: CustomerIOPluginOptionsIOS['useFrameworks'],
+) {
+  const filename = `${iosPath}/Podfile`;
+  const podfile = await FileManagement.read(filename);
+  const next = appendLiveActivityWidgetTargetToPodfile(podfile, useFrameworks);
+  if (next !== podfile) {
     await FileManagement.append(filename, next.slice(podfile.length));
   }
 }

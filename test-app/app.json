@@ -89,6 +89,13 @@
             "logLevel": "debug",
             "location": {
               "trackingMode": "MANUAL"
+            },
+            "liveNotifications": {
+              "types": [
+                "io.customer.livenotifications.segments",
+                "io.customer.livenotifications.countdowntimer"
+              ],
+              "customType": "com.customerio.testbed.rideshare"
             }
           },
           "android": {
@@ -121,6 +128,22 @@
           },
           "location": {
             "enabled": true
+          },
+          "liveNotifications": {
+            "branding": {
+              "companyName": "Customer.io Expo Testbed",
+              "accentColorHex": "#00A0DF",
+              "backgroundColorHex": "#101010",
+              "textColorHex": "#FFFFFF"
+            },
+            "customWidget": {
+              "sourceFile": "./ios-widgets/RideshareLiveActivity.swift",
+              "structName": "RideshareLiveActivity"
+            },
+            "customRenderer": {
+              "sourceFile": "./android-renderers/RideshareLiveNotification.kt",
+              "className": "RideshareLiveNotificationCallback"
+            }
           }
         }
       ],

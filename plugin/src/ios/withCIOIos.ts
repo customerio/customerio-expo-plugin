@@ -3,16 +3,20 @@ import { withEntitlementsPlist } from '@expo/config-plugins';
 import type {
   CustomerIOPluginOptionsIOS,
   CustomerIOPluginPushNotificationOptions,
+  CustomerIOPluginLiveNotificationsOptions,
   CustomerIOPluginLocationOptions,
   NativeSDKConfig,
 } from '../types/cio-types';
+import { isLiveNotificationsEnabled } from '../helpers/utils/liveNotificationsEnabled';
 import { mergeConfigWithEnvValues } from '../utils/config';
 import { logger } from '../utils/logger';
 import { validatePushNotificationOptions } from '../utils/validation';
 import { isExpoVersion53OrHigher } from './utils';
 import { withAppDelegateModifications } from './withAppDelegateModifications';
 import { withCIOIosSwift } from './withCIOIosSwift';
+import { withCioLiveActivityWidgetXcodeProject } from './withCioLiveActivityWidgetXcodeProject';
 import { withGoogleServicesJsonFile } from './withGoogleServicesJsonFile';
+import { withLiveActivityInfoPlist } from './withLiveActivityInfoPlist';
 import { withCioNotificationsXcodeProject } from './withNotificationsXcodeProject';
 import { withCioXcodeProject } from './withXcodeProject';
 
@@ -21,15 +25,20 @@ export function withCIOIos(
   sdkConfig?: NativeSDKConfig,
   props?: CustomerIOPluginOptionsIOS,
   location?: CustomerIOPluginLocationOptions,
+  liveNotifications?: CustomerIOPluginLiveNotificationsOptions,
 ) {
   const isSwiftProject = isExpoVersion53OrHigher(config);
   const platformConfig = mergeDeprecatedPropertiesAndLogWarnings(props);
   const locationEnabled = location?.enabled === true;
+  const liveNotificationsEnabled = isLiveNotificationsEnabled(
+    liveNotifications,
+    sdkConfig
+  );
 
   if (platformConfig?.pushNotification) {
     validatePushNotificationOptions(platformConfig.pushNotification);
     if (isSwiftProject) {
-      config = withCIOIosSwift(config, sdkConfig, platformConfig, location);
+      config = withCIOIosSwift(config, sdkConfig, platformConfig, location, liveNotificationsEnabled);
     } else {
       // Auto initialization is only supported in Swift projects (Expo SDK 53+)
       // Legacy Objective-C projects only support push notifications
@@ -44,6 +53,7 @@ export function withCIOIos(
       podfileOptions: {
         locationEnabled,
         hasPush: true,
+        liveNotificationsEnabled,
       },
     });
     config = withGoogleServicesJsonFile(config, platformConfig);
@@ -61,18 +71,32 @@ export function withCIOIos(
       });
     }
   } else if (sdkConfig && isSwiftProject) {
-    config = withCIOIosSwift(config, sdkConfig, platformConfig, location);
-    if (locationEnabled) {
+    config = withCIOIosSwift(config, sdkConfig, platformConfig, location, liveNotificationsEnabled);
+    if (locationEnabled || liveNotificationsEnabled) {
       config = withCioXcodeProject(config, {
         ...platformConfig,
-        podfileOptions: { locationEnabled: true, hasPush: false },
+        podfileOptions: { locationEnabled, hasPush: false, liveNotificationsEnabled },
       });
     }
-  } else if (locationEnabled) {
-    // Location-only: no push, no config. Still add Podfile location subspec so CIO_LOCATION_ENABLED is set and native location code is included.
+  } else if (locationEnabled || liveNotificationsEnabled) {
+    // No push, no config. Still add the Podfile subspecs so the relevant native modules
+    // (location / live activities) are compiled in.
     config = withCioXcodeProject(config, {
       ...platformConfig,
-      podfileOptions: { locationEnabled: true, hasPush: false },
+      podfileOptions: { locationEnabled, hasPush: false, liveNotificationsEnabled },
+    });
+  }
+
+  // Live Activities: set the host Info.plist flag and inject the widget extension target,
+  // independent of push. Requires iOS 16.2+.
+  if (liveNotificationsEnabled && platformConfig) {
+    config = withLiveActivityInfoPlist(config);
+    config = withCioLiveActivityWidgetXcodeProject(config, {
+      props: platformConfig,
+      liveNotifications: sdkConfig?.liveNotifications,
+      // `customWidget` lives in the build-time options rather than SDK config, so it reaches the
+      // widget whether the app initializes automatically or from JavaScript.
+      buildOptions: liveNotifications,
     });
   }
 

@@ -2,6 +2,7 @@ import CioDataPipelines
 import CioInternalCommon
 import CioMessagingInApp
 {{LOCATION_MODULE_IMPORT}}
+{{LIVE_NOTIFICATION_MODULE_IMPORT}}
 
 class CustomerIOSDKInitializer {
     static func initialize() {
@@ -25,6 +26,7 @@ class CustomerIOSDKInitializer {
         setIfDefined(value: {{MIGRATION_SITE_ID}}, thenPassItTo: builder.migrationSiteId)
 
         {{LOCATION_MODULE_INIT}}
+        {{LIVE_NOTIFICATION_MODULE_INIT}}
         CustomerIO.initialize(withConfig: builder.build())
 
         if let siteId = siteId {

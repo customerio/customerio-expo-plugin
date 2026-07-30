@@ -1,6 +1,7 @@
 app_identifier([
   "io.customer.testbed.expo.apn",
   "io.customer.testbed.expo.apn.richpush",
+  "io.customer.testbed.expo.apn.CIOLiveActivityWidget",
 ])
 
 package_name("io.customer.testbed.expo")
