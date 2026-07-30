@@ -173,14 +173,15 @@ export default function LiveActivitiesScreen() {
         <ThemedView style={styles.sectionCard}>
           <ThemedText style={styles.sectionHeading}>CUSTOM (RIDESHARE)</ThemedText>
           <ThemedText style={styles.hint}>
-            An app-defined template rendered by RideshareLiveActivity.swift, in the same widget
-            bundle as the two built-ins above.
+            An app-defined template. A custom type has no built-in template on either platform, so
+            this app supplies both halves and the plugin wires them up: RideshareLiveActivity.swift
+            renders it on iOS, in the same widget bundle as the two built-ins above, and
+            RideshareLiveNotification.kt renders it on Android.
           </ThemedText>
           <ThemedText style={styles.hint}>
-            iOS only in this app. A custom type has no built-in template, so Android renders it
-            through CustomerIOLiveNotificationsCallback — which is native Kotlin set before SDK
-            initialization, not reachable from JavaScript. These buttons will report success on
-            Android and show nothing.
+            Configured with liveNotifications.customWidget and liveNotifications.customRenderer in
+            app.json. Neither is reachable from JavaScript — SwiftUI and Kotlin have to be compiled
+            in — which is why they are build-time options rather than SDK config.
           </ThemedText>
           <Button title="Start Custom" onPress={startCustom} />
           <Button title="Update Custom" onPress={updateCustom} disabled={!customId} />

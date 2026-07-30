@@ -139,6 +139,10 @@
             "customWidget": {
               "sourceFile": "./ios-widgets/RideshareLiveActivity.swift",
               "structName": "RideshareLiveActivity"
+            },
+            "customRenderer": {
+              "sourceFile": "./android-renderers/RideshareLiveNotification.kt",
+              "className": "RideshareLiveNotificationCallback"
             }
           }
         }
