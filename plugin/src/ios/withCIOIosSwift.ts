@@ -309,10 +309,7 @@ export function modifyAppDelegateForLiveActivityUrl(contents: string): string {
     return contents;
   }
 
-  let next = contents;
-  if (!next.includes(LIVE_ACTIVITY_IMPORT)) {
-    next = next.replace(/^(import [^\n]+\n)/, `$1${LIVE_ACTIVITY_IMPORT}\n`);
-  }
+  const next = addSwiftImports(contents, LIVE_ACTIVITY_IMPORTS);
 
   const methodRegex =
     /func\s+application\s*\(\s*_\s+(app|application)\s*:\s*UIApplication\s*,\s*open\s+url\s*:\s*URL\s*,\s*options\s*:[^)]*\)\s*->\s*Bool\s*{/;
@@ -446,8 +443,39 @@ const modifyDidFinishLaunchingWithOptions = (content: string, codeToInject: stri
  * is nothing left to open.
  */
 const CIO_OPEN_URL_MARKER = 'cioSdkHandler.application(';
-const LIVE_ACTIVITY_IMPORT = 'import CioLiveActivities';
+/**
+ * Both are required to compile the injected call.
+ *
+ * `CustomerIO` itself is declared in `CioInternalCommon`, which `CioDataPipelines` re-exports with
+ * `@_exported`. `CioLiveActivities` only adds the `liveActivities` extension and imports
+ * `CioInternalCommon` plainly, so importing it alone leaves `CustomerIO` out of scope. The push-path
+ * handler imports the same pair for this reason.
+ */
+const LIVE_ACTIVITY_IMPORTS = [
+  'import CioDataPipelines',
+  'import CioLiveActivities',
+];
 const LIVE_ACTIVITY_URL_CALL = 'CustomerIO.liveActivities.handleWidgetUrl';
+
+/**
+ * Add Swift imports after the file's last existing import.
+ *
+ * Matches an optional leading modifier because React Native 0.83 emits `internal import Expo` as the
+ * first line of AppDelegate.swift. An expression anchored to a bare `import` at the start of the
+ * file silently matches nothing there, which leaves the injected call referencing symbols that were
+ * never imported — a failure that only surfaces at compile time.
+ */
+function addSwiftImports(contents: string, imports: string[]): string {
+  const missing = imports.filter((line) => !contents.includes(line));
+  if (missing.length === 0) return contents;
+
+  const matches = [...contents.matchAll(/^(?:\w+[ \t]+)?import[ \t]+\S+.*$/gm)];
+  if (matches.length === 0) return contents;
+
+  const last = matches[matches.length - 1];
+  const insertAt = (last.index ?? 0) + last[0].length;
+  return `${contents.slice(0, insertAt)}\n${missing.join('\n')}${contents.slice(insertAt)}`;
+}
 
 const addOpenURLHandling = (content: string): string => {
   // Already wired — by this run or by an earlier prebuild. Injecting again would duplicate the guard

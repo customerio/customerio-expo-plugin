@@ -1,5 +1,8 @@
 import type { ExpoConfig } from '@expo/config-types';
-import { withCIOIosSwift } from '../../plugin/src/ios/withCIOIosSwift';
+import {
+  modifyAppDelegateForLiveActivityUrl,
+  withCIOIosSwift,
+} from '../../plugin/src/ios/withCIOIosSwift';
 import type { CustomerIOPluginOptionsIOS, NativeSDKConfig } from '../../plugin/src/types/cio-types';
 
 // Mock dependencies
@@ -392,4 +395,60 @@ public class AppDelegate: ExpoAppDelegate {
       expect(occurrences).toBe(1);
     });
   });
+
+describe('modifyAppDelegateForLiveActivityUrl (Live Notifications without push)', () => {
+  // React Native 0.83 / Expo SDK 55 emit `internal import Expo` as the very first line. An
+  // expression anchored to a bare `import` at offset 0 matches nothing here, so the imports were
+  // silently skipped and the injected `CustomerIO.` reference failed to compile.
+  const RN_083_APP_DELEGATE = `internal import Expo
+import React
+import ReactAppDependencyProvider
+
+@UIApplicationMain
+public class AppDelegate: ExpoAppDelegate {
+  public override func application(_ app: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey: Any] = [:]) -> Bool {
+    return super.application(app, open: url, options: options)
+  }
+}
+`;
+
+  test('injects both imports after a leading modifier import', () => {
+    const out = modifyAppDelegateForLiveActivityUrl(RN_083_APP_DELEGATE);
+
+    // CustomerIO is declared in CioInternalCommon, which only CioDataPipelines re-exports.
+    expect(out).toContain('import CioDataPipelines');
+    expect(out).toContain('import CioLiveActivities');
+    expect(out).toContain('CustomerIO.liveActivities.handleWidgetUrl(url)');
+    // Placed after the existing imports, not before them.
+    expect(out.indexOf('import CioDataPipelines')).toBeGreaterThan(
+      out.indexOf('internal import Expo')
+    );
+  });
+
+  test('is idempotent', () => {
+    const once = modifyAppDelegateForLiveActivityUrl(RN_083_APP_DELEGATE);
+    const twice = modifyAppDelegateForLiveActivityUrl(once);
+
+    expect(twice).toBe(once);
+    expect(
+      (twice.match(/CustomerIO\.liveActivities\.handleWidgetUrl/g) || []).length
+    ).toBe(1);
+    expect((twice.match(/import CioDataPipelines/g) || []).length).toBe(1);
+  });
+
+  test('defers to the push handler when it already owns the method', () => {
+    const withPushHandler = `import Expo
+
+public class AppDelegate: ExpoAppDelegate {
+  public override func application(_ app: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey: Any] = [:]) -> Bool {
+    guard let url = cioSdkHandler.application(app, open: url, options: options) else { return true }
+    return super.application(app, open: url, options: options)
+  }
+}
+`;
+
+    expect(modifyAppDelegateForLiveActivityUrl(withPushHandler)).toBe(withPushHandler);
+  });
+});
+
 });
