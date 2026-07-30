@@ -1,6 +1,7 @@
 import type { ExpoConfig } from '@expo/config-types';
 import {
   modifyAppDelegateForLiveActivityUrl,
+  modifyAppDelegateForPushHandler,
   withCIOIosSwift,
 } from '../../plugin/src/ios/withCIOIosSwift';
 import type { CustomerIOPluginOptionsIOS, NativeSDKConfig } from '../../plugin/src/types/cio-types';
@@ -465,6 +466,76 @@ public class AppDelegate: ExpoAppDelegate {
 `;
 
     expect(modifyAppDelegateForLiveActivityUrl(withPushHandler)).toBe(withPushHandler);
+  });
+});
+
+// An app can be prebuilt with Live Notifications and no push, then add a push provider. The push
+// handler routes activity URLs itself, so the direct call has to go — otherwise the tap is reported
+// twice and the same method carries two guards. These round-trip through the real injector so the
+// removal cannot drift from the text it removes.
+describe('enabling push after a Live-Notifications-only prebuild', () => {
+  const APP_DELEGATE_WITH_METHOD = `internal import Expo
+import React
+
+@UIApplicationMain
+public class AppDelegate: ExpoAppDelegate {
+  public override func application(_ app: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey: Any] = [:]) -> Bool {
+    return super.application(app, open: url, options: options)
+  }
+}
+`;
+
+  // The injector creates the method itself when the template has none. The push regex still matches
+  // that generated method, so this shape stacks guards too.
+  const APP_DELEGATE_WITHOUT_METHOD = `internal import Expo
+import React
+
+@UIApplicationMain
+public class AppDelegate: ExpoAppDelegate {
+  public override func applicationDidBecomeActive(_ application: UIApplication) {}
+}
+`;
+
+  const props: CustomerIOPluginOptionsIOS = {
+    iosPath: '/test/ios',
+    pushNotification: { provider: 'apn' },
+  };
+
+  it.each([
+    ['a template that already had the method', APP_DELEGATE_WITH_METHOD],
+    ['a method the Live Activity injector created', APP_DELEGATE_WITHOUT_METHOD],
+  ])('replaces the Live Activity guard with the push handler for %s', (_label, template) => {
+    const liveNotificationsOnly = modifyAppDelegateForLiveActivityUrl(template);
+    expect(liveNotificationsOnly).toContain('CustomerIO.liveActivities.handleWidgetUrl');
+
+    const withPush = modifyAppDelegateForPushHandler(liveNotificationsOnly, props);
+
+    // Exactly one guard, and it is the push handler's.
+    expect(
+      (withPush.match(/CustomerIO\.liveActivities\.handleWidgetUrl/g) || []).length
+    ).toBe(0);
+    expect((withPush.match(/cioSdkHandler\.application\([a-z]+, open:/g) || []).length).toBe(1);
+  });
+
+  it('leaves no orphaned comment when the guard came from an existing method', () => {
+    const withPush = modifyAppDelegateForPushHandler(
+      modifyAppDelegateForLiveActivityUrl(APP_DELEGATE_WITH_METHOD),
+      props
+    );
+
+    // Only meaningful for this shape: the push injector re-emits the same comment when it has to
+    // create the method itself.
+    expect(withPush).not.toContain('Report a Live Activity tap');
+  });
+
+  it('is idempotent once push has taken over', () => {
+    const once = modifyAppDelegateForPushHandler(
+      modifyAppDelegateForLiveActivityUrl(APP_DELEGATE_WITH_METHOD),
+      props
+    );
+    const twice = modifyAppDelegateForPushHandler(once, props);
+
+    expect(twice).toBe(once);
   });
 });
 

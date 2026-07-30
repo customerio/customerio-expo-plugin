@@ -490,6 +490,48 @@ function hasCioOpenUrlHandling(contents: string): boolean {
 }
 
 /**
+ * The whole method {@link modifyAppDelegateForLiveActivityUrl} appends when the template has no
+ * `application(_:open:options:)` of its own. Removing the entire method — rather than just its guard —
+ * puts the file back as it was, so the push injector takes its normal "no implementation to wrap"
+ * path instead of grafting onto a method the Live Activity injector invented.
+ */
+const LIVE_ACTIVITY_URL_METHOD_REGEX =
+  /\n[ \t]*\/\/ Report a Live Activity tap and route the deep link it carries\n[ \t]*public override func application\(_ app: UIApplication, open url: URL, options: \[UIApplication\.OpenURLOptionsKey: Any\] = \[:\]\) -> Bool \{\n[ \t]*guard let url = CustomerIO\.liveActivities\.handleWidgetUrl\(url\) else \{ return true \}\n[ \t]*return super\.application\(app, open: url, options: options\)\n[ \t]*\}\n/g;
+
+/**
+ * The comment + guard pair {@link modifyAppDelegateForLiveActivityUrl} injects into a method that
+ * already existed.
+ *
+ * Both patterns are kept in sync with the injector by the round-trip test rather than by shared
+ * constants, because a removal has to match the emitted text exactly, indentation included.
+ */
+const LIVE_ACTIVITY_URL_GUARD_REGEX =
+  /\n[ \t]*\/\/ Report a Live Activity tap and route the deep link it carries\n[ \t]*guard let url = CustomerIO\.liveActivities\.handleWidgetUrl\(url\) else \{ return true \}/g;
+
+/**
+ * Strips the no-push Live Activity guard so the push handler can take over.
+ *
+ * An app can be prebuilt with Live Notifications and no push, which installs the direct call, and
+ * later add a push provider. `CioSdkAppDelegateHandler` routes activity URLs too, so leaving the
+ * direct call in place would report the same tap twice — and the push guard is inserted into the very
+ * method that already holds it, whether that method came from Expo's template or was created by the
+ * Live Activity injector.
+ *
+ * Leaves the imports alone: they stay valid while the feature is on, and `addSwiftImports` is
+ * idempotent.
+ */
+function removeLiveActivityUrlGuard(contents: string): string {
+  if (!contents.includes(LIVE_ACTIVITY_URL_CALL)) {
+    return contents;
+  }
+  // Whole-method shape first: it contains the guard shape's text, so the narrower pattern would
+  // otherwise strip the guard and leave an empty method behind.
+  return contents
+    .replace(LIVE_ACTIVITY_URL_METHOD_REGEX, '')
+    .replace(LIVE_ACTIVITY_URL_GUARD_REGEX, '');
+}
+
+/**
  * Add Swift imports after the file's last existing import.
  *
  * Matches an optional leading modifier because React Native 0.83 emits `internal import Expo` as the
@@ -515,6 +557,10 @@ const addOpenURLHandling = (content: string): string => {
   if (hasCioOpenUrlHandling(content)) {
     return content;
   }
+
+  // The push handler supersedes the no-push Live Activity call, so drop that one first — otherwise
+  // enabling push on an already-prebuilt project stacks a second guard in the same method.
+  content = removeLiveActivityUrlGuard(content);
 
   // Match either parameter spelling (`_ app` in Expo's template, `_ application` elsewhere) across
   // the multi-line signature Expo generates.
