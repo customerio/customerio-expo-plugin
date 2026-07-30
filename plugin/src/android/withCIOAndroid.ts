@@ -3,10 +3,12 @@ import type { ExpoConfig } from '@expo/config-types';
 import type {
   CustomerIOPluginOptionsAndroid,
   CustomerIOPluginLocationOptions,
+  CustomerIOPluginGeofenceOptions,
   NativeSDKConfig,
 } from '../types/cio-types';
 import { withAndroidManifestUpdates } from './withAndroidManifestUpdates';
 import { withAppGoogleServices } from './withAppGoogleServices';
+import { withGeofenceGradleProperties } from './withGeofenceGradleProperties';
 import { withGoogleServicesJSON } from './withGoogleServicesJSON';
 import { withLocationGradleProperties } from './withLocationGradleProperties';
 import { withMainApplicationModifications } from './withMainApplicationModifications';
@@ -20,6 +22,7 @@ export function withCIOAndroid(
   sdkConfig?: NativeSDKConfig,
   props?: CustomerIOPluginOptionsAndroid,
   location?: CustomerIOPluginLocationOptions,
+  geofence?: CustomerIOPluginGeofenceOptions,
 ): ExpoConfig {
   // Only run notification setup if props are provided
   if (props) {
@@ -36,7 +39,7 @@ export function withCIOAndroid(
 
   // Add auto initialization if sdkConfig is provided
   if (sdkConfig) {
-    config = withMainApplicationModifications(config, { sdkConfig, location });
+    config = withMainApplicationModifications(config, { sdkConfig, location, geofence });
   }
 
   // Update project strings for user agent metadata
@@ -49,6 +52,11 @@ export function withCIOAndroid(
   // Enable SDK location module when location.enabled is true
   if (location?.enabled === true) {
     config = withLocationGradleProperties(config, { location });
+  }
+
+  // Enable SDK geofence module when geofence.enabled is true (geofence implies location).
+  if (geofence?.enabled === true) {
+    config = withGeofenceGradleProperties(config, { geofence });
   }
 
   return config;

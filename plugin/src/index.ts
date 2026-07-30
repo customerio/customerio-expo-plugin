@@ -26,6 +26,15 @@ function withCustomerIOPlugin(
     );
   }
 
+  // Geofence relies on the Swift AppDelegate background-delivery bootstrap, which the
+  // plugin only injects on Swift projects (Expo SDK 53+).
+  if (props.geofence?.enabled && !isExpoVersion53OrHigher(config)) {
+    throw new Error(
+      'CustomerIO geofence requires Expo SDK 53 or higher. ' +
+      'Please upgrade to Expo SDK 53+ to enable geofence.'
+    );
+  }
+
   // Belt-and-suspenders write of the plugin version into the RN SDK's
   // package.json. The postinstall hook does the same write at install time;
   // this covers installs where postinstall didn't run cleanly (pnpm with
@@ -33,8 +42,8 @@ function withCustomerIOPlugin(
   config = withExpoVersion(config);
 
   // Apply platform specific modifications
-  config = withCIOIos(config, props.config, props.ios, props.location);
-  config = withCIOAndroid(config, props.config, props.android, props.location);
+  config = withCIOIos(config, props.config, props.ios, props.location, props.geofence);
+  config = withCIOAndroid(config, props.config, props.android, props.location, props.geofence);
 
   return config;
 }

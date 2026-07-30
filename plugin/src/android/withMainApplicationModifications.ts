@@ -6,6 +6,7 @@ import { PLATFORM } from '../helpers/constants/common';
 import { patchNativeSDKInitializer } from '../helpers/utils/patchPluginNativeCode';
 import type {
   CustomerIOPluginLocationOptions,
+  CustomerIOPluginGeofenceOptions,
   NativeSDKConfig,
 } from '../types/cio-types';
 import { addCodeToMethod, addImportToFile, copyTemplateFile } from '../utils/android';
@@ -14,11 +15,12 @@ import { logger } from '../utils/logger';
 type MainApplicationModParams = {
   sdkConfig: NativeSDKConfig;
   location?: CustomerIOPluginLocationOptions;
+  geofence?: CustomerIOPluginGeofenceOptions;
 };
 
-export const withMainApplicationModifications: ConfigPlugin<MainApplicationModParams> = (configOuter, { sdkConfig, location }) => {
+export const withMainApplicationModifications: ConfigPlugin<MainApplicationModParams> = (configOuter, { sdkConfig, location, geofence }) => {
   return withMainApplication(configOuter, async (config) => {
-    const content = setupCustomerIOSDKInitializer(config, sdkConfig, location);
+    const content = setupCustomerIOSDKInitializer(config, sdkConfig, location, geofence);
     config.modResults.contents = content;
     return config;
   });
@@ -26,14 +28,28 @@ export const withMainApplicationModifications: ConfigPlugin<MainApplicationModPa
 
 /**
  * Build location options for native initializer from plugin config.
- * trackingMode comes from config.location.trackingMode (only used when location.enabled is true).
+ * trackingMode comes from config.location.trackingMode. Geofence implies location, so the
+ * location module is registered whenever location or geofence is enabled.
  */
 const getLocationInitOptions = (
   location?: CustomerIOPluginLocationOptions,
+  geofence?: CustomerIOPluginGeofenceOptions,
   sdkConfig?: NativeSDKConfig
 ) => ({
-  enabled: location?.enabled === true,
+  enabled: location?.enabled === true || geofence?.enabled === true,
   trackingMode: sdkConfig?.location?.trackingMode,
+});
+
+/**
+ * Build geofence options for native initializer from plugin config.
+ * locationMode comes from config.geofence.locationMode (only used when geofence.enabled is true).
+ */
+const getGeofenceInitOptions = (
+  geofence?: CustomerIOPluginGeofenceOptions,
+  sdkConfig?: NativeSDKConfig
+) => ({
+  enabled: geofence?.enabled === true,
+  locationMode: sdkConfig?.geofence?.locationMode,
 });
 
 const SDK_INITIALIZER_CLASS = 'CustomerIOSDKInitializer';
@@ -67,13 +83,15 @@ const setupCustomerIOSDKInitializer = (
   config: ExportedConfigWithProps<ApplicationProjectFile>,
   sdkConfig: NativeSDKConfig,
   location?: CustomerIOPluginLocationOptions,
+  geofence?: CustomerIOPluginGeofenceOptions,
 ): string => {
-  const locationOptions = getLocationInitOptions(location, sdkConfig);
+  const locationOptions = getLocationInitOptions(location, geofence, sdkConfig);
+  const geofenceOptions = getGeofenceInitOptions(geofence, sdkConfig);
 
   try {
     // Always regenerate the CustomerIOSDKInitializer file to reflect config changes
     copyTemplateFile(config, SDK_INITIALIZER_FILE, SDK_INITIALIZER_PACKAGE, (content) =>
-      patchNativeSDKInitializer(content, PLATFORM.ANDROID, sdkConfig, locationOptions)
+      patchNativeSDKInitializer(content, PLATFORM.ANDROID, sdkConfig, locationOptions, geofenceOptions)
     );
     return injectCustomerIOInitializerIntoMainApplication(config.modResults.contents);
   } catch (error) {

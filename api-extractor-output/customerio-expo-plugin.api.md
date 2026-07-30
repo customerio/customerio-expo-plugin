@@ -5,6 +5,11 @@
 ```ts
 
 // @public
+export type CustomerIOPluginGeofenceOptions = {
+    enabled?: boolean;
+};
+
+// @public
 export type CustomerIOPluginLocationOptions = {
     enabled?: boolean;
 };
@@ -15,6 +20,7 @@ export type CustomerIOPluginOptions = {
     android: CustomerIOPluginOptionsAndroid;
     ios: CustomerIOPluginOptionsIOS;
     location?: CustomerIOPluginLocationOptions;
+    geofence?: CustomerIOPluginGeofenceOptions;
 };
 
 // @public
@@ -73,6 +79,9 @@ export type CustomerIOPluginPushNotificationOptions = {
 };
 
 // @public
+export type GeofenceLocationMode = 'AUTOMATIC' | 'MANUAL';
+
+// @public
 export type LocationTrackingMode = 'OFF' | 'MANUAL' | 'ON_APP_START';
 
 // @public
@@ -87,6 +96,12 @@ export type NativeSDKConfig = {
     migrationSiteId?: string;
     location?: {
         trackingMode?: LocationTrackingMode;
+    };
+    geofence?: {
+        locationMode?: GeofenceLocationMode;
+    };
+    ios?: {
+        allowBackgroundDelivery?: boolean;
     };
 };
 

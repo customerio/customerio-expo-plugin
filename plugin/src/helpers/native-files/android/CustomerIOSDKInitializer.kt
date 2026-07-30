@@ -8,6 +8,7 @@ import io.customer.messagingpush.MessagingPushModuleConfig
 import io.customer.messagingpush.ModuleMessagingPushFCM
 import io.customer.reactnative.sdk.messaginginapp.ReactInAppEventListener
 {{LOCATION_MODULE_IMPORT}}
+{{GEOFENCE_MODULE_IMPORT}}
 import io.customer.sdk.CustomerIOBuilder
 import io.customer.sdk.core.util.CioLogLevel
 import io.customer.sdk.data.model.Region
@@ -43,6 +44,7 @@ object CustomerIOSDKInitializer {
             )
         )
         {{LOCATION_MODULE_INIT}}
+        {{GEOFENCE_MODULE_INIT}}
 
         build()
     }
