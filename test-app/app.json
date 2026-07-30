@@ -125,7 +125,7 @@
           "ios": {
             "useFrameworks": "static",
             "pushNotification": {
-              "provider": "fcm",
+              "provider": "apn",
               "useRichPush": true,
               "appGroupId": "group.io.customer.testbed.expo.apn.cio",
               "handleDeeplinkInKilledState": true,
@@ -136,8 +136,7 @@
               "env": {
                 "cdpApiKey": "test-cdp-api-key",
                 "region": "us"
-              },
-              "googleServicesFile": "./files/GoogleService-Info.plist"
+              }
             }
           },
           "location": {
