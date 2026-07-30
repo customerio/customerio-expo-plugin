@@ -144,7 +144,8 @@ export type NativeSDKConfig = {
   };
   /**
    * Live Notifications config. Its presence enables the feature; there is no
-   * separate `enabled` flag to set when you use auto initialization.
+   * separate `enabled` flag to set when you use auto initialization. Setting
+   * `liveNotifications.enabled` to `false` still overrides it.
    */
   liveNotifications?: LiveNotificationsSDKConfig;
 };
@@ -223,6 +224,9 @@ export type CustomerIOPluginLiveNotificationsOptions = {
    *
    * Only needed when you initialize the SDK from JavaScript. With auto
    * initialization, `config.liveNotifications` implies this and you can omit it.
+   *
+   * Setting it to `false` explicitly turns the build-time setup off on either
+   * path, so an app can keep `config.liveNotifications` and still opt out.
    */
   enabled?: boolean;
   /**
@@ -400,6 +404,10 @@ export type LiveNotificationsSDKConfig = {
    * Built-in activity types to enable, as reverse-DNS identifiers (see
    * {@link LIVE_NOTIFICATION_TYPES}). Each one is registered for push-to-start
    * and rendered by the generated iOS widget.
+   *
+   * Omitting this enables **every** built-in type, which is what an app that
+   * chooses its types at runtime needs. To register only your own custom type,
+   * set this to an empty array alongside `customType`.
    *
    * Unrecognized identifiers are ignored with a warning, so a template added in
    * a newer SDK can't break a build on an older plugin.

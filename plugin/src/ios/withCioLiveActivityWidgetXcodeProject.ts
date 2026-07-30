@@ -82,7 +82,12 @@ export type AddLiveActivityWidgetTargetOptions = {
  * {@link addLiveActivityWidget}.
  */
 export const withCioLiveActivityWidgetXcodeProject: ConfigPlugin<{
-  props: CustomerIOPluginOptionsIOS;
+  /**
+   * Optional: an app can enable Live Notifications without declaring an `ios` block at all, and only
+   * the optional `appleTeamId`/`useFrameworks` are read from it. Everything else the target needs
+   * comes from the Expo config or from fixed defaults.
+   */
+  props?: CustomerIOPluginOptionsIOS;
   /** SDK config (automatic initialization): the enabled types and `customType`. */
   liveNotifications?: LiveNotificationsSDKConfig;
   /**
@@ -94,7 +99,7 @@ export const withCioLiveActivityWidgetXcodeProject: ConfigPlugin<{
 }> = (configOuter, { props, liveNotifications, buildOptions }) => {
   return withXcodeProject(configOuter, async (config) => {
     const { modRequest, ios, version: bundleShortVersion } = config;
-    const { appleTeamId, useFrameworks } = props;
+    const { appleTeamId, useFrameworks } = props ?? {};
     // Fixed at the ActivityKit floor. Custom SwiftUI needing newer APIs uses availability
     // annotations (`if #available(iOS 17, *)`), which work fine at this deployment target.
     const iosDeploymentTarget = DEFAULT_LIVE_ACTIVITY_DEPLOYMENT_TARGET;

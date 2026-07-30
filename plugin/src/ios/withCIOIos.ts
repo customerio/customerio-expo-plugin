@@ -108,7 +108,12 @@ export function withCIOIos(
 
   // Live Activities: set the host Info.plist flag and inject the widget extension target,
   // independent of push. Requires iOS 16.2+.
-  if (liveNotificationsEnabled && platformConfig) {
+  // Not gated on `platformConfig`: an app can enable Live Notifications without declaring an `ios`
+  // block (app.json is untyped, so `ios` being required in the TypeScript options doesn't enforce it),
+  // and the widget reads only optional values from it. Requiring it here still added the Podfile
+  // subspec while skipping the plist key and the widget target, leaving nothing able to start or
+  // render an activity and no warning to say why. Location and geofence already work without one.
+  if (liveNotificationsEnabled) {
     config = withLiveActivityInfoPlist(config);
     config = withCioLiveActivityWidgetXcodeProject(config, {
       props: platformConfig,

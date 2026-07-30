@@ -449,6 +449,23 @@ public class AppDelegate: ExpoAppDelegate {
 
     expect(modifyAppDelegateForLiveActivityUrl(withPushHandler)).toBe(withPushHandler);
   });
+
+  // The push path preserves whichever parameter spelling the AppDelegate used, so a template naming
+  // it `_ application` leaves an `application, open:` marker. Checking only the `app,` spelling meant
+  // an app that dropped push and re-ran prebuild got a second guard inside the same method.
+  test('defers to the push handler that used the `application` parameter spelling', () => {
+    const withPushHandler = `import Expo
+
+public class AppDelegate: ExpoAppDelegate {
+  public override func application(_ application: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey: Any] = [:]) -> Bool {
+    guard let url = cioSdkHandler.application(application, open: url, options: options) else { return true }
+    return super.application(application, open: url, options: options)
+  }
+}
+`;
+
+    expect(modifyAppDelegateForLiveActivityUrl(withPushHandler)).toBe(withPushHandler);
+  });
 });
 
 });

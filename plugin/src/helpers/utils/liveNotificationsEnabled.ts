@@ -19,6 +19,11 @@ import {
  *   `liveNotifications.enabled` to get the native artifacts while registering its types at
  *   runtime.
  *
+ * `enabled: false` is an explicit kill switch and wins over both paths, so an app that has
+ * `config.liveNotifications` can still turn the build-time setup off without deleting its type list.
+ * Only an explicit `false` does this — omitting the flag under auto initialization means "infer it",
+ * which is the common case.
+ *
  * Android needs no target of its own at build time — it reads its types from the SDK config and its
  * branding from the build-time options, and the only file the plugin writes for it is the branding
  * logo drawable.
@@ -33,8 +38,8 @@ export function isLiveNotificationsEnabled(
   liveNotifications: CustomerIOPluginLiveNotificationsOptions | undefined,
   sdkConfig: NativeSDKConfig | undefined
 ): boolean {
-  if (liveNotifications?.enabled === true) {
-    return true;
+  if (liveNotifications?.enabled !== undefined) {
+    return liveNotifications.enabled;
   }
 
   const configured = sdkConfig?.liveNotifications;

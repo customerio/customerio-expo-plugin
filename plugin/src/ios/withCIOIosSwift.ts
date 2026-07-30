@@ -322,7 +322,7 @@ export function modifyAppDelegateForPushHandler(
  * Idempotent, and a no-op if the push handler already owns the method.
  */
 export function modifyAppDelegateForLiveActivityUrl(contents: string): string {
-  if (contents.includes(LIVE_ACTIVITY_URL_CALL) || contents.includes(`${CIO_OPEN_URL_MARKER}app, open:`)) {
+  if (contents.includes(LIVE_ACTIVITY_URL_CALL) || hasCioOpenUrlHandling(contents)) {
     return contents;
   }
 
@@ -475,6 +475,21 @@ const LIVE_ACTIVITY_IMPORTS = [
 const LIVE_ACTIVITY_URL_CALL = 'CustomerIO.liveActivities.handleWidgetUrl';
 
 /**
+ * Whether the push path already owns `application(_:open:options:)`.
+ *
+ * Both parameter spellings have to be checked: Expo's template names it `_ app`, other templates use
+ * `_ application`, and the injected marker carries whichever one the AppDelegate had. Shared by both
+ * injectors so they can't disagree — checking only one spelling lets the other path add a second
+ * guard inside the same method on a re-prebuild.
+ */
+function hasCioOpenUrlHandling(contents: string): boolean {
+  return (
+    contents.includes(`${CIO_OPEN_URL_MARKER}app, open:`) ||
+    contents.includes(`${CIO_OPEN_URL_MARKER}application, open:`)
+  );
+}
+
+/**
  * Add Swift imports after the file's last existing import.
  *
  * Matches an optional leading modifier because React Native 0.83 emits `internal import Expo` as the
@@ -497,8 +512,7 @@ function addSwiftImports(contents: string, imports: string[]): string {
 const addOpenURLHandling = (content: string): string => {
   // Already wired — by this run or by an earlier prebuild. Injecting again would duplicate the guard
   // inside the same method.
-  if (content.includes(`${CIO_OPEN_URL_MARKER}app, open:`) ||
-      content.includes(`${CIO_OPEN_URL_MARKER}application, open:`)) {
+  if (hasCioOpenUrlHandling(content)) {
     return content;
   }
 

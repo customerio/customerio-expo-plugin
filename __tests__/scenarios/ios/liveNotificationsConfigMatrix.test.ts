@@ -120,6 +120,19 @@ describe('Live Notifications config matrix — feature off', () => {
 });
 
 describe('Live Notifications config matrix — auto initialization', () => {
+  // The one cell where the two dimensions disagree: SDK config asks for the feature and the
+  // build-time flag refuses it. An explicit `false` is an opt-out, so it wins — otherwise an app
+  // could not turn the native artifacts off without also deleting its type list.
+  test('enabled:false overrides an SDK config that would otherwise enable the feature', () => {
+    const config = { types: [SEGMENTS], customType: CUSTOM_TYPE };
+
+    expect(isLiveNotificationsEnabled(buildOptions({ enabled: false }), sdkConfig(config))).toBe(
+      false
+    );
+    // Omitting the flag still infers it from the config, which is the common auto-init case.
+    expect(isLiveNotificationsEnabled(buildOptions(), sdkConfig(config))).toBe(true);
+  });
+
   test('built-in templates: the bundle renders exactly the configured types', () => {
     const config = { types: [SEGMENTS] };
     expect(isLiveNotificationsEnabled(undefined, sdkConfig(config))).toBe(true);
