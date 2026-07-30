@@ -1,6 +1,7 @@
 import type { ExpoConfig } from '@expo/config-types';
 
 import { withCIOAndroid } from './android/withCIOAndroid';
+import { resolveSdkConfigForLiveNotifications } from './helpers/utils/liveNotificationsEnabled';
 import { isExpoVersion53OrHigher } from './ios/utils';
 import { withCIOIos } from './ios/withCIOIos';
 import type {
@@ -70,9 +71,17 @@ function withCustomerIOPlugin(
   // strict store layouts, --ignore-scripts, cached CI installs, etc).
   config = withExpoVersion(config);
 
+  // Resolved once, here, because both platforms have to see the same thing: an explicit
+  // `liveNotifications.enabled: false` has to remove the native registration as well as the
+  // build-time artifacts, or the generated code references modules the build no longer links.
+  const sdkConfig = resolveSdkConfigForLiveNotifications(
+    props.liveNotifications,
+    props.config
+  );
+
   // Apply platform specific modifications
-  config = withCIOIos(config, props.config, props.ios, props.location, props.geofence, props.liveNotifications);
-  config = withCIOAndroid(config, props.config, props.android, props.location, props.geofence, props.liveNotifications);
+  config = withCIOIos(config, sdkConfig, props.ios, props.location, props.geofence, props.liveNotifications);
+  config = withCIOAndroid(config, sdkConfig, props.android, props.location, props.geofence, props.liveNotifications);
 
   return config;
 }

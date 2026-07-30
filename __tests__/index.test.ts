@@ -170,4 +170,39 @@ describe('withCustomerIOPlugin Live Notifications gating', () => {
 
     expect(warnSpy).not.toHaveBeenCalled();
   });
+
+  // The build-time artifacts and the generated native registration come from different inputs, so
+  // they have to be reconciled before the platform mods run. Leaving `config.liveNotifications` in
+  // place while `enabled: false` removes the pod subspec emits Swift that imports an unlinked module.
+  it('strips config.liveNotifications from both platforms when enabled is false', () => {
+    mockIsExpo53.mockReturnValue(true);
+
+    withCustomerIOPlugin(baseConfig, {
+      ...baseProps,
+      config: { cdpApiKey: 'key', liveNotifications: { types: ['io.customer.livenotifications.segments'] } },
+      liveNotifications: { enabled: false },
+    });
+
+    const iosSdkConfig = mockWithCIOIos.mock.calls[0][1];
+    const androidSdkConfig = mockWithCIOAndroid.mock.calls[0][1];
+
+    expect(iosSdkConfig?.liveNotifications).toBeUndefined();
+    expect(androidSdkConfig?.liveNotifications).toBeUndefined();
+    // Only Live Notifications is dropped — the rest of the config still has to reach the mods.
+    expect(iosSdkConfig?.cdpApiKey).toBe('key');
+    expect(androidSdkConfig?.cdpApiKey).toBe('key');
+  });
+
+  it('leaves config.liveNotifications intact when the feature is on', () => {
+    mockIsExpo53.mockReturnValue(true);
+
+    const liveNotificationsConfig = { types: ['io.customer.livenotifications.segments'] };
+    withCustomerIOPlugin(baseConfig, {
+      ...baseProps,
+      config: { cdpApiKey: 'key', liveNotifications: liveNotificationsConfig },
+    });
+
+    expect(mockWithCIOIos.mock.calls[0][1]?.liveNotifications).toEqual(liveNotificationsConfig);
+    expect(mockWithCIOAndroid.mock.calls[0][1]?.liveNotifications).toEqual(liveNotificationsConfig);
+  });
 });

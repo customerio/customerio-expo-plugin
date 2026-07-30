@@ -2,10 +2,15 @@ import fs from 'fs';
 import os from 'os';
 import path from 'path';
 
+import { PLATFORM } from '../../../plugin/src/helpers/constants/common';
 import { resolveCustomLiveActivityWidget } from '../../../plugin/src/helpers/utils/liveNotificationCustomWidget';
-import { isLiveNotificationsEnabled } from '../../../plugin/src/helpers/utils/liveNotificationsEnabled';
+import {
+  isLiveNotificationsEnabled,
+  resolveSdkConfigForLiveNotifications,
+} from '../../../plugin/src/helpers/utils/liveNotificationsEnabled';
 import {
   generateWidgetBundleSwift,
+  patchLiveNotificationPlaceholders,
   resolveLiveNotificationTypes,
 } from '../../../plugin/src/helpers/utils/patchLiveNotificationCode';
 import type {
@@ -131,6 +136,36 @@ describe('Live Notifications config matrix — auto initialization', () => {
     );
     // Omitting the flag still infers it from the config, which is the common auto-init case.
     expect(isLiveNotificationsEnabled(buildOptions(), sdkConfig(config))).toBe(true);
+  });
+
+  // The opt-out has to reach the generated initializer as well as the build-time artifacts. If it
+  // only turned off the pod subspec, the Swift below would still `import CioLiveActivities` and
+  // construct a `LiveActivitiesModule` against a module the build no longer links.
+  test('enabled:false also clears the registration in the generated initializer', () => {
+    const config = { types: [SEGMENTS], customType: CUSTOM_TYPE };
+    const template =
+      'import CioDataPipelines\n{{LIVE_NOTIFICATION_MODULE_IMPORT}}\n\nlet builder = X()\n' +
+      '        {{LIVE_NOTIFICATION_MODULE_INIT}}\nCustomerIO.initialize()\n';
+
+    const enabled = resolveSdkConfigForLiveNotifications(buildOptions(), sdkConfig(config));
+    const optedOut = resolveSdkConfigForLiveNotifications(
+      buildOptions({ enabled: false }),
+      sdkConfig(config)
+    );
+
+    expect(
+      patchLiveNotificationPlaceholders(template, PLATFORM.IOS, enabled?.liveNotifications)
+    ).toContain('LiveActivitiesModule');
+    const optedOutSwift = patchLiveNotificationPlaceholders(
+      template,
+      PLATFORM.IOS,
+      optedOut?.liveNotifications
+    );
+    expect(optedOutSwift).not.toContain('LiveActivitiesModule');
+    expect(optedOutSwift).not.toContain('CioLiveActivities');
+    // Everything unrelated to Live Notifications survives untouched.
+    expect(optedOutSwift).toContain('import CioDataPipelines');
+    expect(optedOut?.cdpApiKey).toBe(cdpApiKey);
   });
 
   test('built-in templates: the bundle renders exactly the configured types', () => {

@@ -60,3 +60,30 @@ export function isLiveNotificationsEnabled(
   // JavaScript-initialized app pairs with `enabled`, already handled above.
   return resolveCustomLiveNotificationType(configured.customType) !== undefined;
 }
+
+/**
+ * The SDK config the generated initializers should be built from, with `liveNotifications` dropped
+ * when the feature is off.
+ *
+ * Two different inputs decide what gets generated: `isLiveNotificationsEnabled` gates the build-time
+ * artifacts (iOS widget target, `NSSupportsLiveActivities`, the `liveactivities` pod subspec), while
+ * the native registration in the generated initializer comes straight from `config.liveNotifications`.
+ * They have to agree. An explicit `enabled: false` turns the artifacts off, and leaving the
+ * registration in place would emit `import CioLiveActivities` and a `LiveActivitiesModule` against a
+ * pod that is no longer linked — an iOS compile failure — while Android would go on registering the
+ * types at runtime, so the opt-out wouldn't opt out of anything.
+ *
+ * Returns the config unchanged whenever the feature is on, or when there is nothing to strip.
+ */
+export function resolveSdkConfigForLiveNotifications(
+  liveNotifications: CustomerIOPluginLiveNotificationsOptions | undefined,
+  sdkConfig: NativeSDKConfig | undefined
+): NativeSDKConfig | undefined {
+  if (!sdkConfig?.liveNotifications) {
+    return sdkConfig;
+  }
+  if (isLiveNotificationsEnabled(liveNotifications, sdkConfig)) {
+    return sdkConfig;
+  }
+  return { ...sdkConfig, liveNotifications: undefined };
+}
