@@ -383,6 +383,38 @@ describe('Live Notifications config', () => {
       );
     });
 
+    // On this path the generated initializer builds the push config directly, bypassing the React
+    // Native wrapper — so the callback has to be set here or the custom type renders nothing.
+    test('registers the app render callback and imports it', () => {
+      const result = patchLiveNotificationPlaceholders(
+        ANDROID_TEMPLATE,
+        PLATFORM.ANDROID,
+        { types: [SEGMENTS], customType: 'com.myapp.rideshare' },
+        undefined,
+        {
+          className: 'RideshareLiveNotificationCallback',
+          classPackage: 'com.myapp.livenotifications',
+        }
+      );
+
+      expect(result).toContain(
+        '.setLiveNotificationCallback(RideshareLiveNotificationCallback())'
+      );
+      expect(result).toContain(
+        'import com.myapp.livenotifications.RideshareLiveNotificationCallback'
+      );
+    });
+
+    test('omits the callback when no renderer is configured', () => {
+      const result = patchLiveNotificationPlaceholders(
+        ANDROID_TEMPLATE,
+        PLATFORM.ANDROID,
+        { types: [SEGMENTS], customType: 'com.myapp.rideshare' }
+      );
+
+      expect(result).not.toContain('.setLiveNotificationCallback(');
+    });
+
     // The enum overload is what needs the import; a custom type is passed as a plain string, so an
     // unused import would be left behind.
     test('a custom type alone omits the built-in enum call and its import', () => {

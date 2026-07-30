@@ -196,6 +196,16 @@ export type CustomerIOPluginLiveNotificationsOptions = {
    */
   customWidget?: LiveNotificationCustomWidget;
   /**
+   * The Kotlin that renders your custom activity type on Android.
+   *
+   * The Android counterpart to `customWidget`, and build-time for the same reason: a source file to
+   * copy into the app and a class to instantiate where the renderer is registered.
+   *
+   * Pair it with `customWidget` — configuring only one leaves that activity type unrendered on the
+   * other platform.
+   */
+  customRenderer?: LiveNotificationCustomRenderer;
+  /**
    * Branding shared by every built-in template. Your `customWidget` styles itself.
    *
    * Lives here rather than under `config.liveNotifications` because neither platform reads it at
@@ -307,6 +317,36 @@ export type LiveNotificationCustomWidget = {
 };
 
 /**
+ * The Android half of a custom activity type, and the counterpart to
+ * {@link LiveNotificationCustomWidget}.
+ *
+ * Custom types have no built-in template on either platform: iOS renders yours from SwiftUI
+ * compiled into the generated widget, and Android renders yours from a
+ * `CustomerIOLiveNotificationsCallback` that builds a `Notification`. Kotlin cannot cross the
+ * JavaScript bridge any more than SwiftUI can, so the plugin takes your file and wires it up.
+ *
+ * Without this, a configured `customType` still starts and reports on Android — the backend can
+ * push updates to it — but nothing is ever drawn.
+ * @public
+ */
+export type LiveNotificationCustomRenderer = {
+  /**
+   * Path to your Kotlin file, relative to the project root (e.g.
+   * `'./android-renderers/RideshareLiveNotification.kt'`), or absolute.
+   *
+   * Pass an array when the renderer spans several files. Each is copied into the source tree under
+   * its own `package` declaration, so every file must declare one.
+   */
+  sourceFile: string | string[];
+  /**
+   * Name of the `CustomerIOLiveNotificationsCallback` class the plugin instantiates, e.g.
+   * `'RideshareLiveNotificationCallback'`. It must have a no-argument constructor and live in the
+   * `package` declared by one of the files above.
+   */
+  className: string;
+};
+
+/**
  * Live Notifications (Android) / Live Activities (iOS) configuration applied at
  * SDK initialization. Its presence enables the feature — you don't also need
  * `liveNotifications.enabled`.
@@ -326,14 +366,15 @@ export type LiveNotificationsSDKConfig = {
    * Your own reverse-DNS identifier for a custom activity type, e.g. `'com.myapp.rideshare'`.
    * Setting it enables the custom template on both platforms: iOS registers the SDK's
    * `CIOCustomAttributes` under this name — which is what gives a custom activity push-to-start
-   * and metrics — and Android allowlists it for its render callback.
+   * and metrics — and Android allowlists it so its push handler stops dropping it.
    *
    * Singular by design: iOS resolves an activity's type from its Swift attributes type, and every
    * custom activity shares one. A second identifier could not be told apart, so one identifier is
    * the limit rather than a silent mis-attribution.
    *
-   * On iOS, pair it with the top-level `liveNotifications.customWidget`; that SwiftUI is what
-   * renders the activity.
+   * This identifier only enables the type; neither platform can draw it. Pair it with the top-level
+   * `liveNotifications.customWidget` (SwiftUI, iOS) and `liveNotifications.customRenderer` (Kotlin,
+   * Android) — those render the activity.
    */
   customType?: string;
 };

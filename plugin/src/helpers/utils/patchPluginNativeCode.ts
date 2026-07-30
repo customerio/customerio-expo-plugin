@@ -5,7 +5,10 @@ import type {
 import { getPluginVersion } from '../../utils/plugin';
 import { validateNativeSDKConfig } from '../../utils/validation';
 import { PLATFORM, type Platform } from '../constants/common';
-import { patchLiveNotificationPlaceholders } from './patchLiveNotificationCode';
+import {
+  type CustomRendererRegistration,
+  patchLiveNotificationPlaceholders,
+} from './patchLiveNotificationCode';
 import {
   type LocationInitOptions,
   patchLocationPlaceholders,
@@ -26,7 +29,8 @@ export function patchNativeSDKInitializer(
   platform: Platform,
   sdkConfig: NativeSDKConfig,
   locationOptions?: LocationInitOptions,
-  liveNotificationBranding?: LiveNotificationBranding
+  liveNotificationBranding?: LiveNotificationBranding,
+  customRenderer?: CustomRendererRegistration
 ): string {
   // Validate SDK configuration to ensure all fields are present and 
   // correct at the time of patching in prebuild
@@ -123,7 +127,8 @@ export function patchNativeSDKInitializer(
     content,
     platform,
     sdkConfig.liveNotifications,
-    liveNotificationBranding
+    liveNotificationBranding,
+    customRenderer
   );
 
   return content;

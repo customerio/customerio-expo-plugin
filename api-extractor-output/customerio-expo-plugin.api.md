@@ -8,6 +8,7 @@
 export type CustomerIOPluginLiveNotificationsOptions = {
     enabled?: boolean;
     customWidget?: LiveNotificationCustomWidget;
+    customRenderer?: LiveNotificationCustomRenderer;
     branding?: LiveNotificationBranding;
 };
 
@@ -93,6 +94,12 @@ export type LiveNotificationBranding = {
     backgroundColorHex?: string;
     textColorHex?: string;
     accentColorHex?: string;
+};
+
+// @public
+export type LiveNotificationCustomRenderer = {
+    sourceFile: string | string[];
+    className: string;
 };
 
 // @public

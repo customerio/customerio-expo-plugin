@@ -9,6 +9,17 @@ import { PLATFORM, type Platform } from '../constants/common';
 export const LIVE_NOTIFICATION_LOGO_ASSET = 'cio_live_notification_logo';
 
 /**
+ * The app's Android render callback, once resolved to something the generated code can name.
+ * Android-only: iOS renders a custom type from SwiftUI compiled into the widget instead.
+ */
+export type CustomRendererRegistration = {
+  /** `CustomerIOLiveNotificationsCallback` class to instantiate. */
+  className: string;
+  /** Package it lives in, for the generated import. */
+  classPackage: string;
+};
+
+/**
  * A built-in type the plugin knows how to generate code for, keyed by the
  * reverse-DNS identifier shared with both native SDKs and the backend.
  */
@@ -292,13 +303,15 @@ function usesGeneratedColors(
  *
  * `branding` arrives separately because it lives in the build-time options rather than SDK config
  * (it has to reach the iOS widget on both initialization paths). Only Android consumes it here;
- * iOS branding is compiled into the generated widget instead.
+ * iOS branding is compiled into the generated widget instead. `customRenderer` arrives the same way
+ * and for the same reason, and is likewise Android-only.
  */
 export function patchLiveNotificationPlaceholders(
   content: string,
   platform: Platform,
   liveNotifications?: LiveNotificationsSDKConfig,
-  branding?: LiveNotificationBranding
+  branding?: LiveNotificationBranding,
+  customRenderer?: CustomRendererRegistration
 ): string {
   const types = liveNotifications
     ? resolveLiveNotificationTypes(liveNotifications.types)
@@ -312,7 +325,7 @@ export function patchLiveNotificationPlaceholders(
   validateLiveNotificationBranding(branding);
 
   return platform === PLATFORM.ANDROID
-    ? patchAndroid(content, types, branding, customType)
+    ? patchAndroid(content, types, branding, customType, customRenderer)
     : patchIos(content, types, customType);
 }
 
@@ -380,7 +393,8 @@ function patchAndroid(
   content: string,
   types: string[],
   branding: LiveNotificationBranding | undefined,
-  customType: string | undefined
+  customType: string | undefined,
+  customRenderer: CustomRendererRegistration | undefined
 ): string {
   const enumArgs = types
     .map((type) => `                        LiveNotificationType.${KNOWN_TYPES[type].androidEnum},`)
@@ -393,11 +407,19 @@ function patchAndroid(
   }
 
   if (customType) {
-    // Allowlisting the identifier is both necessary and sufficient on Android: the push handler
-    // drops any live notification whose type isn't enabled, and a type with no built-in template
-    // falls through to the host app's render callback.
+    // Allowlisting the identifier stops the push handler dropping it; the render callback below is
+    // what actually draws it, since a custom type has no built-in template.
     lines.push(
       `${lines.length === 0 ? '' : '                    '}.enableCustomLiveNotificationTypes("${customType}")`
+    );
+  }
+
+  if (customRenderer) {
+    // On this path the generated initializer builds the push module config directly, so it never
+    // passes through the React Native wrapper — the static the wrapper exposes would never be read.
+    // Register the app's renderer here instead.
+    lines.push(
+      `${lines.length === 0 ? '' : '                    '}.setLiveNotificationCallback(${customRenderer.className}())`
     );
   }
 
@@ -412,6 +434,9 @@ function patchAndroid(
   if (types.length > 0) {
     // Only the enum overload needs the import; a custom type is passed as a plain string.
     imports.push('import io.customer.messagingpush.livenotification.LiveNotificationType');
+  }
+  if (customRenderer) {
+    imports.push(`import ${customRenderer.classPackage}.${customRenderer.className}`);
   }
   if (brandingCall) {
     imports.unshift(

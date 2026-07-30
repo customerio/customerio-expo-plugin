@@ -3,10 +3,11 @@ import { withMainApplication } from '@expo/config-plugins';
 import type { ApplicationProjectFile } from '@expo/config-plugins/build/android/Paths';
 import { CIO_MAINAPPLICATION_ONCREATE_REGEX, CIO_NATIVE_SDK_INITIALIZE_CALL, CIO_NATIVE_SDK_INITIALIZE_SNIPPET } from '../helpers/constants/android';
 import { PLATFORM } from '../helpers/constants/common';
+import { resolveCustomLiveNotificationRenderer } from '../helpers/utils/liveNotificationCustomRenderer';
 import { patchNativeSDKInitializer } from '../helpers/utils/patchPluginNativeCode';
 import type {
+  CustomerIOPluginLiveNotificationsOptions,
   CustomerIOPluginLocationOptions,
-  LiveNotificationBranding,
   NativeSDKConfig,
 } from '../types/cio-types';
 import { addCodeToMethod, addImportToFile, copyTemplateFile } from '../utils/android';
@@ -16,15 +17,15 @@ type MainApplicationModParams = {
   sdkConfig: NativeSDKConfig;
   location?: CustomerIOPluginLocationOptions;
   /**
-   * Live Notification branding, from the build-time plugin options rather than `sdkConfig` — it also
-   * has to reach the generated iOS widget, which only exists at build time.
+   * Live Notification build-time options rather than `sdkConfig`: branding also has to reach the
+   * generated iOS widget, and `customRenderer` names Kotlin that only exists at build time.
    */
-  liveNotificationBranding?: LiveNotificationBranding;
+  liveNotifications?: CustomerIOPluginLiveNotificationsOptions;
 };
 
-export const withMainApplicationModifications: ConfigPlugin<MainApplicationModParams> = (configOuter, { sdkConfig, location, liveNotificationBranding }) => {
+export const withMainApplicationModifications: ConfigPlugin<MainApplicationModParams> = (configOuter, { sdkConfig, location, liveNotifications }) => {
   return withMainApplication(configOuter, async (config) => {
-    const content = setupCustomerIOSDKInitializer(config, sdkConfig, location, liveNotificationBranding);
+    const content = setupCustomerIOSDKInitializer(config, sdkConfig, location, liveNotifications);
     config.modResults.contents = content;
     return config;
   });
@@ -73,9 +74,17 @@ const setupCustomerIOSDKInitializer = (
   config: ExportedConfigWithProps<ApplicationProjectFile>,
   sdkConfig: NativeSDKConfig,
   location?: CustomerIOPluginLocationOptions,
-  liveNotificationBranding?: LiveNotificationBranding,
+  liveNotifications?: CustomerIOPluginLiveNotificationsOptions,
 ): string => {
   const locationOptions = getLocationInitOptions(location, sdkConfig);
+  // Resolved silently: withLiveNotificationCustomRenderer runs the same resolution and owns the
+  // warnings, so a misconfigured renderer is reported once rather than per mod.
+  const customRenderer = resolveCustomLiveNotificationRenderer({
+    liveNotifications: sdkConfig.liveNotifications,
+    buildOptions: liveNotifications,
+    projectRoot: config.modRequest.projectRoot,
+    silent: true,
+  }) ?? undefined;
 
   try {
     // Always regenerate the CustomerIOSDKInitializer file to reflect config changes
@@ -85,7 +94,8 @@ const setupCustomerIOSDKInitializer = (
         PLATFORM.ANDROID,
         sdkConfig,
         locationOptions,
-        liveNotificationBranding
+        liveNotifications?.branding,
+        customRenderer
       )
     );
     return injectCustomerIOInitializerIntoMainApplication(config.modResults.contents);

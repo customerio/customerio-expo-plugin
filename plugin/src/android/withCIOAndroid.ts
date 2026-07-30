@@ -9,6 +9,8 @@ import type {
 import { withAndroidManifestUpdates } from './withAndroidManifestUpdates';
 import { withAppGoogleServices } from './withAppGoogleServices';
 import { withGoogleServicesJSON } from './withGoogleServicesJSON';
+import { withLiveNotificationCallbackRegistration } from './withLiveNotificationCallbackRegistration';
+import { withLiveNotificationCustomRenderer } from './withLiveNotificationCustomRenderer';
 import { withLiveNotificationLogo } from './withLiveNotificationLogo';
 import { withLocationGradleProperties } from './withLocationGradleProperties';
 import { withMainApplicationModifications } from './withMainApplicationModifications';
@@ -42,9 +44,21 @@ export function withCIOAndroid(
     config = withMainApplicationModifications(config, {
       sdkConfig,
       location,
-      liveNotificationBranding: liveNotifications?.branding,
+      liveNotifications,
     });
+  } else {
+    // Only for JavaScript-initialized apps. With automatic initialization the generated initializer
+    // sets the render callback on the push config itself, so registering the wrapper's static too
+    // would be dead code — that path never reads it.
+    config = withLiveNotificationCallbackRegistration(config, liveNotifications);
   }
+
+  // Outside the `sdkConfig` split on purpose, exactly like the branding logo: both paths above name
+  // the app's renderer class in generated Kotlin, and neither compiles unless the file is copied in.
+  config = withLiveNotificationCustomRenderer(config, {
+    liveNotifications,
+    sdkLiveNotifications: sdkConfig?.liveNotifications,
+  });
 
   // Outside the `sdkConfig` block on purpose: a local branding logo has to become a drawable even
   // when the app initializes from JavaScript, because the branding it passes to `CustomerIO.initialize`
