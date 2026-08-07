@@ -1,3 +1,5 @@
+## [3.7.1](https://github.com/customerio/customerio-expo-plugin/compare/3.7.0...3.7.1) (2026-08-07)
+
 ## [3.7.0](https://github.com/customerio/customerio-expo-plugin/compare/3.6.2...3.7.0) (2026-07-30)
 
 ## [3.6.2](https://github.com/customerio/customerio-expo-plugin/compare/3.6.1...3.6.2) (2026-06-23)
