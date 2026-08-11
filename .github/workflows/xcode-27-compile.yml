@@ -1,0 +1,149 @@
+name: Xcode 27 Expo fixture
+
+on:
+  pull_request:
+    paths:
+      - ".github/actions/verify-xcode-27-preview/**"
+      - ".github/workflows/xcode-27-compile.yml"
+      - "plugin/**"
+      - "scripts/compatibility/**"
+      - "scripts/create-plugin-tarball.sh"
+      - "scripts/utils/**"
+      - "package.json"
+      - "package-lock.json"
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: xcode-27-expo-fixture-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  APP_DIR: ci-test-apps
+  APP_NAME: LifecycleFixture_Expo57
+  APP_PATH: ci-test-apps/LifecycleFixture_Expo57
+  EXPO_SDK: "57"
+
+jobs:
+  compile:
+    name: Xcode 27 compile (Expo 57, FCM)
+    runs-on: xcode-27
+    timeout-minutes: 45
+    steps:
+      - name: Check out Expo plugin
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Verify pinned preview toolchain
+        id: preview
+        uses: ./.github/actions/verify-xcode-27-preview
+
+      - name: Install pinned Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 20.20.2
+          cache: npm
+
+      - name: Install plugin dependencies
+        shell: bash
+        run: npm ci
+
+      - name: Install pinned CocoaPods
+        shell: bash
+        run: gem install cocoapods -v 1.16.2 --no-document
+
+      - name: Generate supported Expo compatibility fixture
+        shell: bash
+        run: |
+          set -o pipefail
+          if ! npm run compatibility:create-test-app -- \
+            --expo-version="$EXPO_SDK" \
+            --app-name="$APP_NAME" \
+            --dir-name="$APP_DIR" 2>&1 | tee "$RUNNER_TEMP/expo-create-fixture.log"; then
+            echo "::error title=Xcode 27 fixture preparation failure::Expo SDK $EXPO_SDK fixture generation failed. No compile conclusion is available."
+            echo "**Classification:** fixture-preparation-failure" >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+          if ! npm run compatibility:setup-test-app -- \
+            --app-path="$APP_PATH" 2>&1 | tee "$RUNNER_TEMP/expo-setup-fixture.log"; then
+            echo "::error title=Xcode 27 fixture preparation failure::Expo fixture dependency setup failed. No compile conclusion is available."
+            echo "**Classification:** fixture-preparation-failure" >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+          if ! npm run compatibility:configure-plugin -- \
+            --app-path="$APP_PATH" \
+            --add-default-config \
+            --ios-push-provider=fcm \
+            --ios-use-frameworks=static 2>&1 | tee "$RUNNER_TEMP/expo-configure-fixture.log"; then
+            echo "::error title=Xcode 27 fixture preparation failure::Expo fixture configuration failed. No compile conclusion is available."
+            echo "**Classification:** fixture-preparation-failure" >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+
+          resolved_expo="$(node -p "require('./$APP_PATH/node_modules/expo/package.json').version")"
+          if [[ "$resolved_expo" != "$EXPO_SDK".* ]]; then
+            echo "::error title=Xcode 27 fixture preparation failure::Expected Expo SDK $EXPO_SDK, resolved $resolved_expo."
+            echo "**Classification:** fixture-preparation-failure" >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+          echo "RESOLVED_EXPO_VERSION=$resolved_expo" >> "$GITHUB_ENV"
+          echo "Resolved Expo SDK: $resolved_expo"
+
+      - name: Generate native iOS project
+        shell: bash
+        run: |
+          set -o pipefail
+          if ! (cd "$APP_PATH" && CI=1 npx expo prebuild --clean --platform=ios) \
+            2>&1 | tee "$RUNNER_TEMP/expo-prebuild.log"; then
+            echo "::error title=Xcode 27 fixture preparation failure::Expo prebuild or CocoaPods resolution failed. No compile conclusion is available."
+            echo "**Classification:** fixture-preparation-failure" >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+
+          workspace_path="$(find "$APP_PATH/ios" -maxdepth 1 -name '*.xcworkspace' -print -quit)"
+          if [[ -z "$workspace_path" ]]; then
+            echo "::error title=Xcode 27 fixture preparation failure::Expo prebuild did not generate an iOS workspace."
+            echo "**Classification:** fixture-preparation-failure" >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+          workspace_name="$(basename "$workspace_path" .xcworkspace)"
+          echo "EXPO_WORKSPACE_PATH=$workspace_path" >> "$GITHUB_ENV"
+          echo "EXPO_WORKSPACE_NAME=$workspace_name" >> "$GITHUB_ENV"
+          echo "Generated workspace: $workspace_path (scheme $workspace_name)"
+
+      - name: Compile Expo iOS fixture
+        shell: bash
+        env:
+          XCODE_BUILD: ${{ steps.preview.outputs.xcode-build }}
+          XCODE_VERSION: ${{ steps.preview.outputs.xcode-version }}
+          SIMULATOR_SDK: ${{ steps.preview.outputs.simulator-sdk }}
+        run: |
+          set -o pipefail
+          if ! xcodebuild \
+            -workspace "$EXPO_WORKSPACE_PATH" \
+            -scheme "$EXPO_WORKSPACE_NAME" \
+            -configuration Release \
+            -sdk "iphonesimulator$SIMULATOR_SDK" \
+            -destination "generic/platform=iOS Simulator" \
+            -derivedDataPath "$RUNNER_TEMP/xcode27-expo57-fcm" \
+            CODE_SIGNING_ALLOWED=NO \
+            build 2>&1 | tee "$RUNNER_TEMP/xcode27-expo57-fcm.log"; then
+            echo "::error title=Xcode 27 SDK compile regression (Expo 57 FCM)::The pinned toolchain passed, but the generated Expo fixture did not compile."
+            {
+              echo "## Expo $RESOLVED_EXPO_VERSION FCM fixture"
+              echo
+              echo "**Classification:** sdk-compile-failure"
+              echo "**Toolchain:** Node 20.20.2, Xcode $XCODE_VERSION build $XCODE_BUILD, iphonesimulator$SIMULATOR_SDK"
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+          {
+            echo "## Expo $RESOLVED_EXPO_VERSION FCM fixture"
+            echo
+            echo "**Classification:** compile-passed"
+            echo "**Toolchain:** Node 20.20.2, Xcode $XCODE_VERSION build $XCODE_BUILD, iphonesimulator$SIMULATOR_SDK"
+            echo "**Scope:** generated-project compile only; no launch, callback, or push-delivery claim"
+          } >> "$GITHUB_STEP_SUMMARY"
