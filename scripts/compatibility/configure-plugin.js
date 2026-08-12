@@ -1,5 +1,5 @@
-const fs = require("fs");
-const path = require("path");
+const fs = require('fs');
+const path = require('path');
 const {
   getArgValue,
   isFlagEnabled,
@@ -7,27 +7,34 @@ const {
   parseArgsAsObject,
   runScript,
   setNestedProperty,
-} = require("../utils/cli");
-const { CUSTOMER_IO_EXPO_PLUGIN_NAME, EXPO_BUILD_PROPERTIES_PLUGIN } = require("../utils/constants");
+} = require('../utils/cli');
+const {
+  CUSTOMER_IO_EXPO_PLUGIN_NAME,
+  EXPO_BUILD_PROPERTIES_PLUGIN,
+} = require('../utils/constants');
 
-const APP_PATH = getArgValue("--app-path", { required: true });
-const USE_AUTO_INIT = isFlagEnabled("--use-auto-init", { default: true });
-const ANDROID_GOOGLE_SERVICES_FILE_PATH = getArgValue("--android-google-services", {
-  default: "./cio-artifacts/google-services.json",
+const APP_PATH = getArgValue('--app-path', { required: true });
+const USE_AUTO_INIT = isFlagEnabled('--use-auto-init', { default: true });
+const ANDROID_GOOGLE_SERVICES_FILE_PATH = getArgValue(
+  '--android-google-services',
+  {
+    default: './cio-artifacts/google-services.json',
+  }
+);
+const IOS_GOOGLE_SERVICES_FILE_PATH = getArgValue('--ios-google-services', {
+  default: './cio-artifacts/GoogleService-Info.plist',
 });
-const IOS_GOOGLE_SERVICES_FILE_PATH = getArgValue("--ios-google-services", {
-  default: "./cio-artifacts/GoogleService-Info.plist",
+const IOS_PUSH_PROVIDER = getArgValue('--ios-push-provider');
+const IOS_NO_PUSH = isFlagEnabled('--ios-no-push');
+const ADD_DEFAULT_CONFIG = isFlagEnabled('--add-default-config');
+const IOS_USE_FRAMEWORKS = getArgValue('--ios-use-frameworks', {
+  default: IOS_PUSH_PROVIDER === 'fcm' ? 'static' : undefined,
 });
-const IOS_PUSH_PROVIDER = getArgValue("--ios-push-provider");
-const ADD_DEFAULT_CONFIG = isFlagEnabled("--add-default-config");
-const IOS_USE_FRAMEWORKS = getArgValue("--ios-use-frameworks", {
-  default: IOS_PUSH_PROVIDER === "fcm" ? "static" : undefined,
-});
-const APP_JSON_FILE_PATH = path.join(APP_PATH, "app.json");
+const APP_JSON_FILE_PATH = path.join(APP_PATH, 'app.json');
 
 const PLUGIN_ABBREVIATIONS = {
-  [CUSTOMER_IO_EXPO_PLUGIN_NAME]: "cio-plugin",
-  [EXPO_BUILD_PROPERTIES_PLUGIN]: "expo-build-props",
+  [CUSTOMER_IO_EXPO_PLUGIN_NAME]: 'cio-plugin',
+  [EXPO_BUILD_PROPERTIES_PLUGIN]: 'expo-build-props',
 };
 
 // Parse additional configurations for plugin using special prefix to avoid conflicts with other Expo plugins
@@ -35,7 +42,7 @@ const PLUGIN_ABBREVIATIONS = {
 function getPluginConfigFromCliPrefix(pluginName) {
   const prefix = PLUGIN_ABBREVIATIONS[pluginName];
   if (!prefix) {
-    logMessage(`❌ Missing CLI prefix for plugin: ${pluginName}`, "error");
+    logMessage(`❌ Missing CLI prefix for plugin: ${pluginName}`, 'error');
     process.exit(1);
   }
 
@@ -44,7 +51,7 @@ function getPluginConfigFromCliPrefix(pluginName) {
 
   const configEntries = Object.entries(keyValues)
     .filter(([key]) => key.startsWith(fullPrefix))
-    .map(([key, value]) => [key.replace(fullPrefix, ""), value]);
+    .map(([key, value]) => [key.replace(fullPrefix, ''), value]);
 
   return Object.fromEntries(configEntries);
 }
@@ -52,12 +59,14 @@ function getPluginConfigFromCliPrefix(pluginName) {
 // Finds or adds a plugin to the plugins array.
 function findOrAddPlugin(plugins, pluginName, defaultConfig = {}) {
   const index = plugins.findIndex(
-    (plugin) => (Array.isArray(plugin) && plugin[0] === pluginName) || plugin === pluginName,
+    (plugin) =>
+      (Array.isArray(plugin) && plugin[0] === pluginName) ||
+      plugin === pluginName
   );
 
   if (index !== -1) {
     // If found as a string, replace it with an array format
-    if (typeof plugins[index] === "string") {
+    if (typeof plugins[index] === 'string') {
       plugins[index] = [pluginName, defaultConfig];
     }
     return index;
@@ -72,7 +81,9 @@ function findOrAddPlugin(plugins, pluginName, defaultConfig = {}) {
 function isObjectEmpty(obj) {
   return (
     Object.keys(obj).length === 0 ||
-    Object.values(obj).every((value) => typeof value === "object" && isObjectEmpty(value))
+    Object.values(obj).every(
+      (value) => typeof value === 'object' && isObjectEmpty(value)
+    )
   );
 }
 
@@ -83,41 +94,45 @@ function execute() {
   logMessage(`🚀 Configuring ${CUSTOMER_IO_EXPO_PLUGIN_NAME} plugin...\n`);
 
   // Step 1: Read and parse app.json
-  logMessage("🔄 Reading and parsing app.json...");
-  const appJson = JSON.parse(fs.readFileSync(APP_JSON_FILE_PATH, "utf8"));
+  logMessage('🔄 Reading and parsing app.json...');
+  const appJson = JSON.parse(fs.readFileSync(APP_JSON_FILE_PATH, 'utf8'));
   if (!appJson.expo?.plugins) {
-    throw new Error("❌ Missing `expo.plugins` in app.json.");
+    throw new Error('❌ Missing `expo.plugins` in app.json.');
   }
 
   // Step 2: Find or add Customer.io plugin
-  logMessage("🔍 Finding or adding Customer.io plugin...");
-  const cioPluginIndex = findOrAddPlugin(appJson.expo.plugins, CUSTOMER_IO_EXPO_PLUGIN_NAME, {});
+  logMessage('🔍 Finding or adding Customer.io plugin...');
+  const cioPluginIndex = findOrAddPlugin(
+    appJson.expo.plugins,
+    CUSTOMER_IO_EXPO_PLUGIN_NAME,
+    {}
+  );
   const cioPluginConfig = appJson.expo.plugins[cioPluginIndex][1];
 
   // Step 3: Add default configurations if flag is set
   if (ADD_DEFAULT_CONFIG) {
-    logMessage("🔧 Adding default configurations...", "debug");
+    logMessage('🔧 Adding default configurations...', 'debug');
 
     // Common configurations
     const envConfig = {
-      cdpApiKey: "dummy-cdp-api-key",
-      region: "us",
+      cdpApiKey: 'dummy-cdp-api-key',
+      region: 'us',
     };
     const androidConfig = {
       googleServicesFile: ANDROID_GOOGLE_SERVICES_FILE_PATH,
       setHighPriorityPushHandler: true,
       pushNotification: {
         channel: {
-          id: "cio-expo-id",
-          name: "CIO Test",
-          importance: 4
-        }
-      }
+          id: 'cio-expo-id',
+          name: 'CIO Test',
+          importance: 4,
+        },
+      },
     };
     const baseIosConfig = {
       pushNotification: {
         useRichPush: true,
-        appGroupId: "group.io.customer.testbed.expo.apn.cio",
+        appGroupId: 'group.io.customer.testbed.expo.apn.cio',
         handleDeeplinkInKilledState: true,
       },
     };
@@ -127,7 +142,7 @@ function execute() {
       Object.assign(cioPluginConfig, {
         config: {
           ...envConfig,
-          siteId: "dummy-site-id",
+          siteId: 'dummy-site-id',
         },
         android: androidConfig,
         ios: baseIosConfig,
@@ -148,39 +163,61 @@ function execute() {
   }
 
   // Step 4: Handle iOS push provider and frameworks
-  if (IOS_PUSH_PROVIDER !== "fcm") {
+  if (IOS_NO_PUSH) {
+    delete cioPluginConfig.ios?.pushNotification;
+  } else if (IOS_PUSH_PROVIDER !== 'fcm') {
     delete cioPluginConfig.ios?.pushNotification?.googleServicesFile;
   }
 
-  if (IOS_PUSH_PROVIDER) {
-    setNestedProperty(cioPluginConfig, "ios.pushNotification.provider", IOS_PUSH_PROVIDER);
-    if (IOS_PUSH_PROVIDER === "fcm") {
-      setNestedProperty(cioPluginConfig, "ios.pushNotification.googleServicesFile", IOS_GOOGLE_SERVICES_FILE_PATH);
+  if (!IOS_NO_PUSH && IOS_PUSH_PROVIDER) {
+    setNestedProperty(
+      cioPluginConfig,
+      'ios.pushNotification.provider',
+      IOS_PUSH_PROVIDER
+    );
+    if (IOS_PUSH_PROVIDER === 'fcm') {
+      setNestedProperty(
+        cioPluginConfig,
+        'ios.pushNotification.googleServicesFile',
+        IOS_GOOGLE_SERVICES_FILE_PATH
+      );
     }
-  } else {
+  } else if (!IOS_NO_PUSH) {
     delete cioPluginConfig.ios?.pushNotification?.provider;
   }
 
   // Step 5: Manage expo-build-properties
   logMessage(`🔧 Managing ${EXPO_BUILD_PROPERTIES_PLUGIN}...`);
-  const buildPropsIndex = findOrAddPlugin(appJson.expo.plugins, EXPO_BUILD_PROPERTIES_PLUGIN, {});
+  const buildPropsIndex = findOrAddPlugin(
+    appJson.expo.plugins,
+    EXPO_BUILD_PROPERTIES_PLUGIN,
+    {}
+  );
   const buildPropsConfig = appJson.expo.plugins[buildPropsIndex][1];
 
   if (IOS_USE_FRAMEWORKS) {
-    setNestedProperty(cioPluginConfig, "ios.useFrameworks", IOS_USE_FRAMEWORKS);
-    setNestedProperty(buildPropsConfig, "ios.useFrameworks", IOS_USE_FRAMEWORKS);
+    setNestedProperty(cioPluginConfig, 'ios.useFrameworks', IOS_USE_FRAMEWORKS);
+    setNestedProperty(
+      buildPropsConfig,
+      'ios.useFrameworks',
+      IOS_USE_FRAMEWORKS
+    );
   } else {
     delete cioPluginConfig.ios?.useFrameworks;
     delete buildPropsConfig.ios?.useFrameworks;
   }
 
   // Step 6: Apply additional plugin-specific configurations
-  logMessage("🔧 Applying additional configurations...");
-  const cioAdditionalConfig = getPluginConfigFromCliPrefix(CUSTOMER_IO_EXPO_PLUGIN_NAME);
+  logMessage('🔧 Applying additional configurations...');
+  const cioAdditionalConfig = getPluginConfigFromCliPrefix(
+    CUSTOMER_IO_EXPO_PLUGIN_NAME
+  );
   Object.entries(cioAdditionalConfig).forEach(([key, value]) => {
     setNestedProperty(cioPluginConfig, key, value);
   });
-  const buildPropsAdditionalConfig = getPluginConfigFromCliPrefix(EXPO_BUILD_PROPERTIES_PLUGIN);
+  const buildPropsAdditionalConfig = getPluginConfigFromCliPrefix(
+    EXPO_BUILD_PROPERTIES_PLUGIN
+  );
   Object.entries(buildPropsAdditionalConfig).forEach(([key, value]) => {
     setNestedProperty(buildPropsConfig, key, value);
   });
@@ -189,14 +226,14 @@ function execute() {
   if (isObjectEmpty(buildPropsConfig)) {
     logMessage(
       `🗑️ Reverting ${EXPO_BUILD_PROPERTIES_PLUGIN} plugin to a string entry as configuration is empty.`,
-      "warning",
+      'warning'
     );
     appJson.expo.plugins[buildPropsIndex] = EXPO_BUILD_PROPERTIES_PLUGIN; // Convert back to a string
   }
 
   // Step 7: Write updated app.json back to file
-  fs.writeFileSync(APP_JSON_FILE_PATH, JSON.stringify(appJson, null, 2) + "\n");
-  logMessage("✅ Successfully updated app.json", "success");
+  fs.writeFileSync(APP_JSON_FILE_PATH, JSON.stringify(appJson, null, 2) + '\n');
+  logMessage('✅ Successfully updated app.json', 'success');
 }
 
 runScript(execute);

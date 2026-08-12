@@ -1,0 +1,69 @@
+{
+  "schema": "cio-expo57-patched-source-snapshot/1",
+  "patchLock": "lifecycle-fixture/scripts/expo57-source-patch.lock.json",
+  "files": {
+    "framework/expo/ios/AppDelegates/AppDelegatesLoaderDelegate.swift": {
+      "sha256": "8de44019c6e7e163dd68cf40cd0636097ce1b118ca1192216220929f6060d264"
+    },
+    "framework/expo/ios/AppDelegates/ExpoAppDelegate.swift": {
+      "sha256": "42cbc0ed6d45e1d45a9b732fc38f7fd5150075fd620b921c8b1dafc7c293a623"
+    },
+    "framework/expo-modules-core/ios/AppDelegates/ExpoAppDelegateSubscriberManager.swift": {
+      "sha256": "ecbf7e11c825d35ef0c958ba713ce16cfc32504657242321e66b920236b70fbb"
+    },
+    "framework/expo-notifications/ios/ExpoNotifications/Notifications/NotificationCenterManager.swift": {
+      "sha256": "2564dc805a93f78fbcdc355265bd0c8a16e22c12a40b8397cbf0e11862e3b9ef"
+    },
+    "framework/expo-notifications/ios/ExpoNotifications/Notifications/Emitter/EmitterModule.swift": {
+      "sha256": "b1799e497c18973b438af2fb0324754d577e1e5cc90735d7231419e8022ed180"
+    },
+    "variants/apn/AppDelegate.swift": {
+      "sha256": "50caeb054a6db025d45b57f5326f618a9bfcd59a680e509bc18554ea90b94ccd"
+    },
+    "variants/apn/app.json": {
+      "sha256": "ab14e1b41f06aebb4f306f938699812cc9f63e8000fcb3bd2b0527b87900c2eb"
+    },
+    "javascript/src/app/index.tsx": {
+      "sha256": "d141588328252fdcc99b8b90759b53380220820e5f249ea0bcbc5b6da0892bb9"
+    },
+    "variants/fcm/AppDelegate.swift": {
+      "sha256": "50caeb054a6db025d45b57f5326f618a9bfcd59a680e509bc18554ea90b94ccd"
+    },
+    "variants/fcm/app.json": {
+      "sha256": "c168f684e0b4bd1dd0ebe123d49a261976dd7404ee20ad7aac00c37e02bf337d"
+    },
+    "variants/nopush/AppDelegate.swift": {
+      "sha256": "6600802b9fb2d761057c7f215d1eff5d02c9c67bbed0eb84864bd50cb865de3b"
+    },
+    "variants/nopush/app.json": {
+      "sha256": "a43971db7ab0e039f59f1bfb9954c9c6aeffa5943d03e2f7284b7a7331e9e929"
+    },
+    "customerio-ios/apn/CioNotificationCenterDelegate.swift": {
+      "sha256": "b6720e67b5dac72d625da5790727834b0cb9c67e8b76cc6bd1816459328345c1"
+    },
+    "customerio-ios/apn/CioAppDelegateAPN.swift": {
+      "sha256": "18ce8b43b165338ea28421be24372c903cf586283798e6e6f0e4adab0812af99"
+    },
+    "variants/apn/CioSdkAppDelegateHandler.swift": {
+      "sha256": "d55795fddddeeb51e13dbff913f82cbf15539784abfd2b1f05ae68595ecea3f6"
+    },
+    "variants/fcm/CioSdkAppDelegateHandler.swift": {
+      "sha256": "132ca251fe28d3ce381157bd18368691d4d8236effe6135bd5dce141250a09d4"
+    },
+    "customerio-ios/fcm/CioNotificationCenterDelegate.swift": {
+      "sha256": "b6720e67b5dac72d625da5790727834b0cb9c67e8b76cc6bd1816459328345c1"
+    },
+    "customerio-ios/fcm/CioAppDelegateFCM.swift": {
+      "sha256": "7fe69d6d6a9feb3f5b10728eb6930fccbbe0c5154bdd99e91cf7701ac012612d"
+    },
+    "variants/nopush/Podfile.properties.json": {
+      "sha256": "fca1c00d93fe4311d5e7f92b9cfdb8b173ad936c5179c8af6d913ed344c6e1cb"
+    },
+    "variants/apn/Podfile.properties.json": {
+      "sha256": "fca1c00d93fe4311d5e7f92b9cfdb8b173ad936c5179c8af6d913ed344c6e1cb"
+    },
+    "variants/fcm/Podfile.properties.json": {
+      "sha256": "fca8c1bc9a70a08878f40fd0aa99b8dca88513fd3d6bde83706198fecb755290"
+    }
+  }
+}

@@ -1,0 +1,116 @@
+{
+  "schema": "cio-expo57-source-patch-lock/1",
+  "expoVersion": "57.0.12",
+  "expoModulesCoreVersion": "57.0.10",
+  "expoNotificationsVersion": "57.0.10",
+  "reactNativeVersion": "0.86.2",
+  "customerioReactNativeVersion": "6.6.2",
+  "customerioExpoPluginVersion": "3.7.1",
+  "customerioIOSVersion": "4.7.2",
+  "firebaseIOSMessagingVersion": "12.17.0",
+  "files": {
+    "appDelegatesLoaderDelegate": {
+      "path": "node_modules/expo/ios/AppDelegates/AppDelegatesLoaderDelegate.swift",
+      "preSha256": [
+        "dbcd1ca23d35fd18d49e4a17d49634d983f7e49a12bee76d408a34cd26789efe"
+      ],
+      "postSha256": [
+        "8de44019c6e7e163dd68cf40cd0636097ce1b118ca1192216220929f6060d264"
+      ]
+    },
+    "expoAppDelegate": {
+      "path": "node_modules/expo/ios/AppDelegates/ExpoAppDelegate.swift",
+      "preSha256": [
+        "a97bc658ce4e33b1738ff84b29f4f22a6d8d62dffc08302e24897937964f1b3c"
+      ],
+      "postSha256": [
+        "42cbc0ed6d45e1d45a9b732fc38f7fd5150075fd620b921c8b1dafc7c293a623"
+      ]
+    },
+    "subscriberManager": {
+      "path": "node_modules/expo-modules-core/ios/AppDelegates/ExpoAppDelegateSubscriberManager.swift",
+      "preSha256": [
+        "d6d9743d4aebf549ea9b8b51fe368744afe6ff19855ae379755597ad4ae7b0ac"
+      ],
+      "postSha256": [
+        "ecbf7e11c825d35ef0c958ba713ce16cfc32504657242321e66b920236b70fbb"
+      ]
+    },
+    "notificationCenterManager": {
+      "path": "node_modules/expo-notifications/ios/ExpoNotifications/Notifications/NotificationCenterManager.swift",
+      "preSha256": [
+        "e23fed57a2c13d8abd6d8cdebb0971d326aed59c98b8b2b51fded9e8a84a7437"
+      ],
+      "postSha256": [
+        "2564dc805a93f78fbcdc355265bd0c8a16e22c12a40b8397cbf0e11862e3b9ef"
+      ]
+    },
+    "emitterModule": {
+      "path": "node_modules/expo-notifications/ios/ExpoNotifications/Notifications/Emitter/EmitterModule.swift",
+      "preSha256": [
+        "8e8556ba36b9934f0a2f0d35ec8c84389f1bc8061e66eb48245a71a129f5e23a"
+      ],
+      "postSha256": [
+        "b1799e497c18973b438af2fb0324754d577e1e5cc90735d7231419e8022ed180"
+      ]
+    },
+    "customerioNotificationDelegate": {
+      "path": "ios/Pods/CustomerIOMessagingPush/Sources/MessagingPush/Integration/CioNotificationCenterDelegate.swift",
+      "preSha256": [
+        "c6205dee06aff379dbf219ec172ba95d42a4008b0e6f5c11ddefc3756de29906"
+      ],
+      "postSha256": [
+        "b6720e67b5dac72d625da5790727834b0cb9c67e8b76cc6bd1816459328345c1"
+      ]
+    },
+    "customerioAPNDelegate": {
+      "path": "ios/Pods/CustomerIOMessagingPushAPN/Sources/MessagingPushAPN/Integration/CioAppDelegateAPN.swift",
+      "preSha256": [
+        "3e03275e533633842dfc8d393f650dca3dc33dc347cd80d8629c381deb1cf549"
+      ],
+      "postSha256": [
+        "18ce8b43b165338ea28421be24372c903cf586283798e6e6f0e4adab0812af99"
+      ]
+    },
+    "customerioFCMDelegate": {
+      "path": "ios/Pods/CustomerIOMessagingPushFCM/Sources/MessagingPushFCM/Integration/CioAppDelegateFCM.swift",
+      "preSha256": [
+        "f7293e78daa312de780d14094451128fa23d023097a2471682ecfdb7c7ef0ff8"
+      ],
+      "postSha256": [
+        "7fe69d6d6a9feb3f5b10728eb6930fccbbe0c5154bdd99e91cf7701ac012612d"
+      ]
+    },
+    "generatedAppDelegate": {
+      "path": "ios/LifecycleFixtureExpo57/AppDelegate.swift",
+      "preSha256": [
+        "5e54054b0b5c0da7a04ad384ecedebd5112662a6f25cdb29ca2db7c91b86b10c",
+        "7fbbd252da13438bf60b9ae0169d358ff870a7912802f36637f435b83aa25adf"
+      ],
+      "postSha256": [
+        "50caeb054a6db025d45b57f5326f618a9bfcd59a680e509bc18554ea90b94ccd",
+        "6600802b9fb2d761057c7f215d1eff5d02c9c67bbed0eb84864bd50cb865de3b"
+      ]
+    },
+    "generatedIndex": {
+      "path": "src/app/index.tsx",
+      "preSha256": [
+        "02d7e1f59bbd1ec24f259701184bc94802ac1d3f1927eadb996514209ed21dca"
+      ],
+      "postSha256": [
+        "d141588328252fdcc99b8b90759b53380220820e5f249ea0bcbc5b6da0892bb9"
+      ]
+    },
+    "podfileProperties": {
+      "path": "ios/Podfile.properties.json",
+      "preSha256": [
+        "e5494d711e203c48d356db2b9c8882092a2781648f65e2cef8524e6c71e6efa4",
+        "eda3286e73f83f103f14d866243366461374a1abf07906db45702526c67102db"
+      ],
+      "postSha256": [
+        "fca1c00d93fe4311d5e7f92b9cfdb8b173ad936c5179c8af6d913ed344c6e1cb",
+        "fca8c1bc9a70a08878f40fd0aa99b8dca88513fd3d6bde83706198fecb755290"
+      ]
+    }
+  }
+}

@@ -1,0 +1,3 @@
+# Generated source snapshots are intentionally byte-identical to the pinned
+# Expo/Customer.io outputs, including their existing trailing spaces.
+__tests__/fixtures/ios/expo57-patched/variants/*/*.swift -whitespace

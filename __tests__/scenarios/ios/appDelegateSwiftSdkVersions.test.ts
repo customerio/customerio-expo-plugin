@@ -133,6 +133,50 @@ describe('AppDelegate.swift — Expo SDK 54 vanilla baseline', () => {
   });
 });
 
+describe('AppDelegate.swift — Expo SDK 57 vanilla baseline', () => {
+  const sdk57 = fs.readFileSync(
+    getFixturePath('ios', 'AppDelegate.sdk57.swift'),
+    'utf8'
+  );
+  const sdk55 = fs.readFileSync(
+    getFixturePath('ios', 'AppDelegate.sdk55.swift'),
+    'utf8'
+  );
+
+  // The SDK 57 fixture is pinned from the real `expo@57` template
+  // (`__tests__/fixtures/ios/expo57-generated/`, see PROVENANCE.json) and is
+  // byte-identical to the SDK 55 template, so the transform output is asserted
+  // by identity with the SDK 55 snapshot below instead of duplicating it. If a
+  // template change breaks the identity, pin the new template and give SDK 57
+  // its own snapshot.
+  it('template is unchanged since SDK 55, so the injected output matches too', () => {
+    expect(sdk57).toEqual(sdk55);
+    expect(modifyAppDelegateForPushHandler(sdk57, defaultPushOptions)).toEqual(
+      modifyAppDelegateForPushHandler(sdk55, defaultPushOptions)
+    );
+  });
+
+  it('injects the CIO handler and delegate hooks into the real SDK 57 template', () => {
+    const output = modifyAppDelegateForPushHandler(sdk57, defaultPushOptions);
+    expect(output).toContain('let cioSdkHandler = CioSdkAppDelegateHandler()');
+    expect(output).toContain(
+      'cioSdkHandler.application(application, didFinishLaunchingWithOptions: launchOptions)'
+    );
+    expect(output).toContain(
+      'cioSdkHandler.application(application, didRegisterForRemoteNotificationsWithDeviceToken: deviceToken)'
+    );
+    expect(output).toContain(
+      'cioSdkHandler.application(application, didFailToRegisterForRemoteNotificationsWithError: error)'
+    );
+    expect(output).toContain(
+      'guard let url = cioSdkHandler.application(app, open: url, options: options) else { return true }'
+    );
+    expect(output).toContain(
+      '// Deep link workaround for app killed state start'
+    );
+  });
+});
+
 describe('AppDelegate.swift — Expo SDK 55 vanilla baseline', () => {
   const baseline = fs.readFileSync(
     getFixturePath('ios', 'AppDelegate.sdk55.swift'),

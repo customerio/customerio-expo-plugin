@@ -97,3 +97,13 @@ jobs:
 
       - name: Run scenarios
         run: npm run test:scenarios
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install lifecycle validator dependencies
+        run: python3 -m pip install 'jsonschema[format]>=4.18,<5'
+
+      - name: Run lifecycle contract and producer tests
+        run: npm run test:lifecycle-contract

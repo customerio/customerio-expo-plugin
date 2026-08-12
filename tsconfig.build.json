@@ -3,6 +3,7 @@
   "exclude": [
     "ci-test-apps",
     "__tests__",
+    "lifecycle-fixture",
     "test-app",
     "test-app-pnpm",
     "test-app-pnpm-monorepo"

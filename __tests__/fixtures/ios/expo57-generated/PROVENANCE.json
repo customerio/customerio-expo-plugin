@@ -1,0 +1,148 @@
+{
+  "ticket": "MBL-2232",
+  "generatedBy": "lifecycle-fixture/scripts/pin-expo-fixture-sources.js",
+  "appPath": "ci-test-apps/LifecycleFixture_Expo57",
+  "commands": [
+    "node scripts/compatibility/create-test-app.js --expo-version=57 --app-name=LifecycleFixture_Expo57",
+    "node scripts/compatibility/setup-test-app.js --app-path=ci-test-apps/LifecycleFixture_Expo57 --dependencies=expo-notifications",
+    "node lifecycle-fixture/scripts/pin-expo-fixture-sources.js --app-path=ci-test-apps/LifecycleFixture_Expo57"
+  ],
+  "packageVersions": {
+    "expo": "57.0.12",
+    "expo-modules-core": "57.0.10",
+    "expo-notifications": "57.0.10",
+    "react-native": "0.86.2",
+    "customerio-reactnative": "6.6.2",
+    "customerio-expo-plugin": "3.7.1"
+  },
+  "files": {
+    "expo/ExpoAppDelegate.swift": {
+      "sha256": "a97bc658ce4e33b1738ff84b29f4f22a6d8d62dffc08302e24897937964f1b3c"
+    },
+    "expo/Expo.podspec": {
+      "sha256": "2798d70b69e8b3462421f5d96ea839b4ab2f0d49e7eb422cc6a6881066bd2f29"
+    },
+    "expo/EXAppDelegatesLoader.m": {
+      "sha256": "592717c7886701d00133018dd63a7d17091f0f60df2e8a8a48af0946e59e4c94"
+    },
+    "expo/AppDelegatesLoaderDelegate.swift": {
+      "sha256": "dbcd1ca23d35fd18d49e4a17d49634d983f7e49a12bee76d408a34cd26789efe"
+    },
+    "expo-modules-core/ExpoAppDelegateSubscriber.swift": {
+      "sha256": "4a97048d51e335ad830a1509d99c11fbb5a29df7379508604c9ca7c719d19427"
+    },
+    "expo-modules-core/ExpoAppDelegateSubscriberManager.swift": {
+      "sha256": "d6d9743d4aebf549ea9b8b51fe368744afe6ff19855ae379755597ad4ae7b0ac"
+    },
+    "expo-modules-core/ExpoAppDelegateSubscriberRepository.swift": {
+      "sha256": "780ad6cdbe34df1a87cddfea66801a839fe9d2953969e41737a5939ca0fa912f"
+    },
+    "expo-modules-core/ExpoModulesCore.podspec": {
+      "sha256": "b8259e2770ded8730eec301be7ac22f1a8624c85dcd4bfeaeaf01a0bcd0c4887"
+    },
+    "expo-notifications/NotificationCenterManager.swift": {
+      "sha256": "e23fed57a2c13d8abd6d8cdebb0971d326aed59c98b8b2b51fded9e8a84a7437"
+    },
+    "expo-notifications/NotificationsAppDelegateSubscriber.swift": {
+      "sha256": "121e4ec8ab6e030e196005e4e209696c4893831bb98b6eb118cfc5bc8dd2b0ff"
+    },
+    "expo-notifications/EmitterModule.swift": {
+      "sha256": "8e8556ba36b9934f0a2f0d35ec8c84389f1bc8061e66eb48245a71a129f5e23a"
+    },
+    "expo-notifications/ExpoNotifications.podspec": {
+      "sha256": "ab73ae5b13d3cd62c462be26cdd65a183f7736570281368326ed305e80645fdb"
+    },
+    "expo-notifications/expo-module.config.json": {
+      "sha256": "b19298fe410565a404c1ebdf069de56ceca20fb29067bcc8d57ec8d1166302a1"
+    },
+    "generated-app/Podfile.properties.json": {
+      "sha256": "e5494d711e203c48d356db2b9c8882092a2781648f65e2cef8524e6c71e6efa4"
+    },
+    "customerio-ios/CioNotificationCenterDelegate.swift": {
+      "sha256": "c6205dee06aff379dbf219ec172ba95d42a4008b0e6f5c11ddefc3756de29906"
+    },
+    "customerio-ios/CioAppDelegateAPN.swift": {
+      "sha256": "3e03275e533633842dfc8d393f650dca3dc33dc347cd80d8629c381deb1cf549"
+    },
+    "customerio-ios/CioAppDelegateFCM.swift": {
+      "sha256": "f7293e78daa312de780d14094451128fa23d023097a2471682ecfdb7c7ef0ff8"
+    },
+    "expo/template/AppDelegate.swift": {
+      "sha256": "510895dbd9aec82fe5c8143baf7cc4740449433f4a59a7299dd3dc1c6a408aeb"
+    },
+    "expo/template/Info.plist": {
+      "sha256": "7ab1a1bf1eeb2b06d16cd6ec854e2351a8e3604b76225c2fe2c81abbf2d53ee6"
+    }
+  },
+  "localInputs": {
+    "tsconfig.json": {
+      "sha256": "a9c57723cfc950ffbe4dff924bf717a84c89aedd1d43fa265cf6851069eb7e18"
+    },
+    "tsconfig.build.json": {
+      "sha256": "4e860d130d0ccfe41d4d9f66c55d7c05e0e99b8080cd3776ed9b56d5ce853e56"
+    },
+    "scripts/compatibility/configure-plugin.js": {
+      "sha256": "219726835cbf7b36669d9cb574e2d788d0b9fec1d998d75b27322315968b2c92"
+    },
+    "lifecycle-fixture/javascript/LifecycleReceipts.ts": {
+      "sha256": "3e54ce2780abcf74e17e26014327f59cfb8e9fa9f4896c39dddde41ba3db4f04"
+    },
+    "lifecycle-fixture/probe-module/expo-module.config.json": {
+      "sha256": "39000bef2242673dfa3080b753a84b6c722db14912e7f184e6df8b4b341e054f"
+    },
+    "lifecycle-fixture/probe-module/ios/CioLifecycleProbe.podspec": {
+      "sha256": "ab659cc9e3295588f2dee21c44084dd78934c5c94690364ad51b3d592ba08a1c"
+    },
+    "lifecycle-fixture/probe-module/ios/CioLifecycleProbeBootstrap.m": {
+      "sha256": "dac7b1ba8699401e6ed1b179322f54154698ee67b3a1f19ff20335ac48a663dd"
+    },
+    "lifecycle-fixture/probe-module/ios/CioLifecycleProbeModule.swift": {
+      "sha256": "dd341ed555c70577568a5eb2c8013ee0802e1c06cb0b9eb12633057669f7945c"
+    },
+    "lifecycle-fixture/probe-module/ios/LifecycleTraceModel.swift": {
+      "sha256": "cd74c8b0c9ebdda75f5a3045e6ddbe6dc993252aeec7649b84c05c21c43f5ff1"
+    },
+    "lifecycle-fixture/probe-module/ios/LifecycleTraceProbe.swift": {
+      "sha256": "9d48ad49e5fe116e66e0c924bd1aafd3764709d9865115ba5491836d03927956"
+    },
+    "lifecycle-fixture/probe-module/ios/LifecycleTraceProbeObserver.swift": {
+      "sha256": "9036c5193c177b6e8a1f077c649e1ec65340dbbcdd2576e03527b6b35e15c6a5"
+    },
+    "lifecycle-fixture/probe-module/ios/LifecycleTraceRecorder.swift": {
+      "sha256": "5c3ecfb951ab957f1215b45e70cb5aeb358cf3c6b5335ff553e91a65d02b1588"
+    },
+    "lifecycle-fixture/scripts/expo57-source-patch.lock.json": {
+      "sha256": "ee4add37fd52ceef2dd78a83c1eec77e45bda00d1eeb9ab16088d3d47d53dd53"
+    },
+    "lifecycle-fixture/scripts/install-probe.js": {
+      "sha256": "445560ac8b944fca2e2481702be5b071b2aa792c411c9ad767f8108155175551"
+    },
+    "lifecycle-fixture/scripts/lib.js": {
+      "sha256": "7a44913ca8aaef20bb27b75cfd10b435418feecb5d7eb2b9407464da9068d94b"
+    },
+    "lifecycle-fixture/scripts/patch-customerio-pod-sources.js": {
+      "sha256": "cb6456330638133fac7e40170eaf55d4c57347853bf8de6dff138a1b4487737d"
+    },
+    "lifecycle-fixture/scripts/patch-expo57-sources.js": {
+      "sha256": "3917db9e1c995614ef14aca7e16975edc214e7dabe238a52142fcf3dbe227ed4"
+    },
+    "lifecycle-fixture/scripts/pin-expo-fixture-sources.js": {
+      "sha256": "23e764665df69d7154944755494e347ea65717cb552d8ddcb36da5953fdcd557"
+    },
+    "lifecycle-fixture/scripts/test-javascript-recorder.js": {
+      "sha256": "4aa05f8e802a4c1ca42a157214fd39eadca85068005bda76de191e89fc4c3c66"
+    },
+    "lifecycle-fixture/scripts/test-expo-producer-captures.py": {
+      "sha256": "287a37c083172a1a0d0e65f0796114773d7c6291014f75d08643d3e82cb399ef"
+    },
+    "lifecycle-fixture/scripts/test-expo-runtime-capture.py": {
+      "sha256": "2a8b048d015c8a749e3f9ae9ffd1075e531d4e244434acd32422d6e52cdaa096"
+    },
+    "lifecycle-fixture/scripts/typecheck-probe.sh": {
+      "sha256": "75e1875c21a3f9a4bcc5ec39a633d76167a53b778ddd7f1e5a767755ce07ad91"
+    },
+    "lifecycle-fixture/scripts/validate-expo-runtime-capture.py": {
+      "sha256": "3a9e8d3459b5c883986701e3f45cdd02d024e5bdaf1c3c947103b59d871af295"
+    }
+  }
+}
