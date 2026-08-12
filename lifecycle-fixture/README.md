@@ -196,10 +196,12 @@ python3 lifecycle-fixture/scripts/test-expo-runtime-capture.py --integration \
 Repeat with `--variant fcm` and `--variant nopush` against those exact generated
 apps. A single generated directory represents only one variant at a time.
 
-For an actual L2/L3 run, first obtain the exact dirty-repository provenance
-object and generated-fixture digest. Put the returned `repository` object in
-the manifest, then validate the native and JavaScript NDJSON plus their
-separate post-drain receipts:
+For an actual L2/L3 run, first obtain the exact fixture-checkout provenance
+object and generated-fixture digest. Put the returned `fixture_source` object
+in the manifest. Keep `repositories.customerio-expo-plugin` and its framework
+commit pinned to the audited production 3.7.1 topology, rather than relabeling
+fixture-only commits as production plugin code. Then validate the native and
+JavaScript NDJSON plus their separate post-drain receipts:
 
 ```sh
 python3 lifecycle-fixture/scripts/validate-expo-runtime-capture.py \
@@ -230,10 +232,11 @@ push-provider, and Firebase Messaging versions from package manifests,
 versions. The explicitly selected validator Python must provide
 `jsonschema[format]>=4.18,<5`. The repository-owned contract verifier must then
 validate the byte-locked 18-file canonical bundle before the non-overridable
-canonical validator is invoked. The manifest's
-dirty `customerio-expo-plugin` snapshot hashes all tracked and untracked,
-non-ignored outer-repository source, including those snapshots and patch
-inputs. This closes the otherwise invisible `ci-test-apps` provenance gap.
+canonical validator is invoked. The manifest's `fixture_source` records the
+actual current checkout commit and dirty state. When dirty, its snapshot hashes
+all tracked and untracked, non-ignored outer-repository source, including those
+snapshots and patch inputs. This closes the otherwise invisible `ci-test-apps`
+provenance gap without weakening the audited production topology.
 The printed generated-fixture SHA is only a diagnostic comparison aid, not a
 second or unrecorded manifest provenance field.
 

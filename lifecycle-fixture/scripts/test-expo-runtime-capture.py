@@ -4,9 +4,11 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import importlib.util
 import json
 import shutil
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -160,6 +162,91 @@ class ExpoRuntimeDependencyTests(unittest.TestCase):
         validator.write_bytes(validator.read_bytes() + b"\n# mutation\n")
         with self.assertRaisesRegex(MODULE.CaptureError, "failed locked verification"):
             MODULE._verify_contract_bundle(sys.executable, self.source)
+
+    def initialize_source_repository(self) -> str:
+        commands = (
+            ("git", "init", "-q"),
+            ("git", "config", "user.name", "Lifecycle Fixture Test"),
+            ("git", "config", "user.email", "fixture@example.invalid"),
+            ("git", "add", "."),
+            ("git", "-c", "commit.gpgsign=false", "commit", "-q", "-m", "fixture"),
+        )
+        for command in commands:
+            subprocess.run(command, cwd=self.source, check=True)
+        return subprocess.run(
+            ("git", "rev-parse", "HEAD"), cwd=self.source, check=True,
+            stdout=subprocess.PIPE, text=True,
+        ).stdout.strip()
+
+    def test_clean_fixture_source_uses_exact_checkout_commit(self) -> None:
+        commit = self.initialize_source_repository()
+        expected = MODULE._fixture_source_provenance(self.source)
+        self.assertEqual(expected, {
+            "name": "customerio-expo-plugin",
+            "commit_sha": commit,
+            "dirty": False,
+            "source_snapshot": None,
+        })
+        MODULE._validate_fixture_source({"fixture_source": expected}, expected)
+
+    def test_dirty_fixture_source_requires_exact_current_snapshot(self) -> None:
+        self.initialize_source_repository()
+        self.write_json(self.source / "package.json", {"version": "3.7.1", "fixture": True})
+        expected = MODULE._fixture_source_provenance(self.source)
+        self.assertTrue(expected["dirty"])
+        self.assertEqual(expected["source_snapshot"]["algorithm"], "sha256")
+        MODULE._validate_fixture_source({"fixture_source": expected}, expected)
+
+        stale = json.loads(json.dumps(expected))
+        stale["source_snapshot"]["tree_hash"] = "0" * 64
+        with self.assertRaisesRegex(MODULE.CaptureError, "exact current Expo fixture source"):
+            MODULE._validate_fixture_source({"fixture_source": stale}, expected)
+
+    def test_stale_clean_fixture_commit_fails_closed(self) -> None:
+        self.initialize_source_repository()
+        expected = MODULE._fixture_source_provenance(self.source)
+        stale = json.loads(json.dumps(expected))
+        stale["commit_sha"] = "0" * 40
+        with self.assertRaisesRegex(MODULE.CaptureError, "exact current Expo fixture source"):
+            MODULE._validate_fixture_source({"fixture_source": stale}, expected)
+
+    def test_snapshot_framing_distinguishes_newline_path_collision(self) -> None:
+        self.initialize_source_repository()
+        first = b"first fixture contents"
+        second = b"second fixture contents"
+        second_hash = hashlib.sha256(second).hexdigest()
+        ambiguous_name = f"a\n{second_hash}  b"
+
+        (self.source / ambiguous_name).write_bytes(first)
+        first_snapshot = MODULE._fixture_source_provenance(self.source)
+        (self.source / ambiguous_name).unlink()
+        (self.source / "a").write_bytes(first)
+        (self.source / "b").write_bytes(second)
+        second_snapshot = MODULE._fixture_source_provenance(self.source)
+
+        legacy_single = (
+            f"{hashlib.sha256(first).hexdigest()}  {ambiguous_name}\n".encode()
+        )
+        legacy_split = (
+            f"{hashlib.sha256(first).hexdigest()}  a\n"
+            f"{second_hash}  b\n"
+        ).encode()
+        self.assertEqual(legacy_single, legacy_split)
+        self.assertNotEqual(
+            first_snapshot["source_snapshot"], second_snapshot["source_snapshot"]
+        )
+
+    def test_snapshot_framing_distinguishes_untracked_executable_mode(self) -> None:
+        self.initialize_source_repository()
+        script = self.source / "fixture-script"
+        script.write_bytes(b"#!/bin/sh\nexit 0\n")
+        script.chmod(0o655)
+        non_executable = MODULE._fixture_source_provenance(self.source)
+        script.chmod(0o755)
+        executable = MODULE._fixture_source_provenance(self.source)
+        self.assertNotEqual(
+            non_executable["source_snapshot"], executable["source_snapshot"]
+        )
 
 
 if __name__ == "__main__":

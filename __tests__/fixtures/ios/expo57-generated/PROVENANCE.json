@@ -133,16 +133,16 @@
       "sha256": "4aa05f8e802a4c1ca42a157214fd39eadca85068005bda76de191e89fc4c3c66"
     },
     "lifecycle-fixture/scripts/test-expo-producer-captures.py": {
-      "sha256": "287a37c083172a1a0d0e65f0796114773d7c6291014f75d08643d3e82cb399ef"
+      "sha256": "50808e054a31f7ee43eef80d79a260901a15ade024c36a314ce2d26a9e3f8559"
     },
     "lifecycle-fixture/scripts/test-expo-runtime-capture.py": {
-      "sha256": "2a8b048d015c8a749e3f9ae9ffd1075e531d4e244434acd32422d6e52cdaa096"
+      "sha256": "9cc0b831012a2aae19002c8bfb7d93a56454c9f53a417c1540583d85c2a1b923"
     },
     "lifecycle-fixture/scripts/typecheck-probe.sh": {
       "sha256": "75e1875c21a3f9a4bcc5ec39a633d76167a53b778ddd7f1e5a767755ce07ad91"
     },
     "lifecycle-fixture/scripts/validate-expo-runtime-capture.py": {
-      "sha256": "3a9e8d3459b5c883986701e3f45cdd02d024e5bdaf1c3c947103b59d871af295"
+      "sha256": "e9b2ab8c4d61109ddc6719762f82a7615efeb15eae1bcd3b2ee9dd1569599672"
     }
   }
 }

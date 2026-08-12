@@ -172,6 +172,12 @@ def manifest(scenario: str, provider: str, native: list[dict], javascript: list[
         "evidence_level": "L2",
         "scenario": scenario,
         "repositories": repositories(),
+        "fixture_source": {
+            "name": "customerio-expo-plugin",
+            "commit_sha": "5635e80e69eaed39f4b2dfff01d1a01104766abe",
+            "dirty": False,
+            "source_snapshot": None,
+        },
         "toolchain": {"xcode_version": "26.6", "xcode_build": "17F113", "swift_version": "6.2.4", "flutter_version": None, "dart_version": None, "node_version": "20.20.2", "expo_cli_version": "57.0.12"},
         "sdk": {"platform": "ios", "name": "iphonesimulator", "version": "26.5", "build": "23F81a"},
         "build": {"configuration": "Debug", "scheme": "LifecycleFixtureExpo57", "target_name": "LifecycleFixtureExpo57", "product_kind": "application", "deployment_target": "15.1"},

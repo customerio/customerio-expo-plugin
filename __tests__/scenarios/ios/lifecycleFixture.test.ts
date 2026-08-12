@@ -653,14 +653,14 @@ describe('real generated-app capture validation', () => {
     'utf8'
   );
 
-  it('binds L2/L3 manifests to the dirty outer tree and exact generated sources', () => {
+  it('binds L2/L3 manifests to the exact fixture checkout and generated sources', () => {
     expect(harness).toContain('"ls-files", "-z", "--cached", "--others"');
     expect(harness).toContain('diff + b"\\0UNTRACKED\\0"');
     expect(harness).toContain(
       'generated source differs from its pinned patched snapshot'
     );
     expect(harness).toContain(
-      'manifest does not record the exact current Expo source snapshot'
+      'manifest does not record the exact current Expo fixture source'
     );
     expect(harness).toContain(
       'runtime acceptance validation requires L2 or L3'

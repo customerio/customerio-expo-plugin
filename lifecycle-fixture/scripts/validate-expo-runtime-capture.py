@@ -7,6 +7,7 @@ import argparse
 import hashlib
 import json
 import re
+import stat
 import subprocess
 import sys
 from pathlib import Path
@@ -143,7 +144,15 @@ def _source_snapshot(root: Path) -> tuple[bool, dict[str, str] | None]:
         path = root / relative
         if path.is_symlink() or not path.is_file():
             raise CaptureError(f"source snapshot contains a non-regular path: {relative}")
-        entry = f"{hashlib.sha256(path.read_bytes()).hexdigest()}  {relative}\n".encode()
+        path_bytes = relative.encode("utf-8")
+        content_digest = hashlib.sha256(path.read_bytes()).digest()
+        git_mode = 0o100755 if path.stat().st_mode & stat.S_IXUSR else 0o100644
+        entry = (
+            len(path_bytes).to_bytes(8, byteorder="big")
+            + path_bytes
+            + git_mode.to_bytes(4, byteorder="big")
+            + content_digest
+        )
         tree.update(entry)
         if relative in untracked:
             untracked_digest.update(entry)
@@ -395,7 +404,7 @@ def _receipt_matches(manifest: dict[str, Any], runtime: str, receipt_path: Path)
         raise CaptureError(f"{runtime} receipt does not match exactly one manifest stream")
 
 
-def _repository_provenance(source: Path) -> dict[str, Any]:
+def _fixture_source_provenance(source: Path) -> dict[str, Any]:
     dirty, snapshot = _source_snapshot(source)
     return {
         "name": "customerio-expo-plugin",
@@ -403,6 +412,11 @@ def _repository_provenance(source: Path) -> dict[str, Any]:
         "dirty": dirty,
         "source_snapshot": snapshot,
     }
+
+
+def _validate_fixture_source(manifest: dict[str, Any], expected: dict[str, Any]) -> None:
+    if manifest.get("fixture_source") != expected:
+        raise CaptureError("manifest does not record the exact current Expo fixture source")
 
 
 def main() -> None:
@@ -421,9 +435,9 @@ def main() -> None:
     source, app = _resolve_roots(arguments.source_root, arguments.app_path)
     fixture_digest = _verify_generated_sources(source, app, arguments.variant)
     dependency_versions = _dependency_versions(source, app, arguments.variant)
-    repository = _repository_provenance(source)
+    fixture_source = _fixture_source_provenance(source)
     if arguments.print_provenance:
-        print(json.dumps({"repository": repository, "generated_fixture_sha256": fixture_digest}, sort_keys=True))
+        print(json.dumps({"fixture_source": fixture_source, "generated_fixture_sha256": fixture_digest}, sort_keys=True))
         return
     required = (arguments.manifest, arguments.native_trace, arguments.native_receipt)
     if any(value is None for value in required):
@@ -431,9 +445,7 @@ def main() -> None:
     manifest = _load_object(arguments.manifest, "capture manifest")
     if manifest.get("evidence_level") not in {"L2", "L3"}:
         raise CaptureError("runtime acceptance validation requires L2 or L3")
-    matches = [item for item in manifest.get("repositories", []) if item.get("name") == "customerio-expo-plugin"]
-    if matches != [repository]:
-        raise CaptureError("manifest does not record the exact current Expo source snapshot")
+    _validate_fixture_source(manifest, fixture_source)
     _validate_dependency_manifest(manifest, dependency_versions)
     _receipt_matches(manifest, "swift", arguments.native_receipt)
     traces = [arguments.native_trace]
