@@ -92,7 +92,7 @@ jobs:
 
       - name: Report and verify iOS toolchain family
         if: matrix.platform == 'ios'
-        uses: customerio/mobile-ci-tools/github-actions/ios/report-toolchain/v1@1572446a747bfd0aa33226a037617b62ab2e53ab
+        uses: customerio/mobile-ci-tools/github-actions/ios/report-toolchain/v1@981c9ddc975e352edd80357ccac10ea91b3b9473
         with:
           expected-xcode-major: ${{ matrix.xcode-major }}
           expected-ios-sdk-major: ${{ matrix.ios-sdk-major }}
