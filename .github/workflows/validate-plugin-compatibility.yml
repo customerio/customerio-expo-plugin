@@ -24,7 +24,7 @@ jobs:
     name: Expo latest - ${{ matrix.platform }}${{ matrix.ios-push-provider && format(' ({0})', matrix.ios-push-provider) }}${{ matrix.check-suffix }}
     runs-on: ${{ matrix.runs-on }}
     continue-on-error: ${{ matrix.experimental }}
-    timeout-minutes: 60
+    timeout-minutes: 90
 
     strategy:
       fail-fast: false
@@ -118,8 +118,8 @@ jobs:
 
       # The test app is generated fresh by `compatibility:create-test-app`, so
       # `Podfile.lock` / Gradle files don't exist at checkout. The cache keys
-      # below pin to the inputs that determine resolved versions: Expo SDK,
-      # Xcode, push provider, and the plugin's own lockfile.
+      # below pin to the inputs that determine resolved versions: Xcode,
+      # push provider, and the plugin's own lockfile.
       - name: Cache CocoaPods
         if: matrix.platform == 'ios' && !matrix.experimental
         uses: actions/cache@v4
@@ -130,6 +130,7 @@ jobs:
           key: ${{ runner.os }}-pods-smoke-${{ matrix.ios-push-provider }}-${{ matrix.toolchain-key }}-${{ hashFiles('package-lock.json') }}
           restore-keys: |
             ${{ runner.os }}-pods-smoke-${{ matrix.ios-push-provider }}-${{ matrix.toolchain-key }}-
+            ${{ runner.os }}-pods-smoke-${{ matrix.ios-push-provider }}-
 
       - name: Cache Gradle
         if: matrix.platform == 'android'
