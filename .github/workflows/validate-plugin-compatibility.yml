@@ -1,10 +1,11 @@
 name: Validate Plugin Compatibility
 
-# Slim 3-cell PR-time smoke matrix at the latest Expo SDK. Catches real-build
+# Slim 5-cell PR-time smoke matrix at the latest Expo SDK. Catches real-build
 # regressions (Gradle / CocoaPods / xcodebuild) that the fast Jest scenario
 # suite can't see. The full multi-SDK matrix runs on merges to main via
 # `validate-plugin-compatibility-release.yml`, and on demand via
-# `validate-plugin-compatibility-manual.yml`.
+# `validate-plugin-compatibility-manual.yml`. Policy and evidence boundaries:
+# `.github/IOS-TOOLCHAIN-COMPATIBILITY.md`.
 on:
   pull_request:
 
@@ -20,7 +21,7 @@ env:
 
 jobs:
   smoke:
-    name: Expo latest - ${{ matrix.platform }}${{ matrix.ios-push-provider && format(' ({0})', matrix.ios-push-provider) }}${{ matrix.toolchain && format(' - {0}', matrix.toolchain) }}
+    name: Expo latest - ${{ matrix.platform }}${{ matrix.ios-push-provider && format(' ({0})', matrix.ios-push-provider) }}${{ matrix.check-suffix }}
     runs-on: ${{ matrix.runs-on }}
     continue-on-error: ${{ matrix.experimental }}
 
@@ -30,10 +31,12 @@ jobs:
         include:
           - platform: android
             runs-on: ubuntu-latest
+            check-suffix: ''
             experimental: false
           - platform: ios
             runs-on: macos-26
             ios-push-provider: apn
+            check-suffix: ''
             toolchain: Xcode 26.5
             toolchain-key: xcode-26.5
             xcode-version: '26.5'
@@ -43,6 +46,7 @@ jobs:
           - platform: ios
             runs-on: macos-26
             ios-push-provider: fcm
+            check-suffix: ''
             toolchain: Xcode 26.5
             toolchain-key: xcode-26.5
             xcode-version: '26.5'
@@ -52,8 +56,11 @@ jobs:
           - platform: ios
             runs-on: xcode-27
             ios-push-provider: apn
+            check-suffix: ' - Xcode 27 preview'
             toolchain: Xcode 27 preview
             toolchain-key: xcode-27-preview
+            # Empty selects the Xcode bundled with the floating preview image;
+            # the reporter fails closed unless it is Xcode/iOS SDK 27.
             xcode-version: ''
             xcode-major: '27'
             ios-sdk-major: '27'
@@ -61,8 +68,11 @@ jobs:
           - platform: ios
             runs-on: xcode-27
             ios-push-provider: fcm
+            check-suffix: ' - Xcode 27 preview'
             toolchain: Xcode 27 preview
             toolchain-key: xcode-27-preview
+            # Empty selects the Xcode bundled with the floating preview image;
+            # the reporter fails closed unless it is Xcode/iOS SDK 27.
             xcode-version: ''
             xcode-major: '27'
             ios-sdk-major: '27'
@@ -119,7 +129,6 @@ jobs:
           key: ${{ runner.os }}-pods-smoke-${{ matrix.ios-push-provider }}-${{ matrix.toolchain-key }}-${{ hashFiles('package-lock.json') }}
           restore-keys: |
             ${{ runner.os }}-pods-smoke-${{ matrix.ios-push-provider }}-${{ matrix.toolchain-key }}-
-            ${{ runner.os }}-pods-smoke-${{ matrix.ios-push-provider }}-
 
       - name: Cache Gradle
         if: matrix.platform == 'android'
