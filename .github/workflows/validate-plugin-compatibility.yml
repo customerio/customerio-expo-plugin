@@ -24,6 +24,7 @@ jobs:
     name: Expo latest - ${{ matrix.platform }}${{ matrix.ios-push-provider && format(' ({0})', matrix.ios-push-provider) }}${{ matrix.check-suffix }}
     runs-on: ${{ matrix.runs-on }}
     continue-on-error: ${{ matrix.experimental }}
+    timeout-minutes: 60
 
     strategy:
       fail-fast: false
@@ -120,7 +121,7 @@ jobs:
       # below pin to the inputs that determine resolved versions: Expo SDK,
       # Xcode, push provider, and the plugin's own lockfile.
       - name: Cache CocoaPods
-        if: matrix.platform == 'ios'
+        if: matrix.platform == 'ios' && !matrix.experimental
         uses: actions/cache@v4
         with:
           path: |
@@ -178,5 +179,6 @@ jobs:
             echo '**Result:** ${{ job.status }}'
             echo '**Provider:** ${{ matrix.ios-push-provider }}'
             echo '**Toolchain family:** Xcode ${{ matrix.xcode-major }} / iOS SDK ${{ matrix.ios-sdk-major }}'
+            echo '**Blocking:** ${{ !matrix.experimental }}'
             echo '**Scope:** generated-project compatibility build; no launch, callback, push-delivery, signing, or App Store claim'
           } >> "$GITHUB_STEP_SUMMARY"
