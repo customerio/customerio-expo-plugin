@@ -24,7 +24,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "24"
           cache: 'npm'
 
       - uses: actions/setup-java@v4
@@ -84,9 +84,9 @@ jobs:
           echo "sdkVersion=${{ env.LATEST_TAG }}" >> "test-app/local.env"
 
       - name: Install tools from Gemfile (ruby language) used for building our apps with
-        uses: ruby/setup-ruby@354a1ad156761f5ee2b7b13fa8e09943a5e8d252 # v1.229.0
+        uses: ruby/setup-ruby@95ef2b042f9d7a56d8268cba8559e2842e2ad01b # v1.321.0
         with:
-          ruby-version: '3.0'
+          ruby-version: '3.4'
           bundler-cache: true
 
       - name: Install sd CLI to use later in the workflow
@@ -167,7 +167,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "24"
           cache: 'npm'
 
       - name: Capture Git Context
@@ -233,9 +233,9 @@ jobs:
             ${{ runner.os }}-pods-sampleapp-${{ matrix.push_provider }}-
 
       - name: Install tools from Gemfile (ruby language) used for building our apps with
-        uses: ruby/setup-ruby@354a1ad156761f5ee2b7b13fa8e09943a5e8d252 # v1.229.0
+        uses: ruby/setup-ruby@95ef2b042f9d7a56d8268cba8559e2842e2ad01b # v1.321.0
         with:
-          ruby-version: '3.0'
+          ruby-version: '3.4'
           bundler-cache: true
 
       - name: Install SD CLI
