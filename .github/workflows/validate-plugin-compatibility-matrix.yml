@@ -73,7 +73,7 @@ jobs:
 
       - name: Setup iOS
         if: matrix.platform == 'ios'
-        uses: customerio/mobile-ci-tools/github-actions/ios/setup-ios/v1@86901f620405b9acdcbee56020f3d4ef38e45650
+        uses: customerio/mobile-ci-tools/github-actions/ios/setup-ios/v1@main
         with:
           xcode-version: ${{ env.XCODE_VERSION }}
 

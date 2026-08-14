@@ -1,0 +1,116 @@
+name: Xcode 27 preview compatibility
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/ios-toolchain-compatibility.yml'
+  schedule:
+    # Native and Flutter run during the two preceding hours.
+    - cron: '17 7 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: '20'
+  APP_DIR: ci-test-apps
+  APP_NAME_PREFIX: ExpoPluginTestApp
+
+jobs:
+  preview:
+    name: Xcode 27 preview (${{ matrix.ios-push-provider }})
+    runs-on: xcode-27
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        ios-push-provider:
+          - apn
+          - fcm
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Report and verify iOS toolchain family
+        id: toolchain
+        uses: customerio/mobile-ci-tools/github-actions/ios/report-toolchain/v1@39fdbfa85b60c110c5f40a979b27f7b2a8d54268
+        with:
+          expected-xcode-major: '27'
+          expected-ios-sdk-major: '27'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Set APP_NAME and APP_PATH
+        run: |
+          echo "APP_NAME=${{ env.APP_NAME_PREFIX }}_latest" >> "$GITHUB_ENV"
+          echo "APP_PATH=${{ env.APP_DIR }}/${{ env.APP_NAME_PREFIX }}_latest" >> "$GITHUB_ENV"
+
+      - name: Cache CocoaPods
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/Library/Caches/CocoaPods
+            ~/.cocoapods
+          key: ${{ runner.os }}-pods-xcode-27-preview-${{ matrix.ios-push-provider }}-${{ steps.toolchain.outputs.xcode-build }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-pods-xcode-27-preview-${{ matrix.ios-push-provider }}-
+
+      - name: Create Test App
+        run: |
+          npm run compatibility:create-test-app -- \
+            --expo-version=latest \
+            --app-name=${{ env.APP_NAME }} \
+            --dir-name=${{ env.APP_DIR }}
+
+      - name: Setup Test App
+        run: |
+          npm run compatibility:setup-test-app -- \
+            --app-path=${{ env.APP_PATH }}
+
+      - name: Configure Plugin with Default Config
+        run: |
+          npm run compatibility:configure-plugin -- \
+            --app-path=${{ env.APP_PATH }} \
+            --add-default-config
+
+      - name: Validate Plugin
+        run: |
+          npm run compatibility:validate-plugin -- \
+            --app-path=${{ env.APP_PATH }} \
+            --expo-version=latest \
+            --platforms=ios \
+            --ios-push-providers=${{ matrix.ios-push-provider }}
+
+      - name: Record compatibility result
+        if: always() && !cancelled()
+        shell: bash
+        env:
+          XCODE_VERSION: ${{ steps.toolchain.outputs.xcode-version }}
+          XCODE_BUILD: ${{ steps.toolchain.outputs.xcode-build }}
+          IOS_SIMULATOR_SDK: ${{ steps.toolchain.outputs.iphonesimulator-sdk }}
+        run: |
+          set -euo pipefail
+          : "${XCODE_VERSION:?missing xcode-version output}"
+          : "${XCODE_BUILD:?missing xcode-build output}"
+          : "${IOS_SIMULATOR_SDK:?missing iphonesimulator-sdk output}"
+          {
+            echo '## Expo Xcode 27 preview compatibility'
+            echo
+            echo '**Result:** ${{ job.status }}'
+            echo '**Provider:** ${{ matrix.ios-push-provider }}'
+            echo "**Toolchain:** Xcode $XCODE_VERSION build $XCODE_BUILD, iphonesimulator $IOS_SIMULATOR_SDK"
+            echo '**Scope:** generated-project compatibility build; no launch, callback, push-delivery, signing, or App Store claim'
+          } >> "$GITHUB_STEP_SUMMARY"

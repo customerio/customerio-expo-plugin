@@ -1,11 +1,10 @@
 name: Validate Plugin Compatibility
 
-# Slim 5-cell PR-time smoke matrix at the latest Expo SDK. Catches real-build
+# Slim 3-cell PR-time smoke matrix at the latest Expo SDK. Catches real-build
 # regressions (Gradle / CocoaPods / xcodebuild) that the fast Jest scenario
 # suite can't see. The full multi-SDK matrix runs on merges to main via
 # `validate-plugin-compatibility-release.yml`, and on demand via
-# `validate-plugin-compatibility-manual.yml`. Policy and evidence boundaries:
-# `.github/IOS-TOOLCHAIN-COMPATIBILITY.md`.
+# `validate-plugin-compatibility-manual.yml`.
 on:
   pull_request:
 
@@ -16,15 +15,14 @@ concurrency:
 env:
   NODE_VERSION: "20"
   JAVA_VERSION: "17"
+  XCODE_VERSION: "26.5"
   APP_DIR: ci-test-apps
   APP_NAME_PREFIX: ExpoPluginTestApp
 
 jobs:
   smoke:
-    name: Expo latest - ${{ matrix.platform }}${{ matrix.ios-push-provider && format(' ({0})', matrix.ios-push-provider) }}${{ matrix.check-suffix }}
+    name: Expo latest - ${{ matrix.platform }}${{ matrix.ios-push-provider && format(' ({0})', matrix.ios-push-provider) }}
     runs-on: ${{ matrix.runs-on }}
-    continue-on-error: ${{ matrix.experimental }}
-    timeout-minutes: 90
 
     strategy:
       fail-fast: false
@@ -32,52 +30,12 @@ jobs:
         include:
           - platform: android
             runs-on: ubuntu-latest
-            check-suffix: ''
-            experimental: false
           - platform: ios
             runs-on: macos-26
             ios-push-provider: apn
-            check-suffix: ''
-            toolchain: Xcode 26.5
-            toolchain-key: xcode-26.5
-            xcode-version: '26.5'
-            xcode-major: '26'
-            ios-sdk-major: '26'
-            experimental: false
           - platform: ios
             runs-on: macos-26
             ios-push-provider: fcm
-            check-suffix: ''
-            toolchain: Xcode 26.5
-            toolchain-key: xcode-26.5
-            xcode-version: '26.5'
-            xcode-major: '26'
-            ios-sdk-major: '26'
-            experimental: false
-          - platform: ios
-            runs-on: xcode-27
-            ios-push-provider: apn
-            check-suffix: ' - Xcode 27 preview'
-            toolchain: Xcode 27 preview
-            toolchain-key: xcode-27-preview
-            # Empty selects the Xcode bundled with the floating preview image;
-            # the reporter fails closed unless it is Xcode/iOS SDK 27.
-            xcode-version: ''
-            xcode-major: '27'
-            ios-sdk-major: '27'
-            experimental: true
-          - platform: ios
-            runs-on: xcode-27
-            ios-push-provider: fcm
-            check-suffix: ' - Xcode 27 preview'
-            toolchain: Xcode 27 preview
-            toolchain-key: xcode-27-preview
-            # Empty selects the Xcode bundled with the floating preview image;
-            # the reporter fails closed unless it is Xcode/iOS SDK 27.
-            xcode-version: ''
-            xcode-major: '27'
-            ios-sdk-major: '27'
-            experimental: true
 
     steps:
       - name: Checkout Repository
@@ -97,39 +55,32 @@ jobs:
 
       - name: Setup iOS
         if: matrix.platform == 'ios'
-        uses: customerio/mobile-ci-tools/github-actions/ios/setup-ios/v1@86901f620405b9acdcbee56020f3d4ef38e45650
+        uses: customerio/mobile-ci-tools/github-actions/ios/setup-ios/v1@main
         with:
-          xcode-version: ${{ matrix.xcode-version }}
-
-      - name: Report and verify iOS toolchain family
-        if: matrix.platform == 'ios'
-        uses: customerio/mobile-ci-tools/github-actions/ios/report-toolchain/v1@39fdbfa85b60c110c5f40a979b27f7b2a8d54268
-        with:
-          expected-xcode-major: ${{ matrix.xcode-major }}
-          expected-ios-sdk-major: ${{ matrix.ios-sdk-major }}
+          xcode-version: ${{ env.XCODE_VERSION }}
 
       - name: Install Dependencies
         run: npm ci
 
       - name: Set APP_NAME and APP_PATH
         run: |
-          echo "APP_NAME=${{ env.APP_NAME_PREFIX }}_latest" >> "$GITHUB_ENV"
-          echo "APP_PATH=${{ env.APP_DIR }}/${{ env.APP_NAME_PREFIX }}_latest" >> "$GITHUB_ENV"
+          echo "APP_NAME=${{ env.APP_NAME_PREFIX }}_latest" >> $GITHUB_ENV
+          echo "APP_PATH=${{ env.APP_DIR }}/${{ env.APP_NAME_PREFIX }}_latest" >> $GITHUB_ENV
 
       # The test app is generated fresh by `compatibility:create-test-app`, so
       # `Podfile.lock` / Gradle files don't exist at checkout. The cache keys
-      # below pin to the inputs that determine resolved versions: Xcode,
-      # push provider, and the plugin's own lockfile.
+      # below pin to the inputs that determine resolved versions: Expo SDK,
+      # Xcode, push provider, and the plugin's own lockfile.
       - name: Cache CocoaPods
-        if: matrix.platform == 'ios' && !matrix.experimental
+        if: matrix.platform == 'ios'
         uses: actions/cache@v4
         with:
           path: |
             ~/Library/Caches/CocoaPods
             ~/.cocoapods
-          key: ${{ runner.os }}-pods-smoke-${{ matrix.ios-push-provider }}-${{ matrix.toolchain-key }}-${{ hashFiles('package-lock.json') }}
+          key: ${{ runner.os }}-pods-smoke-${{ matrix.ios-push-provider }}-${{ env.XCODE_VERSION }}-${{ hashFiles('package-lock.json') }}
           restore-keys: |
-            ${{ runner.os }}-pods-smoke-${{ matrix.ios-push-provider }}-${{ matrix.toolchain-key }}-
+            ${{ runner.os }}-pods-smoke-${{ matrix.ios-push-provider }}-${{ env.XCODE_VERSION }}-
             ${{ runner.os }}-pods-smoke-${{ matrix.ios-push-provider }}-
 
       - name: Cache Gradle
@@ -169,17 +120,3 @@ jobs:
             --platforms=${{ matrix.platform }}\
             --ios-use-frameworks="static" \
             ${{ matrix.ios-push-provider && format(' --ios-push-providers={0}', matrix.ios-push-provider) }}
-
-      - name: Record iOS compatibility result
-        if: always() && !cancelled() && matrix.platform == 'ios'
-        shell: bash
-        run: |
-          {
-            echo '## Expo iOS compatibility'
-            echo
-            echo '**Result:** ${{ job.status }}'
-            echo '**Provider:** ${{ matrix.ios-push-provider }}'
-            echo '**Toolchain family:** Xcode ${{ matrix.xcode-major }} / iOS SDK ${{ matrix.ios-sdk-major }}'
-            echo '**Blocking:** ${{ !matrix.experimental }}'
-            echo '**Scope:** generated-project compatibility build; no launch, callback, push-delivery, signing, or App Store claim'
-          } >> "$GITHUB_STEP_SUMMARY"
