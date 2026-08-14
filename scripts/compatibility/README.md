@@ -18,6 +18,16 @@ npm run compatibility:create-test-app -- --expo-version=<version>
 | - | - | - | - |
 | `--expo-version` | Expo SDK version to test (e.g., `50`, `52` `latest`) | - | ✅ |
 
+#### Template selection
+
+The script does not use the `sdk-<major>` template dist-tag. That tag tracks `next`, so it can point at a template pinning an `expo` release that hasn't reached `latest` yet — and a template pinning an unreleased `expo` fails to install, with no cause anywhere in this repository.
+
+Instead it resolves the Expo major (floating, unchanged), reads the stable `expo` release for that major from its dist-tag, and generates from the **newest** `expo-template-<name>` in the major whose pinned `expo` range that release satisfies. The major still floats and the template is still as new as possible — it is not a pin.
+
+If no template in the major is satisfiable, the script fails with an `Upstream registry inconsistent` diagnosis naming the versions that disagree. That state is upstream and resolves on its own; it is not a plugin regression, and nothing in this repository needs to change in response to it.
+
+Dependencies are installed by this script (`create-expo-app` runs with `--no-install`), with retries. `create-expo-app`'s own installer reports failures as a warning and still prints `Your project is ready!`, which hides a broken dependency graph until a later build step fails for an unrelated-looking reason.
+
 ### 2. `compatibility:setup-test-app`
 
 Sets up the test app by installing dependencies, copying Google services files, and updating `app.json` with necessary configurations like app package and bundle id.

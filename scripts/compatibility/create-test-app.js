@@ -1,14 +1,25 @@
 const fs = require("fs");
 const path = require("path");
+const semver = require("semver");
 const { execSync } = require("child_process");
 const { getArgValue, isFlagEnabled, logMessage, runCommand, runScript } = require("../utils/cli");
+const {
+  chooseStableExpoVersion,
+  describeTemplateResolutionFailure,
+  expoRegistrySources,
+  fetchTemplateCandidates,
+  selectTemplateVersion,
+  templatePackageName,
+} = require("../utils/expo-template");
+
+const INSTALL_ATTEMPTS = 3;
+const INSTALL_RETRY_DELAY_SECONDS = 10;
 
 // `expo-template-default`'s npm `latest` dist-tag lags Expo SDK releases by
 // weeks (e.g. SDK 55 has been out for a while but `default` still resolves
 // to the SDK 54 template), so `--template default` silently downgrades the
 // generated app a major version. Resolve `--expo-version=latest` to the
-// current Expo SDK major from `npm view expo version` and always pass the
-// pinned `default@sdk-<major>` template to create-expo-app instead.
+// current Expo SDK major from `npm view expo version` instead.
 function resolveExpoVersion(input) {
   if (input !== "latest") return input;
   const full = execSync("npm view expo version", { encoding: "utf8" }).trim();
@@ -26,6 +37,83 @@ const APP_NAME = getArgValue("--app-name", {
 });
 const DIRECTORY_NAME = getArgValue("--dir-name", { default: "ci-test-apps" });
 const CLEAN_FLAG = isFlagEnabled("--clean");
+
+// Fails the job with an explicit "this is upstream, not us" verdict. The
+// 2026-08-14 incident cost ~58 minutes of red CI across every open Expo PR
+// before anyone established that nothing in this repo had changed, so the
+// distinction is worth spelling out at the point of failure.
+function exitUpstreamInconsistent(lines) {
+  logMessage(
+    [
+      "",
+      "❌ Upstream registry inconsistent — this is not a plugin regression.",
+      ...lines.map((line) => `   ${line}`),
+      "",
+      "   Nothing in this repository needs to change. Re-run once the registry",
+      "   settles, or pass --expo-version=<major> to target a published SDK.",
+      "",
+    ].join("\n"),
+    "error",
+  );
+  process.exit(1);
+}
+
+// Resolves the exact `expo-template-<name>` version to generate from, rather
+// than trusting the `sdk-<major>` dist-tag. That tag tracks `next`, so it can
+// point at a template pinning an `expo` release that isn't on `latest` yet —
+// which on 2026-08-14 meant a template requiring an unpublished
+// expo-file-system. Gating on the stable `expo` release keeps the major
+// floating and the template as new as possible while excluding that channel.
+function resolveTemplateSpec() {
+  const coerced = semver.coerce(EXPO_VERSION);
+  if (!coerced) {
+    console.error(`❌ Could not read an Expo SDK major from --expo-version=${EXPO_VERSION}`);
+    process.exit(1);
+  }
+
+  const major = coerced.major;
+  const templatePackage = templatePackageName(EXPO_TEMPLATE);
+
+  const stableExpoVersion = chooseStableExpoVersion(major, expoRegistrySources());
+  const candidates = stableExpoVersion ? fetchTemplateCandidates(templatePackage, major) : [];
+  const selected = stableExpoVersion ? selectTemplateVersion(candidates, stableExpoVersion) : null;
+
+  if (!selected) {
+    exitUpstreamInconsistent(
+      describeTemplateResolutionFailure({ major, templatePackage, stableExpoVersion, candidates }),
+    );
+  }
+
+  logMessage(`🔹 Stable Expo Release: ${stableExpoVersion}`);
+  logMessage(`🔹 Template: ${templatePackage}@${selected.version} (pins expo ${selected.expoRange})`);
+
+  return `${EXPO_TEMPLATE}@${selected.version}`;
+}
+
+// create-expo-app swallows install failures — it prints "Something went wrong
+// installing JavaScript dependencies... Continuing" and then "Your project is
+// ready!", so a broken dependency graph only surfaces several steps later as
+// an unrelated-looking prebuild or Gradle error. Running the install here makes
+// it fail where it happened, and gives transient registry errors a retry.
+function installAppDependencies(appPath) {
+  for (let attempt = 1; attempt <= INSTALL_ATTEMPTS; attempt++) {
+    try {
+      runCommand(`cd ${appPath} && npm install`);
+      return;
+    } catch (error) {
+      if (attempt === INSTALL_ATTEMPTS) {
+        logMessage(`❌ Dependency installation failed after ${INSTALL_ATTEMPTS} attempts.`, "error");
+        throw error;
+      }
+
+      logMessage(
+        `⚠️  Dependency installation failed (attempt ${attempt}/${INSTALL_ATTEMPTS}), retrying in ${INSTALL_RETRY_DELAY_SECONDS}s...`,
+        "warning",
+      );
+      execSync(`sleep ${INSTALL_RETRY_DELAY_SECONDS}`);
+    }
+  }
+}
 
 /**
  * Main entry point for the script to handle the execution logic.
@@ -57,10 +145,15 @@ function execute() {
 
   // Step 3: Create a new Expo app
   logMessage(`\n🔧 Creating new Expo app: ${APP_NAME} (Expo ${EXPO_VERSION})`);
-  const RESOLVED_EXPO_TEMPLATE = `${EXPO_TEMPLATE}@sdk-${EXPO_VERSION}`;
+  const RESOLVED_EXPO_TEMPLATE = resolveTemplateSpec();
   runCommand(
-    `cd ${APP_DIRECTORY_PATH} && npx create-expo-app '${APP_NAME}' --template ${RESOLVED_EXPO_TEMPLATE}`,
+    `cd ${APP_DIRECTORY_PATH} && npx create-expo-app '${APP_NAME}' --template ${RESOLVED_EXPO_TEMPLATE} --no-install`,
   );
+
+  // Step 4: Install dependencies (skipped above via --no-install)
+  logMessage("\n📦 Installing app dependencies...");
+  installAppDependencies(APP_PATH);
+
   logMessage("✅ Expo app created successfully!", "success");
 }
 
