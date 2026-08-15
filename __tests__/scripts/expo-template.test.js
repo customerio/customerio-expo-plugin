@@ -4,6 +4,7 @@ const {
   selectTemplateVersion,
   chooseStableExpoVersion,
   describeTemplateResolutionFailure,
+  pinnedExactVersion,
 } = require('../../scripts/utils/expo-template');
 
 // Real `npm view 'expo-template-default@>=57.0.0 <58.0.0' version dependencies.expo --json`
@@ -29,12 +30,14 @@ const TEMPLATES_57 = [
   { version: '57.0.15', expoRange: '~57.0.13' },
 ];
 
-// Tail of the same query for major 54, captured 2026-08-14.
+// Tail of the same query for major 54. `sdk-54` points at 54.0.62; 54.0.63 is
+// published but carries no dist-tag.
 const TEMPLATES_54 = [
-  { version: '54.0.59', expoRange: '~54.0.33' },
-  { version: '54.0.60', expoRange: '~54.0.34' },
-  { version: '54.0.61', expoRange: '~54.0.35' },
-  { version: '54.0.62', expoRange: '~54.0.36' },
+  { version: '54.0.59', expoRange: '~54.0.32' },
+  { version: '54.0.60', expoRange: '~54.0.33' },
+  { version: '54.0.61', expoRange: '~54.0.34' },
+  { version: '54.0.62', expoRange: '~54.0.35' },
+  { version: '54.0.63', expoRange: '~54.0.36' },
 ];
 
 describe('selectTemplateVersion', () => {
@@ -42,30 +45,47 @@ describe('selectTemplateVersion', () => {
   // 57.0.12 while the `sdk-57` template tag pointed at 57.0.15, which pins
   // ~57.0.13 — a `next`-channel expo whose expo-file-system was unpublished.
   // Hardcoding @sdk-<major> took that template and turned every Expo PR red.
-  it('skips templates pinning an expo release newer than stable latest', () => {
-    const selected = selectTemplateVersion(TEMPLATES_57, '57.0.12');
+  it('walks back from the tagged template when it pins an unreleased expo', () => {
+    const selected = selectTemplateVersion(TEMPLATES_57, '57.0.12', '57.0.15');
 
     expect(selected).toEqual({ version: '57.0.14', expoRange: '~57.0.12' });
   });
 
-  it('takes the newest template once stable latest catches up', () => {
-    // Same table, one `expo` patch later: 57.0.15 becomes usable again, so the
-    // selection floats forward on its own. This is not a pin.
-    const selected = selectTemplateVersion(TEMPLATES_57, '57.0.13');
+  it('takes the tagged template once stable latest catches up', () => {
+    // Same table, one `expo` patch later: the tag becomes usable again, so the
+    // selection returns to it on its own. This is not a pin.
+    const selected = selectTemplateVersion(TEMPLATES_57, '57.0.13', '57.0.15');
 
     expect(selected).toEqual({ version: '57.0.15', expoRange: '~57.0.13' });
   });
 
-  it('selects within an explicitly requested older major', () => {
-    const selected = selectTemplateVersion(TEMPLATES_54, '54.0.36');
+  // `sdk-54` is the curated template for that SDK. 54.0.63 is newer and also
+  // satisfiable, but carries no dist-tag — taking it would mean trusting an
+  // unblessed publish on a leg of the matrix that was never broken.
+  it('prefers the curated dist-tag over a newer untagged template', () => {
+    const selected = selectTemplateVersion(TEMPLATES_54, '54.0.36', '54.0.62');
 
-    expect(selected).toEqual({ version: '54.0.62', expoRange: '~54.0.36' });
+    expect(selected).toEqual({ version: '54.0.62', expoRange: '~54.0.35' });
+  });
+
+  it('falls back to the newest satisfiable template when the tag is unknown', () => {
+    expect(selectTemplateVersion(TEMPLATES_54, '54.0.36', null)).toEqual({
+      version: '54.0.63',
+      expoRange: '~54.0.36',
+    });
+  });
+
+  it('ignores a tagged version that is absent from the candidate list', () => {
+    expect(selectTemplateVersion(TEMPLATES_54, '54.0.36', '54.0.99')).toEqual({
+      version: '54.0.63',
+      expoRange: '~54.0.36',
+    });
   });
 
   it('returns the newest satisfiable template regardless of input order', () => {
     const shuffled = [TEMPLATES_57[2], TEMPLATES_57[15], TEMPLATES_57[13], TEMPLATES_57[7]];
 
-    expect(selectTemplateVersion(shuffled, '57.0.12')).toEqual({
+    expect(selectTemplateVersion(shuffled, '57.0.12', '57.0.15')).toEqual({
       version: '57.0.13',
       expoRange: '~57.0.11',
     });
@@ -75,11 +95,11 @@ describe('selectTemplateVersion', () => {
     // Every template ahead of stable latest: the "upstream registry
     // inconsistent" case, which must be reported as such rather than as a
     // plugin regression.
-    expect(selectTemplateVersion(TEMPLATES_57.slice(-2), '57.0.11')).toBeNull();
+    expect(selectTemplateVersion(TEMPLATES_57.slice(-2), '57.0.11', '57.0.15')).toBeNull();
   });
 
   it('returns null for an empty candidate list', () => {
-    expect(selectTemplateVersion([], '57.0.13')).toBeNull();
+    expect(selectTemplateVersion([], '57.0.13', '57.0.15')).toBeNull();
   });
 
   it('ignores prerelease template versions even when satisfiable', () => {
@@ -88,7 +108,7 @@ describe('selectTemplateVersion', () => {
       { version: '58.0.0-canary-20260812-27f94d4', expoRange: '~57.0.12' },
     ];
 
-    expect(selectTemplateVersion(withCanary, '57.0.12')).toEqual({
+    expect(selectTemplateVersion(withCanary, '57.0.12', null)).toEqual({
       version: '57.0.13',
       expoRange: '~57.0.11',
     });
@@ -97,7 +117,7 @@ describe('selectTemplateVersion', () => {
   it('skips candidates with no expo pin instead of throwing', () => {
     const withGap = [...TEMPLATES_57.slice(0, 15), { version: '57.0.15', expoRange: undefined }];
 
-    expect(selectTemplateVersion(withGap, '57.0.12')).toEqual({
+    expect(selectTemplateVersion(withGap, '57.0.12', '57.0.15')).toEqual({
       version: '57.0.14',
       expoRange: '~57.0.12',
     });
@@ -106,10 +126,33 @@ describe('selectTemplateVersion', () => {
   it('skips candidates with an unparseable expo range', () => {
     const withJunk = [...TEMPLATES_57.slice(0, 15), { version: '57.0.15', expoRange: 'workspace:*' }];
 
-    expect(selectTemplateVersion(withJunk, '57.0.12')).toEqual({
+    expect(selectTemplateVersion(withJunk, '57.0.12', '57.0.15')).toEqual({
       version: '57.0.14',
       expoRange: '~57.0.12',
     });
+  });
+});
+
+// The template only decides which `expo` *range* lands in package.json. npm
+// resolves a `~` range to the highest published version, ignoring dist-tags, so
+// `~57.0.12` still installs 57.0.13 when that release exists on `next` only.
+// Closing the channel requires writing an exact version into the generated app.
+describe('pinnedExactVersion', () => {
+  it('recognises an exact version', () => {
+    expect(pinnedExactVersion('57.0.12')).toBe('57.0.12');
+  });
+
+  it('rejects ranges, which are what let a next-channel release back in', () => {
+    expect(pinnedExactVersion('~57.0.12')).toBeNull();
+    expect(pinnedExactVersion('^57.0.12')).toBeNull();
+    expect(pinnedExactVersion('>=57.0.0 <58.0.0')).toBeNull();
+    expect(pinnedExactVersion('*')).toBeNull();
+  });
+
+  it('rejects absent or non-semver values', () => {
+    expect(pinnedExactVersion(undefined)).toBeNull();
+    expect(pinnedExactVersion('')).toBeNull();
+    expect(pinnedExactVersion('file:../local')).toBeNull();
   });
 });
 
@@ -177,6 +220,17 @@ describe('chooseStableExpoVersion', () => {
     const src = sources({ latest: '57.0.13' });
 
     expect(chooseStableExpoVersion(58, src)).toBeNull();
+  });
+
+  // A major ahead of `latest` is where the `next` channel lives, so the version
+  // list is exactly the wrong source there: 58.0.0 can be published, entirely
+  // non-prerelease, months before it is blessed as `latest`. The list is only
+  // safe for majors already superseded.
+  it('never consults the version list for a major ahead of latest', () => {
+    const src = sources({ latest: '57.0.13', newestStableInMajor: '58.0.0' });
+
+    expect(chooseStableExpoVersion(58, src)).toBeNull();
+    expect(src.calls).not.toContain('newestStableInMajor:58');
   });
 
   it('rejects a prerelease sdk dist-tag', () => {
@@ -272,6 +326,28 @@ describe('describeTemplateResolutionFailure', () => {
     expect(report).toContain('`sdk-58`');
   });
 
+  // The count and the "newest" it names must describe the templates actually
+  // evaluated. Reporting unevaluated entries — or printing `pins expo undefined`
+  // — undermines the one job this message has: closing the "is this us?"
+  // question on sight.
+  it('counts only the candidates the selector could evaluate', () => {
+    const report = describeTemplateResolutionFailure({
+      major: 57,
+      templatePackage: 'expo-template-default',
+      stableExpoVersion: '57.0.11',
+      candidates: [
+        { version: '57.0.14', expoRange: '~57.0.12' },
+        { version: '57.0.15', expoRange: undefined },
+        { version: '58.0.0-canary-20260812-27f94d4', expoRange: '~57.0.11' },
+      ],
+    }).join('\n');
+
+    expect(report).toContain('Newest `expo-template-default`: 57.0.14, pins expo ~57.0.12');
+    expect(report).toContain('Checked 1 template version(s)');
+    expect(report).not.toContain('undefined');
+    expect(report).not.toContain('canary');
+  });
+
   it('reports a major with no stable template published', () => {
     const report = describeTemplateResolutionFailure({
       major: 57,
@@ -280,7 +356,7 @@ describe('describeTemplateResolutionFailure', () => {
       candidates: [],
     }).join('\n');
 
-    expect(report).toContain('No stable `expo-template-default` version published for SDK 57');
+    expect(report).toContain('No usable `expo-template-default` version published for SDK 57');
   });
 });
 

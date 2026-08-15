@@ -25,22 +25,42 @@ function parseTemplateCandidates(raw) {
   }));
 }
 
-// Picks the newest template whose pinned `expo` range accepts the stable `expo`
-// release. Templates ship ahead of the `expo` releases they pin, so the newest
-// one is regularly unusable for a day or two; walking back to the newest usable
-// one keeps the job on the latest template without pinning it to a version.
-function selectTemplateVersion(candidates, stableExpoVersion) {
-  const usable = candidates.filter(
+// An exact version, or null for anything with range semantics. A `~`/`^` range
+// is resolved by npm to the highest *published* version regardless of dist-tag,
+// so only an exact version keeps an unblessed release out of the install.
+function pinnedExactVersion(dependencyRange) {
+  return dependencyRange && semver.valid(dependencyRange) ? dependencyRange : null;
+}
+
+// Candidates the selector can actually reason about: real stable versions that
+// declare a parseable `expo` pin.
+function evaluableCandidates(candidates) {
+  return candidates.filter(
     (candidate) =>
       semver.valid(candidate.version) &&
       !semver.prerelease(candidate.version) &&
       candidate.expoRange &&
       semver.validRange(candidate.expoRange),
   );
+}
 
-  const newestFirst = [...usable].sort((a, b) => semver.rcompare(a.version, b.version));
+function newestFirst(candidates) {
+  return [...candidates].sort((a, b) => semver.rcompare(a.version, b.version));
+}
 
-  return newestFirst.find((candidate) => semver.satisfies(stableExpoVersion, candidate.expoRange)) || null;
+// Prefers the curated `sdk-<major>` template, and only walks back when that one
+// pins an `expo` release that isn't out yet. Templates ship ahead of the `expo`
+// releases they pin, so the tagged one is regularly unusable for a day or two;
+// deviating only in that window keeps every unaffected run on the blessed
+// template rather than trusting whatever was published most recently.
+function selectTemplateVersion(candidates, stableExpoVersion, taggedVersion) {
+  const usable = newestFirst(evaluableCandidates(candidates));
+  const satisfied = (candidate) => semver.satisfies(stableExpoVersion, candidate.expoRange);
+
+  const tagged = taggedVersion && usable.find((candidate) => candidate.version === taggedVersion);
+  if (tagged && satisfied(tagged)) return tagged;
+
+  return usable.find(satisfied) || null;
 }
 
 function isStableRelease(version, expectedMajor) {
@@ -67,7 +87,12 @@ function chooseStableExpoVersion(requestedMajor, sources) {
 
   // `expo` prunes old channel tags — sdk-52 is currently the oldest that still
   // exists — so anything older has to come from the published version list.
-  // Safe there: `next` and `canary` never point at a superseded major.
+  // Safe only for a *superseded* major: `next` and `canary` never point back at
+  // one. For a major at or ahead of `latest` the list is the wrong source, since
+  // that is exactly where an unblessed release sits as ordinary semver.
+  const supersededMajor = semver.valid(latest) && requestedMajor < semver.major(latest);
+  if (!supersededMajor) return null;
+
   const newestStable = sources.newestStableInMajor(requestedMajor);
   if (isStableRelease(newestStable, requestedMajor)) return newestStable;
 
@@ -86,19 +111,27 @@ function describeTemplateResolutionFailure({ major, templatePackage, stableExpoV
     ];
   }
 
-  if (candidates.length === 0) {
+  // Only the candidates the selector could evaluate are worth reporting on —
+  // counting entries it silently skipped would overstate what was checked, and
+  // naming one of them prints an `undefined` pin.
+  const evaluable = newestFirst(evaluableCandidates(candidates));
+
+  if (evaluable.length === 0) {
     return [
-      `No stable \`${templatePackage}\` version published for SDK ${major}.`,
+      `No usable \`${templatePackage}\` version published for SDK ${major}.`,
       `Stable \`expo\` for SDK ${major}: ${stableExpoVersion}`,
+      candidates.length > 0
+        ? `${candidates.length} version(s) exist but none declare a parseable \`expo\` pin.`
+        : "The registry returned no stable versions in this major.",
     ];
   }
 
-  const newest = [...candidates].sort((a, b) => semver.rcompare(a.version, b.version))[0];
+  const newest = evaluable[0];
 
   return [
     `Stable \`expo\` for SDK ${major}: ${stableExpoVersion}`,
     `Newest \`${templatePackage}\`: ${newest.version}, pins expo ${newest.expoRange} — unsatisfied`,
-    `Checked ${candidates.length} template version(s); none pin an expo range that ${stableExpoVersion} satisfies.`,
+    `Checked ${evaluable.length} template version(s); none pin an expo range that ${stableExpoVersion} satisfies.`,
     "The template channel is ahead of the stable expo release.",
   ];
 }
@@ -136,6 +169,18 @@ function fetchTemplateCandidates(templatePackage, major) {
   );
 }
 
+// The curated template for an SDK, or null when the tag doesn't exist.
+function fetchTaggedTemplateVersion(templatePackage, major) {
+  return npmViewJson(`${templatePackage}@sdk-${major}`, ["version"]);
+}
+
+// Distinguishes "this package isn't published at all" (a bad `--expo-template`
+// argument — our problem) from "published, but nothing usable in this major"
+// (upstream). Conflating the two sends the reader upstream to chase a typo.
+function templatePackageExists(templatePackage) {
+  return npmViewJson(templatePackage, ["name"]) !== null;
+}
+
 function expoRegistrySources() {
   return {
     latest: () => npmViewJson("expo@latest", ["version"]),
@@ -154,6 +199,9 @@ module.exports = {
   selectTemplateVersion,
   chooseStableExpoVersion,
   describeTemplateResolutionFailure,
+  pinnedExactVersion,
   fetchTemplateCandidates,
+  fetchTaggedTemplateVersion,
+  templatePackageExists,
   expoRegistrySources,
 };

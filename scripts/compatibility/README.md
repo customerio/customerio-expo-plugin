@@ -18,13 +18,20 @@ npm run compatibility:create-test-app -- --expo-version=<version>
 | - | - | - | - |
 | `--expo-version` | Expo SDK version to test (e.g., `50`, `52` `latest`) | - | ✅ |
 
-#### Template selection
+#### Expo version selection
 
-The script does not use the `sdk-<major>` template dist-tag. That tag tracks `next`, so it can point at a template pinning an `expo` release that hasn't reached `latest` yet — and a template pinning an unreleased `expo` fails to install, with no cause anywhere in this repository.
+The generated app is held to the **stable** `expo` release — the one on the `latest` dist-tag — resolved fresh on every run.
 
-Instead it resolves the Expo major (floating, unchanged), reads the stable `expo` release for that major from its dist-tag, and generates from the **newest** `expo-template-<name>` in the major whose pinned `expo` range that release satisfies. The major still floats and the template is still as new as possible — it is not a pin.
+This is not a committed pin. Nothing is stored in this repository and nothing needs bumping: the day a new release is promoted to `latest`, the next run tests against it, so a genuinely incompatible release still turns CI red immediately. What it excludes is releases that have not reached `latest` yet, which is not what customers install.
 
-If no template in the major is satisfiable, the script fails with an `Upstream registry inconsistent` diagnosis naming the versions that disagree. That state is upstream and resolves on its own; it is not a plugin regression, and nothing in this repository needs to change in response to it.
+Two things are needed to make that hold, because there are two independent places the version gets decided:
+
+1. **Template choice.** `sdk-<major>` tracks `next`, so it can point at a template pinning an `expo` that isn't out yet. The curated tag is still used whenever it is usable; the script walks back to the newest usable template in the major only when it isn't.
+2. **The pin itself.** Choosing the template is *not* sufficient. Templates pin `expo` with a `~` range, and npm resolves a range to the highest **published** version regardless of dist-tag — `~57.0.12` still installs 57.0.13 when that release exists on `next` only. So the exact stable version is written into the app before installing, and re-asserted in `compatibility:setup-test-app` after `npx expo install --fix`, which otherwise rewrites it.
+
+If no template in the major is usable, the script fails with an `Upstream registry inconsistent` diagnosis naming the versions that disagree. That state is upstream and resolves on its own; it is not a plugin regression. A bad `--expo-template` argument is reported separately, as our problem.
+
+**Known limitation:** only `expo` is held to the stable release. The template pins ~20 other `expo-*` packages with their own `~` ranges, so a broken pre-stable release of one of those can still fail the install. `expo install --fix` realigns them to the SDK, but only after the first install has already run.
 
 Dependencies are installed by this script (`create-expo-app` runs with `--no-install`), with retries. `create-expo-app`'s own installer reports failures as a warning and still prints `Your project is ready!`, which hides a broken dependency graph until a later build step fails for an unrelated-looking reason.
 
