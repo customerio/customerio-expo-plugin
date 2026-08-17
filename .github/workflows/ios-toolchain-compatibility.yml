@@ -74,7 +74,8 @@ jobs:
           npm run compatibility:create-test-app -- \
             --expo-version=latest \
             --app-name=${{ env.APP_NAME }} \
-            --dir-name=${{ env.APP_DIR }}
+            --dir-name=${{ env.APP_DIR }} \
+            --clean
 
       - name: Setup Test App
         run: |
@@ -122,76 +123,11 @@ jobs:
             -sdk iphonesimulator \
             -showBuildSettings \
             -json > "$private_settings_json"
-          app_product_path="$(python3 - "$private_settings_json" "$build_start_epoch" "$scheme" "$settings_json" <<'PY'
-          import json
-          import os
-          import plistlib
-          import sys
-
-          try:
-              with open(sys.argv[1], encoding="utf-8") as settings_file:
-                  entries = json.load(settings_file)
-          except (OSError, json.JSONDecodeError) as error:
-              raise SystemExit(f"could not parse xcodebuild settings JSON: {error}") from error
-          if not isinstance(entries, list) or any(
-              not isinstance(entry, dict)
-              or not isinstance(entry.get("buildSettings", {}), dict)
-              for entry in entries
-          ):
-              raise SystemExit("xcodebuild settings JSON must be a list of target objects")
-          safe_keys = (
-              "CONFIGURATION",
-              "TARGET_BUILD_DIR",
-              "WRAPPER_EXTENSION",
-              "WRAPPER_NAME",
-          )
-          safe_entries = [
-              {
-                  "target": entry.get("target", "unknown"),
-                  "buildSettings": {
-                      key: entry.get("buildSettings", {}).get(key)
-                      for key in safe_keys
-                  },
-              }
-              for entry in entries
-          ]
-          with open(sys.argv[4], "w", encoding="utf-8") as safe_file:
-              json.dump(safe_entries, safe_file, indent=2, sort_keys=True)
-              safe_file.write("\n")
-          with open(sys.argv[2], encoding="utf-8") as start_file:
-              build_started_at = int(start_file.read().strip())
-          matches = []
-          stale_executables = []
-          for entry in entries:
-              settings = entry.get("buildSettings", {})
-              if settings.get("CONFIGURATION") != "Release":
-                  continue
-              if settings.get("WRAPPER_EXTENSION") != "app":
-                  continue
-              path = os.path.join(
-                  settings.get("TARGET_BUILD_DIR", ""),
-                  settings.get("WRAPPER_NAME", ""),
-              )
-              info_plist = os.path.join(path, "Info.plist")
-              if not os.path.isfile(info_plist):
-                  continue
-              with open(info_plist, "rb") as plist_file:
-                  executable_name = plistlib.load(plist_file).get("CFBundleExecutable")
-              executable = os.path.join(path, executable_name or "")
-              if not os.path.isfile(executable):
-                  continue
-              if os.path.getmtime(executable) < build_started_at:
-                  stale_executables.append(executable)
-                  continue
-              matches.append(path)
-          if len(matches) != 1:
-              raise SystemExit(
-                  f"expected one current built simulator app for {sys.argv[3]}, "
-                  f"found {matches}; stale executables {stale_executables}"
-              )
-          print(matches[0])
-          PY
-          )"
+          app_product_path="$(python3 scripts/compatibility/resolve_simulator_app.py \
+            --private-settings-json "$private_settings_json" \
+            --build-start-epoch "$build_start_epoch" \
+            --scheme "$scheme" \
+            --sanitized-settings-json "$settings_json")"
           if [[ -z "$app_product_path" || "$app_product_path" == *$'\n'* ]]; then
             echo '::error::resolved app product path must be one non-empty line'
             exit 1
@@ -201,7 +137,7 @@ jobs:
       - name: Install and launch generated app
         id: launch
         # TODO(MBL-2248): switch to @main after customerio/mobile-ci-tools#16 merges.
-        uses: customerio/mobile-ci-tools/github-actions/ios/launch-simulator-app/v1@4a09284521d9bdcb0747acf21a44371975112e2d
+        uses: customerio/mobile-ci-tools/github-actions/ios/launch-simulator-app/v1@5a3a7cfb412e5b2f25ccf968d002a4af6194a741
         with:
           app-path: ${{ env.APP_PRODUCT_PATH }}
           expected-ios-major: '27'
@@ -258,6 +194,7 @@ jobs:
               next_step='inspect the generated product metadata and smoke-test inputs'
               ;;
             *)
+              echo "::warning::unrecognized launch failure reason: $FAILURE_REASON"
               classification=launch-smoke-failed
               next_step='confirm the simulator runtime and shared action reference before treating this as an Expo lifecycle failure'
               ;;

@@ -1,0 +1,154 @@
+#!/usr/bin/env python3
+
+"""Resolve one freshly built Release simulator app from xcodebuild settings."""
+
+from __future__ import annotations
+
+import argparse
+import json
+import plistlib
+from pathlib import Path
+
+
+SAFE_BUILD_SETTING_KEYS = (
+    "CONFIGURATION",
+    "TARGET_BUILD_DIR",
+    "WRAPPER_EXTENSION",
+    "WRAPPER_NAME",
+)
+
+
+def write_sanitized_settings(
+    destination: Path,
+    entries: list[dict[str, object]] | None,
+    *,
+    parse_error: str | None = None,
+    raw_bytes: int | None = None,
+) -> None:
+    """Write only the allowlisted settings or bounded parse metadata."""
+
+    if entries is None:
+        payload: object = {
+            "parse_error": parse_error or "unknown parse error",
+            "raw_bytes": raw_bytes or 0,
+        }
+    else:
+        payload = [
+            {
+                "target": entry.get("target", "unknown"),
+                "buildSettings": {
+                    key: entry.get("buildSettings", {}).get(key)
+                    for key in SAFE_BUILD_SETTING_KEYS
+                },
+            }
+            for entry in entries
+        ]
+    with destination.open("w", encoding="utf-8") as safe_file:
+        json.dump(payload, safe_file, indent=2, sort_keys=True)
+        safe_file.write("\n")
+
+
+def load_settings(source: Path, sanitized_destination: Path) -> list[dict[str, object]]:
+    """Load private settings and always leave a bounded sanitized diagnostic."""
+
+    try:
+        raw_bytes = source.stat().st_size
+        with source.open(encoding="utf-8") as settings_file:
+            payload = json.load(settings_file)
+    except (OSError, json.JSONDecodeError) as error:
+        write_sanitized_settings(
+            sanitized_destination,
+            None,
+            parse_error=str(error),
+            raw_bytes=locals().get("raw_bytes", 0),
+        )
+        raise SystemExit(f"could not parse xcodebuild settings JSON: {error}") from error
+
+    if not isinstance(payload, list) or any(
+        not isinstance(entry, dict)
+        or not isinstance(entry.get("buildSettings", {}), dict)
+        for entry in payload
+    ):
+        write_sanitized_settings(
+            sanitized_destination,
+            None,
+            parse_error="xcodebuild settings JSON must be a list of target objects",
+            raw_bytes=raw_bytes,
+        )
+        raise SystemExit("xcodebuild settings JSON must be a list of target objects")
+
+    write_sanitized_settings(sanitized_destination, payload)
+    return payload
+
+
+def load_build_start(source: Path) -> int:
+    """Load the build-start epoch with a classified error."""
+
+    try:
+        return int(source.read_text(encoding="utf-8").strip())
+    except (OSError, ValueError) as error:
+        raise SystemExit(f"could not read build start epoch: {error}") from error
+
+
+def resolve_app(entries: list[dict[str, object]], build_started_at: int, scheme: str) -> Path:
+    """Return the single fresh Release simulator app or fail with rejection reasons."""
+
+    matches: list[Path] = []
+    rejected: list[str] = []
+    for entry in entries:
+        settings = entry.get("buildSettings", {})
+        if settings.get("CONFIGURATION") != "Release":
+            continue
+        if settings.get("WRAPPER_EXTENSION") != "app":
+            continue
+        path = Path(str(settings.get("TARGET_BUILD_DIR", ""))) / str(
+            settings.get("WRAPPER_NAME", "")
+        )
+        info_plist = path / "Info.plist"
+        if not info_plist.is_file():
+            rejected.append(f"{path}: missing Info.plist")
+            continue
+        try:
+            with info_plist.open("rb") as plist_file:
+                executable_name = plistlib.load(plist_file).get("CFBundleExecutable")
+        except (OSError, plistlib.InvalidFileException) as error:
+            rejected.append(f"{path}: unreadable Info.plist ({error})")
+            continue
+        if not isinstance(executable_name, str) or not executable_name:
+            rejected.append(f"{path}: missing CFBundleExecutable")
+            continue
+        executable = path / executable_name
+        if not executable.is_file():
+            rejected.append(f"{path}: missing executable {executable_name}")
+            continue
+        if executable.stat().st_mtime < build_started_at:
+            rejected.append(f"{path}: stale executable")
+            continue
+        matches.append(path)
+
+    if len(matches) != 1:
+        raise SystemExit(
+            f"expected one current built simulator app for {scheme}, "
+            f"found {[str(path) for path in matches]}; rejected {rejected}"
+        )
+    return matches[0]
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--private-settings-json", type=Path, required=True)
+    parser.add_argument("--build-start-epoch", type=Path, required=True)
+    parser.add_argument("--scheme", required=True)
+    parser.add_argument("--sanitized-settings-json", type=Path, required=True)
+    arguments = parser.parse_args()
+
+    entries = load_settings(
+        arguments.private_settings_json,
+        arguments.sanitized_settings_json,
+    )
+    build_started_at = load_build_start(arguments.build_start_epoch)
+    print(resolve_app(entries, build_started_at, arguments.scheme))
+
+
+if __name__ == "__main__":
+    main()

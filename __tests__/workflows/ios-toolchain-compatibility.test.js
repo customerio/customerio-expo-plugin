@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const { execFileSync } = require('child_process');
 const { parse } = require('yaml');
 
 const workflowPath = path.join(
@@ -9,6 +10,13 @@ const workflowPath = path.join(
 
 describe('Xcode 27 preview workflow', () => {
   const workflow = fs.readFileSync(workflowPath, 'utf8');
+  const resolver = fs.readFileSync(
+    path.join(
+      __dirname,
+      '../../scripts/compatibility/resolve_simulator_app.py'
+    ),
+    'utf8'
+  );
   const definition = parse(workflow);
   const steps = definition.jobs.preview.steps;
   const step = (name) => steps.find((candidate) => candidate.name === name);
@@ -16,12 +24,15 @@ describe('Xcode 27 preview workflow', () => {
   it('uses the repository Node version and launches the generated app', () => {
     expect(definition.env.NODE_VERSION).toBe('24');
     expect(workflow).toContain('-showBuildSettings');
-    expect(workflow).toContain('WRAPPER_EXTENSION');
+    expect(resolver).toContain('"WRAPPER_EXTENSION"');
     expect(workflow).toContain('APP_PRODUCT_PATH=');
     expect(workflow).toContain('build-settings-private.json');
     expect(workflow).toContain('trap \'rm -f "$private_settings_json"\' EXIT');
-    expect(workflow).toContain('"TARGET_BUILD_DIR",');
-    expect(workflow).toContain('"WRAPPER_NAME",');
+    expect(workflow).toContain(
+      'scripts/compatibility/resolve_simulator_app.py'
+    );
+    expect(workflow).toContain('--sanitized-settings-json "$settings_json"');
+    expect(workflow).toContain('--clean');
     expect(
       step('Upload compatibility logs').with.path.trim().split('\n')
     ).toEqual([
@@ -34,7 +45,6 @@ describe('Xcode 27 preview workflow', () => {
     );
     expect(workflow).toContain('workspaces=("$APP_PATH"/ios/*.xcworkspace)');
     expect(workflow).not.toContain('$APP_NAME.xcworkspace');
-    expect(workflow).toContain('stale_executables.append(executable)');
     expect(workflow).toContain("expected-ios-major: '27'");
     expect(workflow).toContain('steps.launch.outputs.failure-reason');
     expect(workflow).toContain('simulator-infrastructure-unavailable');
@@ -44,18 +54,28 @@ describe('Xcode 27 preview workflow', () => {
     );
     expect(workflow).not.toContain('**Result:** ${{ job.status }}');
     expect(workflow).toContain(
-      'launch-simulator-app/v1@4a09284521d9bdcb0747acf21a44371975112e2d'
+      'launch-simulator-app/v1@5a3a7cfb412e5b2f25ccf968d002a4af6194a741'
     );
     expect(step('Record unavailable toolchain').if).toContain(
       "steps.toolchain.outcome == 'failure'"
     );
-    expect(workflow).toContain('settings.get("CONFIGURATION") != "Release"');
-    expect(workflow).toContain('could not parse xcodebuild settings JSON');
-    expect(workflow).toContain(
-      'xcodebuild settings JSON must be a list of target objects'
-    );
+    expect(workflow).toContain('unrecognized launch failure reason');
     expect(step('Record unclassified failure').if).toBe(
       "failure() && steps.toolchain.outcome != 'failure' && steps.validate-plugin.outcome != 'failure' && steps.resolve-app.outcome != 'failure' && steps.launch.outcome != 'failure'"
     );
+  });
+
+  it('executes the generated-app resolver behavior suite', () => {
+    expect(() =>
+      execFileSync(
+        'python3',
+        [
+          '-m',
+          'unittest',
+          'scripts/compatibility/test_resolve_simulator_app.py',
+        ],
+        { cwd: path.join(__dirname, '../..'), stdio: 'pipe' }
+      )
+    ).not.toThrow();
   });
 });
