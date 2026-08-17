@@ -104,14 +104,11 @@ jobs:
           IOS_SIMULATOR_SDK: ${{ steps.toolchain.outputs.iphonesimulator-sdk }}
         run: |
           set -euo pipefail
-          : "${XCODE_VERSION:?missing xcode-version output}"
-          : "${XCODE_BUILD:?missing xcode-build output}"
-          : "${IOS_SIMULATOR_SDK:?missing iphonesimulator-sdk output}"
           {
             echo '## Expo Xcode 27 preview compatibility'
             echo
             echo '**Result:** ${{ job.status }}'
             echo '**Provider:** ${{ matrix.ios-push-provider }}'
-            echo "**Toolchain:** Xcode $XCODE_VERSION build $XCODE_BUILD, iphonesimulator $IOS_SIMULATOR_SDK"
+            echo "**Toolchain:** Xcode ${XCODE_VERSION:-unknown} build ${XCODE_BUILD:-unknown}, iphonesimulator ${IOS_SIMULATOR_SDK:-unknown}"
             echo '**Scope:** generated-project compatibility build; no launch, callback, push-delivery, signing, or App Store claim'
           } >> "$GITHUB_STEP_SUMMARY"
