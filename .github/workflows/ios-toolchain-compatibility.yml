@@ -13,11 +13,12 @@ permissions:
   contents: read
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: true
 
 env:
-  NODE_VERSION: '20'
+  NODE_VERSION: '24'
+  LAUNCH_SURVIVAL_SECONDS: '10'
   APP_DIR: ci-test-apps
   APP_NAME_PREFIX: ExpoPluginTestApp
 
@@ -87,7 +88,9 @@ jobs:
             --add-default-config
 
       - name: Validate Plugin
+        id: validate-plugin
         run: |
+          date +%s > "$RUNNER_TEMP/${{ matrix.ios-push-provider }}-build-start-epoch"
           npm run compatibility:validate-plugin -- \
             --app-path=${{ env.APP_PATH }} \
             --expo-version=latest \
@@ -95,8 +98,78 @@ jobs:
             --ios-use-frameworks="static" \
             --ios-push-providers=${{ matrix.ios-push-provider }}
 
+      - name: Resolve generated simulator app
+        id: resolve-app
+        shell: bash
+        run: |
+          set -euo pipefail
+          settings_json="$RUNNER_TEMP/${{ matrix.ios-push-provider }}-build-settings.json"
+          build_start_epoch="$RUNNER_TEMP/${{ matrix.ios-push-provider }}-build-start-epoch"
+          shopt -s nullglob
+          workspaces=("$APP_PATH"/ios/*.xcworkspace)
+          if [[ "${#workspaces[@]}" -ne 1 ]]; then
+            echo "::error::expected one generated workspace, found ${#workspaces[@]}: ${workspaces[*]}"
+            exit 1
+          fi
+          workspace="${workspaces[0]}"
+          scheme="$(basename "$workspace" .xcworkspace)"
+          xcodebuild \
+            -workspace "$workspace" \
+            -scheme "$scheme" \
+            -configuration Release \
+            -sdk iphonesimulator \
+            -showBuildSettings \
+            -json > "$settings_json"
+          app_product_path="$(python3 - "$settings_json" "$build_start_epoch" "$scheme" <<'PY'
+          import json
+          import os
+          import plistlib
+          import sys
+
+          with open(sys.argv[1], encoding="utf-8") as settings_file:
+              entries = json.load(settings_file)
+          with open(sys.argv[2], encoding="utf-8") as start_file:
+              build_started_at = int(start_file.read().strip())
+          matches = []
+          for entry in entries:
+              settings = entry.get("buildSettings", {})
+              if settings.get("WRAPPER_EXTENSION") != "app":
+                  continue
+              path = os.path.join(
+                  settings.get("TARGET_BUILD_DIR", ""),
+                  settings.get("WRAPPER_NAME", ""),
+              )
+              info_plist = os.path.join(path, "Info.plist")
+              if not os.path.isfile(info_plist):
+                  continue
+              with open(info_plist, "rb") as plist_file:
+                  executable_name = plistlib.load(plist_file).get("CFBundleExecutable")
+              executable = os.path.join(path, executable_name or "")
+              if not os.path.isfile(executable):
+                  continue
+              if os.path.getmtime(executable) < build_started_at:
+                  raise SystemExit(f"built app executable is stale: {executable}")
+              matches.append(path)
+          if len(matches) != 1:
+              raise SystemExit(
+                  f"expected one current built simulator app for {sys.argv[3]}, found {matches}"
+              )
+          print(matches[0])
+          PY
+          )"
+          echo "APP_PRODUCT_PATH=$app_product_path" >> "$GITHUB_ENV"
+
+      - name: Install and launch generated app
+        id: launch
+        uses: customerio/mobile-ci-tools/github-actions/ios/launch-simulator-app/v1@codex/ios-simulator-launch-smoke
+        with:
+          app-path: ${{ env.APP_PRODUCT_PATH }}
+          expected-ios-major: '27'
+          survival-seconds: ${{ env.LAUNCH_SURVIVAL_SECONDS }}
+          log-path: ${{ runner.temp }}/${{ matrix.ios-push-provider }}-launch.log
+
       - name: Record compatibility result
-        if: always() && !cancelled()
+        if: steps.launch.outcome == 'success'
         shell: bash
         env:
           XCODE_VERSION: ${{ steps.toolchain.outputs.xcode-version }}
@@ -107,8 +180,56 @@ jobs:
           {
             echo '## Expo Xcode 27 preview compatibility'
             echo
-            echo '**Result:** ${{ job.status }}'
+            echo '**Classification:** launch-passed'
             echo '**Provider:** ${{ matrix.ios-push-provider }}'
             echo "**Toolchain:** Xcode ${XCODE_VERSION:-unknown} build ${XCODE_BUILD:-unknown}, iphonesimulator ${IOS_SIMULATOR_SDK:-unknown}"
-            echo '**Scope:** generated-project compatibility build; no launch, callback, push-delivery, signing, or App Store claim'
+            echo "**Scope:** generated-project compile, simulator install, launch, and ${LAUNCH_SURVIVAL_SECONDS}-second process survival; no callback, push-delivery, signing, or App Store claim"
           } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Record launch failure
+        if: failure() && steps.launch.outcome == 'failure'
+        shell: bash
+        run: |
+          {
+            echo '## Expo Xcode 27 preview compatibility'
+            echo
+            echo '**Classification:** generated-app-launch-failed'
+            echo '**Provider:** ${{ matrix.ios-push-provider }}'
+            echo '**Next step:** inspect the uploaded launch log for the UIKit runtime issue or early process exit'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Record generated-app build failure
+        if: failure() && steps.validate-plugin.outcome == 'failure'
+        shell: bash
+        run: |
+          {
+            echo '## Expo Xcode 27 preview compatibility'
+            echo
+            echo '**Classification:** generated-app-build-failed'
+            echo '**Provider:** ${{ matrix.ios-push-provider }}'
+            echo '**Next step:** inspect prebuild, provider snapshots, CocoaPods, and xcodebuild output before evaluating launch compatibility'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Record product resolution failure
+        if: failure() && steps.resolve-app.outcome == 'failure'
+        shell: bash
+        run: |
+          {
+            echo '## Expo Xcode 27 preview compatibility'
+            echo
+            echo '**Classification:** generated-app-not-found'
+            echo '**Provider:** ${{ matrix.ios-push-provider }}'
+            echo '**Next step:** inspect the generated workspace build settings before evaluating launch compatibility'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload compatibility logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: xcode-27-preview-expo-${{ matrix.ios-push-provider }}-logs
+          path: |
+            ${{ runner.temp }}/${{ matrix.ios-push-provider }}-launch.log
+            ${{ runner.temp }}/${{ matrix.ios-push-provider }}-build-settings.json
+            ${{ runner.temp }}/${{ matrix.ios-push-provider }}-build-start-epoch
+          if-no-files-found: ignore
+          retention-days: 7
