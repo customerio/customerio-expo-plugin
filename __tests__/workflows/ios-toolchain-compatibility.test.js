@@ -54,7 +54,7 @@ describe('Xcode 27 preview workflow', () => {
     );
     expect(workflow).not.toContain('**Result:** ${{ job.status }}');
     expect(workflow).toContain(
-      'launch-simulator-app/v1@e83f36523b5068a2e274813a4d59929d438335d5'
+      'launch-simulator-app/v1@e23ed26882a5cf99378b3208187dcfedf68d2c93'
     );
     expect(step('Record unavailable toolchain').if).toContain(
       "steps.toolchain.outcome == 'failure'"
@@ -75,7 +75,7 @@ describe('Xcode 27 preview workflow', () => {
   });
 
   it('executes the generated-app resolver behavior suite', () => {
-    expect(() =>
+    try {
       execFileSync(
         'python3',
         [
@@ -84,7 +84,13 @@ describe('Xcode 27 preview workflow', () => {
           'scripts/compatibility/test_resolve_simulator_app.py',
         ],
         { cwd: path.join(__dirname, '../..'), stdio: 'pipe' }
-      )
-    ).not.toThrow();
+      );
+    } catch (error) {
+      throw new Error(
+        `resolver behavior suite failed\nstdout:\n${
+          error.stdout ?? ''
+        }\nstderr:\n${error.stderr ?? ''}`
+      );
+    }
   });
 });

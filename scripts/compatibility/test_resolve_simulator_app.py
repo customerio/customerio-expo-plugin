@@ -74,6 +74,20 @@ class ResolveSimulatorAppTests(unittest.TestCase):
         self.assertNotIn("PRIVATE_VALUE", sanitized)
         self.assertNotIn("must-not-be-published", sanitized)
 
+    def test_resolves_settings_after_xcodebuild_stdout_preamble(self):
+        app = self.create_app()
+        self.private_settings.write_text(
+            "xcodebuild: warning: diagnostic preamble\n" + json.dumps(self.settings(app)),
+            encoding="utf-8",
+        )
+
+        result = self.run_script()
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout.strip(), str(app))
+        sanitized = self.sanitized_settings.read_text(encoding="utf-8")
+        self.assertNotIn("diagnostic preamble", sanitized)
+
     def test_malformed_json_leaves_only_bounded_parse_metadata(self):
         self.private_settings.write_text('{"secret":"must-not-leak"', encoding="utf-8")
 
@@ -129,6 +143,16 @@ class ResolveSimulatorAppTests(unittest.TestCase):
     def test_rejection_reports_unreadable_info_plist(self):
         app = self.create_app()
         (app / "Info.plist").write_bytes(b"not a plist")
+        self.private_settings.write_text(json.dumps(self.settings(app)), encoding="utf-8")
+
+        result = self.run_script()
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("unreadable Info.plist", result.stderr)
+
+    def test_rejection_reports_truncated_xml_info_plist(self):
+        app = self.create_app()
+        (app / "Info.plist").write_bytes(b'<?xml version="1.0"?><plist')
         self.private_settings.write_text(json.dumps(self.settings(app)), encoding="utf-8")
 
         result = self.run_script()

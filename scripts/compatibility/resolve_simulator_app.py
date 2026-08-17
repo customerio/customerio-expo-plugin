@@ -7,6 +7,7 @@ from __future__ import annotations
 import argparse
 import json
 import plistlib
+from xml.parsers.expat import ExpatError
 from pathlib import Path
 
 
@@ -54,8 +55,23 @@ def load_settings(source: Path, sanitized_destination: Path) -> list[dict[str, o
     raw_bytes = 0
     try:
         raw_bytes = source.stat().st_size
-        with source.open(encoding="utf-8") as settings_file:
-            payload = json.load(settings_file)
+        raw = source.read_text(encoding="utf-8")
+        try:
+            payload = json.loads(raw)
+        except json.JSONDecodeError as initial_error:
+            payload = None
+            for offset, character in enumerate(raw):
+                if character != "[":
+                    continue
+                try:
+                    candidate = json.loads(raw[offset:])
+                except json.JSONDecodeError:
+                    continue
+                if isinstance(candidate, list):
+                    payload = candidate
+                    break
+            if payload is None:
+                raise initial_error
     except (OSError, json.JSONDecodeError) as error:
         write_sanitized_settings(
             sanitized_destination,
@@ -121,7 +137,7 @@ def resolve_app(entries: list[dict[str, object]], build_started_at: int, scheme:
         try:
             with info_plist.open("rb") as plist_file:
                 executable_name = plistlib.load(plist_file).get("CFBundleExecutable")
-        except (OSError, plistlib.InvalidFileException) as error:
+        except (OSError, plistlib.InvalidFileException, ValueError, ExpatError) as error:
             rejected.append(f"{path}: unreadable Info.plist ({error})")
             continue
         if not isinstance(executable_name, str) or not executable_name:
@@ -131,7 +147,12 @@ def resolve_app(entries: list[dict[str, object]], build_started_at: int, scheme:
         if not executable.is_file():
             rejected.append(f"{path}: missing executable {executable_name}")
             continue
-        if executable.stat().st_mtime < build_started_at:
+        try:
+            executable_modified_at = executable.stat().st_mtime
+        except OSError as error:
+            rejected.append(f"{path}: unreadable executable {executable_name} ({error})")
+            continue
+        if executable_modified_at < build_started_at:
             rejected.append(f"{path}: stale executable")
             continue
         matches.append(path)
