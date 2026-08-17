@@ -59,18 +59,14 @@ def load_settings(source: Path, sanitized_destination: Path) -> list[dict[str, o
         try:
             payload = json.loads(raw)
         except json.JSONDecodeError as initial_error:
-            payload = None
-            for offset, character in enumerate(raw):
-                if character != "[":
-                    continue
-                try:
-                    candidate = json.loads(raw[offset:])
-                except json.JSONDecodeError:
-                    continue
-                if isinstance(candidate, list):
-                    payload = candidate
-                    break
-            if payload is None:
+            start = raw.find("[")
+            if start == -1:
+                raise initial_error
+            try:
+                payload, _ = json.JSONDecoder().raw_decode(raw, start)
+            except json.JSONDecodeError:
+                raise initial_error
+            if not isinstance(payload, list):
                 raise initial_error
     except (OSError, json.JSONDecodeError) as error:
         write_sanitized_settings(

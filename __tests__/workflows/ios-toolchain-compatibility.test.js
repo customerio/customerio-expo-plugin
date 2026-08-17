@@ -54,7 +54,7 @@ describe('Xcode 27 preview workflow', () => {
     );
     expect(workflow).not.toContain('**Result:** ${{ job.status }}');
     expect(workflow).toContain(
-      'launch-simulator-app/v1@e23ed26882a5cf99378b3208187dcfedf68d2c93'
+      'launch-simulator-app/v1@a5a10ee48b901234701ac38ff26daeb4b5d9c041'
     );
     expect(step('Record unavailable toolchain').if).toContain(
       "steps.toolchain.outcome == 'failure'"
@@ -87,7 +87,7 @@ describe('Xcode 27 preview workflow', () => {
       );
     } catch (error) {
       throw new Error(
-        `resolver behavior suite failed\nstdout:\n${
+        `resolver behavior suite failed: ${error.message}\nstdout:\n${
           error.stdout ?? ''
         }\nstderr:\n${error.stderr ?? ''}`
       );

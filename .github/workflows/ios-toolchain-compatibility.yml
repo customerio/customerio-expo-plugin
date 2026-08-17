@@ -4,7 +4,8 @@ on:
   pull_request:
     paths:
       - '.github/workflows/ios-toolchain-compatibility.yml'
-      - 'scripts/compatibility/**'
+      - 'scripts/compatibility/resolve_simulator_app.py'
+      - 'scripts/compatibility/test_resolve_simulator_app.py'
   schedule:
     # Native and Flutter run during the two preceding hours.
     - cron: '17 7 * * *'
@@ -138,7 +139,7 @@ jobs:
       - name: Install and launch generated app
         id: launch
         # TODO(MBL-2248): switch to @main after customerio/mobile-ci-tools#16 merges.
-        uses: customerio/mobile-ci-tools/github-actions/ios/launch-simulator-app/v1@e23ed26882a5cf99378b3208187dcfedf68d2c93
+        uses: customerio/mobile-ci-tools/github-actions/ios/launch-simulator-app/v1@a5a10ee48b901234701ac38ff26daeb4b5d9c041
         with:
           app-path: ${{ env.APP_PRODUCT_PATH }}
           expected-ios-major: '27'

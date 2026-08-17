@@ -77,7 +77,9 @@ class ResolveSimulatorAppTests(unittest.TestCase):
     def test_resolves_settings_after_xcodebuild_stdout_preamble(self):
         app = self.create_app()
         self.private_settings.write_text(
-            "xcodebuild: warning: diagnostic preamble\n" + json.dumps(self.settings(app)),
+            "xcodebuild: warning: diagnostic preamble\n"
+            + json.dumps(self.settings(app))
+            + "\nxcodebuild: warning: diagnostic trailer\n",
             encoding="utf-8",
         )
 
