@@ -51,6 +51,7 @@ def write_sanitized_settings(
 def load_settings(source: Path, sanitized_destination: Path) -> list[dict[str, object]]:
     """Load private settings and always leave a bounded sanitized diagnostic."""
 
+    raw_bytes = 0
     try:
         raw_bytes = source.stat().st_size
         with source.open(encoding="utf-8") as settings_file:
@@ -60,7 +61,7 @@ def load_settings(source: Path, sanitized_destination: Path) -> list[dict[str, o
             sanitized_destination,
             None,
             parse_error=str(error),
-            raw_bytes=locals().get("raw_bytes", 0),
+            raw_bytes=raw_bytes,
         )
         raise SystemExit(f"could not parse xcodebuild settings JSON: {error}") from error
 

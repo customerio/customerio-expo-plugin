@@ -18,13 +18,13 @@ class ResolveSimulatorAppTests(unittest.TestCase):
         self.build_start.write_text("100\n", encoding="utf-8")
         self.script = Path(__file__).with_name("resolve_simulator_app.py")
 
-    def create_app(self, *, executable=True, modified_at=101):
-        app = self.root / "Build" / "Fixture.app"
+    def create_app(self, *, name="Fixture", executable=True, modified_at=101):
+        app = self.root / "Build" / f"{name}.app"
         app.mkdir(parents=True)
         with (app / "Info.plist").open("wb") as plist_file:
-            plistlib.dump({"CFBundleExecutable": "Fixture"}, plist_file)
+            plistlib.dump({"CFBundleExecutable": name}, plist_file)
         if executable:
-            binary = app / "Fixture"
+            binary = app / name
             binary.write_bytes(b"fixture")
             os.utime(binary, (modified_at, modified_at))
         return app
@@ -102,6 +102,30 @@ class ResolveSimulatorAppTests(unittest.TestCase):
 
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("missing executable Fixture", result.stderr)
+
+    def test_rejects_stale_executable(self):
+        app = self.create_app(modified_at=99)
+        self.private_settings.write_text(json.dumps(self.settings(app)), encoding="utf-8")
+
+        result = self.run_script()
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("stale executable", result.stderr)
+
+    def test_rejects_multiple_fresh_release_apps(self):
+        first_app = self.create_app(name="FixtureOne")
+        second_app = self.create_app(name="FixtureTwo")
+        self.private_settings.write_text(
+            json.dumps(self.settings(first_app) + self.settings(second_app)),
+            encoding="utf-8",
+        )
+
+        result = self.run_script()
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("expected one current built simulator app", result.stderr)
+        self.assertIn(str(first_app), result.stderr)
+        self.assertIn(str(second_app), result.stderr)
 
 
 if __name__ == "__main__":

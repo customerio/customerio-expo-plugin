@@ -61,7 +61,7 @@ describe('Xcode 27 preview workflow', () => {
     );
     expect(workflow).toContain('unrecognized launch failure reason');
     expect(step('Record unclassified failure').if).toBe(
-      "failure() && steps.toolchain.outcome != 'failure' && steps.validate-plugin.outcome != 'failure' && steps.resolve-app.outcome != 'failure' && steps.launch.outcome != 'failure'"
+      "failure() && steps.toolchain.outcome != 'failure' && steps.validate-plugin.outcome != 'failure' && steps.resolve-app.outcome != 'failure' && steps.launch.outcome != 'failure' && steps.launch.outcome != 'success'"
     );
   });
 

@@ -251,7 +251,7 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Record unclassified failure
-        if: failure() && steps.toolchain.outcome != 'failure' && steps.validate-plugin.outcome != 'failure' && steps.resolve-app.outcome != 'failure' && steps.launch.outcome != 'failure'
+        if: failure() && steps.toolchain.outcome != 'failure' && steps.validate-plugin.outcome != 'failure' && steps.resolve-app.outcome != 'failure' && steps.launch.outcome != 'failure' && steps.launch.outcome != 'success'
         shell: bash
         run: |
           set -euo pipefail
