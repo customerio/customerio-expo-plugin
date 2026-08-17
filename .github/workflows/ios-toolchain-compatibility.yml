@@ -104,6 +104,8 @@ jobs:
         run: |
           set -euo pipefail
           settings_json="$RUNNER_TEMP/${{ matrix.ios-push-provider }}-build-settings.json"
+          private_settings_json="$RUNNER_TEMP/${{ matrix.ios-push-provider }}-build-settings-private.json"
+          trap 'rm -f "$private_settings_json"' EXIT
           build_start_epoch="$RUNNER_TEMP/${{ matrix.ios-push-provider }}-build-start-epoch"
           shopt -s nullglob
           workspaces=("$APP_PATH"/ios/*.xcworkspace)
@@ -119,8 +121,8 @@ jobs:
             -configuration Release \
             -sdk iphonesimulator \
             -showBuildSettings \
-            -json > "$settings_json"
-          app_product_path="$(python3 - "$settings_json" "$build_start_epoch" "$scheme" <<'PY'
+            -json > "$private_settings_json"
+          app_product_path="$(python3 - "$private_settings_json" "$build_start_epoch" "$scheme" "$settings_json" <<'PY'
           import json
           import os
           import plistlib
@@ -128,6 +130,25 @@ jobs:
 
           with open(sys.argv[1], encoding="utf-8") as settings_file:
               entries = json.load(settings_file)
+          safe_keys = (
+              "CONFIGURATION",
+              "TARGET_BUILD_DIR",
+              "WRAPPER_EXTENSION",
+              "WRAPPER_NAME",
+          )
+          safe_entries = [
+              {
+                  "target": entry.get("target", "unknown"),
+                  "buildSettings": {
+                      key: entry.get("buildSettings", {}).get(key)
+                      for key in safe_keys
+                  },
+              }
+              for entry in entries
+          ]
+          with open(sys.argv[4], "w", encoding="utf-8") as safe_file:
+              json.dump(safe_entries, safe_file, indent=2, sort_keys=True)
+              safe_file.write("\n")
           with open(sys.argv[2], encoding="utf-8") as start_file:
               build_started_at = int(start_file.read().strip())
           matches = []
@@ -169,7 +190,7 @@ jobs:
       - name: Install and launch generated app
         id: launch
         # TODO(MBL-2248): switch to @main after customerio/mobile-ci-tools#16 merges.
-        uses: customerio/mobile-ci-tools/github-actions/ios/launch-simulator-app/v1@codex/ios-simulator-launch-smoke
+        uses: customerio/mobile-ci-tools/github-actions/ios/launch-simulator-app/v1@8e270bbad1fa659379755aec99c5ad80ac23a7a4
         with:
           app-path: ${{ env.APP_PRODUCT_PATH }}
           expected-ios-major: '27'

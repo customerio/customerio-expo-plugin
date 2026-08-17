@@ -18,4 +18,8 @@ unavailable before a job starts, and job timeouts do not cover queue time; neith
 compatibility pass. If an expected result or watchdog alert is absent, check this repository's
 Actions history and the pending native watchdog PR before treating the nightly as healthy.
 
+The current generated APN and FCM apps are expected to report `generated-app-exited-early` until
+Expo UIScene host-lifecycle support lands. That known red result is the compatibility defect this
+nightly is intended to preserve visibly; do not interpret it as a healthy baseline or suppress it.
+
 The review invariant is the known failure mode, not merely a successful build: an Xcode 27 product can compile and still terminate during launch when its generated host lifecycle is incompatible. When Xcode 27 becomes stable, remove this temporary preview workflow and add Xcode 27 to the normal required compatibility and release paths. Exact beta-image validation belongs in a temporary, explicitly test-only PR. A compatibility pass proves generated-project compilation, simulator installation, launch, and short process survival for the named Expo/provider combination. It does not prove lifecycle callback forwarding, authenticated UI paths, physical-device push delivery, signing, export, or App Store acceptance.
