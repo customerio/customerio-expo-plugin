@@ -133,6 +133,12 @@ jobs:
                   entries = json.load(settings_file)
           except (OSError, json.JSONDecodeError) as error:
               raise SystemExit(f"could not parse xcodebuild settings JSON: {error}") from error
+          if not isinstance(entries, list) or any(
+              not isinstance(entry, dict)
+              or not isinstance(entry.get("buildSettings", {}), dict)
+              for entry in entries
+          ):
+              raise SystemExit("xcodebuild settings JSON must be a list of target objects")
           safe_keys = (
               "CONFIGURATION",
               "TARGET_BUILD_DIR",
@@ -292,7 +298,7 @@ jobs:
             echo
             echo '**Classification:** generated-app-resolution-failed'
             echo "**Provider:** ${{ matrix.ios-push-provider }}"
-            echo '**Next step:** inspect xcodebuild settings JSON and the generated product path before evaluating launch compatibility'
+            echo '**Next step:** inspect the resolve-step log and, when present, the sanitized xcodebuild settings JSON before evaluating launch compatibility'
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Record unavailable toolchain

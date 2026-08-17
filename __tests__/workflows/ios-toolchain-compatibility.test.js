@@ -51,5 +51,11 @@ describe('Xcode 27 preview workflow', () => {
     );
     expect(workflow).toContain('settings.get("CONFIGURATION") != "Release"');
     expect(workflow).toContain('could not parse xcodebuild settings JSON');
+    expect(workflow).toContain(
+      'xcodebuild settings JSON must be a list of target objects'
+    );
+    expect(step('Record unclassified failure').if).toBe(
+      "failure() && steps.toolchain.outcome != 'failure' && steps.validate-plugin.outcome != 'failure' && steps.resolve-app.outcome != 'failure' && steps.launch.outcome != 'failure'"
+    );
   });
 });
