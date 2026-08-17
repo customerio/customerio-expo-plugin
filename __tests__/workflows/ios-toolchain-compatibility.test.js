@@ -22,9 +22,13 @@ describe('Xcode 27 preview workflow', () => {
     expect(workflow).toContain('trap \'rm -f "$private_settings_json"\' EXIT');
     expect(workflow).toContain('"TARGET_BUILD_DIR",');
     expect(workflow).toContain('"WRAPPER_NAME",');
-    expect(step('Upload compatibility logs').with.path).not.toContain(
-      'build-settings-private.json'
-    );
+    expect(
+      step('Upload compatibility logs').with.path.trim().split('\n')
+    ).toEqual([
+      '${{ runner.temp }}/${{ matrix.ios-push-provider }}-launch.log',
+      '${{ runner.temp }}/${{ matrix.ios-push-provider }}-build-settings.json',
+      '${{ runner.temp }}/${{ matrix.ios-push-provider }}-build-start-epoch',
+    ]);
     expect(workflow).toContain(
       'customerio/mobile-ci-tools/github-actions/ios/launch-simulator-app/v1@'
     );
@@ -40,7 +44,7 @@ describe('Xcode 27 preview workflow', () => {
     );
     expect(workflow).not.toContain('**Result:** ${{ job.status }}');
     expect(workflow).toContain(
-      'launch-simulator-app/v1@7e22693841ec0e896dbef13efac814e54ba09c41'
+      'launch-simulator-app/v1@74220ac3aad31615e8c6564c5c75ea5466a4ebc3'
     );
     expect(step('Record unavailable toolchain').if).toContain(
       "steps.toolchain.outcome == 'failure'"

@@ -195,7 +195,7 @@ jobs:
       - name: Install and launch generated app
         id: launch
         # TODO(MBL-2248): switch to @main after customerio/mobile-ci-tools#16 merges.
-        uses: customerio/mobile-ci-tools/github-actions/ios/launch-simulator-app/v1@7e22693841ec0e896dbef13efac814e54ba09c41
+        uses: customerio/mobile-ci-tools/github-actions/ios/launch-simulator-app/v1@74220ac3aad31615e8c6564c5c75ea5466a4ebc3
         with:
           app-path: ${{ env.APP_PRODUCT_PATH }}
           expected-ios-major: '27'
