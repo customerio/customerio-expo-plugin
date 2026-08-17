@@ -128,8 +128,11 @@ jobs:
           import plistlib
           import sys
 
-          with open(sys.argv[1], encoding="utf-8") as settings_file:
-              entries = json.load(settings_file)
+          try:
+              with open(sys.argv[1], encoding="utf-8") as settings_file:
+                  entries = json.load(settings_file)
+          except (OSError, json.JSONDecodeError) as error:
+              raise SystemExit(f"could not parse xcodebuild settings JSON: {error}") from error
           safe_keys = (
               "CONFIGURATION",
               "TARGET_BUILD_DIR",
@@ -155,6 +158,8 @@ jobs:
           stale_executables = []
           for entry in entries:
               settings = entry.get("buildSettings", {})
+              if settings.get("CONFIGURATION") != "Release":
+                  continue
               if settings.get("WRAPPER_EXTENSION") != "app":
                   continue
               path = os.path.join(
@@ -190,7 +195,7 @@ jobs:
       - name: Install and launch generated app
         id: launch
         # TODO(MBL-2248): switch to @main after customerio/mobile-ci-tools#16 merges.
-        uses: customerio/mobile-ci-tools/github-actions/ios/launch-simulator-app/v1@8e270bbad1fa659379755aec99c5ad80ac23a7a4
+        uses: customerio/mobile-ci-tools/github-actions/ios/launch-simulator-app/v1@7e22693841ec0e896dbef13efac814e54ba09c41
         with:
           app-path: ${{ env.APP_PRODUCT_PATH }}
           expected-ios-major: '27'
@@ -210,7 +215,7 @@ jobs:
             echo '## Expo Xcode 27 preview compatibility'
             echo
             echo '**Classification:** launch-passed'
-            echo '**Provider:** ${{ matrix.ios-push-provider }}'
+            echo "**Provider:** ${{ matrix.ios-push-provider }}"
             echo "**Toolchain:** Xcode ${XCODE_VERSION:-unknown} build ${XCODE_BUILD:-unknown}, iphonesimulator ${IOS_SIMULATOR_SDK:-unknown}"
             echo "**Scope:** generated-project compile, simulator install, launch, and ${LAUNCH_SURVIVAL_SECONDS}-second process survival; no callback, push-delivery, signing, or App Store claim"
           } >> "$GITHUB_STEP_SUMMARY"
@@ -220,6 +225,9 @@ jobs:
         shell: bash
         env:
           FAILURE_REASON: ${{ steps.launch.outputs.failure-reason }}
+          XCODE_VERSION: ${{ steps.toolchain.outputs.xcode-version }}
+          XCODE_BUILD: ${{ steps.toolchain.outputs.xcode-build }}
+          IOS_SIMULATOR_SDK: ${{ steps.toolchain.outputs.iphonesimulator-sdk }}
         run: |
           set -euo pipefail
           case "$FAILURE_REASON" in
@@ -253,8 +261,12 @@ jobs:
             echo
             echo "**Classification:** $classification"
             echo "**Failure category:** $FAILURE_REASON"
-            echo '**Provider:** ${{ matrix.ios-push-provider }}'
+            echo "**Provider:** ${{ matrix.ios-push-provider }}"
+            echo "**Toolchain:** Xcode ${XCODE_VERSION:-unknown} build ${XCODE_BUILD:-unknown}, iphonesimulator ${IOS_SIMULATOR_SDK:-unknown}"
             echo "**Next step:** $next_step"
+            # Markdown backticks are intentionally literal in the summary.
+            # shellcheck disable=SC2016
+            echo '**Known boundary:** `generated-app-exited-early` is the expected blocker until Expo adopts UIScene; see [.github/IOS-TOOLCHAIN-COMPATIBILITY.md](https://github.com/customerio/customerio-expo-plugin/blob/main/.github/IOS-TOOLCHAIN-COMPATIBILITY.md).'
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Record generated-app build failure
@@ -266,7 +278,7 @@ jobs:
             echo '## Expo Xcode 27 preview compatibility'
             echo
             echo '**Classification:** generated-app-build-failed'
-            echo '**Provider:** ${{ matrix.ios-push-provider }}'
+            echo "**Provider:** ${{ matrix.ios-push-provider }}"
             echo '**Next step:** inspect prebuild, provider snapshots, CocoaPods, and xcodebuild output before evaluating launch compatibility'
           } >> "$GITHUB_STEP_SUMMARY"
 
@@ -278,13 +290,25 @@ jobs:
           {
             echo '## Expo Xcode 27 preview compatibility'
             echo
-            echo '**Classification:** generated-app-not-found'
-            echo '**Provider:** ${{ matrix.ios-push-provider }}'
-            echo '**Next step:** inspect the generated workspace build settings before evaluating launch compatibility'
+            echo '**Classification:** generated-app-resolution-failed'
+            echo "**Provider:** ${{ matrix.ios-push-provider }}"
+            echo '**Next step:** inspect xcodebuild settings JSON and the generated product path before evaluating launch compatibility'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Record unavailable toolchain
+        if: failure() && steps.toolchain.outcome == 'failure'
+        shell: bash
+        run: |
+          {
+            echo '## Expo Xcode 27 preview compatibility'
+            echo
+            echo '**Classification:** toolchain-unavailable'
+            echo "**Provider:** ${{ matrix.ios-push-provider }}"
+            echo '**Next step:** inspect the hosted Xcode 27 image and shared toolchain report before attributing this to Expo'
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Record unclassified failure
-        if: failure() && steps.validate-plugin.outcome != 'failure' && steps.resolve-app.outcome != 'failure' && steps.launch.outcome != 'failure'
+        if: failure() && steps.toolchain.outcome != 'failure' && steps.validate-plugin.outcome != 'failure' && steps.resolve-app.outcome != 'failure' && steps.launch.outcome != 'failure'
         shell: bash
         run: |
           set -euo pipefail
@@ -292,7 +316,7 @@ jobs:
             echo '## Expo Xcode 27 preview compatibility'
             echo
             echo '**Classification:** harness-failed-before-build'
-            echo '**Provider:** ${{ matrix.ios-push-provider }}'
+            echo "**Provider:** ${{ matrix.ios-push-provider }}"
             echo '**Next step:** inspect runner setup, npm install, app generation, and plugin configuration; no compatibility signal was produced'
           } >> "$GITHUB_STEP_SUMMARY"
 

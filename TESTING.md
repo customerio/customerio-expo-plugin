@@ -4,44 +4,44 @@ This guide explains how the test suite is layered and **where new tests should g
 
 ## TL;DR
 
-| Command | Runs |
-| --- | --- |
-| `npm test` | All four Jest projects (see below) |
-| `npm run test:scenarios` | Just the fixture-based scenario suite (fast, no setup) |
-| `npm run test-plugin apn` / `npm run test-plugin fcm` | Legacy plugin tests; runs `setup-test-app` first |
+| Command                                               | Runs                                                   |
+| ----------------------------------------------------- | ------------------------------------------------------ |
+| `npm test`                                            | All four Jest projects (see below)                     |
+| `npm run test:scenarios`                              | Just the fixture-based scenario suite (fast, no setup) |
+| `npm run test-plugin apn` / `npm run test-plugin fcm` | Legacy plugin tests; runs `setup-test-app` first       |
 
 CI runs:
 
-| Workflow | Trigger | Tests |
-| --- | --- | --- |
-| `test.yml` | every PR + push to `main`/`beta`/`feature/*` | All four Jest projects (parallel jobs) |
-| `validate-plugin-compatibility.yml` | every PR | 3-cell latest-Expo smoke matrix: Android plus APN/FCM native builds on stable Xcode |
-| `ios-toolchain-compatibility.yml` | nightly + manual + workflow changes | APN/FCM native builds on the floating Xcode 27 preview ([policy](.github/IOS-TOOLCHAIN-COMPATIBILITY.md)) |
-| `validate-plugin-compatibility-matrix.yml` | merge to `main` (release) + manual | Full multi-SDK matrix — real `expo prebuild` + native build |
-| `reusable_build_sample_apps.yml` | release / sample-app distribution | Full Android + iOS app builds shipped to Firebase |
+| Workflow                                   | Trigger                                      | Tests                                                                                                                                                                  |
+| ------------------------------------------ | -------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `test.yml`                                 | every PR + push to `main`/`beta`/`feature/*` | All four Jest projects (parallel jobs)                                                                                                                                 |
+| `validate-plugin-compatibility.yml`        | every PR                                     | 3-cell latest-Expo smoke matrix: Android plus APN/FCM native builds on stable Xcode                                                                                    |
+| `ios-toolchain-compatibility.yml`          | nightly + manual + workflow changes          | APN/FCM native builds, simulator installs, launches, and 10-second survival checks on the floating Xcode 27 preview ([policy](.github/IOS-TOOLCHAIN-COMPATIBILITY.md)) |
+| `validate-plugin-compatibility-matrix.yml` | merge to `main` (release) + manual           | Full multi-SDK matrix — real `expo prebuild` + native build                                                                                                            |
+| `reusable_build_sample_apps.yml`           | release / sample-app distribution            | Full Android + iOS app builds shipped to Firebase                                                                                                                      |
 
 ## The four Jest projects
 
 Defined in `jest.config.js`. Each is a separate `displayName` and runs as its own Jest project:
 
-| Project | Lives in | Purpose |
-| --- | --- | --- |
-| `plugin` | `plugin/__tests__/` | Tests inside the published plugin package itself |
-| `test-app` | `test-app/__tests__/` | Tests against the dev test-app shell |
+| Project      | Lives in                                        | Purpose                                                                                                                                                                                                                 |
+| ------------ | ----------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `plugin`     | `plugin/__tests__/`                             | Tests inside the published plugin package itself                                                                                                                                                                        |
+| `test-app`   | `test-app/__tests__/`                           | Tests against the dev test-app shell                                                                                                                                                                                    |
 | `root-tests` | `__tests__/` (excluding `__tests__/scenarios/`) | Legacy mock-heavy unit tests + snapshot tests. Tests under `__tests__/{ios,android}/` snapshot against generated test-app artifacts and require `npm run setup-test-app` to have run first; `__tests__/utils/` does not |
-| `scenarios` | `__tests__/scenarios/` | **Pure-function transformer tests against hand-curated fixtures.** No setup, no mocks. The direction we're moving toward. |
+| `scenarios`  | `__tests__/scenarios/`                          | **Pure-function transformer tests against hand-curated fixtures.** No setup, no mocks. The direction we're moving toward.                                                                                               |
 
 Run a single project: `npx jest --selectProjects <name>`.
 
 ## Where do new tests go?
 
-| You're editing… | Add a test in… |
-| --- | --- |
-| A pure transformer (`modifyAppDelegateForPushHandler`, `injectCustomerIOInitializerIntoMainApplication`, Podfile/Gradle/Manifest mutators, …) | **`__tests__/scenarios/{ios,android}/`** — scenario test against a fixture |
-| A helper / utility (`fileManagement`, plugin-config parsing, version helpers) | `__tests__/utils/` |
-| Native build wiring that mutates a generated file (Podfile target, NSE Xcode setup, MainApplication injection) | Scenario test using the relevant fixture (e.g. `__tests__/fixtures/ios/pbxproj/`) |
-| A new pod / `AndroidManifest.xml` entry / Gradle dep | Scenario test for the file content. The compatibility matrix already covers "does it actually build" — you do **not** need to add a matrix variant |
-| The plugin's public TypeScript API | `plugin/__tests__/` |
+| You're editing…                                                                                                                               | Add a test in…                                                                                                                                     |
+| --------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A pure transformer (`modifyAppDelegateForPushHandler`, `injectCustomerIOInitializerIntoMainApplication`, Podfile/Gradle/Manifest mutators, …) | **`__tests__/scenarios/{ios,android}/`** — scenario test against a fixture                                                                         |
+| A helper / utility (`fileManagement`, plugin-config parsing, version helpers)                                                                 | `__tests__/utils/`                                                                                                                                 |
+| Native build wiring that mutates a generated file (Podfile target, NSE Xcode setup, MainApplication injection)                                | Scenario test using the relevant fixture (e.g. `__tests__/fixtures/ios/pbxproj/`)                                                                  |
+| A new pod / `AndroidManifest.xml` entry / Gradle dep                                                                                          | Scenario test for the file content. The compatibility matrix already covers "does it actually build" — you do **not** need to add a matrix variant |
+| The plugin's public TypeScript API                                                                                                            | `plugin/__tests__/`                                                                                                                                |
 
 If you can express the change as `(input string, options) → output string`, it belongs in **scenarios**. Reach for legacy `__tests__/{ios,android}/` only when the existing test there is what you're updating.
 
@@ -55,7 +55,10 @@ Canonical example: `__tests__/scenarios/android/mainApplication.test.ts`.
    ```ts
    import * as fs from 'fs';
    import { getFixturePath } from '../../utils';
-   const baseline = fs.readFileSync(getFixturePath('android', 'MainApplication.kt'), 'utf8');
+   const baseline = fs.readFileSync(
+     getFixturePath('android', 'MainApplication.kt'),
+     'utf8'
+   );
    ```
 4. **Assert with an inline snapshot** — `expect(transform(baseline)).toMatchInlineSnapshot(\`…\`)`. Run `npx jest --selectProjects scenarios -u` to fill it in the first time.
 5. **Add an idempotency case** when relevant: running the transformer twice should equal running it once. See `mainApplication.test.ts` for an example.
