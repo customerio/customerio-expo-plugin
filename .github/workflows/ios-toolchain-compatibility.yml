@@ -92,6 +92,7 @@ jobs:
             --app-path=${{ env.APP_PATH }} \
             --expo-version=latest \
             --platforms=ios \
+            --ios-use-frameworks="static" \
             --ios-push-providers=${{ matrix.ios-push-provider }}
 
       - name: Record compatibility result

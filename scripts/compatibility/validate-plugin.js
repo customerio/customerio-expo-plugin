@@ -14,6 +14,7 @@ const APP_PATH = getArgValue("--app-path", { required: true });
 const EXPO_VERSION = getArgValue("--expo-version", { default: 53 })
 const PLATFORMS = getArgValue("--platforms", { default: "android,ios" }).split(",");
 const IOS_PUSH_PROVIDERS = parseArrayArg("--ios-push-providers", { default: ["apn", "fcm"] });
+const IOS_USE_FRAMEWORKS = getArgValue("--ios-use-frameworks");
 const TESTS_DIRECTORY_PATH = getArgValue("--tests-dir-path", {
   default: path.join(__dirname, "../../__tests__"),
 });
@@ -99,11 +100,15 @@ function execute() {
   if (PLATFORMS.includes("ios")) {
     for (const provider of IOS_PUSH_PROVIDERS) {
       logMessage(`🔄 Switching push provider to: ${provider}`);
+      const configurePluginArgs = {
+        "app-path": APP_PATH,
+        "ios-push-provider": provider,
+      };
+      if (IOS_USE_FRAMEWORKS !== undefined) {
+        configurePluginArgs["ios-use-frameworks"] = IOS_USE_FRAMEWORKS;
+      }
       runScriptWithArgs("compatibility:configure-plugin", {
-        args: {
-          "app-path": APP_PATH,
-          "ios-push-provider": provider,
-        },
+        args: configurePluginArgs,
       });
 
       logMessage(`⚙️ Running expo prebuild after modifying app.json for ios push provider: ${provider}`);
