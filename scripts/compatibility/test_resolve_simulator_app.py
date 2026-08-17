@@ -84,6 +84,19 @@ class ResolveSimulatorAppTests(unittest.TestCase):
         self.assertEqual(set(diagnostic), {"parse_error", "raw_bytes"})
         self.assertNotIn("must-not-leak", json.dumps(diagnostic))
 
+    def test_wrong_shaped_json_leaves_only_bounded_parse_metadata(self):
+        self.private_settings.write_text(
+            json.dumps({"secret": "must-not-leak"}),
+            encoding="utf-8",
+        )
+
+        result = self.run_script()
+
+        self.assertNotEqual(result.returncode, 0)
+        diagnostic = json.loads(self.sanitized_settings.read_text(encoding="utf-8"))
+        self.assertEqual(set(diagnostic), {"parse_error", "raw_bytes"})
+        self.assertNotIn("must-not-leak", json.dumps(diagnostic))
+
     def test_invalid_epoch_is_classified(self):
         app = self.create_app()
         self.private_settings.write_text(json.dumps(self.settings(app)), encoding="utf-8")
@@ -102,6 +115,37 @@ class ResolveSimulatorAppTests(unittest.TestCase):
 
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("missing executable Fixture", result.stderr)
+
+    def test_rejection_reports_missing_info_plist(self):
+        app = self.create_app()
+        (app / "Info.plist").unlink()
+        self.private_settings.write_text(json.dumps(self.settings(app)), encoding="utf-8")
+
+        result = self.run_script()
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("missing Info.plist", result.stderr)
+
+    def test_rejection_reports_unreadable_info_plist(self):
+        app = self.create_app()
+        (app / "Info.plist").write_bytes(b"not a plist")
+        self.private_settings.write_text(json.dumps(self.settings(app)), encoding="utf-8")
+
+        result = self.run_script()
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("unreadable Info.plist", result.stderr)
+
+    def test_rejection_reports_missing_bundle_executable(self):
+        app = self.create_app()
+        with (app / "Info.plist").open("wb") as plist_file:
+            plistlib.dump({}, plist_file)
+        self.private_settings.write_text(json.dumps(self.settings(app)), encoding="utf-8")
+
+        result = self.run_script()
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("missing CFBundleExecutable", result.stderr)
 
     def test_rejects_stale_executable(self):
         app = self.create_app(modified_at=99)
@@ -126,6 +170,28 @@ class ResolveSimulatorAppTests(unittest.TestCase):
         self.assertIn("expected one current built simulator app", result.stderr)
         self.assertIn(str(first_app), result.stderr)
         self.assertIn(str(second_app), result.stderr)
+
+    def test_reports_filtered_debug_and_extension_targets(self):
+        app = self.create_app()
+        debug_settings = self.settings(app)[0]
+        debug_settings["target"] = "DebugApp"
+        debug_settings["buildSettings"]["CONFIGURATION"] = "Debug"
+        extension_settings = self.settings(app)[0]
+        extension_settings["target"] = "NotificationExtension"
+        extension_settings["buildSettings"]["WRAPPER_EXTENSION"] = "appex"
+        self.private_settings.write_text(
+            json.dumps([debug_settings, extension_settings]),
+            encoding="utf-8",
+        )
+
+        result = self.run_script()
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("DebugApp: configuration=Debug wrapper=app", result.stderr)
+        self.assertIn(
+            "NotificationExtension: configuration=Release wrapper=appex",
+            result.stderr,
+        )
 
 
 if __name__ == "__main__":

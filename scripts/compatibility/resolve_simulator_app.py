@@ -96,11 +96,20 @@ def resolve_app(entries: list[dict[str, object]], build_started_at: int, scheme:
 
     matches: list[Path] = []
     rejected: list[str] = []
+    skipped: list[str] = []
     for entry in entries:
         settings = entry.get("buildSettings", {})
         if settings.get("CONFIGURATION") != "Release":
+            skipped.append(
+                f"{entry.get('target', 'unknown')}: configuration={settings.get('CONFIGURATION')} "
+                f"wrapper={settings.get('WRAPPER_EXTENSION')}"
+            )
             continue
         if settings.get("WRAPPER_EXTENSION") != "app":
+            skipped.append(
+                f"{entry.get('target', 'unknown')}: configuration={settings.get('CONFIGURATION')} "
+                f"wrapper={settings.get('WRAPPER_EXTENSION')}"
+            )
             continue
         path = Path(str(settings.get("TARGET_BUILD_DIR", ""))) / str(
             settings.get("WRAPPER_NAME", "")
@@ -130,7 +139,8 @@ def resolve_app(entries: list[dict[str, object]], build_started_at: int, scheme:
     if len(matches) != 1:
         raise SystemExit(
             f"expected one current built simulator app for {scheme}, "
-            f"found {[str(path) for path in matches]}; rejected {rejected}"
+            f"found {[str(path) for path in matches]}; inspected {len(entries)} targets; "
+            f"skipped {skipped}; rejected {rejected}"
         )
     return matches[0]
 

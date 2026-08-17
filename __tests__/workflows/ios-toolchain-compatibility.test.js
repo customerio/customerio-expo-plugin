@@ -59,6 +59,15 @@ describe('Xcode 27 preview workflow', () => {
     expect(step('Record unavailable toolchain').if).toContain(
       "steps.toolchain.outcome == 'failure'"
     );
+    expect(step('Record launch failure').if).toBe(
+      "failure() && steps.launch.outcome == 'failure'"
+    );
+    expect(step('Record generated-app build failure').if).toContain(
+      "steps.validate-plugin.outcome == 'failure'"
+    );
+    expect(step('Record product resolution failure').if).toContain(
+      "steps.resolve-app.outcome == 'failure'"
+    );
     expect(workflow).toContain('unrecognized launch failure reason');
     expect(step('Record unclassified failure').if).toBe(
       "failure() && steps.toolchain.outcome != 'failure' && steps.validate-plugin.outcome != 'failure' && steps.resolve-app.outcome != 'failure' && steps.launch.outcome != 'failure' && steps.launch.outcome != 'success'"
