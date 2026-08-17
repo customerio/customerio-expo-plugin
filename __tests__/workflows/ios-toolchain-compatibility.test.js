@@ -19,8 +19,10 @@ describe('Xcode 27 preview workflow', () => {
     );
     expect(workflow).toContain('workspaces=("$APP_PATH"/ios/*.xcworkspace)');
     expect(workflow).not.toContain('$APP_NAME.xcworkspace');
-    expect(workflow).toContain('built app executable is stale');
+    expect(workflow).toContain('stale_executables.append(executable)');
     expect(workflow).toContain("expected-ios-major: '27'");
+    expect(workflow).toContain('steps.launch.outputs.failure-reason');
+    expect(workflow).toContain('simulator-infrastructure-unavailable');
     expect(workflow).toContain('**Classification:** launch-passed');
   });
 });

@@ -108,7 +108,7 @@ jobs:
           shopt -s nullglob
           workspaces=("$APP_PATH"/ios/*.xcworkspace)
           if [[ "${#workspaces[@]}" -ne 1 ]]; then
-            echo "::error::expected one generated workspace, found ${#workspaces[@]}: ${workspaces[*]}"
+            echo "::error::expected one generated workspace, found ${#workspaces[@]}: ${workspaces[*]-}"
             exit 1
           fi
           workspace="${workspaces[0]}"
@@ -131,6 +131,7 @@ jobs:
           with open(sys.argv[2], encoding="utf-8") as start_file:
               build_started_at = int(start_file.read().strip())
           matches = []
+          stale_executables = []
           for entry in entries:
               settings = entry.get("buildSettings", {})
               if settings.get("WRAPPER_EXTENSION") != "app":
@@ -148,19 +149,26 @@ jobs:
               if not os.path.isfile(executable):
                   continue
               if os.path.getmtime(executable) < build_started_at:
-                  raise SystemExit(f"built app executable is stale: {executable}")
+                  stale_executables.append(executable)
+                  continue
               matches.append(path)
           if len(matches) != 1:
               raise SystemExit(
-                  f"expected one current built simulator app for {sys.argv[3]}, found {matches}"
+                  f"expected one current built simulator app for {sys.argv[3]}, "
+                  f"found {matches}; stale executables {stale_executables}"
               )
           print(matches[0])
           PY
           )"
+          if [[ -z "$app_product_path" || "$app_product_path" == *$'\n'* ]]; then
+            echo '::error::resolved app product path must be one non-empty line'
+            exit 1
+          fi
           echo "APP_PRODUCT_PATH=$app_product_path" >> "$GITHUB_ENV"
 
       - name: Install and launch generated app
         id: launch
+        # TODO(MBL-2248): switch to @main after customerio/mobile-ci-tools#16 merges.
         uses: customerio/mobile-ci-tools/github-actions/ios/launch-simulator-app/v1@codex/ios-simulator-launch-smoke
         with:
           app-path: ${{ env.APP_PRODUCT_PATH }}
@@ -189,19 +197,50 @@ jobs:
       - name: Record launch failure
         if: failure() && steps.launch.outcome == 'failure'
         shell: bash
+        env:
+          FAILURE_REASON: ${{ steps.launch.outputs.failure-reason }}
         run: |
+          set -euo pipefail
+          case "$FAILURE_REASON" in
+            runtime-unavailable|runtime-selection-failed|simulator-boot-failed)
+              classification=simulator-infrastructure-unavailable
+              next_step='inspect the hosted image runtime and launch log before attributing this to Expo'
+              ;;
+            install-failed)
+              classification=generated-app-install-failed
+              next_step='inspect the generated app and simulator install failure before evaluating lifecycle compatibility'
+              ;;
+            launch-failed)
+              classification=generated-app-launch-failed
+              next_step='inspect the launch log for the UIKit runtime issue or launch rejection'
+              ;;
+            did-not-survive)
+              classification=generated-app-exited-early
+              next_step='inspect the launch log for the UIKit runtime issue or early process exit'
+              ;;
+            invalid-input|invalid-app|sdk-mismatch)
+              classification=launch-contract-invalid
+              next_step='inspect the generated product metadata and smoke-test inputs'
+              ;;
+            *)
+              classification=launch-smoke-failed
+              next_step='confirm the simulator runtime and shared action reference before treating this as an Expo lifecycle failure'
+              ;;
+          esac
           {
             echo '## Expo Xcode 27 preview compatibility'
             echo
-            echo '**Classification:** generated-app-launch-failed'
+            echo "**Classification:** $classification"
+            echo "**Failure category:** $FAILURE_REASON"
             echo '**Provider:** ${{ matrix.ios-push-provider }}'
-            echo '**Next step:** inspect the uploaded launch log for the UIKit runtime issue or early process exit'
+            echo "**Next step:** $next_step"
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Record generated-app build failure
         if: failure() && steps.validate-plugin.outcome == 'failure'
         shell: bash
         run: |
+          set -euo pipefail
           {
             echo '## Expo Xcode 27 preview compatibility'
             echo
@@ -214,12 +253,26 @@ jobs:
         if: failure() && steps.resolve-app.outcome == 'failure'
         shell: bash
         run: |
+          set -euo pipefail
           {
             echo '## Expo Xcode 27 preview compatibility'
             echo
             echo '**Classification:** generated-app-not-found'
             echo '**Provider:** ${{ matrix.ios-push-provider }}'
             echo '**Next step:** inspect the generated workspace build settings before evaluating launch compatibility'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Record unclassified failure
+        if: failure() && steps.validate-plugin.outcome != 'failure' && steps.resolve-app.outcome != 'failure' && steps.launch.outcome != 'failure'
+        shell: bash
+        run: |
+          set -euo pipefail
+          {
+            echo '## Expo Xcode 27 preview compatibility'
+            echo
+            echo '**Classification:** harness-failed-before-build'
+            echo '**Provider:** ${{ matrix.ios-push-provider }}'
+            echo '**Next step:** inspect runner setup, npm install, app generation, and plugin configuration; no compatibility signal was produced'
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload compatibility logs
