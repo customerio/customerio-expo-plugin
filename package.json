@@ -83,7 +83,8 @@
     "ts-jest": "^29.2.5",
     "typescript": "^5.9.2",
     "typescript-eslint": "^8.39.0",
-    "xcode": "^3.0.1"
+    "xcode": "^3.0.1",
+    "yaml": "^2.8.3"
   },
   "commitlint": {
     "extends": [
