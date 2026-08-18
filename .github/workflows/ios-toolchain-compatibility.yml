@@ -139,7 +139,7 @@ jobs:
       - name: Install and launch generated app
         id: launch
         # TODO(MBL-2248): switch to @main after customerio/mobile-ci-tools#16 merges.
-        uses: customerio/mobile-ci-tools/github-actions/ios/launch-simulator-app/v1@a5a10ee48b901234701ac38ff26daeb4b5d9c041
+        uses: customerio/mobile-ci-tools/github-actions/ios/launch-simulator-app/v1@76855cf3495a2c616d0a5ccc2e53a41d66b6c967
         with:
           app-path: ${{ env.APP_PRODUCT_PATH }}
           expected-ios-major: '27'
@@ -211,7 +211,7 @@ jobs:
             echo "**Next step:** $next_step"
             # Markdown backticks are intentionally literal in the summary.
             # shellcheck disable=SC2016
-            echo '**Known boundary:** `generated-app-exited-early` is the expected blocker until Expo adopts UIScene; see [.github/IOS-TOOLCHAIN-COMPATIBILITY.md](https://github.com/customerio/customerio-expo-plugin/blob/main/.github/IOS-TOOLCHAIN-COMPATIBILITY.md).'
+            echo '**Known boundary:** `generated-app-launch-failed` and `generated-app-exited-early` are the expected blockers until Expo adopts UIScene; see [.github/IOS-TOOLCHAIN-COMPATIBILITY.md](https://github.com/customerio/customerio-expo-plugin/blob/main/.github/IOS-TOOLCHAIN-COMPATIBILITY.md).'
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Record generated-app build failure

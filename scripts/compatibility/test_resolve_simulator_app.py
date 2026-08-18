@@ -77,7 +77,7 @@ class ResolveSimulatorAppTests(unittest.TestCase):
     def test_resolves_settings_after_xcodebuild_stdout_preamble(self):
         app = self.create_app()
         self.private_settings.write_text(
-            "xcodebuild: warning: diagnostic preamble\n"
+            "2026-08-17 07:20:00.123 xcodebuild[1234:5678] warning: diagnostic preamble\n"
             + json.dumps(self.settings(app))
             + "\nxcodebuild: warning: diagnostic trailer\n",
             encoding="utf-8",
@@ -155,6 +155,16 @@ class ResolveSimulatorAppTests(unittest.TestCase):
     def test_rejection_reports_truncated_xml_info_plist(self):
         app = self.create_app()
         (app / "Info.plist").write_bytes(b'<?xml version="1.0"?><plist')
+        self.private_settings.write_text(json.dumps(self.settings(app)), encoding="utf-8")
+
+        result = self.run_script()
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("unreadable Info.plist", result.stderr)
+
+    def test_rejection_reports_corrupt_binary_info_plist(self):
+        app = self.create_app()
+        (app / "Info.plist").write_bytes(b"bplist00" + b"\0" * 32)
         self.private_settings.write_text(json.dumps(self.settings(app)), encoding="utf-8")
 
         result = self.run_script()
