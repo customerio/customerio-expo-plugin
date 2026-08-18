@@ -86,7 +86,7 @@ jobs:
         run: npm ci
 
       - name: Run utils tests
-        run: npm test -- __tests__/utils __tests__/ios/withCIOIos.test.ts __tests__/ios/withCIOIosSwift.test.ts
+        run: npm test -- __tests__/utils __tests__/scripts __tests__/ios/withCIOIos.test.ts __tests__/ios/withCIOIosSwift.test.ts
 
   test-scenarios:
     name: Test scenario suite

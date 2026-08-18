@@ -6,6 +6,7 @@ const {
   CUSTOMER_IO_REACT_NATIVE_SDK_NAME,
   EXPO_BUILD_PROPERTIES_PLUGIN,
 } = require("../utils/constants");
+const { pinnedExactVersion } = require("../utils/expo-template");
 
 const APP_PATH = getArgValue("--app-path", { required: true });
 
@@ -24,6 +25,19 @@ const APP_ARTIFACTS_DIR_PATH = path.join(APP_PATH, APP_ARTIFACTS_DIR_NAME);
 
 // Get additional dependencies to install
 const ADDITIONAL_DEPENDENCIES = parseArrayArg("--dependencies");
+
+// The app's `expo` dependency when it is an exact version, or null when it is a
+// range. Only an exact version represents a deliberate pin — a range is npm's
+// default and is meant to float.
+function readPinnedExpoVersion() {
+  try {
+    const appPackageJson = JSON.parse(fs.readFileSync(path.join(APP_PATH, "package.json"), "utf8"));
+    return pinnedExactVersion((appPackageJson.dependencies || {}).expo);
+  } catch (error) {
+    logMessage(`⚠️  Could not read the app's expo version: ${error.message}`, "warning");
+    return null;
+  }
+}
 
 /**
  * Main entry point for the script to handle the execution logic.
@@ -130,12 +144,31 @@ function execute() {
   }
 
   // Step 6: Run npx expo install
+  //
+  // `--fix` realigns every expo-* package to the SDK, which is what we want —
+  // but it also rewrites `expo` itself to the newest patch it considers
+  // appropriate, discarding the exact version create-test-app pinned. It is the
+  // last writer, so capture the pin first and restore it afterwards; otherwise
+  // the app silently ends up on whichever release `--fix` picked.
+  const pinnedExpoVersion = readPinnedExpoVersion();
+
   logMessage("🚀 Running npx expo install...");
   try {
     runCommand(`cd ${APP_PATH} && npx expo install --fix`);
   } catch (error) {
     logMessage(`❌ Error running npx expo install: ${error.message}`, "error");
     process.exit(1);
+  }
+
+  if (pinnedExpoVersion && readPinnedExpoVersion() !== pinnedExpoVersion) {
+    logMessage(`📌 Restoring pinned expo version: ${pinnedExpoVersion}`);
+    try {
+      runCommand(`cd ${APP_PATH} && npm pkg set dependencies.expo=${pinnedExpoVersion}`);
+      runCommand(`cd ${APP_PATH} && npm install`);
+    } catch (error) {
+      logMessage(`❌ Error restoring pinned expo version: ${error.message}`, "error");
+      process.exit(1);
+    }
   }
 
   logMessage("✅ App setup and dependency installation completed successfully!", "success");
