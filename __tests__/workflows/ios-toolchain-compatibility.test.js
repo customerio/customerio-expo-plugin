@@ -62,7 +62,7 @@ describe('Xcode 27 preview workflow', () => {
     expect(step('Record launch failure').if).toBe(
       "failure() && steps.launch.outcome == 'failure'"
     );
-    expect(step('Record generated-app build failure').if).toContain(
+    expect(step('Record generated-app validation failure').if).toContain(
       "steps.validate-plugin.outcome == 'failure'"
     );
     expect(step('Record product resolution failure').if).toContain(

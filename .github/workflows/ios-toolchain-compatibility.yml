@@ -137,8 +137,8 @@ jobs:
 
       - name: Install and launch generated app
         id: launch
-        # TODO(MBL-2248): switch to @main after customerio/mobile-ci-tools#16 merges.
-        uses: customerio/mobile-ci-tools/github-actions/ios/launch-simulator-app/v1@7071072c77b3e92ac14418f54a3f8865f5863e75
+        # Repin to the reviewed merge commit after customerio/mobile-ci-tools#16 merges.
+        uses: customerio/mobile-ci-tools/github-actions/ios/launch-simulator-app/v1@bfa00684949587735d7076d2e11a8a44f27cb467
         with:
           app-path: ${{ env.APP_PRODUCT_PATH }}
           expected-ios-major: '27'
@@ -217,7 +217,7 @@ jobs:
             echo '**Known boundary:** `generated-app-launch-failed` and `generated-app-exited-early` are the expected blockers until Expo adopts UIScene; see [.github/IOS-TOOLCHAIN-COMPATIBILITY.md](https://github.com/customerio/customerio-expo-plugin/blob/main/.github/IOS-TOOLCHAIN-COMPATIBILITY.md).'
           } >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Record generated-app build failure
+      - name: Record generated-app validation failure
         if: failure() && steps.validate-plugin.outcome == 'failure'
         shell: bash
         run: |
@@ -225,9 +225,9 @@ jobs:
           {
             echo '## Expo Xcode 27 preview compatibility'
             echo
-            echo '**Classification:** generated-app-build-failed'
+            echo '**Classification:** generated-app-validation-failed'
             echo "**Provider:** ${{ matrix.ios-push-provider }}"
-            echo '**Next step:** inspect prebuild, provider snapshots, CocoaPods, and xcodebuild output before evaluating launch compatibility'
+            echo '**Next step:** inspect prebuild, provider snapshots, CocoaPods, and xcodebuild output to identify which validation stage failed'
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Record product resolution failure

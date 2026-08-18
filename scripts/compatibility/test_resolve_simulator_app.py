@@ -116,6 +116,17 @@ class ResolveSimulatorAppTests(unittest.TestCase):
         self.assertEqual(set(diagnostic), {"parse_error", "raw_bytes"})
         self.assertNotIn("must-not-leak", json.dumps(diagnostic))
 
+    def test_non_utf8_settings_leave_only_bounded_parse_metadata(self):
+        self.private_settings.write_bytes(b"xcodebuild preamble \xff must-not-leak")
+
+        result = self.run_script()
+
+        self.assertNotEqual(result.returncode, 0)
+        diagnostic = json.loads(self.sanitized_settings.read_text(encoding="utf-8"))
+        self.assertEqual(set(diagnostic), {"parse_error", "raw_bytes"})
+        self.assertEqual(diagnostic["raw_bytes"], self.private_settings.stat().st_size)
+        self.assertNotIn("must-not-leak", json.dumps(diagnostic))
+
     def test_wrong_shaped_json_leaves_only_bounded_parse_metadata(self):
         self.private_settings.write_text(
             json.dumps({"secret": "must-not-leak"}),

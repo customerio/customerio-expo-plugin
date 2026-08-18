@@ -86,7 +86,7 @@ def load_settings(source: Path, sanitized_destination: Path) -> list[dict[str, o
                 if is_settings_payload(candidate):
                     payload = candidate
                     break
-    except (OSError, json.JSONDecodeError) as error:
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as error:
         write_sanitized_settings(
             sanitized_destination,
             None,
