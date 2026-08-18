@@ -129,9 +129,19 @@ def resolve_app(entries: list[dict[str, object]], build_started_at: int, scheme:
                 f"wrapper={settings.get('WRAPPER_EXTENSION')}"
             )
             continue
-        path = Path(str(settings.get("TARGET_BUILD_DIR", ""))) / str(
-            settings.get("WRAPPER_NAME", "")
-        )
+        build_directory = settings.get("TARGET_BUILD_DIR")
+        wrapper_name = settings.get("WRAPPER_NAME")
+        if (
+            not isinstance(build_directory, str)
+            or not build_directory
+            or not isinstance(wrapper_name, str)
+            or not wrapper_name
+        ):
+            rejected.append(
+                f"{entry.get('target', 'unknown')}: missing TARGET_BUILD_DIR/WRAPPER_NAME"
+            )
+            continue
+        path = Path(build_directory) / wrapper_name
         info_plist = path / "Info.plist"
         if not info_plist.is_file():
             rejected.append(f"{path}: missing Info.plist")
@@ -163,7 +173,7 @@ def resolve_app(entries: list[dict[str, object]], build_started_at: int, scheme:
         raise SystemExit(
             f"expected one current built simulator app for {scheme}, "
             f"found {[str(path) for path in matches]}; inspected {len(entries)} targets; "
-            f"skipped {skipped}; rejected {rejected}"
+            f"skipped {len(skipped)} targets (first 10: {skipped[:10]}); rejected {rejected}"
         )
     return matches[0]
 

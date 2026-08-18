@@ -142,6 +142,22 @@ class ResolveSimulatorAppTests(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("missing Info.plist", result.stderr)
 
+    def test_rejection_reports_missing_product_path_settings(self):
+        entry = {
+            "target": "Fixture",
+            "buildSettings": {
+                "CONFIGURATION": "Release",
+                "WRAPPER_EXTENSION": "app",
+            },
+        }
+        self.private_settings.write_text(json.dumps([entry]), encoding="utf-8")
+
+        result = self.run_script()
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("Fixture: missing TARGET_BUILD_DIR/WRAPPER_NAME", result.stderr)
+        self.assertNotIn("None: missing Info.plist", result.stderr)
+
     def test_rejection_reports_unreadable_info_plist(self):
         app = self.create_app()
         (app / "Info.plist").write_bytes(b"not a plist")
@@ -223,6 +239,7 @@ class ResolveSimulatorAppTests(unittest.TestCase):
         result = self.run_script()
 
         self.assertNotEqual(result.returncode, 0)
+        self.assertIn("skipped 2 targets", result.stderr)
         self.assertIn("DebugApp: configuration=Debug wrapper=app", result.stderr)
         self.assertIn(
             "NotificationExtension: configuration=Release wrapper=appex",

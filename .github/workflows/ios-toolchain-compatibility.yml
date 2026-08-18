@@ -5,7 +5,6 @@ on:
     paths:
       - '.github/workflows/ios-toolchain-compatibility.yml'
       - 'scripts/compatibility/resolve_simulator_app.py'
-      - 'scripts/compatibility/test_resolve_simulator_app.py'
   schedule:
     # Native and Flutter run during the two preceding hours.
     - cron: '17 7 * * *'
