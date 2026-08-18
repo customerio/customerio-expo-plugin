@@ -117,6 +117,7 @@ jobs:
           fi
           workspace="${workspaces[0]}"
           scheme="$(basename "$workspace" .xcworkspace)"
+          set +e
           xcodebuild \
             -workspace "$workspace" \
             -scheme "$scheme" \
@@ -124,6 +125,19 @@ jobs:
             -sdk iphonesimulator \
             -showBuildSettings \
             -json > "$private_settings_json"
+          xcodebuild_status="$?"
+          set -e
+          if [[ "$xcodebuild_status" -ne 0 ]]; then
+            # Preserve only the resolver's bounded parse metadata. The private
+            # build settings are still removed by the EXIT trap.
+            python3 scripts/compatibility/resolve_simulator_app.py \
+              --private-settings-json "$private_settings_json" \
+              --build-start-epoch "$build_start_epoch" \
+              --scheme "$scheme" \
+              --sanitized-settings-json "$settings_json" >/dev/null || true
+            echo "::error::xcodebuild -showBuildSettings failed with exit code $xcodebuild_status"
+            exit "$xcodebuild_status"
+          fi
           app_product_path="$(python3 scripts/compatibility/resolve_simulator_app.py \
             --private-settings-json "$private_settings_json" \
             --build-start-epoch "$build_start_epoch" \

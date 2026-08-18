@@ -32,6 +32,11 @@ describe('Xcode 27 preview workflow', () => {
       'scripts/compatibility/resolve_simulator_app.py'
     );
     expect(workflow).toContain('--sanitized-settings-json "$settings_json"');
+    expect(workflow).toContain('xcodebuild_status="$?"');
+    expect(workflow).toContain('if [[ "$xcodebuild_status" -ne 0 ]]');
+    expect(workflow).toContain(
+      'xcodebuild -showBuildSettings failed with exit code $xcodebuild_status'
+    );
     expect(workflow).toContain('--clean');
     expect(
       step('Upload compatibility logs').with.path.trim().split('\n')
@@ -92,5 +97,5 @@ describe('Xcode 27 preview workflow', () => {
         }\nstderr:\n${error.stderr ?? ''}`
       );
     }
-  });
+  }, 60_000);
 });
