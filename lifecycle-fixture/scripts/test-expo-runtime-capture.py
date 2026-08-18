@@ -52,8 +52,16 @@ class ExpoRuntimeDependencyTests(unittest.TestCase):
                 "customerioExpoPluginVersion": "3.7.1",
                 "customerioIOSVersion": "4.7.2",
                 "firebaseIOSMessagingVersion": "12.17.0",
+                "files": {
+                    "customerioNotificationDelegate": {
+                        "preSha256": [hashlib.sha256(b"original delegate").hexdigest()]
+                    }
+                },
             },
         )
+        delegate = self.app / MODULE.CUSTOMERIO_PODS_SOURCE
+        delegate.parent.mkdir(parents=True, exist_ok=True)
+        delegate.write_bytes(b"original delegate")
         packages = {}
         for package, version in NODE_VERSIONS.items():
             self.write_json(
@@ -144,6 +152,18 @@ class ExpoRuntimeDependencyTests(unittest.TestCase):
         )
         with self.assertRaisesRegex(MODULE.CaptureError, "precompiled ExpoModulesCore"):
             MODULE._dependency_versions(self.source, self.app, "fcm")
+
+    def test_nopush_requires_exact_unpatched_customerio_delegate(self) -> None:
+        digest = hashlib.sha256()
+        MODULE._verify_nopush_customerio_source(self.source, self.app, digest)
+        self.assertNotEqual(digest.hexdigest(), hashlib.sha256().hexdigest())
+
+    def test_mutated_nopush_customerio_delegate_fails_closed(self) -> None:
+        (self.app / MODULE.CUSTOMERIO_PODS_SOURCE).write_bytes(b"patched delegate")
+        with self.assertRaisesRegex(MODULE.CaptureError, "exact unpatched source"):
+            MODULE._verify_nopush_customerio_source(
+                self.source, self.app, hashlib.sha256()
+            )
 
     def test_mutated_canonical_validator_fails_locked_verification(self) -> None:
         actual_source = SCRIPT.parents[2]

@@ -85,7 +85,13 @@
       "sha256": "219726835cbf7b36669d9cb574e2d788d0b9fec1d998d75b27322315968b2c92"
     },
     "lifecycle-fixture/javascript/LifecycleReceipts.ts": {
-      "sha256": "7998725ee0154a495e9f1e5f8bfb51380c94b0be20acec30e2cf94bc4d8144bd"
+      "sha256": "ff34f10b425cbf68b644a3847260156f059941ebfd5b373e8b0b004338e9cf83"
+    },
+    "lifecycle-fixture/javascript/runtime-modules.d.ts": {
+      "sha256": "24b0a3450e5691b998e0db3259e99615523e751e6e29221e1bc6be259d167122"
+    },
+    "lifecycle-fixture/javascript/tsconfig.json": {
+      "sha256": "cc6be75a165a54900101ace78191d84ff322f6443a4478a5d52e85f05cdd75c8"
     },
     "lifecycle-fixture/probe-module/expo-module.config.json": {
       "sha256": "39000bef2242673dfa3080b753a84b6c722db14912e7f184e6df8b4b341e054f"
@@ -130,22 +136,22 @@
       "sha256": "3917db9e1c995614ef14aca7e16975edc214e7dabe238a52142fcf3dbe227ed4"
     },
     "lifecycle-fixture/scripts/pin-expo-fixture-sources.js": {
-      "sha256": "a359ea2e83ca3126be9c4e10067960adde1556798fee7fbea794c2900632ff86"
+      "sha256": "0fd69b0bc3807a020b56c1830106a1ca9d2ecccab2841e09252b0fb38080ff97"
     },
     "lifecycle-fixture/scripts/test-javascript-recorder.js": {
-      "sha256": "72fb39460e286d3f264b92500fb69bd0a8156bd6c9c2ecc1822ea61dc932be57"
+      "sha256": "dd8851a2710a4e96874b393cb79067afd224317d48e3e9c33a1b21200d48b172"
     },
     "lifecycle-fixture/scripts/test-expo-producer-captures.py": {
       "sha256": "f175af93b889b142fe701303626d70d27a578b5bd82cc57b38929818e73d6228"
     },
     "lifecycle-fixture/scripts/test-expo-runtime-capture.py": {
-      "sha256": "9cc0b831012a2aae19002c8bfb7d93a56454c9f53a417c1540583d85c2a1b923"
+      "sha256": "1c9ff9a6daace2511f54e23383b96989a6d41302f0552118eff07edbad8422ec"
     },
     "lifecycle-fixture/scripts/typecheck-probe.sh": {
       "sha256": "042b24acfc7e742ecdff9a474ea277751642196b1bf8bcf65d1c22c0a27ee5f3"
     },
     "lifecycle-fixture/scripts/validate-expo-runtime-capture.py": {
-      "sha256": "e9b2ab8c4d61109ddc6719762f82a7615efeb15eae1bcd3b2ee9dd1569599672"
+      "sha256": "3d3b76df61ffce44d07d0a665a2935fe4c5f825da2d57983827ed78379fff526"
     }
   }
 }

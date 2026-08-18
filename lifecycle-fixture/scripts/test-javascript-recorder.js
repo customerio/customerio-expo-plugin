@@ -45,6 +45,78 @@ function framework(name, role, version, commitSha = null) {
   return { name, role, version, commit_sha: commitSha };
 }
 
+async function assertSinkFailureFailsClosed(Recorder, context, output) {
+  let traceWrites = 0;
+  let receiptWrites = 0;
+  const sink = {
+    writeJavascriptTrace() {
+      traceWrites += 1;
+      return traceWrites === 1;
+    },
+    writeJavascriptReceipt() {
+      receiptWrites += 1;
+      return true;
+    },
+  };
+  const outputStart = output.length;
+  const recorder = new Recorder(context, 8, sink);
+  recorder.start();
+  recorder.record(
+    'wrapper.app-lifecycle-state',
+    'expo-javascript',
+    'app-received',
+    'state-change',
+    { enums: { app_state: 'active' } }
+  );
+  await Promise.resolve();
+  recorder.record(
+    'wrapper.notification-response-received',
+    'expo-javascript',
+    'app-received',
+    'entry'
+  );
+  await recorder.end();
+  const failedOutput = output.splice(outputStart);
+  if (traceWrites !== 2 || receiptWrites !== 0) {
+    throw new Error('JavaScript sink failure did not stop trace publication');
+  }
+  if (failedOutput.some((line) => line.startsWith('CIO-LIFECYCLE-RECEIPT '))) {
+    throw new Error('JavaScript sink failure published a receipt');
+  }
+}
+
+async function assertHarnessOccurrenceWins(Recorder, context, output) {
+  const outputStart = output.length;
+  const recorder = new Recorder(context, 8);
+  recorder.start();
+  recorder.record(
+    'wrapper.app-lifecycle-state',
+    'expo-javascript',
+    'app-received',
+    'state-change',
+    { rawCorrelation: { occurrence: 'caller-supplied' } }
+  );
+  recorder.record(
+    'wrapper.app-lifecycle-state',
+    'expo-javascript',
+    'app-received',
+    'state-change'
+  );
+  await recorder.end();
+  const tracePrefix = 'CIO-LIFECYCLE-TRACE ';
+  const records = output
+    .splice(outputStart)
+    .filter((line) => line.startsWith(tracePrefix))
+    .map((line) => JSON.parse(line.slice(tracePrefix.length)))
+    .filter((record) => record.kind !== 'trace-control');
+  if (
+    records.length !== 2 ||
+    records.some((record) => record.correlation?.occurrence !== 'occurrence-1')
+  ) {
+    throw new Error('caller overrode the harness-issued activation occurrence');
+  }
+}
+
 async function main() {
   const Recorder = loadRecorder();
   const context = {
@@ -64,6 +136,8 @@ async function main() {
   const originalLog = console.log;
   console.log = (line) => output.push(String(line));
   try {
+    await assertSinkFailureFailsClosed(Recorder, context, output);
+    await assertHarnessOccurrenceWins(Recorder, context, output);
     const recorder = new Recorder(context, 2);
     recorder.start();
     for (let index = 0; index < 3; index += 1) {

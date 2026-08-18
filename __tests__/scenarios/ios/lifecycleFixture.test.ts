@@ -123,6 +123,8 @@ describe('Expo 57 lifecycle source provenance', () => {
         'tsconfig.build.json',
         'scripts/compatibility/configure-plugin.js',
         'lifecycle-fixture/javascript/LifecycleReceipts.ts',
+        'lifecycle-fixture/javascript/runtime-modules.d.ts',
+        'lifecycle-fixture/javascript/tsconfig.json',
         'lifecycle-fixture/probe-module/expo-module.config.json',
         'lifecycle-fixture/probe-module/ios/CioLifecycleProbe.podspec',
         'lifecycle-fixture/probe-module/ios/CioLifecycleProbeBootstrap.m',
@@ -171,6 +173,26 @@ describe('no-seat fixture bridge', () => {
     expect(probeText).not.toContain(': NotificationDelegate');
     expect(probeText).not.toContain('addDelegate(self)');
     expect(probeText).not.toContain('UNUserNotificationCenter.current');
+    const bootstrap = fs.readFileSync(
+      path.join(probeRoot, 'ios/CioLifecycleProbeBootstrap.m'),
+      'utf8'
+    );
+    const module = fs.readFileSync(
+      path.join(probeRoot, 'ios/CioLifecycleProbeModule.swift'),
+      'utf8'
+    );
+    expect(bootstrap).not.toContain('LifecycleTracePlatformProbeObserver');
+    expect(module).not.toContain('LifecycleTracePlatformProbeObserver');
+  });
+
+  it('binds every compiled probe source and the unpatched no-push delegate', () => {
+    const validator = fs.readFileSync(
+      path.join(scriptsRoot, 'validate-expo-runtime-capture.py'),
+      'utf8'
+    );
+    expect(validator).toContain('"ios/LifecycleTraceEvidence.swift"');
+    expect(validator).toContain('_verify_nopush_customerio_source');
+    expect(validator).toContain('delegate_sha != expected[0]');
   });
 
   it('accepts only canonical probe vocabulary before recording', () => {

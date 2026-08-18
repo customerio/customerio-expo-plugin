@@ -281,6 +281,8 @@ function main() {
     'tsconfig.build.json',
     'scripts/compatibility/configure-plugin.js',
     'lifecycle-fixture/javascript/LifecycleReceipts.ts',
+    'lifecycle-fixture/javascript/runtime-modules.d.ts',
+    'lifecycle-fixture/javascript/tsconfig.json',
     'lifecycle-fixture/probe-module/expo-module.config.json',
     'lifecycle-fixture/probe-module/ios/CioLifecycleProbe.podspec',
     'lifecycle-fixture/probe-module/ios/CioLifecycleProbeBootstrap.m',

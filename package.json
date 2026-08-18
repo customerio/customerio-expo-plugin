@@ -30,6 +30,7 @@
     "test": "jest",
     "test:scenarios": "jest --selectProjects scenarios",
     "test:lifecycle-contract": "PYTHONDONTWRITEBYTECODE=1 python3 scripts/ios27_lifecycle_contract.py verify --root . && PYTHONDONTWRITEBYTECODE=1 python3 docs/dev-notes/test_validate_ios27_lifecycle_trace.py && PYTHONDONTWRITEBYTECODE=1 python3 lifecycle-fixture/scripts/test-expo-producer-captures.py && PYTHONDONTWRITEBYTECODE=1 python3 lifecycle-fixture/scripts/test-expo-runtime-capture.py && node lifecycle-fixture/scripts/test-javascript-recorder.js",
+    "test:lifecycle-javascript-types": "tsc -p lifecycle-fixture/javascript/tsconfig.json",
     "compatibility:create-test-app": "node scripts/compatibility/create-test-app.js",
     "compatibility:setup-test-app": "node scripts/compatibility/setup-test-app.js",
     "compatibility:configure-plugin": "node scripts/compatibility/configure-plugin.js",

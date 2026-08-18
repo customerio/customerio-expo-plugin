@@ -31,6 +31,9 @@ The generated fixture contains one local pod, `CioLifecycleProbe`:
 
 - its recorder and harness use only Apple SDK frameworks;
 - its Expo module exposes harness context/control only;
+- the shared platform observer type is compiled but never instantiated by the
+  Expo bootstrap or module; the Expo-specific observer is the sole recorder
+  consumer and terminal owner;
 - it declares no `apple.appDelegateSubscribers` entry;
 - it implements no Expo `NotificationDelegate`;
 - it never installs or replaces a production delegate;

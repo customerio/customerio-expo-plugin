@@ -48,6 +48,11 @@ CUSTOMERIO_SOURCES = {
     "nopush": {},
 }
 
+CUSTOMERIO_PODS_SOURCE = (
+    "ios/Pods/CustomerIOMessagingPush/Sources/MessagingPush/Integration/"
+    "CioNotificationCenterDelegate.swift"
+)
+
 NODE_FRAMEWORKS = {
     "expo": "expo",
     "expo-modules-core": "expo-modules-core",
@@ -355,6 +360,32 @@ def _compare_file(actual: Path, expected: Path, digest: hashlib._Hash) -> None:
     digest.update(f"{hashlib.sha256(actual_bytes).hexdigest()}  {actual}\n".encode())
 
 
+def _verify_nopush_customerio_source(
+    source: Path, app: Path, digest: hashlib._Hash
+) -> None:
+    patch_lock = _load_object(
+        source / "lifecycle-fixture/scripts/expo57-source-patch.lock.json",
+        "Expo source patch lock",
+    )
+    files = patch_lock.get("files")
+    delegate = files.get("customerioNotificationDelegate") if isinstance(files, dict) else None
+    expected = delegate.get("preSha256") if isinstance(delegate, dict) else None
+    if (
+        not isinstance(expected, list)
+        or len(expected) != 1
+        or not isinstance(expected[0], str)
+    ):
+        raise CaptureError("Expo source patch lock lacks one original Customer.io delegate hash")
+    delegate_path = app / CUSTOMERIO_PODS_SOURCE
+    if delegate_path.is_symlink() or not delegate_path.is_file():
+        raise CaptureError("no-push Customer.io notification delegate must be a regular file")
+    delegate_bytes = delegate_path.read_bytes()
+    delegate_sha = hashlib.sha256(delegate_bytes).hexdigest()
+    if delegate_sha != expected[0]:
+        raise CaptureError("no-push Customer.io notification delegate is not exact unpatched source")
+    digest.update(f"{delegate_sha}  {delegate_path}\n".encode())
+
+
 def _verify_generated_sources(source: Path, app: Path, variant: str) -> str:
     patched = source / "__tests__/fixtures/ios/expo57-patched"
     digest = hashlib.sha256()
@@ -375,6 +406,7 @@ def _verify_generated_sources(source: Path, app: Path, variant: str) -> str:
         "ios/CioLifecycleProbe.podspec",
         "ios/CioLifecycleProbeBootstrap.m",
         "ios/CioLifecycleProbeModule.swift",
+        "ios/LifecycleTraceEvidence.swift",
         "ios/LifecycleTraceModel.swift",
         "ios/LifecycleTraceProbe.swift",
         "ios/LifecycleTraceProbeObserver.swift",
@@ -391,6 +423,7 @@ def _verify_generated_sources(source: Path, app: Path, variant: str) -> str:
         digest,
     )
     if variant == "nopush":
+        _verify_nopush_customerio_source(source, app, digest)
         app_delegate = (app / "ios/LifecycleFixtureExpo57/AppDelegate.swift").read_text()
         if "customerio.route-deep-link" in app_delegate:
             raise CaptureError("no-push AppDelegate invents Customer.io Live Activity routing")

@@ -113,3 +113,6 @@ jobs:
 
       - name: Run lifecycle contract and producer tests
         run: npm run test:lifecycle-contract
+
+      - name: Typecheck lifecycle JavaScript recorder
+        run: npm run test:lifecycle-javascript-types

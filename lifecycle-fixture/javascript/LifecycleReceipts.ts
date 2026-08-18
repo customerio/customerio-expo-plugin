@@ -57,6 +57,7 @@ const namespaces: CorrelationNamespace[] = [
 
 export class LifecycleJavascriptRecorder {
   private sequence = 0;
+  private lastEmittedSequence = 0;
   private emittedRecords = 0;
   private droppedRecordsTotal = 0;
   private bufferHighWatermark = 0;
@@ -69,6 +70,7 @@ export class LifecycleJavascriptRecorder {
   private drainScheduled = false;
   private ended = false;
   private sinkFailed = false;
+  private lastCapturedAt = '';
   private drainWaiters: Array<() => void> = [];
 
   constructor(
@@ -97,7 +99,7 @@ export class LifecycleJavascriptRecorder {
     phase: string,
     summary: Summary = {}
   ): void {
-    if (this.ended) return;
+    if (this.ended || this.sinkFailed) return;
 
     this.sequence += 1;
     const correlation: Record<string, string> = {};
@@ -105,8 +107,8 @@ export class LifecycleJavascriptRecorder {
       kind === 'trace-control'
         ? summary.rawCorrelation
         : {
-            occurrence: this.context.activationOccurrenceId,
             ...summary.rawCorrelation,
+            occurrence: this.context.activationOccurrenceId,
           };
     for (const [namespace, raw] of Object.entries(
       rawCorrelation ?? {}
@@ -148,6 +150,9 @@ export class LifecycleJavascriptRecorder {
         this.aliases.get(namespace)!.size,
       ])
     );
+    const capturedAt = new Date().toISOString();
+    this.lastCapturedAt =
+      capturedAt < this.lastCapturedAt ? this.lastCapturedAt : capturedAt;
     const record = {
       schema: 'cio-lifecycle-trace/1',
       manifest_id: this.context.manifestId,
@@ -155,7 +160,7 @@ export class LifecycleJavascriptRecorder {
       stream_id: this.context.javascriptStreamId,
       sequence: this.sequence,
       monotonic_ms: Math.max(0, Math.floor(performance.now() - this.startedAt)),
-      captured_at: new Date().toISOString(),
+      captured_at: this.lastCapturedAt,
       process_id: null,
       integration: this.context.integration,
       runtime: this.context.runtime,
@@ -215,7 +220,7 @@ export class LifecycleJavascriptRecorder {
     );
     const receipt = JSON.stringify({
       last_assigned_sequence: this.sequence,
-      last_emitted_sequence: this.sequence,
+      last_emitted_sequence: this.lastEmittedSequence,
       emitted_records: this.emittedRecords,
       dropped_records_total: this.droppedRecordsTotal,
       buffer_high_watermark: this.bufferHighWatermark,
@@ -225,14 +230,16 @@ export class LifecycleJavascriptRecorder {
       alias_overflow_namespaces: [...this.overflow].sort(),
       drained_at: new Date().toISOString(),
     });
-    if (!this.sinkFailed && this.nativeSink) {
+    if (this.sinkFailed) return;
+    if (this.nativeSink) {
       this.sinkFailed = !this.nativeSink.writeJavascriptReceipt(receipt);
     }
+    if (this.sinkFailed) return;
     console.log(RECEIPT_PREFIX + receipt);
   }
 
   private scheduleDrain(): void {
-    if (this.drainScheduled) return;
+    if (this.drainScheduled || this.sinkFailed) return;
     this.drainScheduled = true;
     queueMicrotask(() => this.drain());
   }
@@ -243,10 +250,13 @@ export class LifecycleJavascriptRecorder {
       const line = TRACE_PREFIX + JSON.stringify(record);
       if (this.nativeSink && !this.nativeSink.writeJavascriptTrace(line)) {
         this.sinkFailed = true;
+        this.queue = [];
+        break;
       } else {
         this.emittedRecords += 1;
+        this.lastEmittedSequence = record.sequence as number;
+        console.log(line);
       }
-      console.log(line);
     }
     this.drainScheduled = false;
     for (const resolve of this.drainWaiters.splice(0)) resolve();
