@@ -285,6 +285,7 @@ function main() {
     'lifecycle-fixture/probe-module/ios/CioLifecycleProbe.podspec',
     'lifecycle-fixture/probe-module/ios/CioLifecycleProbeBootstrap.m',
     'lifecycle-fixture/probe-module/ios/CioLifecycleProbeModule.swift',
+    'lifecycle-fixture/probe-module/ios/LifecycleTraceEvidence.swift',
     'lifecycle-fixture/probe-module/ios/LifecycleTraceModel.swift',
     'lifecycle-fixture/probe-module/ios/LifecycleTraceProbe.swift',
     'lifecycle-fixture/probe-module/ios/LifecycleTraceProbeObserver.swift',

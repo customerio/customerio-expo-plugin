@@ -14,7 +14,7 @@ VALIDATOR = ROOT / "docs/dev-notes/validate_ios27_lifecycle_trace.py"
 NATIVE_ID = "cccccccc-cccc-4ccc-8ccc-cccccccccccc"
 JAVASCRIPT_ID = "dddddddd-dddd-4ddd-8ddd-dddddddddddd"
 PROCESS_INSTANCE_ID = "99999999-9999-4999-8999-999999999999"
-ALIAS_NAMES = ("delivery", "request", "scene", "url", "closure")
+ALIAS_NAMES = ("occurrence", "delivery", "request", "scene", "url", "closure")
 
 
 def frameworks() -> list[dict]:
@@ -67,6 +67,9 @@ def record(
     summary: dict | None = None,
     correlation: dict[str, str] | None = None,
 ) -> dict:
+    if kind != "trace-control":
+        correlation = dict(correlation or {})
+        correlation.setdefault("occurrence", "occurrence-1")
     return {
         "schema": "cio-lifecycle-trace/1",
         "manifest_id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
@@ -94,7 +97,15 @@ def record(
 
 
 def controls(scenario: str, provider: str, runtime: str, body: list[dict]) -> list[dict]:
-    start = record(1, scenario, provider, runtime, "trace.scenario-start", "trace-recorder", "trace-control", "state-change")
+    start_summary = (
+        {"flags": {"scene_manifest_active": False}, "counts": {}, "enums": {}}
+        if runtime == "swift"
+        else None
+    )
+    start = record(
+        1, scenario, provider, runtime, "trace.scenario-start", "trace-recorder",
+        "trace-control", "state-change", start_summary
+    )
     renumbered = []
     for sequence, item in enumerate(body, 2):
         item["sequence"] = sequence
@@ -170,6 +181,7 @@ def manifest(scenario: str, provider: str, native: list[dict], javascript: list[
         "run_ended_at": "2026-08-11T16:00:20Z",
         "created_at": "2026-08-11T16:00:21Z",
         "evidence_level": "L2",
+        "host_topology": "app-delegate-only",
         "scenario": scenario,
         "repositories": repositories(),
         "fixture_source": {
@@ -178,7 +190,7 @@ def manifest(scenario: str, provider: str, native: list[dict], javascript: list[
             "dirty": False,
             "source_snapshot": None,
         },
-        "toolchain": {"xcode_version": "26.6", "xcode_build": "17F113", "swift_version": "6.2.4", "flutter_version": None, "dart_version": None, "node_version": "20.20.2", "expo_cli_version": "57.0.12"},
+        "toolchain": {"xcode_version": "26.6", "xcode_build": "17F113", "swift_version": "6.2.4", "flutter_version": None, "dart_version": None, "node_version": "24.13.1", "expo_cli_version": "57.0.12"},
         "sdk": {"platform": "ios", "name": "iphonesimulator", "version": "26.5", "build": "23F81a"},
         "build": {"configuration": "Debug", "scheme": "LifecycleFixtureExpo57", "target_name": "LifecycleFixtureExpo57", "product_kind": "application", "deployment_target": "15.1"},
         "target": {"kind": "simulator", "model": "iPhone 17 Pro", "architecture": "arm64", "os_name": "iOS", "os_version": "26.5", "os_build": "23F81a"},

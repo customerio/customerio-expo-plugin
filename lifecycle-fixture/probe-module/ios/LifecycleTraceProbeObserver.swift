@@ -258,7 +258,9 @@ public final class LifecycleTraceProbeObserver: @unchecked Sendable {
         let terminal: LifecycleTraceTerminal
         switch scenario {
         case .iconColdLaunch, .appBackgroundForeground:
-            terminal = .activeScene
+            terminal = LifecycleTraceHarness.sharedRecorder?.hostTopology == .appDelegateOnly
+                ? .activeApplication
+                : .activeScene
         case .pushTapWarm, .pushTapCold, .localNotificationTapWarm, .localNotificationTapCold:
             terminal = .notificationResponse
         case .customURLWarm, .customURLCold, .liveActivityTapWarm, .liveActivityTapCold:

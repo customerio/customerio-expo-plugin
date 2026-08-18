@@ -41,6 +41,11 @@ public final class CioLifecycleProbeModule: Module {
               let runID = environment["CIO_LIFECYCLE_RUN_ID"],
               let streamID = environment["CIO_LIFECYCLE_JAVASCRIPT_STREAM_ID"],
               let processInstanceID = environment["CIO_LIFECYCLE_PROCESS_INSTANCE_ID"],
+              let hostTopologyValue = environment["CIO_LIFECYCLE_HOST_TOPOLOGY"],
+              let hostTopology = LifecycleTraceHostTopology(rawValue: hostTopologyValue),
+              let activationOccurrenceIdentity = environment[
+                  "CIO_LIFECYCLE_ACTIVATION_OCCURRENCE_ID"
+              ],
               let nativeOutputPath = environment["CIO_LIFECYCLE_OUTPUT_PATH"],
               let javascriptOutputPath = environment["CIO_LIFECYCLE_JAVASCRIPT_OUTPUT_PATH"],
               !nativeOutputPath.isEmpty,
@@ -64,7 +69,9 @@ public final class CioLifecycleProbeModule: Module {
                   runtime: .javascript,
                   provider: provider,
                   scenario: scenario,
-                  evidenceLevel: evidence
+                  evidenceLevel: evidence,
+                  hostTopology: hostTopology,
+                  activationOccurrenceIdentity: activationOccurrenceIdentity
               ) != nil else {
             return nil
         }
@@ -73,6 +80,8 @@ public final class CioLifecycleProbeModule: Module {
             "runId": runID,
             "javascriptStreamId": streamID,
             "processInstanceId": processInstanceID,
+            "hostTopology": hostTopology.rawValue,
+            "activationOccurrenceId": activationOccurrenceIdentity,
             "scenario": scenario.rawValue,
             "evidenceLevel": evidence.rawValue,
             "integration": "expo",
@@ -117,8 +126,7 @@ public final class CioLifecycleProbeModule: Module {
         state.lock.lock()
         defer { state.lock.unlock() }
         guard let sink = javascriptSink(environment: environment, state: state) else { return false }
-        sink.write(line: line)
-        return true
+        return sink.write(line: line)
     }
 
     private static func writeJavascriptReceipt(

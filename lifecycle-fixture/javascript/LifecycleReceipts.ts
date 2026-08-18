@@ -11,6 +11,8 @@ export type HarnessContext = {
   runId: string;
   javascriptStreamId: string;
   processInstanceId: string;
+  hostTopology: 'app-delegate-only' | 'ui-scene';
+  activationOccurrenceId: string;
   scenario: string;
   evidenceLevel: EvidenceLevel;
   integration: 'expo';
@@ -33,6 +35,7 @@ type Summary = {
 };
 
 type CorrelationNamespace =
+  | 'occurrence'
   | 'delivery'
   | 'request'
   | 'scene'
@@ -44,6 +47,7 @@ const RECEIPT_PREFIX = 'CIO-LIFECYCLE-RECEIPT ';
 const BUFFER_CAPACITY = 512;
 const ALIAS_CAPACITY = 256;
 const namespaces: CorrelationNamespace[] = [
+  'occurrence',
   'delivery',
   'request',
   'scene',
@@ -97,8 +101,15 @@ export class LifecycleJavascriptRecorder {
 
     this.sequence += 1;
     const correlation: Record<string, string> = {};
+    const rawCorrelation: Summary['rawCorrelation'] =
+      kind === 'trace-control'
+        ? summary.rawCorrelation
+        : {
+            occurrence: this.context.activationOccurrenceId,
+            ...summary.rawCorrelation,
+          };
     for (const [namespace, raw] of Object.entries(
-      summary.rawCorrelation ?? {}
+      rawCorrelation ?? {}
     ) as Array<[CorrelationNamespace, string]>) {
       const table = this.aliases.get(namespace)!;
       let ordinal = table.get(raw);

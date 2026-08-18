@@ -6,8 +6,9 @@ Customer.io production config plugin.
 
 ## Canonical contract
 
-The contract is vendored at the same repo-relative paths as
-`customerio/customerio-ios@b0c7ad68150cdfacdeb5a5419ed69264b117c242`.
+The contract is vendored at the same repo-relative paths as the immutable
+content commit named by `pinned_content_commit` in
+`docs/dev-notes/ios27-lifecycle-contract-v1.lock.json`.
 The ordered 18-file bundle is locked by
 `docs/dev-notes/ios27-lifecycle-contract-v1.lock.json`. The lock and
 `scripts/ios27_lifecycle_contract.py` are byte-identical to the native repo.
@@ -15,7 +16,7 @@ The ordered 18-file bundle is locked by
 ```sh
 python3 scripts/ios27_lifecycle_contract.py verify --root .
 python3 scripts/ios27_lifecycle_contract.py sync \
-  --source-root /path/to/clean/customerio-ios-at-b0c7ad68 \
+  --source-root /path/to/customerio-ios-descending-from-the-pinned-content \
   --destination-root .
 ```
 
@@ -28,7 +29,7 @@ reported separately as L0 and L1 review evidence.
 
 The generated fixture contains one local pod, `CioLifecycleProbe`:
 
-- its recorder, harness, and notification observer import Foundation only;
+- its recorder and harness use only Apple SDK frameworks;
 - its Expo module exposes harness context/control only;
 - it declares no `apple.appDelegateSubscribers` entry;
 - it implements no Expo `NotificationDelegate`;
@@ -73,6 +74,11 @@ added because the generated AppDelegate has none. The known production
 `#if canImport(EXNotifications)` compatibility gap is not repaired by this
 fixture.
 
+This fixture therefore declares `host_topology=app-delegate-only`. The harness
+must provide the same value through `CIO_LIFECYCLE_HOST_TOPOLOGY`; declaring a
+UIScene topology against this source graph fails the canonical manifest and
+startup evidence checks rather than inferring support from missing callbacks.
+
 ## JavaScript receipts
 
 `javascript/LifecycleReceipts.ts` observes only public app-level APIs:
@@ -88,7 +94,9 @@ The scenario from the harness selects exactly one cold or warm branch. There
 is no warm-listener/cold-pull deduplication heuristic. JavaScript emits nothing
 unless the native context bridge supplies all harness-issued identities,
 including its distinct stream ID. It never mints an ID or infers provider,
-scenario, evidence level, integration, or runtime.
+scenario, evidence level, integration, runtime, host topology, or activation
+occurrence. Every non-control JavaScript record carries the harness-issued
+activation occurrence used by the Swift stream.
 
 The bridge requires these additional harness inputs for the JavaScript stream:
 
@@ -130,26 +138,30 @@ outputs are under `__tests__/fixtures/ios/expo57-patched`.
 patcher refuses unknown input and unknown output bytes.
 
 ```sh
-mise exec node@20 -- node lifecycle-fixture/scripts/install-probe.js \
+mise exec node@24 -- node lifecycle-fixture/scripts/install-probe.js \
   --app-path=ci-test-apps/LifecycleFixture_Expo57
 
 cd ci-test-apps/LifecycleFixture_Expo57
-CI=1 mise exec node@20 -- npx expo prebuild --clean --platform ios --no-install
+CI=1 mise exec node@24 -- npx expo prebuild --clean --platform ios --no-install
 cd ../..
 
-mise exec node@20 -- node lifecycle-fixture/scripts/pin-expo-fixture-sources.js \
+mise exec node@24 -- node lifecycle-fixture/scripts/pin-expo-fixture-sources.js \
   --app-path=ci-test-apps/LifecycleFixture_Expo57
-mise exec node@20 -- node lifecycle-fixture/scripts/patch-expo57-sources.js \
+mise exec node@24 -- node lifecycle-fixture/scripts/patch-expo57-sources.js \
   --app-path=ci-test-apps/LifecycleFixture_Expo57 --snapshot=apn
 
 cd ci-test-apps/LifecycleFixture_Expo57/ios
 DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer \
-  mise exec node@20 -- pod install
+  mise exec node@24 -- pod install
 cd ../../..
-mise exec node@20 -- node \
+mise exec node@24 -- node \
   lifecycle-fixture/scripts/patch-customerio-pod-sources.js \
   --app-path=ci-test-apps/LifecycleFixture_Expo57 --snapshot=apn
 ```
+
+`patch-expo57-sources.js` supports the `apn`, `fcm`, and `nopush` snapshots.
+`patch-customerio-pod-sources.js` applies only to the `apn` and `fcm`
+snapshots; the no-push graph contains no Customer.io push pod to patch.
 
 Use `--snapshot=fcm` or `--snapshot=nopush` only after configuring and
 prebuilding that exact variant. `scripts/compatibility/configure-plugin.js`
@@ -161,19 +173,19 @@ accepts `--ios-no-push` for the no-push fixture.
 # Contract identity and checked vectors
 python3 scripts/ios27_lifecycle_contract.py verify --root .
 python3 -m unittest docs/dev-notes/test_validate_ios27_lifecycle_trace.py
-mise exec node@20 -- node lifecycle-fixture/scripts/test-javascript-recorder.js
+mise exec node@24 -- node lifecycle-fixture/scripts/test-javascript-recorder.js
 python3 lifecycle-fixture/scripts/test-expo-producer-captures.py
 python3 lifecycle-fixture/scripts/test-expo-runtime-capture.py
 
 # Source/hash/API tests under the pinned Node runtime
-mise exec node@20 -- npx jest --selectProjects scenarios --runInBand \
+mise exec node@24 -- npx jest --selectProjects scenarios --runInBand \
   __tests__/scenarios/ios/lifecycleFixture.test.ts \
   __tests__/scenarios/ios/appDelegateSwiftSdkVersions.test.ts
 
 # Focused JavaScript typecheck. The whole generated app currently has two
 # unrelated Expo template CSS declaration errors.
 cd ci-test-apps/LifecycleFixture_Expo57
-mise exec node@20 -- npx tsc --ignoreConfig --noEmit --skipLibCheck \
+mise exec node@24 -- npx tsc --ignoreConfig --noEmit --skipLibCheck \
   --target ES2022 --module Preserve --moduleResolution Bundler \
   --jsx react-jsx src/lifecycle/LifecycleReceipts.ts
 

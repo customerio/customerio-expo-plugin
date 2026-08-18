@@ -127,6 +127,7 @@ describe('Expo 57 lifecycle source provenance', () => {
         'lifecycle-fixture/probe-module/ios/CioLifecycleProbe.podspec',
         'lifecycle-fixture/probe-module/ios/CioLifecycleProbeBootstrap.m',
         'lifecycle-fixture/probe-module/ios/CioLifecycleProbeModule.swift',
+        'lifecycle-fixture/probe-module/ios/LifecycleTraceEvidence.swift',
         'lifecycle-fixture/probe-module/ios/LifecycleTraceModel.swift',
         'lifecycle-fixture/probe-module/ios/LifecycleTraceProbe.swift',
         'lifecycle-fixture/probe-module/ios/LifecycleTraceProbeObserver.swift',
@@ -188,6 +189,12 @@ describe('no-seat fixture bridge', () => {
     expect(probeText).toContain(
       '== LifecycleTraceHarness.sharedRecorder?.processInstanceID'
     );
+    expect(probeText).toContain('CIO_LIFECYCLE_HOST_TOPOLOGY');
+    expect(probeText).toContain('CIO_LIFECYCLE_ACTIVATION_OCCURRENCE_ID');
+    expect(probeText).toContain('hostTopology: hostTopology');
+    expect(probeText).toContain(
+      'activationOccurrenceIdentity: activationOccurrenceIdentity'
+    );
   });
 
   it('closes only from supported native result seats and never from JavaScript', () => {
@@ -208,6 +215,8 @@ describe('no-seat fixture bridge', () => {
       'Self.closeScenarioIfTerminal(after: callback, phase: .stateChange)'
     );
     expect(probeText).toContain('LifecycleTraceExpoSupport.supports(scenario)');
+    expect(probeText).toContain('? .activeApplication');
+    expect(probeText).toContain(': .activeScene');
     expect(probeText).not.toContain('Function("endScenario")');
     expect(probeText).not.toContain('AsyncFunction("endScenario")');
     expect(probeText).not.toContain('case (.backgroundFetch');
@@ -630,6 +639,13 @@ describe('actual Expo JavaScript receipt seats', () => {
 
   it('requires harness-issued identity and never mints IDs', () => {
     expect(receipts).toContain('javascriptStreamId: string');
+    expect(receipts).toContain(
+      "hostTopology: 'app-delegate-only' | 'ui-scene'"
+    );
+    expect(receipts).toContain('activationOccurrenceId: string');
+    expect(receipts).toContain(
+      'occurrence: this.context.activationOccurrenceId'
+    );
     expect(receipts).toContain(
       'getNativeReceipt(): Record<string, unknown> | null'
     );

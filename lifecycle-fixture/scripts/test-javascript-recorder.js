@@ -52,6 +52,8 @@ async function main() {
     runId: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
     javascriptStreamId: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
     processInstanceId: 'dddddddd-dddd-4ddd-8ddd-dddddddddddd',
+    hostTopology: 'app-delegate-only',
+    activationOccurrenceId: 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee',
     scenario: 'app-background-foreground',
     evidenceLevel: 'diagnostic',
     integration: 'expo',
@@ -116,6 +118,7 @@ async function main() {
     run_ended_at: timestamp(60_000),
     created_at: timestamp(120_000),
     evidence_level: 'diagnostic',
+    host_topology: context.hostTopology,
     scenario: 'app-background-foreground',
     repositories: [
       {
