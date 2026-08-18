@@ -138,7 +138,7 @@ jobs:
       - name: Install and launch generated app
         id: launch
         # Repin to the reviewed merge commit after customerio/mobile-ci-tools#16 merges.
-        uses: customerio/mobile-ci-tools/github-actions/ios/launch-simulator-app/v1@bfa00684949587735d7076d2e11a8a44f27cb467
+        uses: customerio/mobile-ci-tools/github-actions/ios/launch-simulator-app/v1@5640301248dcfacde1ad22fd7015f849e45b4b2f
         with:
           app-path: ${{ env.APP_PRODUCT_PATH }}
           expected-ios-major: '27'
