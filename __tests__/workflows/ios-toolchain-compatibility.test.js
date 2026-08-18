@@ -54,7 +54,7 @@ describe('Xcode 27 preview workflow', () => {
     );
     expect(workflow).not.toContain('**Result:** ${{ job.status }}');
     expect(workflow).toContain(
-      'launch-simulator-app/v1@7dae70961c011b4ab475ec0b01860f2597b7cba2'
+      'launch-simulator-app/v1@e5fbb641ab946ca3a1b6cd443c450a9d00348c98'
     );
     expect(step('Record unavailable toolchain').if).toContain(
       "steps.toolchain.outcome == 'failure'"
