@@ -51,32 +51,17 @@ describe('Xcode 27 preview workflow', () => {
     expect(workflow).toContain('workspaces=("$APP_PATH"/ios/*.xcworkspace)');
     expect(workflow).not.toContain('$APP_NAME.xcworkspace');
     expect(workflow).toContain("expected-ios-major: '27'");
-    expect(workflow).toContain('steps.launch.outputs.failure-reason');
-    expect(workflow).toContain('simulator-infrastructure-unavailable');
-    expect(workflow).toContain('**Classification:** launch-passed');
-    expect(step('Record compatibility result').if).toBe(
-      "steps.launch.outcome == 'success'"
-    );
-    expect(workflow).not.toContain('**Result:** ${{ job.status }}');
     expect(step('Install and launch generated app').uses).toBe(
       'customerio/mobile-ci-tools/github-actions/ios/launch-simulator-app/v1@main'
     );
-    expect(step('Record unavailable toolchain').if).toContain(
-      "steps.toolchain.outcome == 'failure'"
+    expect(step('Upload compatibility logs').if).toBe('always()');
+    expect(step('Upload compatibility logs').with['if-no-files-found']).toBe(
+      'error'
     );
-    expect(step('Record launch failure').if).toBe(
-      "failure() && steps.launch.outcome == 'failure'"
-    );
-    expect(step('Record generated-app validation failure').if).toContain(
-      "steps.validate-plugin.outcome == 'failure'"
-    );
-    expect(step('Record product resolution failure').if).toContain(
-      "steps.resolve-app.outcome == 'failure'"
-    );
-    expect(workflow).toContain('unrecognized launch failure reason');
-    expect(step('Record unclassified failure').if).toBe(
-      "failure() && steps.toolchain.outcome != 'failure' && steps.validate-plugin.outcome != 'failure' && steps.resolve-app.outcome != 'failure' && steps.launch.outcome != 'failure' && steps.launch.outcome != 'success'"
-    );
+    expect(workflow).not.toContain('steps.launch.outputs.failure-reason');
+    expect(workflow).not.toContain('Record compatibility result');
+    expect(workflow).not.toContain('Record launch failure');
+    expect(workflow).not.toContain('Record unclassified failure');
   });
 
   it('executes the generated-app resolver behavior suite', () => {

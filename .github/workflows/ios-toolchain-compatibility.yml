@@ -14,7 +14,9 @@ permissions:
   contents: read
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  # Scheduled and manual runs for main share one slot. Pull-request runs use
+  # their merge ref, so they do not cancel the nightly.
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 env:
@@ -90,7 +92,6 @@ jobs:
             --add-default-config
 
       - name: Validate Plugin
-        id: validate-plugin
         run: |
           date +%s > "$RUNNER_TEMP/${{ matrix.ios-push-provider }}-build-start-epoch"
           npm run compatibility:validate-plugin -- \
@@ -101,7 +102,6 @@ jobs:
             --ios-push-providers=${{ matrix.ios-push-provider }}
 
       - name: Resolve generated simulator app
-        id: resolve-app
         shell: bash
         run: |
           set -euo pipefail
@@ -150,137 +150,12 @@ jobs:
           echo "APP_PRODUCT_PATH=$app_product_path" >> "$GITHUB_ENV"
 
       - name: Install and launch generated app
-        id: launch
         uses: customerio/mobile-ci-tools/github-actions/ios/launch-simulator-app/v1@main
         with:
           app-path: ${{ env.APP_PRODUCT_PATH }}
           expected-ios-major: '27'
           survival-seconds: ${{ env.LAUNCH_SURVIVAL_SECONDS }}
           log-path: ${{ runner.temp }}/${{ matrix.ios-push-provider }}-launch.log
-
-      - name: Record compatibility result
-        if: steps.launch.outcome == 'success'
-        shell: bash
-        env:
-          XCODE_VERSION: ${{ steps.toolchain.outputs.xcode-version }}
-          XCODE_BUILD: ${{ steps.toolchain.outputs.xcode-build }}
-          IOS_SIMULATOR_SDK: ${{ steps.toolchain.outputs.iphonesimulator-sdk }}
-        run: |
-          set -euo pipefail
-          {
-            echo '## Expo Xcode 27 preview compatibility'
-            echo
-            echo '**Classification:** launch-passed'
-            echo "**Provider:** ${{ matrix.ios-push-provider }}"
-            echo "**Toolchain:** Xcode ${XCODE_VERSION:-unknown} build ${XCODE_BUILD:-unknown}, iphonesimulator ${IOS_SIMULATOR_SDK:-unknown}"
-            echo "**Scope:** generated-project compile, simulator install, launch, and ${LAUNCH_SURVIVAL_SECONDS}-second process survival; no callback, push-delivery, signing, or App Store claim"
-          } >> "$GITHUB_STEP_SUMMARY"
-
-      - name: Record launch failure
-        if: failure() && steps.launch.outcome == 'failure'
-        shell: bash
-        env:
-          FAILURE_REASON: ${{ steps.launch.outputs.failure-reason }}
-          XCODE_VERSION: ${{ steps.toolchain.outputs.xcode-version }}
-          XCODE_BUILD: ${{ steps.toolchain.outputs.xcode-build }}
-          IOS_SIMULATOR_SDK: ${{ steps.toolchain.outputs.iphonesimulator-sdk }}
-        run: |
-          set -euo pipefail
-          case "$FAILURE_REASON" in
-            '')
-              classification=launch-smoke-inconclusive
-              next_step='inspect the launch action and setup steps; no structured failure category was published'
-              ;;
-            runtime-unavailable|runtime-selection-failed|simulator-boot-failed)
-              classification=simulator-infrastructure-unavailable
-              next_step='inspect the hosted image runtime and launch log before attributing this to Expo'
-              ;;
-            install-failed)
-              classification=generated-app-install-failed
-              next_step='inspect the generated app and simulator install failure before evaluating lifecycle compatibility'
-              ;;
-            launch-failed)
-              classification=generated-app-launch-failed
-              next_step='inspect the launch log for the UIKit runtime issue or launch rejection'
-              ;;
-            did-not-survive)
-              classification=generated-app-exited-early
-              next_step='inspect the launch log for the UIKit runtime issue or early process exit'
-              ;;
-            invalid-input|invalid-app|sdk-mismatch)
-              classification=launch-contract-invalid
-              next_step='inspect the generated product metadata and smoke-test inputs'
-              ;;
-            *)
-              echo "::warning::unrecognized launch failure reason: $FAILURE_REASON"
-              classification=launch-smoke-failed
-              next_step='confirm the simulator runtime and shared action reference before treating this as an Expo lifecycle failure'
-              ;;
-          esac
-          {
-            echo '## Expo Xcode 27 preview compatibility'
-            echo
-            echo "**Classification:** $classification"
-            echo "**Failure category:** $FAILURE_REASON"
-            echo "**Provider:** ${{ matrix.ios-push-provider }}"
-            echo "**Toolchain:** Xcode ${XCODE_VERSION:-unknown} build ${XCODE_BUILD:-unknown}, iphonesimulator ${IOS_SIMULATOR_SDK:-unknown}"
-            echo "**Next step:** $next_step"
-            # Markdown backticks are intentionally literal in the summary.
-            # shellcheck disable=SC2016
-            echo '**Known boundary:** `generated-app-launch-failed` and `generated-app-exited-early` are the expected blockers until Expo adopts UIScene; see [.github/IOS-TOOLCHAIN-COMPATIBILITY.md](https://github.com/customerio/customerio-expo-plugin/blob/main/.github/IOS-TOOLCHAIN-COMPATIBILITY.md).'
-          } >> "$GITHUB_STEP_SUMMARY"
-
-      - name: Record generated-app validation failure
-        if: failure() && steps.validate-plugin.outcome == 'failure'
-        shell: bash
-        run: |
-          set -euo pipefail
-          {
-            echo '## Expo Xcode 27 preview compatibility'
-            echo
-            echo '**Classification:** generated-app-validation-failed'
-            echo "**Provider:** ${{ matrix.ios-push-provider }}"
-            echo '**Next step:** inspect prebuild, provider snapshots, CocoaPods, and xcodebuild output to identify which validation stage failed'
-          } >> "$GITHUB_STEP_SUMMARY"
-
-      - name: Record product resolution failure
-        if: failure() && steps.resolve-app.outcome == 'failure'
-        shell: bash
-        run: |
-          set -euo pipefail
-          {
-            echo '## Expo Xcode 27 preview compatibility'
-            echo
-            echo '**Classification:** generated-app-resolution-failed'
-            echo "**Provider:** ${{ matrix.ios-push-provider }}"
-            echo '**Next step:** inspect the resolve-step log and, when present, the sanitized xcodebuild settings JSON before evaluating launch compatibility'
-          } >> "$GITHUB_STEP_SUMMARY"
-
-      - name: Record unavailable toolchain
-        if: failure() && steps.toolchain.outcome == 'failure'
-        shell: bash
-        run: |
-          set -euo pipefail
-          {
-            echo '## Expo Xcode 27 preview compatibility'
-            echo
-            echo '**Classification:** toolchain-unavailable'
-            echo "**Provider:** ${{ matrix.ios-push-provider }}"
-            echo '**Next step:** inspect the hosted Xcode 27 image and shared toolchain report before attributing this to Expo'
-          } >> "$GITHUB_STEP_SUMMARY"
-
-      - name: Record unclassified failure
-        if: failure() && steps.toolchain.outcome != 'failure' && steps.validate-plugin.outcome != 'failure' && steps.resolve-app.outcome != 'failure' && steps.launch.outcome != 'failure' && steps.launch.outcome != 'success'
-        shell: bash
-        run: |
-          set -euo pipefail
-          {
-            echo '## Expo Xcode 27 preview compatibility'
-            echo
-            echo '**Classification:** harness-failed-before-build'
-            echo "**Provider:** ${{ matrix.ios-push-provider }}"
-            echo '**Next step:** inspect runner setup, npm install, app generation, and plugin configuration; no compatibility signal was produced'
-          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload compatibility logs
         if: always()
@@ -291,5 +166,5 @@ jobs:
             ${{ runner.temp }}/${{ matrix.ios-push-provider }}-launch.log
             ${{ runner.temp }}/${{ matrix.ios-push-provider }}-build-settings.json
             ${{ runner.temp }}/${{ matrix.ios-push-provider }}-build-start-epoch
-          if-no-files-found: ignore
+          if-no-files-found: error
           retention-days: 7
