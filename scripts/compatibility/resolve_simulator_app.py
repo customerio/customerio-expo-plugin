@@ -18,6 +18,20 @@ SAFE_BUILD_SETTING_KEYS = (
 )
 
 
+def is_settings_payload(candidate: object) -> bool:
+    """Return whether a decoded value is a non-empty xcodebuild target list."""
+
+    return (
+        isinstance(candidate, list)
+        and bool(candidate)
+        and all(
+            isinstance(entry, dict)
+            and isinstance(entry.get("buildSettings"), dict)
+            for entry in candidate
+        )
+    )
+
+
 def write_sanitized_settings(
     destination: Path,
     entries: list[dict[str, object]] | None,
@@ -69,11 +83,9 @@ def load_settings(source: Path, sanitized_destination: Path) -> list[dict[str, o
                     candidate, _ = decoder.raw_decode(raw, start)
                 except json.JSONDecodeError:
                     continue
-                if isinstance(candidate, list):
+                if is_settings_payload(candidate):
                     payload = candidate
                     break
-            if not isinstance(payload, list):
-                raise initial_error
     except (OSError, json.JSONDecodeError) as error:
         write_sanitized_settings(
             sanitized_destination,
@@ -83,11 +95,7 @@ def load_settings(source: Path, sanitized_destination: Path) -> list[dict[str, o
         )
         raise SystemExit(f"could not parse xcodebuild settings JSON: {error}") from error
 
-    if not isinstance(payload, list) or any(
-        not isinstance(entry, dict)
-        or not isinstance(entry.get("buildSettings", {}), dict)
-        for entry in payload
-    ):
+    if not is_settings_payload(payload):
         write_sanitized_settings(
             sanitized_destination,
             None,
@@ -173,7 +181,8 @@ def resolve_app(entries: list[dict[str, object]], build_started_at: int, scheme:
         raise SystemExit(
             f"expected one current built simulator app for {scheme}, "
             f"found {[str(path) for path in matches]}; inspected {len(entries)} targets; "
-            f"skipped {len(skipped)} targets (first 10: {skipped[:10]}); rejected {rejected}"
+            f"skipped {len(skipped)} targets (first 10: {skipped[:10]}); "
+            f"rejected {len(rejected)} targets (first 10: {rejected[:10]})"
         )
     return matches[0]
 

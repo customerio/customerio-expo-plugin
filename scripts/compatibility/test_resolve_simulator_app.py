@@ -90,6 +90,22 @@ class ResolveSimulatorAppTests(unittest.TestCase):
         sanitized = self.sanitized_settings.read_text(encoding="utf-8")
         self.assertNotIn("diagnostic preamble", sanitized)
 
+    def test_ignores_json_list_in_xcodebuild_stdout_preamble(self):
+        app = self.create_app()
+        self.private_settings.write_text(
+            "xcodebuild: note: Using codesigning identities: []\n"
+            + json.dumps(self.settings(app)),
+            encoding="utf-8",
+        )
+
+        result = self.run_script()
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout.strip(), str(app))
+        sanitized = json.loads(self.sanitized_settings.read_text(encoding="utf-8"))
+        self.assertEqual(len(sanitized), 1)
+        self.assertEqual(sanitized[0]["target"], "Fixture")
+
     def test_malformed_json_leaves_only_bounded_parse_metadata(self):
         self.private_settings.write_text('{"secret":"must-not-leak"', encoding="utf-8")
 

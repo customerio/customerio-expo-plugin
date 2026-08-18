@@ -12,13 +12,13 @@ This guide explains how the test suite is layered and **where new tests should g
 
 CI runs:
 
-| Workflow                                   | Trigger                                      | Tests                                                                                                                                                                  |
-| ------------------------------------------ | -------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `test.yml`                                 | every PR + push to `main`/`beta`/`feature/*` | All four Jest projects (parallel jobs)                                                                                                                                 |
-| `validate-plugin-compatibility.yml`        | every PR                                     | 3-cell latest-Expo smoke matrix: Android plus APN/FCM native builds on stable Xcode                                                                                    |
-| `ios-toolchain-compatibility.yml`          | nightly + manual + workflow/resolver changes | APN/FCM native builds, simulator installs, launches, and 10-second survival checks on the floating Xcode 27 preview ([policy](.github/IOS-TOOLCHAIN-COMPATIBILITY.md)) |
-| `validate-plugin-compatibility-matrix.yml` | merge to `main` (release) + manual           | Full multi-SDK matrix — real `expo prebuild` + native build                                                                                                            |
-| `reusable_build_sample_apps.yml`           | release / sample-app distribution            | Full Android + iOS app builds shipped to Firebase                                                                                                                      |
+| Workflow                                   | Trigger                                      | Tests                                                                                                                                                                                  |
+| ------------------------------------------ | -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `test.yml`                                 | every PR + push to `main`/`beta`/`feature/*` | All four Jest projects (parallel jobs)                                                                                                                                                 |
+| `validate-plugin-compatibility.yml`        | every PR                                     | 3-cell latest-Expo smoke matrix: Android plus APN/FCM native builds on stable Xcode                                                                                                    |
+| `ios-toolchain-compatibility.yml`          | nightly + manual + workflow/resolver changes | APN/FCM native builds, simulator installs, launches, and `LAUNCH_SURVIVAL_SECONDS` survival checks on the floating Xcode 27 preview ([policy](.github/IOS-TOOLCHAIN-COMPATIBILITY.md)) |
+| `validate-plugin-compatibility-matrix.yml` | merge to `main` (release) + manual           | Full multi-SDK matrix — real `expo prebuild` + native build                                                                                                                            |
+| `reusable_build_sample_apps.yml`           | release / sample-app distribution            | Full Android + iOS app builds shipped to Firebase                                                                                                                                      |
 
 ## The four Jest projects
 
