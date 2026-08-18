@@ -58,8 +58,8 @@ describe('Xcode 27 preview workflow', () => {
       "steps.launch.outcome == 'success'"
     );
     expect(workflow).not.toContain('**Result:** ${{ job.status }}');
-    expect(step('Install and launch generated app').uses).toMatch(
-      /^customerio\/mobile-ci-tools\/github-actions\/ios\/launch-simulator-app\/v1@[0-9a-f]{40}$/
+    expect(step('Install and launch generated app').uses).toBe(
+      'customerio/mobile-ci-tools/github-actions/ios/launch-simulator-app/v1@main'
     );
     expect(step('Record unavailable toolchain').if).toContain(
       "steps.toolchain.outcome == 'failure'"
