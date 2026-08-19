@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - '.github/workflows/ios-toolchain-compatibility.yml'
+      - 'scripts/compatibility/resolve_simulator_app.py'
   schedule:
     # Native and Flutter run during the two preceding hours.
     - cron: '17 7 * * *'
@@ -13,11 +14,14 @@ permissions:
   contents: read
 
 concurrency:
+  # Scheduled and manual runs for main share one slot. Pull-request runs use
+  # their merge ref, so they do not cancel the nightly.
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 env:
-  NODE_VERSION: '20'
+  NODE_VERSION: '24'
+  LAUNCH_SURVIVAL_SECONDS: '10'
   APP_DIR: ci-test-apps
   APP_NAME_PREFIX: ExpoPluginTestApp
 
@@ -73,7 +77,8 @@ jobs:
           npm run compatibility:create-test-app -- \
             --expo-version=latest \
             --app-name=${{ env.APP_NAME }} \
-            --dir-name=${{ env.APP_DIR }}
+            --dir-name=${{ env.APP_DIR }} \
+            --clean
 
       - name: Setup Test App
         run: |
@@ -88,6 +93,7 @@ jobs:
 
       - name: Validate Plugin
         run: |
+          date +%s > "$RUNNER_TEMP/${{ matrix.ios-push-provider }}-build-start-epoch"
           npm run compatibility:validate-plugin -- \
             --app-path=${{ env.APP_PATH }} \
             --expo-version=latest \
@@ -95,20 +101,70 @@ jobs:
             --ios-use-frameworks="static" \
             --ios-push-providers=${{ matrix.ios-push-provider }}
 
-      - name: Record compatibility result
-        if: always() && !cancelled()
+      - name: Resolve generated simulator app
         shell: bash
-        env:
-          XCODE_VERSION: ${{ steps.toolchain.outputs.xcode-version }}
-          XCODE_BUILD: ${{ steps.toolchain.outputs.xcode-build }}
-          IOS_SIMULATOR_SDK: ${{ steps.toolchain.outputs.iphonesimulator-sdk }}
         run: |
           set -euo pipefail
-          {
-            echo '## Expo Xcode 27 preview compatibility'
-            echo
-            echo '**Result:** ${{ job.status }}'
-            echo '**Provider:** ${{ matrix.ios-push-provider }}'
-            echo "**Toolchain:** Xcode ${XCODE_VERSION:-unknown} build ${XCODE_BUILD:-unknown}, iphonesimulator ${IOS_SIMULATOR_SDK:-unknown}"
-            echo '**Scope:** generated-project compatibility build; no launch, callback, push-delivery, signing, or App Store claim'
-          } >> "$GITHUB_STEP_SUMMARY"
+          settings_json="$RUNNER_TEMP/${{ matrix.ios-push-provider }}-build-settings.json"
+          private_settings_json="$RUNNER_TEMP/${{ matrix.ios-push-provider }}-build-settings-private.json"
+          trap 'rm -f "$private_settings_json"' EXIT
+          build_start_epoch="$RUNNER_TEMP/${{ matrix.ios-push-provider }}-build-start-epoch"
+          shopt -s nullglob
+          workspaces=("$APP_PATH"/ios/*.xcworkspace)
+          if [[ "${#workspaces[@]}" -ne 1 ]]; then
+            echo "::error::expected one generated workspace, found ${#workspaces[@]}: ${workspaces[*]-}"
+            exit 1
+          fi
+          workspace="${workspaces[0]}"
+          scheme="$(basename "$workspace" .xcworkspace)"
+          set +e
+          xcodebuild \
+            -workspace "$workspace" \
+            -scheme "$scheme" \
+            -configuration Release \
+            -sdk iphonesimulator \
+            -showBuildSettings \
+            -json > "$private_settings_json"
+          xcodebuild_status="$?"
+          set -e
+          if [[ "$xcodebuild_status" -ne 0 ]]; then
+            # Preserve only the resolver's bounded parse metadata. The private
+            # build settings are still removed by the EXIT trap.
+            python3 scripts/compatibility/resolve_simulator_app.py \
+              --private-settings-json "$private_settings_json" \
+              --build-start-epoch "$build_start_epoch" \
+              --scheme "$scheme" \
+              --sanitized-settings-json "$settings_json" >/dev/null || true
+            echo "::error::xcodebuild -showBuildSettings failed with exit code $xcodebuild_status"
+            exit "$xcodebuild_status"
+          fi
+          app_product_path="$(python3 scripts/compatibility/resolve_simulator_app.py \
+            --private-settings-json "$private_settings_json" \
+            --build-start-epoch "$build_start_epoch" \
+            --scheme "$scheme" \
+            --sanitized-settings-json "$settings_json")"
+          if [[ -z "$app_product_path" || "$app_product_path" == *$'\n'* ]]; then
+            echo '::error::resolved app product path must be one non-empty line'
+            exit 1
+          fi
+          echo "APP_PRODUCT_PATH=$app_product_path" >> "$GITHUB_ENV"
+
+      - name: Install and launch generated app
+        uses: customerio/mobile-ci-tools/github-actions/ios/launch-simulator-app/v1@main
+        with:
+          app-path: ${{ env.APP_PRODUCT_PATH }}
+          expected-ios-major: '27'
+          survival-seconds: ${{ env.LAUNCH_SURVIVAL_SECONDS }}
+          log-path: ${{ runner.temp }}/${{ matrix.ios-push-provider }}-launch.log
+
+      - name: Upload compatibility logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: xcode-27-preview-expo-${{ matrix.ios-push-provider }}-logs
+          path: |
+            ${{ runner.temp }}/${{ matrix.ios-push-provider }}-launch.log
+            ${{ runner.temp }}/${{ matrix.ios-push-provider }}-build-settings.json
+            ${{ runner.temp }}/${{ matrix.ios-push-provider }}-build-start-epoch
+          if-no-files-found: error
+          retention-days: 7

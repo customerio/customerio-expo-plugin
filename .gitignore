@@ -6,6 +6,10 @@ npm-debug.log
 yarn-error.log
 *.tgz
 
+# Python
+__pycache__/
+*.pyc
+
 # OS X
 .DS_Store
 
