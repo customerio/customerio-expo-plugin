@@ -5,6 +5,6 @@
   "main": "index.ts",
   "types": "index.ts",
   "dependencies": {
-    "customerio-reactnative": "^6.6.2"
+    "customerio-reactnative": "^6.6.3"
   }
 }
