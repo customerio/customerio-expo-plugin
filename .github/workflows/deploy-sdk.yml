@@ -7,10 +7,19 @@ name: Deploy SDK
 #      accidentally adds a `workflow_dispatch` trigger to the release matrix —
 #      a manually-dispatched run would not satisfy `event == 'push'`), AND
 #   3. The push targeted `main` (the only branch in `.releaserc.json`).
+#
+# `workflow_dispatch` here is publish-only: it publishes an existing tag, never tags or
+# re-releases, and reaches only `publish-npm-manual` — the gates above still hold.
 on:
   workflow_run:
     workflows: ["Validate Plugin Compatibility Release"]
     types: [completed]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing git tag to publish to npm (e.g. 3.7.2)'
+        required: true
+        type: string
 
 permissions:
   id-token: write
@@ -245,6 +254,44 @@ jobs:
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
           SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+
+  # Same file and `release` environment as deploy-npm, so npm OIDC still applies. The
+  # automated jobs gate on workflow_run.*, which is null here, so they skip on a dispatch.
+  publish-npm-manual:
+    name: Publish existing tag to npm (manual recovery)
+    if: github.event_name == 'workflow_dispatch'
+    environment: release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install npm 11.5.1+ for OIDC support
+        run: npm install -g npm@11
+
+      - name: Install dependencies
+        run: npm ci
+
+      # npm forbids republishing a version, so check the tag before anything is published.
+      - name: Verify package version matches tag
+        env:
+          EXPECTED_TAG: ${{ inputs.tag }}
+        run: |
+          pkg_version="$(node -p "require('./package.json').version")"
+          if [[ "$pkg_version" != "$EXPECTED_TAG" ]]; then
+            echo "::error::package.json version ($pkg_version) does not match requested tag ($EXPECTED_TAG)."
+            exit 1
+          fi
+          echo "package.json version matches tag: $pkg_version"
+
+      - name: Publish to npm
+        run: npm publish
 
   publish-sample-apps-public-builds:
     needs: deploy-npm
