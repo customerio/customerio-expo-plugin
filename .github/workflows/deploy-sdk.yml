@@ -168,10 +168,10 @@ jobs:
         run: npm install -g npm@11
 
       - name: Install dependencies
-        run: yarn install --frozen-lockfile
+        run: npm ci
 
       - name: Compile TypeScript
-        run: yarn typescript
+        run: npm run typescript
 
       - name: Publish to npm
         run: npm publish
