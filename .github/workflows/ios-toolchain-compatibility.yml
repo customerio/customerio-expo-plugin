@@ -85,6 +85,12 @@ jobs:
         run: |
           npm_config_foreground_scripts=true npm run compatibility:setup-test-app -- \
             --app-path=${{ env.APP_PATH }}
+          installed_version="$(node -p \
+            "require('./$APP_PATH/node_modules/expo/package.json').version")"
+          if [[ "$installed_version" != "$EXPO_CANARY_VERSION" ]]; then
+            echo "::error::expected expo $EXPO_CANARY_VERSION, installed $installed_version"
+            exit 1
+          fi
 
       - name: Complete FCM fixture metadata
         if: matrix.ios-push-provider == 'fcm'
