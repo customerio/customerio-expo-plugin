@@ -21,7 +21,7 @@ concurrency:
 
 env:
   NODE_VERSION: '24'
-  LAUNCH_SURVIVAL_SECONDS: '10'
+  LAUNCH_SURVIVAL_SECONDS: '30'
   APP_DIR: ci-test-apps
   APP_NAME_PREFIX: ExpoPluginTestApp
   EXPO_CANARY_VERSION: 58.0.0-canary-20260812-27f94d4
@@ -115,6 +115,7 @@ jobs:
         run: |
           npm run compatibility:configure-plugin -- \
             --app-path=${{ env.APP_PATH }} \
+            --ios-use-frameworks=static \
             --ios-push-provider=${{ matrix.ios-push-provider }}
 
       - name: Generate scene-enabled native project
@@ -176,7 +177,7 @@ jobs:
           if app_source.count(app_anchor) != 1:
               raise SystemExit("unexpected Expo AppDelegate launch method")
           app_probe = app_anchor + """    UserDefaults.standard.set(false, forKey: "CIO_EXPO_SCENE_DID_CONNECT")
-              DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
+              DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
                 guard UserDefaults.standard.bool(forKey: "CIO_EXPO_SCENE_DID_CONNECT") else {
                   fatalError("SceneDelegate did not receive willConnectTo")
                 }
@@ -296,5 +297,5 @@ jobs:
             ${{ runner.temp }}/${{ matrix.ios-push-provider }}-launch.log
             ${{ runner.temp }}/${{ matrix.ios-push-provider }}-build-settings.json
             ${{ runner.temp }}/${{ matrix.ios-push-provider }}-build-start-epoch
-          if-no-files-found: error
+          if-no-files-found: warn
           retention-days: 7
