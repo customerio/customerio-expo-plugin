@@ -24,6 +24,7 @@ env:
   LAUNCH_SURVIVAL_SECONDS: '10'
   APP_DIR: ci-test-apps
   APP_NAME_PREFIX: ExpoPluginTestApp
+  EXPO_CANARY_VERSION: 58.0.0-canary-20260812-27f94d4
 
 jobs:
   preview:
@@ -59,8 +60,8 @@ jobs:
 
       - name: Set APP_NAME and APP_PATH
         run: |
-          echo "APP_NAME=${{ env.APP_NAME_PREFIX }}_latest" >> "$GITHUB_ENV"
-          echo "APP_PATH=${{ env.APP_DIR }}/${{ env.APP_NAME_PREFIX }}_latest" >> "$GITHUB_ENV"
+          echo "APP_NAME=${{ env.APP_NAME_PREFIX }}_scene_canary" >> "$GITHUB_ENV"
+          echo "APP_PATH=${{ env.APP_DIR }}/${{ env.APP_NAME_PREFIX }}_scene_canary" >> "$GITHUB_ENV"
 
       - name: Cache CocoaPods
         uses: actions/cache@v4
@@ -74,11 +75,14 @@ jobs:
 
       - name: Create Test App
         run: |
-          npm run compatibility:create-test-app -- \
-            --expo-version=latest \
-            --app-name=${{ env.APP_NAME }} \
-            --dir-name=${{ env.APP_DIR }} \
-            --clean
+          mkdir -p "$APP_DIR"
+          npx create-expo-app "$APP_PATH" \
+            --template "expo-template-default@$EXPO_CANARY_VERSION" \
+            --no-install
+          npm pkg set \
+            --prefix "$APP_PATH" \
+            "dependencies.expo=$EXPO_CANARY_VERSION"
+          npm install --prefix "$APP_PATH"
 
       - name: Setup Test App
         run: |
@@ -96,7 +100,7 @@ jobs:
           date +%s > "$RUNNER_TEMP/${{ matrix.ios-push-provider }}-build-start-epoch"
           npm run compatibility:validate-plugin -- \
             --app-path=${{ env.APP_PATH }} \
-            --expo-version=latest \
+            --expo-version=${{ env.EXPO_CANARY_VERSION }} \
             --platforms=ios \
             --ios-use-frameworks="static" \
             --ios-push-providers=${{ matrix.ios-push-provider }}
