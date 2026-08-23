@@ -297,5 +297,5 @@ jobs:
             ${{ runner.temp }}/${{ matrix.ios-push-provider }}-launch.log
             ${{ runner.temp }}/${{ matrix.ios-push-provider }}-build-settings.json
             ${{ runner.temp }}/${{ matrix.ios-push-provider }}-build-start-epoch
-          if-no-files-found: warn
+          if-no-files-found: error
           retention-days: 7
