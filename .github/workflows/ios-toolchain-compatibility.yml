@@ -95,6 +95,14 @@ jobs:
             --app-path=${{ env.APP_PATH }} \
             --add-default-config
 
+      - name: Generate scene-enabled native project
+        working-directory: ${{ env.APP_PATH }}
+        run: |
+          CI=1 npx expo prebuild \
+            --clean \
+            --platform=ios \
+            --template "expo-template-bare-minimum@$EXPO_CANARY_VERSION"
+
       - name: Validate Plugin
         run: |
           date +%s > "$RUNNER_TEMP/${{ matrix.ios-push-provider }}-build-start-epoch"
@@ -103,7 +111,8 @@ jobs:
             --expo-version=${{ env.EXPO_CANARY_VERSION }} \
             --platforms=ios \
             --ios-use-frameworks="static" \
-            --ios-push-providers=${{ matrix.ios-push-provider }}
+            --ios-push-providers=${{ matrix.ios-push-provider }} \
+            --clean=false
 
       - name: Resolve generated simulator app
         shell: bash
