@@ -29,9 +29,7 @@ describe('Xcode 27 preview workflow', () => {
     expect(workflow).toContain(
       '--template "expo-template-default@$EXPO_CANARY_VERSION"'
     );
-    expect(workflow).toContain(
-      '"dependencies.expo=$EXPO_CANARY_VERSION"'
-    );
+    expect(workflow).toContain('"dependencies.expo=$EXPO_CANARY_VERSION"');
     expect(workflow).toContain(
       '--template "expo-template-bare-minimum@$EXPO_CANARY_VERSION"'
     );
@@ -39,6 +37,10 @@ describe('Xcode 27 preview workflow', () => {
       '--ios-push-provider=${{ matrix.ios-push-provider }}'
     );
     expect(workflow).toContain('npm_config_foreground_scripts=true');
+    expect(step('Complete FCM fixture metadata').if).toBe(
+      "matrix.ios-push-provider == 'fcm'"
+    );
+    expect(workflow).toContain("-c 'Add :PROJECT_ID string test-project'");
     expect(workflow).toContain(
       'echo "IOS_APP_NAME=$(basename "${workspaces[0]}" .xcworkspace)"'
     );
@@ -63,6 +65,7 @@ describe('Xcode 27 preview workflow', () => {
       '${{ runner.temp }}/${{ matrix.ios-push-provider }}-launch.log',
       '${{ runner.temp }}/${{ matrix.ios-push-provider }}-build-settings.json',
       '${{ runner.temp }}/${{ matrix.ios-push-provider }}-build-start-epoch',
+      '${{ runner.temp }}/${{ matrix.ios-push-provider }}-crash-reports',
     ]);
     expect(workflow).toContain(
       'customerio/mobile-ci-tools/github-actions/ios/launch-simulator-app/v1@'
@@ -74,6 +77,8 @@ describe('Xcode 27 preview workflow', () => {
       'customerio/mobile-ci-tools/github-actions/ios/launch-simulator-app/v1@main'
     );
     expect(step('Upload compatibility logs').if).toBe('always()');
+    expect(step('Collect crash reports').if).toBe('failure()');
+    expect(workflow).toContain('Library/Logs/DiagnosticReports');
     expect(step('Upload compatibility logs').with['if-no-files-found']).toBe(
       'error'
     );

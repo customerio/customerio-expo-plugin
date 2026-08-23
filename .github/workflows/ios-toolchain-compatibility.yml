@@ -89,6 +89,13 @@ jobs:
           npm_config_foreground_scripts=true npm run compatibility:setup-test-app -- \
             --app-path=${{ env.APP_PATH }}
 
+      - name: Complete FCM fixture metadata
+        if: matrix.ios-push-provider == 'fcm'
+        run: |
+          /usr/libexec/PlistBuddy \
+            -c 'Add :PROJECT_ID string test-project' \
+            "$APP_PATH/cio-artifacts/GoogleService-Info.plist"
+
       - name: Configure Plugin with Default Config
         run: |
           npm run compatibility:configure-plugin -- \
@@ -201,6 +208,23 @@ jobs:
           survival-seconds: ${{ env.LAUNCH_SURVIVAL_SECONDS }}
           log-path: ${{ runner.temp }}/${{ matrix.ios-push-provider }}-launch.log
 
+      - name: Collect crash reports
+        if: failure()
+        shell: bash
+        run: |
+          set -euo pipefail
+          reports_dir="$RUNNER_TEMP/${{ matrix.ios-push-provider }}-crash-reports"
+          mkdir -p "$reports_dir"
+          find "$HOME/Library/Logs/DiagnosticReports" \
+            -maxdepth 1 \
+            -type f \
+            -name "${IOS_APP_NAME}*" \
+            -exec cp {} "$reports_dir" \; 2>/dev/null || true
+          if [[ -z "$(find "$reports_dir" -type f -print -quit)" ]]; then
+            printf 'No host crash report was generated. See the launch log.\n' \
+              > "$reports_dir/README.txt"
+          fi
+
       - name: Upload compatibility logs
         if: always()
         uses: actions/upload-artifact@v4
@@ -210,5 +234,6 @@ jobs:
             ${{ runner.temp }}/${{ matrix.ios-push-provider }}-launch.log
             ${{ runner.temp }}/${{ matrix.ios-push-provider }}-build-settings.json
             ${{ runner.temp }}/${{ matrix.ios-push-provider }}-build-start-epoch
+            ${{ runner.temp }}/${{ matrix.ios-push-provider }}-crash-reports
           if-no-files-found: error
           retention-days: 7
