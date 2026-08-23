@@ -35,7 +35,9 @@ describe('Xcode 27 preview workflow', () => {
     expect(workflow).toContain(
       '--template "expo-template-bare-minimum@$EXPO_CANARY_VERSION"'
     );
-    expect(workflow).toContain('--clean=false');
+    expect(workflow).toContain(
+      '--ios-push-provider=${{ matrix.ios-push-provider }}'
+    );
     expect(workflow).toContain('-showBuildSettings');
     expect(resolver).toContain('"WRAPPER_EXTENSION"');
     expect(workflow).toContain('APP_PRODUCT_PATH=');

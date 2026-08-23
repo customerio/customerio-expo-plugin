@@ -95,6 +95,13 @@ jobs:
             --app-path=${{ env.APP_PATH }} \
             --add-default-config
 
+      - name: Configure push provider
+        run: |
+          npm run compatibility:configure-plugin -- \
+            --app-path=${{ env.APP_PATH }} \
+            --ios-push-provider=${{ matrix.ios-push-provider }} \
+            --ios-use-frameworks=static
+
       - name: Generate scene-enabled native project
         working-directory: ${{ env.APP_PATH }}
         run: |
@@ -103,16 +110,34 @@ jobs:
             --platform=ios \
             --template "expo-template-bare-minimum@$EXPO_CANARY_VERSION"
 
-      - name: Validate Plugin
+      - name: Validate generated plugin configuration
         run: |
+          TEST_APP_PATH="$APP_PATH" \
+          TEST_APP_NAME="$APP_NAME" \
+          EXPO_VERSION="$EXPO_CANARY_VERSION" \
+            npm test -- \
+              __tests__/ios/common \
+              "__tests__/ios/${{ matrix.ios-push-provider }}"
+
+      - name: Build generated app
+        shell: bash
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
           date +%s > "$RUNNER_TEMP/${{ matrix.ios-push-provider }}-build-start-epoch"
-          npm run compatibility:validate-plugin -- \
-            --app-path=${{ env.APP_PATH }} \
-            --expo-version=${{ env.EXPO_CANARY_VERSION }} \
-            --platforms=ios \
-            --ios-use-frameworks="static" \
-            --ios-push-providers=${{ matrix.ios-push-provider }} \
-            --clean=false
+          workspaces=("$APP_PATH"/ios/*.xcworkspace)
+          if [[ "${#workspaces[@]}" -ne 1 ]]; then
+            echo "::error::expected one generated workspace, found ${#workspaces[@]}"
+            exit 1
+          fi
+          workspace="${workspaces[0]}"
+          scheme="$(basename "$workspace" .xcworkspace)"
+          xcodebuild \
+            -workspace "$workspace" \
+            -scheme "$scheme" \
+            -sdk iphonesimulator \
+            -configuration Release \
+            build
 
       - name: Resolve generated simulator app
         shell: bash
