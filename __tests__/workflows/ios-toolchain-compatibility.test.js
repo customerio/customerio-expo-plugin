@@ -42,6 +42,9 @@ describe('Xcode 27 preview workflow', () => {
     );
     expect(workflow).toContain("-c 'Add :PROJECT_ID string test-project'");
     expect(workflow).toContain(
+      "-c 'Set :API_KEY AIzaSy000000000000000000000000000000000'"
+    );
+    expect(workflow).toContain(
       'echo "IOS_APP_NAME=$(basename "${workspaces[0]}" .xcworkspace)"'
     );
     expect(workflow).toContain('TEST_APP_NAME="$IOS_APP_NAME"');

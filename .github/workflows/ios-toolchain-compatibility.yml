@@ -95,6 +95,9 @@ jobs:
           /usr/libexec/PlistBuddy \
             -c 'Add :PROJECT_ID string test-project' \
             "$APP_PATH/cio-artifacts/GoogleService-Info.plist"
+          /usr/libexec/PlistBuddy \
+            -c 'Set :API_KEY AIzaSy000000000000000000000000000000000' \
+            "$APP_PATH/cio-artifacts/GoogleService-Info.plist"
 
       - name: Configure Plugin with Default Config
         run: |
