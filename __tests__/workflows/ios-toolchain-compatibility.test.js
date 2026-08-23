@@ -38,6 +38,11 @@ describe('Xcode 27 preview workflow', () => {
     expect(workflow).toContain(
       '--ios-push-provider=${{ matrix.ios-push-provider }}'
     );
+    expect(workflow).toContain('npm_config_foreground_scripts=true');
+    expect(workflow).toContain(
+      'echo "IOS_APP_NAME=$(basename "${workspaces[0]}" .xcworkspace)"'
+    );
+    expect(workflow).toContain('TEST_APP_NAME="$IOS_APP_NAME"');
     expect(workflow).toContain('-showBuildSettings');
     expect(resolver).toContain('"WRAPPER_EXTENSION"');
     expect(workflow).toContain('APP_PRODUCT_PATH=');

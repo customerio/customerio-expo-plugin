@@ -86,7 +86,7 @@ jobs:
 
       - name: Setup Test App
         run: |
-          npm run compatibility:setup-test-app -- \
+          npm_config_foreground_scripts=true npm run compatibility:setup-test-app -- \
             --app-path=${{ env.APP_PATH }}
 
       - name: Configure Plugin with Default Config
@@ -109,11 +109,17 @@ jobs:
             --clean \
             --platform=ios \
             --template "expo-template-bare-minimum@$EXPO_CANARY_VERSION"
+          workspaces=(ios/*.xcworkspace)
+          if [[ "${#workspaces[@]}" -ne 1 ]]; then
+            echo "::error::expected one generated workspace, found ${#workspaces[@]}"
+            exit 1
+          fi
+          echo "IOS_APP_NAME=$(basename "${workspaces[0]}" .xcworkspace)" >> "$GITHUB_ENV"
 
       - name: Validate generated plugin configuration
         run: |
           TEST_APP_PATH="$APP_PATH" \
-          TEST_APP_NAME="$APP_NAME" \
+          TEST_APP_NAME="$IOS_APP_NAME" \
           EXPO_VERSION="$EXPO_CANARY_VERSION" \
             npm test -- \
               __tests__/ios/common \
