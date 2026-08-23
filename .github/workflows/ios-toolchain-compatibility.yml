@@ -79,9 +79,6 @@ jobs:
           npx create-expo-app "$APP_PATH" \
             --template "expo-template-default@$EXPO_CANARY_VERSION" \
             --no-install
-          npm pkg set \
-            --prefix "$APP_PATH" \
-            "dependencies.expo=$EXPO_CANARY_VERSION"
           npm install --prefix "$APP_PATH"
 
       - name: Setup Test App
@@ -92,12 +89,15 @@ jobs:
       - name: Complete FCM fixture metadata
         if: matrix.ios-push-provider == 'fcm'
         run: |
+          plist="$APP_PATH/cio-artifacts/GoogleService-Info.plist"
+          /usr/libexec/PlistBuddy -c 'Delete :PROJECT_ID' "$plist" >/dev/null 2>&1 || true
           /usr/libexec/PlistBuddy \
             -c 'Add :PROJECT_ID string test-project' \
-            "$APP_PATH/cio-artifacts/GoogleService-Info.plist"
+            "$plist"
+          /usr/libexec/PlistBuddy -c 'Delete :API_KEY' "$plist" >/dev/null 2>&1 || true
           /usr/libexec/PlistBuddy \
-            -c 'Set :API_KEY AIzaSy000000000000000000000000000000000' \
-            "$APP_PATH/cio-artifacts/GoogleService-Info.plist"
+            -c 'Add :API_KEY string AIzaSy000000000000000000000000000000000' \
+            "$plist"
 
       - name: Configure Plugin with Default Config
         run: |
@@ -109,12 +109,13 @@ jobs:
         run: |
           npm run compatibility:configure-plugin -- \
             --app-path=${{ env.APP_PATH }} \
-            --ios-push-provider=${{ matrix.ios-push-provider }} \
-            --ios-use-frameworks=static
+            --ios-push-provider=${{ matrix.ios-push-provider }}
 
       - name: Generate scene-enabled native project
         working-directory: ${{ env.APP_PATH }}
         run: |
+          set -euo pipefail
+          shopt -s nullglob
           CI=1 npx expo prebuild \
             --clean \
             --platform=ios \
@@ -128,12 +129,81 @@ jobs:
 
       - name: Validate generated plugin configuration
         run: |
+          set -euo pipefail
+          app_delegate="$APP_PATH/ios/$IOS_APP_NAME/AppDelegate.swift"
+          scene_delegate="$APP_PATH/ios/$IOS_APP_NAME/SceneDelegate.swift"
+          plist="$APP_PATH/ios/$IOS_APP_NAME/Info.plist"
+
+          test -f "$app_delegate"
+          test -f "$scene_delegate"
+          scene_class="$(/usr/libexec/PlistBuddy \
+            -c 'Print :UIApplicationSceneManifest:UISceneConfigurations:UIWindowSceneSessionRoleApplication:0:UISceneDelegateClassName' \
+            "$plist")"
+          # shellcheck disable=SC2016
+          if [[ "$scene_class" != '$(PRODUCT_MODULE_NAME).SceneDelegate' ]]; then
+            echo "::error::unexpected scene delegate class: $scene_class"
+            exit 1
+          fi
+          grep -Fq 'let cioSdkHandler = CioSdkAppDelegateHandler()' "$app_delegate"
+          grep -Fq 'cioSdkHandler.application(application, didFinishLaunchingWithOptions: launchOptions)' "$app_delegate"
+
           TEST_APP_PATH="$APP_PATH" \
           TEST_APP_NAME="$IOS_APP_NAME" \
           EXPO_VERSION="$EXPO_CANARY_VERSION" \
             npm test -- \
               __tests__/ios/common \
               "__tests__/ios/${{ matrix.ios-push-provider }}"
+
+          python3 - "$app_delegate" "$scene_delegate" <<'PY'
+          import pathlib
+          import sys
+
+          app_delegate = pathlib.Path(sys.argv[1])
+          scene_delegate = pathlib.Path(sys.argv[2])
+
+          app_source = app_delegate.read_text()
+          app_anchor = """  public override func application(
+              _ application: UIApplication,
+              didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
+            ) -> Bool {
+          """
+          if app_source.count(app_anchor) != 1:
+              raise SystemExit("unexpected Expo AppDelegate launch method")
+          app_probe = app_anchor + """    UserDefaults.standard.set(false, forKey: "CIO_EXPO_SCENE_DID_CONNECT")
+              DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
+                guard UserDefaults.standard.bool(forKey: "CIO_EXPO_SCENE_DID_CONNECT") else {
+                  fatalError("SceneDelegate did not receive willConnectTo")
+                }
+              }
+          """
+          app_delegate.write_text(app_source.replace(app_anchor, app_probe))
+
+          scene_source = scene_delegate.read_text()
+          scene_anchor = """internal import Expo
+
+          @objc(SceneDelegate)
+          class SceneDelegate: ExpoAppSceneDelegate {
+            // Extension point for config plugins.
+          }
+          """
+          if scene_source != scene_anchor:
+              raise SystemExit("unexpected Expo SceneDelegate template")
+          scene_delegate.write_text("""internal import Expo
+          import UIKit
+
+          @objc(SceneDelegate)
+          class SceneDelegate: ExpoAppSceneDelegate {
+            override func scene(
+              _ scene: UIScene,
+              willConnectTo session: UISceneSession,
+              options connectionOptions: UIScene.ConnectionOptions
+            ) {
+              UserDefaults.standard.set(true, forKey: "CIO_EXPO_SCENE_DID_CONNECT")
+              super.scene(scene, willConnectTo: session, options: connectionOptions)
+            }
+          }
+          """)
+          PY
 
       - name: Build generated app
         shell: bash
@@ -211,23 +281,6 @@ jobs:
           survival-seconds: ${{ env.LAUNCH_SURVIVAL_SECONDS }}
           log-path: ${{ runner.temp }}/${{ matrix.ios-push-provider }}-launch.log
 
-      - name: Collect crash reports
-        if: failure()
-        shell: bash
-        run: |
-          set -euo pipefail
-          reports_dir="$RUNNER_TEMP/${{ matrix.ios-push-provider }}-crash-reports"
-          mkdir -p "$reports_dir"
-          find "$HOME/Library/Logs/DiagnosticReports" \
-            -maxdepth 1 \
-            -type f \
-            -name "${IOS_APP_NAME}*" \
-            -exec cp {} "$reports_dir" \; 2>/dev/null || true
-          if [[ -z "$(find "$reports_dir" -type f -print -quit)" ]]; then
-            printf 'No host crash report was generated. See the launch log.\n' \
-              > "$reports_dir/README.txt"
-          fi
-
       - name: Upload compatibility logs
         if: always()
         uses: actions/upload-artifact@v4
@@ -237,6 +290,5 @@ jobs:
             ${{ runner.temp }}/${{ matrix.ios-push-provider }}-launch.log
             ${{ runner.temp }}/${{ matrix.ios-push-provider }}-build-settings.json
             ${{ runner.temp }}/${{ matrix.ios-push-provider }}-build-start-epoch
-            ${{ runner.temp }}/${{ matrix.ios-push-provider }}-crash-reports
           if-no-files-found: error
           retention-days: 7

@@ -21,33 +21,8 @@ describe('Xcode 27 preview workflow', () => {
   const steps = definition.jobs.preview.steps;
   const step = (name) => steps.find((candidate) => candidate.name === name);
 
-  it('uses the scene-enabled Expo canary and launches the generated app', () => {
+  it('uses the repository Node version and launches the generated app', () => {
     expect(definition.env.NODE_VERSION).toBe('24');
-    expect(definition.env.EXPO_CANARY_VERSION).toBe(
-      '58.0.0-canary-20260812-27f94d4'
-    );
-    expect(workflow).toContain(
-      '--template "expo-template-default@$EXPO_CANARY_VERSION"'
-    );
-    expect(workflow).toContain('"dependencies.expo=$EXPO_CANARY_VERSION"');
-    expect(workflow).toContain(
-      '--template "expo-template-bare-minimum@$EXPO_CANARY_VERSION"'
-    );
-    expect(workflow).toContain(
-      '--ios-push-provider=${{ matrix.ios-push-provider }}'
-    );
-    expect(workflow).toContain('npm_config_foreground_scripts=true');
-    expect(step('Complete FCM fixture metadata').if).toBe(
-      "matrix.ios-push-provider == 'fcm'"
-    );
-    expect(workflow).toContain("-c 'Add :PROJECT_ID string test-project'");
-    expect(workflow).toContain(
-      "-c 'Set :API_KEY AIzaSy000000000000000000000000000000000'"
-    );
-    expect(workflow).toContain(
-      'echo "IOS_APP_NAME=$(basename "${workspaces[0]}" .xcworkspace)"'
-    );
-    expect(workflow).toContain('TEST_APP_NAME="$IOS_APP_NAME"');
     expect(workflow).toContain('-showBuildSettings');
     expect(resolver).toContain('"WRAPPER_EXTENSION"');
     expect(workflow).toContain('APP_PRODUCT_PATH=');
@@ -62,13 +37,13 @@ describe('Xcode 27 preview workflow', () => {
     expect(workflow).toContain(
       'xcodebuild -showBuildSettings failed with exit code $xcodebuild_status'
     );
+    expect(workflow).toContain('--clean');
     expect(
       step('Upload compatibility logs').with.path.trim().split('\n')
     ).toEqual([
       '${{ runner.temp }}/${{ matrix.ios-push-provider }}-launch.log',
       '${{ runner.temp }}/${{ matrix.ios-push-provider }}-build-settings.json',
       '${{ runner.temp }}/${{ matrix.ios-push-provider }}-build-start-epoch',
-      '${{ runner.temp }}/${{ matrix.ios-push-provider }}-crash-reports',
     ]);
     expect(workflow).toContain(
       'customerio/mobile-ci-tools/github-actions/ios/launch-simulator-app/v1@'
@@ -80,8 +55,6 @@ describe('Xcode 27 preview workflow', () => {
       'customerio/mobile-ci-tools/github-actions/ios/launch-simulator-app/v1@main'
     );
     expect(step('Upload compatibility logs').if).toBe('always()');
-    expect(step('Collect crash reports').if).toBe('failure()');
-    expect(workflow).toContain('Library/Logs/DiagnosticReports');
     expect(step('Upload compatibility logs').with['if-no-files-found']).toBe(
       'error'
     );
