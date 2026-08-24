@@ -135,7 +135,7 @@ function execute() {
       <key>GCM_SENDER_ID</key>
       <string>1234567890</string>
       <key>API_KEY</key>
-      <string>test-api-key</string>
+      <string>AIzaSy000000000000000000000000000000000</string>
       <key>CLIENT_ID</key>
       <string>1234567890-abcdefg.apps.googleusercontent.com</string>
     </dict>
