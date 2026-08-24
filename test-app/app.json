@@ -119,7 +119,9 @@
                 "id": "cio-expo-id",
                 "name": "CIO Test",
                 "importance": 4
-              }
+              },
+              "icon": "./assets/images/android-icon-monochrome.png",
+              "color": "#1DA1F2"
             }
           },
           "ios": {
