@@ -66,21 +66,52 @@ describe('android scenarios: addResourceMetadataIfNotExists (notification icon a
   });
 
   it('does not duplicate when the same name is added twice (and preserves the first resource)', () => {
+    const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
     const application = freshApplication();
-    addResourceMetadataIfNotExists(
-      application,
-      FIREBASE_NOTIFICATION_ICON_METADATA,
-      '@drawable/first'
-    );
-    addResourceMetadataIfNotExists(
-      application,
-      FIREBASE_NOTIFICATION_ICON_METADATA,
-      '@drawable/second'
-    );
+    expect(
+      addResourceMetadataIfNotExists(
+        application,
+        FIREBASE_NOTIFICATION_ICON_METADATA,
+        '@drawable/first'
+      )
+    ).toBe(true);
+    // The losing write reports false so callers can skip dependent resources,
+    // and warns so a changed value being ignored is visible in the prebuild log.
+    expect(
+      addResourceMetadataIfNotExists(
+        application,
+        FIREBASE_NOTIFICATION_ICON_METADATA,
+        '@drawable/second'
+      )
+    ).toBe(false);
     expect(application['meta-data']).toHaveLength(1);
     expect(application['meta-data']![0].$['android:resource']).toEqual(
       '@drawable/first'
     );
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('already declares')
+    );
+    warnSpy.mockRestore();
+  });
+
+  it('reports true without warning when the existing entry already references the same resource', () => {
+    const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    const application = freshApplication();
+    addResourceMetadataIfNotExists(
+      application,
+      FIREBASE_NOTIFICATION_COLOR_METADATA,
+      `@color/${NOTIFICATION_COLOR_RESOURCE}`
+    );
+    expect(
+      addResourceMetadataIfNotExists(
+        application,
+        FIREBASE_NOTIFICATION_COLOR_METADATA,
+        `@color/${NOTIFICATION_COLOR_RESOURCE}`
+      )
+    ).toBe(true);
+    expect(application['meta-data']).toHaveLength(1);
+    expect(warnSpy).not.toHaveBeenCalled();
+    warnSpy.mockRestore();
   });
 
   it('initializes the meta-data array when missing', () => {
@@ -131,11 +162,21 @@ describe('android scenarios: resolveNotificationColor', () => {
     });
   });
 
+  it('resolves an #AARRGGBB hex color with a transparency mask', () => {
+    expect(resolveNotificationColor('#801DA1F2')).toEqual({
+      resource: `@color/${NOTIFICATION_COLOR_RESOURCE}`,
+      value: '#801DA1F2',
+    });
+  });
+
   it('throws on a malformed color so prebuild fails with a clear message', () => {
     expect(() => resolveNotificationColor('red')).toThrow(
       /pushNotification\.color/
     );
     expect(() => resolveNotificationColor('#12345')).toThrow(
+      /pushNotification\.color/
+    );
+    expect(() => resolveNotificationColor('#1234567')).toThrow(
       /pushNotification\.color/
     );
   });
@@ -173,5 +214,16 @@ describe('android scenarios: resolveNotificationIcon', () => {
     expect(
       resolveNotificationIcon('./missing-icon.png', '/nonexistent')
     ).toBeNull();
+  });
+
+  it('returns null for an extension the Android resource compiler rejects', () => {
+    const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    expect(
+      resolveNotificationIcon('./notification-icon.svg', '/nonexistent')
+    ).toBeNull();
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('unsupported extension')
+    );
+    warnSpy.mockRestore();
   });
 });

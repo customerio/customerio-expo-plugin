@@ -6,6 +6,7 @@ import {
   mkdirSync,
   readFile,
   readFileSync,
+  unlinkSync,
   writeFile,
   writeFileSync,
 } from 'fs';
@@ -57,6 +58,14 @@ export class FileManagement {
       copyFileSync(src, dest);
     } catch (err) {
       logger.error(`Error copying file from ${src} to ${dest}: `, err);
+    }
+  }
+
+  static remove(path: string) {
+    try {
+      unlinkSync(path);
+    } catch (err) {
+      logger.error(`Error removing file ${path}: `, err);
     }
   }
 

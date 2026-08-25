@@ -28,6 +28,7 @@ jest.mock('../../plugin/src/helpers/utils/fileManagement', () => ({
     exists: jest.fn(),
     mkdir: jest.fn(),
     copyFile: jest.fn(),
+    remove: jest.fn(),
   },
 }));
 
@@ -61,15 +62,33 @@ const metadataResource = (
     'android:resource'
   ];
 
+const seedMetadata = (
+  app: ManifestApplication,
+  name: string,
+  resource: string
+): void => {
+  app['meta-data'] = [
+    ...(app['meta-data'] ?? []),
+    { $: { 'android:name': name, 'android:resource': resource } },
+  ];
+};
+
 describe('withNotificationIconAndColor', () => {
+  let warnSpy: jest.SpyInstance;
+
   beforeEach(() => {
     jest.clearAllMocks();
+    warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    warnSpy.mockRestore();
   });
 
   const runWrapper = (
-    pushNotification: { icon?: string; color?: string } | undefined
+    pushNotification: { icon?: string; color?: string } | undefined,
+    application: ManifestApplication = makeApplication()
   ) => {
-    const application = makeApplication();
     const mockManifestConfig = {
       modResults: { manifest: { application: [application] } },
       modRequest: {
@@ -134,6 +153,18 @@ describe('withNotificationIconAndColor', () => {
     ).toEqual(`@color/${NOTIFICATION_COLOR_RESOURCE}`);
   });
 
+  it('accepts an #AARRGGBB hex color with a transparency mask', () => {
+    const app = runWrapper({ color: '#801DA1F2' });
+
+    expect(mockAssignColorValue).toHaveBeenCalledWith(expect.anything(), {
+      name: NOTIFICATION_COLOR_RESOURCE,
+      value: '#801DA1F2',
+    });
+    expect(
+      metadataResource(app, FIREBASE_NOTIFICATION_COLOR_METADATA)
+    ).toEqual(`@color/${NOTIFICATION_COLOR_RESOURCE}`);
+  });
+
   it('copies a local icon into the drawable resources and references it', () => {
     mockFileManagement.exists.mockReturnValue(true);
     const app = runWrapper({ icon: './assets/notification-icon.png' });
@@ -155,6 +186,104 @@ describe('withNotificationIconAndColor', () => {
     // No meta-data pointing at a drawable that was never created, which would
     // fail the Android resource build.
     expect(app['meta-data']).toBeUndefined();
+  });
+
+  it('skips the manifest entry when the copy did not land in the drawable resources', () => {
+    // The source exists but nothing under the android project does: the copy is attempted and the
+    // destination check finds no file, as when FileManagement.copyFile swallows an I/O error.
+    mockFileManagement.exists.mockImplementation(
+      (p: string) => !p.startsWith('/project/android/')
+    );
+    const app = runWrapper({ icon: './assets/notification-icon.png' });
+
+    expect(mockFileManagement.copyFile).toHaveBeenCalled();
+    expect(app['meta-data']).toBeUndefined();
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('could not be copied')
+    );
+  });
+
+  it('skips an icon with an extension the Android resource compiler rejects', () => {
+    mockFileManagement.exists.mockReturnValue(true);
+    const app = runWrapper({ icon: './assets/notification-icon.svg' });
+
+    expect(mockFileManagement.copyFile).not.toHaveBeenCalled();
+    expect(app['meta-data']).toBeUndefined();
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('unsupported extension')
+    );
+  });
+
+  it('removes stale copies with other extensions before copying, so AAPT never sees duplicates', () => {
+    mockFileManagement.exists.mockReturnValue(true);
+    runWrapper({ icon: './assets/notification-icon.webp' });
+
+    const drawableDir = '/project/android/app/src/main/res/drawable';
+    expect(mockFileManagement.remove.mock.calls.map(([p]) => p).sort()).toEqual(
+      [
+        `${drawableDir}/${NOTIFICATION_ICON_ASSET}.jpeg`,
+        `${drawableDir}/${NOTIFICATION_ICON_ASSET}.jpg`,
+        `${drawableDir}/${NOTIFICATION_ICON_ASSET}.png`,
+      ]
+    );
+    expect(mockFileManagement.copyFile).toHaveBeenCalledWith(
+      '/project/assets/notification-icon.webp',
+      `${drawableDir}/${NOTIFICATION_ICON_ASSET}.webp`
+    );
+  });
+
+  it('keeps an existing entry from the app or another plugin, warns, and writes no orphaned color', () => {
+    const application = makeApplication();
+    seedMetadata(
+      application,
+      FIREBASE_NOTIFICATION_ICON_METADATA,
+      '@drawable/old_icon'
+    );
+    seedMetadata(
+      application,
+      FIREBASE_NOTIFICATION_COLOR_METADATA,
+      '@color/old_color'
+    );
+
+    const app = runWrapper(
+      { icon: '@drawable/new_icon', color: '#1DA1F2' },
+      application
+    );
+
+    expect(
+      metadataResource(app, FIREBASE_NOTIFICATION_ICON_METADATA)
+    ).toEqual('@drawable/old_icon');
+    expect(
+      metadataResource(app, FIREBASE_NOTIFICATION_COLOR_METADATA)
+    ).toEqual('@color/old_color');
+    // The manifest kept the pre-existing entry, so writing the plugin-owned color value would
+    // leave an orphaned colors.xml entry nothing references.
+    expect(mockAssignColorValue).not.toHaveBeenCalled();
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining(FIREBASE_NOTIFICATION_ICON_METADATA)
+    );
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining(FIREBASE_NOTIFICATION_COLOR_METADATA)
+    );
+  });
+
+  it('updates the color value on re-runs when the manifest already references the plugin-owned resource', () => {
+    // prebuild --no-clean: the previous run's manifest entry survives, but it is the plugin's own
+    // resource, so the new hex value must still land in colors.xml.
+    const application = makeApplication();
+    seedMetadata(
+      application,
+      FIREBASE_NOTIFICATION_COLOR_METADATA,
+      `@color/${NOTIFICATION_COLOR_RESOURCE}`
+    );
+
+    runWrapper({ color: '#ABCDEF' }, application);
+
+    expect(mockAssignColorValue).toHaveBeenCalledWith(expect.anything(), {
+      name: NOTIFICATION_COLOR_RESOURCE,
+      value: '#ABCDEF',
+    });
+    expect(warnSpy).not.toHaveBeenCalled();
   });
 
   it('throws on a malformed color value', () => {
