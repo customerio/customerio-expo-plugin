@@ -1,3 +1,9 @@
+## [3.8.0](https://github.com/customerio/customerio-expo-plugin/compare/3.7.2...3.8.0) (2026-08-25)
+
+### Features
+
+* add Android push notification icon and color options (MBL-2297) ([#397](https://github.com/customerio/customerio-expo-plugin/issues/397)) ([000ed9a](https://github.com/customerio/customerio-expo-plugin/commit/000ed9abddb87ad1b210c8d3f07527a4d0c8856a))
+
 ## [3.7.2](https://github.com/customerio/customerio-expo-plugin/compare/3.7.1...3.7.2) (2026-08-21)
 
 ### Bug Fixes
