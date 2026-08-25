@@ -111,7 +111,12 @@ function execute() {
           id: "cio-expo-id",
           name: "CIO Test",
           importance: 4
-        }
+        },
+        // icon points at the asset the expo template ships in every SDK version; color
+        // matches test-app/app.json so __tests__/android/app-manifest.test.js passes
+        // against both apps.
+        icon: "./assets/images/icon.png",
+        color: "#1DA1F2"
       }
     };
     const baseIosConfig = {

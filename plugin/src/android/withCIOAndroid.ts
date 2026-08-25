@@ -17,6 +17,7 @@ import { withLiveNotificationLogo } from './withLiveNotificationLogo';
 import { withLocationGradleProperties } from './withLocationGradleProperties';
 import { withMainApplicationModifications } from './withMainApplicationModifications';
 import { withNotificationChannelMetadata } from './withNotificationChannelMetadata';
+import { withNotificationIconAndColor } from './withNotificationIconAndColor';
 import { withProjectBuildGradle } from './withProjectBuildGradle';
 import { withProjectGoogleServices } from './withProjectGoogleServices';
 import { withProjectStrings } from './withProjectStrings';
@@ -39,6 +40,9 @@ export function withCIOAndroid(
     }
     if (props.pushNotification?.channel) {
       config = withNotificationChannelMetadata(config, props);
+    }
+    if (props.pushNotification?.icon || props.pushNotification?.color) {
+      config = withNotificationIconAndColor(config, props);
     }
   }
 

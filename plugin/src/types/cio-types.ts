@@ -71,6 +71,28 @@ export type CustomerIOPluginOptionsAndroid = {
       name?: string;
       importance?: number;
     };
+    /**
+     * Small icon shown in the status bar for push notifications. Without it Android falls back to
+     * the app icon rendered as a grey square.
+     *
+     * Either a path to a local image, relative to your project root (e.g.
+     * `./assets/notification-icon.png`), or a reference to a drawable your app already defines
+     * (e.g. `@drawable/ic_stat_notification`). A local image is copied into the Android drawables
+     * and should be white-on-transparent, as Android renders status bar icons in a single color.
+     *
+     * Written to the manifest as the `com.google.firebase.messaging.default_notification_icon`
+     * meta-data entry.
+     */
+    icon?: string;
+    /**
+     * Accent color applied to the notification icon. Either a `#RRGGBB` hex color (written to the
+     * Android color resources) or a reference to a color your app already defines (e.g.
+     * `@color/notification_accent`).
+     *
+     * Written to the manifest as the `com.google.firebase.messaging.default_notification_color`
+     * meta-data entry.
+     */
+    color?: string;
   };
   /**
    * Controls whether to disable Android 16 support by downgrading androidx dependencies.

@@ -72,3 +72,50 @@ test("Plugin injects notification channel metadata in the app manifest", async (
     expect(channelImportanceMetadata['$']['android:value']).toBe('4');
   });
 });
+
+test("Plugin injects notification icon and color metadata in the app manifest", async () => {
+  // When pushNotification.icon and pushNotification.color are set when setting up the plugin
+  // Firebase default notification icon and color metadata tags should be added to the
+  // app Manifest file as resource references, and the resources they point at should exist
+  const manifestContent = await fs.readFile(appManifestPath, "utf8");
+
+  parseString(manifestContent, (err, manifest) => {
+    if (err) throw err;
+
+    const application = manifest?.manifest?.application?.[0];
+    expect(application).toBeDefined();
+
+    const metadataList = application['meta-data'] || [];
+
+    const iconMetadata = metadataList.find(
+      metadata => metadata['$']['android:name'] === 'com.google.firebase.messaging.default_notification_icon'
+    );
+    expect(iconMetadata).toBeDefined();
+    expect(iconMetadata['$']['android:resource']).toBe('@drawable/cio_notification_icon');
+
+    const colorMetadata = metadataList.find(
+      metadata => metadata['$']['android:name'] === 'com.google.firebase.messaging.default_notification_color'
+    );
+    expect(colorMetadata).toBeDefined();
+    expect(colorMetadata['$']['android:resource']).toBe('@color/cio_notification_color');
+  });
+
+  // The icon image configured in app.json is copied into the drawable resources
+  const iconPath = path.join(androidPath, "app/src/main/res/drawable/cio_notification_icon.png");
+  expect(await fs.pathExists(iconPath)).toBe(true);
+
+  // The hex color configured in app.json is written into colors.xml
+  const colorsPath = path.join(androidPath, "app/src/main/res/values/colors.xml");
+  const colorsContent = await fs.readFile(colorsPath, "utf8");
+
+  parseString(colorsContent, (err, colors) => {
+    if (err) throw err;
+
+    const colorList = colors?.resources?.color || [];
+    const notificationColor = colorList.find(
+      color => color['$']['name'] === 'cio_notification_color'
+    );
+    expect(notificationColor).toBeDefined();
+    expect(notificationColor['_']).toBe('#1DA1F2');
+  });
+});

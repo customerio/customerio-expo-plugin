@@ -43,6 +43,8 @@ export type CustomerIOPluginOptionsAndroid = {
             name?: string;
             importance?: number;
         };
+        icon?: string;
+        color?: string;
     };
     disableAndroid16Support?: boolean;
 };
