@@ -14,7 +14,10 @@ import { logger } from '../utils/logger';
 import { validatePushNotificationOptions } from '../utils/validation';
 import { isExpoVersion53OrHigher, isExpoVersion58OrHigher } from './utils';
 import { withAppDelegateModifications } from './withAppDelegateModifications';
-import { withCIOIosSwift } from './withCIOIosSwift';
+import {
+  withCIOIosLiveActivityCleanup,
+  withCIOIosSwift,
+} from './withCIOIosSwift';
 import { withCIOSceneDelegate } from './withCIOSceneDelegate';
 import { withCioLiveActivityWidgetXcodeProject } from './withCioLiveActivityWidgetXcodeProject';
 import { withGeofenceAppDelegate } from './withGeofenceAppDelegate';
@@ -128,17 +131,21 @@ export function withCIOIos(
     // the SDK. Without it the activity still renders, but the `opened` metric is never reported and
     // the deep link the activity carries is never forwarded. `withCIOIosSwift` is built for exactly
     // this shape — no push and no SDK config — and calls the Live Activities module directly, since
-    // `CioSdkAppDelegateHandler` imports the push module this configuration does not install.
-    if (liveNotificationsEnabled && isSwiftProject) {
-      config = withCIOIosSwift(
-        config,
-        sdkConfig,
-        platformConfig,
-        location,
-        geofence,
-        liveNotificationsEnabled,
-        usesSceneLifecycle
-      );
+    // `CioSdkAppDelegateHandler` imports the push module this configuration does not install. When
+    // an incremental prebuild disables Live Notifications but keeps another optional module, remove
+    // that direct route before the Podfile drops the Live Activities subspec.
+    if (isSwiftProject) {
+      config = liveNotificationsEnabled
+        ? withCIOIosSwift(
+            config,
+            sdkConfig,
+            platformConfig,
+            location,
+            geofence,
+            liveNotificationsEnabled,
+            usesSceneLifecycle
+          )
+        : withCIOIosLiveActivityCleanup(config);
     }
     config = withCioXcodeProject(config, {
       ...platformConfig,

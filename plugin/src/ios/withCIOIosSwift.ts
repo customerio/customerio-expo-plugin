@@ -342,6 +342,8 @@ export const withCIOIosSwift = (
           next,
           projectUsesSceneLifecycle
         );
+      } else {
+        next = removeLiveActivityUrlGuard(next);
       }
       config.modResults.contents = next;
       return config;
@@ -349,6 +351,16 @@ export const withCIOIosSwift = (
   } else {
     return configOuter;
   }
+};
+
+/** Remove no-push Live Activity URL handling after an incremental disable. */
+export const withCIOIosLiveActivityCleanup = (configOuter: ExpoConfig) => {
+  return withAppDelegate(configOuter, async (config) => {
+    config.modResults.contents = removeLiveActivityUrlGuard(
+      config.modResults.contents
+    );
+    return config;
+  });
 };
 
 function warnIfNativeAutoInitializationNeedsSceneReadiness(

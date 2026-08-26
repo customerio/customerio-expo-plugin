@@ -6,6 +6,7 @@ import {
   modifyAppDelegateForLiveActivityUrl,
   modifyAppDelegateForNativeSDKInitializer,
   modifyAppDelegateForPushHandler,
+  withCIOIosLiveActivityCleanup,
   withCIOIosSwift,
 } from '../../plugin/src/ios/withCIOIosSwift';
 import {
@@ -339,6 +340,33 @@ public class AppDelegate: ExpoAppDelegate {
       // Should NOT inject CioSdkAppDelegateHandler code
       expect(result.modResults.contents).not.toContain('cioSdkHandler.application');
       expect(result.modResults.contents).not.toContain('let cioSdkHandler = CioSdkAppDelegateHandler()');
+    });
+
+    it('removes stale Live Activity handling when the module is disabled', async () => {
+      const { withAppDelegate } = require('@expo/config-plugins');
+      const enabled = modifyAppDelegateForLiveActivityUrl(
+        fs.readFileSync(getFixturePath('ios', 'AppDelegate.sdk55.swift'), 'utf8')
+      );
+
+      withCIOIosSwift(
+        mockConfig,
+        mockSdkConfig,
+        mockPropsAutoInitOnly,
+        undefined,
+        undefined,
+        false
+      );
+      const appDelegateCallback = withAppDelegate.mock.calls[0][1];
+      const result = await appDelegateCallback({
+        modResults: { contents: enabled },
+      });
+
+      expect(result.modResults.contents).not.toContain(
+        'CustomerIO.liveActivities.handleWidgetUrl'
+      );
+      expect(result.modResults.contents).toContain(
+        '#if canImport(CioLiveActivities)\nimport CioLiveActivities\n#endif'
+      );
     });
 
     it('warns about the explicit Linking readiness signal for scene auto-initialization', async () => {
@@ -702,6 +730,27 @@ public class AppDelegate: ExpoAppDelegate {
 `;
 
     expect(modifyAppDelegateForLiveActivityUrl(withPushHandler)).toBe(withPushHandler);
+  });
+
+  it('cleans stale no-config Live Activity handling without adding SDK wiring', async () => {
+    const { withAppDelegate } = require('@expo/config-plugins');
+    const enabled = modifyAppDelegateForLiveActivityUrl(
+      fs.readFileSync(getFixturePath('ios', 'AppDelegate.sdk55.swift'), 'utf8')
+    );
+
+    withCIOIosLiveActivityCleanup(mockConfig);
+    const appDelegateCallback = withAppDelegate.mock.calls[0][1];
+    const result = await appDelegateCallback({
+      modResults: { contents: enabled },
+    });
+
+    expect(result.modResults.contents).not.toContain(
+      'CustomerIO.liveActivities.handleWidgetUrl'
+    );
+    expect(result.modResults.contents).not.toContain(
+      'CustomerIOSDKInitializer.initialize()'
+    );
+    expect(result.modResults.contents).not.toContain('cioSdkHandler');
   });
 });
 
