@@ -188,6 +188,25 @@ import customerio_reactnative
     ).toHaveLength(2);
   });
 
+  it('does not treat a generated transform inside a multiline string as installed', () => {
+    const customized = baseline.replace(
+      '  // Extension point for config plugins.',
+      `  let debugText = """
+  override func transformURL(_ url: URL) -> URL? {
+    NativeCustomerIO.handleLiveActivityWidgetUrl(url)
+  }
+  """`
+    );
+
+    const output = modifySceneDelegateForCustomerIO(customized, {
+      liveNotificationsEnabled: true,
+    });
+
+    expect(
+      output.match(/override func transformURL\(_ url: URL\) -> URL\?/g)
+    ).toHaveLength(2);
+  });
+
   it('leaves an existing URL transform untouched', () => {
     const customized = baseline.replace(
       '  // Extension point for config plugins.',

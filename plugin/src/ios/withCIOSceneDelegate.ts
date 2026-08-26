@@ -6,7 +6,7 @@ import { logger } from '../utils/logger';
 import {
   addSwiftImports,
   hasExpoSceneLifecycle,
-  maskSwiftComments,
+  maskSwiftNonCode,
 } from './utils';
 
 const SCENE_DELEGATE_CLASS_REGEX =
@@ -41,7 +41,7 @@ export function modifySceneDelegateForCustomerIO(
     return contents;
   }
 
-  const executableContents = maskSwiftComments(contents);
+  const executableContents = maskSwiftNonCode(contents);
   if (CUSTOMER_IO_TRANSFORM_METHOD_REGEX.test(executableContents)) {
     return contents;
   }

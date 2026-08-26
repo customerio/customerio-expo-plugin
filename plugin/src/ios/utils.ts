@@ -71,10 +71,10 @@ export function addSwiftImports(
 }
 
 /**
- * Replaces Swift comments with spaces while preserving indexes and line breaks.
- * Presence checks can then distinguish executable generated hooks from code a host commented out.
+ * Replaces Swift comments and string contents with spaces while preserving indexes and line breaks.
+ * Presence checks can then distinguish executable generated hooks from non-code text.
  */
-export function maskSwiftComments(contents: string): string {
+export function maskSwiftNonCode(contents: string): string {
   const output = contents.split('');
   let blockDepth = 0;
   let stringDelimiter: '"' | '"""' | undefined;
@@ -121,9 +121,11 @@ export function maskSwiftComments(contents: string): string {
         contents.startsWith(stringDelimiter, index) &&
         !isEscaped(index)
       ) {
+        mask(index, index + stringDelimiter.length);
         index += stringDelimiter.length;
         stringDelimiter = undefined;
       } else {
+        mask(index, index + 1);
         index += 1;
       }
       continue;
@@ -131,9 +133,11 @@ export function maskSwiftComments(contents: string): string {
 
     if (contents.startsWith('"""', index)) {
       stringDelimiter = '"""';
+      mask(index, index + 3);
       index += 3;
     } else if (contents[index] === '"') {
       stringDelimiter = '"';
+      mask(index, index + 1);
       index += 1;
     } else if (contents.startsWith('//', index)) {
       const lineEnd = contents.indexOf('\n', index);

@@ -29,7 +29,7 @@ import {
   addSwiftImports,
   hasExpoSceneLifecycle,
   isFcmPushProvider,
-  maskSwiftComments,
+  maskSwiftNonCode,
 } from './utils';
 
 export { hasExpoSceneLifecycle };
@@ -376,7 +376,7 @@ export function modifyAppDelegateForPushHandler(
 ): string {
   let next = contents;
 
-  if (APP_DELEGATE_HANDLER_DECLARATION_REGEX.test(maskSwiftComments(next))) {
+  if (APP_DELEGATE_HANDLER_DECLARATION_REGEX.test(maskSwiftNonCode(next))) {
     logger.info(
       'CustomerIO Swift AppDelegate changes already exist. Adding anything newer...'
     );
@@ -491,7 +491,7 @@ export function modifyAppDelegateForNativeSDKInitializer(
   contents: string,
   usesSceneLifecycle = false
 ): string {
-  if (NATIVE_INITIALIZATION_LINE_REGEX.test(maskSwiftComments(contents))) {
+  if (NATIVE_INITIALIZATION_LINE_REGEX.test(maskSwiftNonCode(contents))) {
     logger.info(
       'CustomerIO Swift AppDelegate changes already exist. Skipping...'
     );
@@ -516,7 +516,7 @@ function addSceneRoutingBeforeNativeInitialization(contents: string): string {
     return contents;
   }
 
-  const executableContents = maskSwiftComments(contents);
+  const executableContents = maskSwiftNonCode(contents);
   const initializationMatch =
     executableContents.match(PUSH_INITIALIZATION_LINE_REGEX) ??
     executableContents.match(NATIVE_INITIALIZATION_LINE_REGEX);
@@ -541,7 +541,7 @@ function addSceneRoutingBeforeNativeInitialization(contents: string): string {
 }
 
 function hasExecutableSceneRouting(contents: string): boolean {
-  return CONFIGURE_SCENE_ROUTING_LINE_REGEX.test(maskSwiftComments(contents));
+  return CONFIGURE_SCENE_ROUTING_LINE_REGEX.test(maskSwiftNonCode(contents));
 }
 
 /**
