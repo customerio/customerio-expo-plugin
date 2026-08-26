@@ -727,6 +727,30 @@ public class AppDelegate: ExpoAppDelegate {
     ).toHaveLength(1);
   });
 
+  test('preserves a host conditional Live Activities import across disable cycles', () => {
+    const hostImport = `#if DEBUG && canImport(CioLiveActivities)
+import CioLiveActivities
+#endif`;
+    const template = RN_083_APP_DELEGATE.replace(
+      'import Expo',
+      `import Expo\n${hostImport}`
+    );
+
+    const enabled = modifyAppDelegateForLiveActivityUrl(template);
+    const disabled = modifyAppDelegateForLiveActivityUrl(enabled, true);
+
+    expect(disabled).toContain(hostImport);
+    expect(maskSwiftNonCode(disabled)).not.toContain(
+      'CustomerIO.liveActivities.handleWidgetUrl'
+    );
+    expect(disabled).toContain(
+      '#if canImport(CioLiveActivities)\nimport CioLiveActivities\n#endif'
+    );
+    expect(
+      maskSwiftNonCode(disabled).match(/^import CioLiveActivities$/gm)
+    ).toHaveLength(2);
+  });
+
   test('defers to the push handler when it already owns the method', () => {
     const withPushHandler = `import Expo
 

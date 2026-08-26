@@ -27,6 +27,7 @@ import { getIosNativeFilesPath } from '../utils/plugin';
 import { copyFileToXcode, getOrCreateCustomerIOGroup } from '../utils/xcode';
 import {
   addSwiftImports,
+  enclosingConditionalStart,
   hasExpoSceneLifecycle,
   isFcmPushProvider,
   maskSwiftNonCode,
@@ -749,17 +750,14 @@ function hasConditionalLiveActivityImport(contents: string): boolean {
 }
 
 function unconditionalLiveActivityImportMatch(
-  contents: string,
-  conditionalImport?: SourceMatch
+  contents: string
 ): SourceMatch | undefined {
   const executableContents = maskSwiftNonCode(contents);
   for (const match of executableContents.matchAll(/^import CioLiveActivities$/gm)) {
     if (match.index === undefined) continue;
-    const isInsideConditional =
-      conditionalImport !== undefined &&
-      match.index >= conditionalImport.index &&
-      match.index < conditionalImport.index + conditionalImport.length;
-    if (!isInsideConditional) {
+    if (
+      enclosingConditionalStart(executableContents, match.index) === undefined
+    ) {
       return { index: match.index, length: match[0].length };
     }
   }
@@ -771,10 +769,7 @@ function enableLiveActivityImport(contents: string): string {
   const conditionalImport = conditionalLiveActivityImportMatch(contents);
   if (!conditionalImport) return contents;
 
-  const unconditionalImport = unconditionalLiveActivityImportMatch(
-    contents,
-    conditionalImport
-  );
+  const unconditionalImport = unconditionalLiveActivityImportMatch(contents);
   const replacement = unconditionalImport ? '' : 'import CioLiveActivities';
   return `${contents.slice(0, conditionalImport.index)}${replacement}${contents.slice(
     conditionalImport.index + conditionalImport.length
@@ -784,10 +779,7 @@ function enableLiveActivityImport(contents: string): string {
 /** Keep a generated import compilable after the Live Activities subspec is removed. */
 function disableLiveActivityImport(contents: string): string {
   const conditionalImport = conditionalLiveActivityImportMatch(contents);
-  const unconditionalImport = unconditionalLiveActivityImportMatch(
-    contents,
-    conditionalImport
-  );
+  const unconditionalImport = unconditionalLiveActivityImportMatch(contents);
   if (!unconditionalImport) return contents;
 
   const replacement = conditionalImport

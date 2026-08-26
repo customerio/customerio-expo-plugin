@@ -163,7 +163,7 @@ export function maskSwiftNonCode(contents: string): string {
   return output.join('');
 }
 
-function enclosingConditionalStart(
+export function enclosingConditionalStart(
   contents: string,
   position: number
 ): number | undefined {
