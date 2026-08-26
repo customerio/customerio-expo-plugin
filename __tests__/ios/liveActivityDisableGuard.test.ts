@@ -9,7 +9,9 @@ jest.mock('@expo/config-plugins', () => ({
   ) =>
     callback({
       modResults: {
-        pbxTargetByName: jest.fn(() => mockExistingTarget),
+        pbxTargetByName: jest.fn((name: string) =>
+          name === '"CIOLiveActivityWidget"' ? mockExistingTarget : null
+        ),
       },
     }),
 }));

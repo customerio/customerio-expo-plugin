@@ -166,11 +166,7 @@ export const withCioLiveActivityWidgetXcodeProject: ConfigPlugin<{
  */
 export const withCioLiveActivityDisableGuard: ConfigPlugin = (configOuter) => {
   return withXcodeProject(configOuter, (config) => {
-    if (
-      config.modResults.pbxTargetByName(
-        CIO_LIVE_ACTIVITY_WIDGET_TARGET_NAME
-      )
-    ) {
+    if (hasLiveActivityWidgetTarget(config.modResults)) {
       throw new Error(
         'Disabling Customer.io Live Notifications in an existing iOS project requires a clean prebuild. ' +
           'Run `npx expo prebuild --clean --platform ios` so Expo removes the generated widget target and related build artifacts.'
@@ -179,6 +175,16 @@ export const withCioLiveActivityDisableGuard: ConfigPlugin = (configOuter) => {
     return config;
   });
 };
+
+/** node-xcode serializes newly added target names with quotes, but some projects parse without them. */
+export function hasLiveActivityWidgetTarget(
+  xcodeProject: XcodeProject
+): boolean {
+  return Boolean(
+    xcodeProject.pbxTargetByName(CIO_LIVE_ACTIVITY_WIDGET_TARGET_NAME) ??
+      xcodeProject.pbxTargetByName(`"${CIO_LIVE_ACTIVITY_WIDGET_TARGET_NAME}"`)
+  );
+}
 
 type AddLiveActivityWidgetInternalOptions = {
   iosPath: string;
@@ -257,7 +263,7 @@ const addLiveActivityWidget = async (
     };
   };
 
-  if (xcodeProject.pbxTargetByName(CIO_LIVE_ACTIVITY_WIDGET_TARGET_NAME)) {
+  if (hasLiveActivityWidgetTarget(xcodeProject)) {
     logger.warn(
       `${CIO_LIVE_ACTIVITY_WIDGET_TARGET_NAME} already exists in project. Refreshing its generated files ` +
         'only — files added or renamed since it was created cannot be registered on an existing target. ' +
@@ -374,7 +380,7 @@ export function addLiveActivityWidgetToXcodeProject(
   xcodeProject: XcodeProject,
   options: AddLiveActivityWidgetTargetOptions
 ): XcodeProject {
-  if (xcodeProject.pbxTargetByName(CIO_LIVE_ACTIVITY_WIDGET_TARGET_NAME)) {
+  if (hasLiveActivityWidgetTarget(xcodeProject)) {
     logger.warn(
       `${CIO_LIVE_ACTIVITY_WIDGET_TARGET_NAME} already exists in project. Skipping...`
     );

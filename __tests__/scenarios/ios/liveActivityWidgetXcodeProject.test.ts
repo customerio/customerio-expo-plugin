@@ -134,6 +134,17 @@ describe('ios scenarios — addLiveActivityWidgetToXcodeProject (vanilla pbxproj
     ]);
   });
 
+  it('does not duplicate a widget target on an incremental prebuild', () => {
+    const { project } = loadFixture('vanilla.pbxproj');
+
+    addLiveActivityWidgetToXcodeProject(project, baseOptions);
+    addLiveActivityWidgetToXcodeProject(project, baseOptions);
+
+    expect(
+      targetNames(project).filter((name) => name === WIDGET_TARGET_NAME)
+    ).toHaveLength(1);
+  });
+
   it('wires three build phases (Sources, Resources, Frameworks) on the new target', () => {
     const { project } = loadFixture('vanilla.pbxproj');
     addLiveActivityWidgetToXcodeProject(project, baseOptions);
