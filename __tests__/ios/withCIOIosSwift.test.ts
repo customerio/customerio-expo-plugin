@@ -783,6 +783,34 @@ describe('Expo scene AppDelegate', () => {
     );
   });
 
+  it('inserts routing at the executable initialization when a string contains the same line', () => {
+    const customized = sceneAppDelegate.replace(
+      'return super.application(application, didFinishLaunchingWithOptions: launchOptions)',
+      `let debugText = """
+    CustomerIOSDKInitializer.initialize()
+    """
+    return super.application(application, didFinishLaunchingWithOptions: launchOptions)`
+    );
+    const output = modifyAppDelegateForNativeSDKInitializer(customized, true);
+    const executableOutput = maskSwiftNonCode(output);
+
+    expect(output).toContain(`let debugText = """
+    CustomerIOSDKInitializer.initialize()
+    """`);
+    expect(
+      executableOutput.match(
+        /^[ \t]*NativeCustomerIO\.configureExpoSceneDeepLinkRouting\(\)$/gm
+      )
+    ).toHaveLength(1);
+    expect(
+      executableOutput.indexOf(
+        'NativeCustomerIO.configureExpoSceneDeepLinkRouting()'
+      )
+    ).toBeLessThan(
+      executableOutput.indexOf('CustomerIOSDKInitializer.initialize()')
+    );
+  });
+
   it('does not treat a commented scene-routing call as installed', () => {
     const customized = sceneAppDelegate.replace(
       'return super.application(application, didFinishLaunchingWithOptions: launchOptions)',

@@ -525,11 +525,13 @@ function addSceneRoutingBeforeNativeInitialization(contents: string): string {
   const lineEnd = nextLine < 0 ? contents.length : nextLine;
   const initializationLine = contents.slice(lineStart, lineEnd);
   const indentation = initializationLine.match(/^[ \t]*/)?.[0] ?? '';
-  const next = addSwiftImports(contents, [REACT_NATIVE_IMPORT]);
-  return next.replace(
-    initializationLine,
-    `${indentation}${CONFIGURE_SCENE_ROUTING_CALL}\n${initializationLine}`
-  );
+  const withSceneRouting = `${contents.slice(
+    0,
+    lineStart
+  )}${indentation}${CONFIGURE_SCENE_ROUTING_CALL}\n${contents.slice(
+    lineStart
+  )}`;
+  return addSwiftImports(withSceneRouting, [REACT_NATIVE_IMPORT]);
 }
 
 function hasExecutableSceneRouting(contents: string): boolean {
