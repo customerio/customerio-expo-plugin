@@ -621,6 +621,9 @@ const LIVE_ACTIVITY_IMPORTS = [
   'import CioDataPipelines',
   'import CioLiveActivities',
 ];
+const CONDITIONAL_LIVE_ACTIVITY_IMPORT = `#if canImport(CioLiveActivities)
+import CioLiveActivities
+#endif`;
 const LIVE_ACTIVITY_URL_CALL = 'CustomerIO.liveActivities.handleWidgetUrl';
 
 /**
@@ -666,8 +669,10 @@ const LIVE_ACTIVITY_URL_GUARD_REGEX =
  * method that already holds it, whether that method came from Expo's template or was created by the
  * Live Activity injector.
  *
- * Leaves the imports alone: they stay valid while the feature is on, and `addSwiftImports` is
- * idempotent.
+ * If the generated route was the last known use, makes the Live Activities import conditional.
+ * That keeps a host-owned import/use intact when the module remains installed, while allowing an
+ * incremental prebuild that removes the module to compile. We cannot safely delete an import from a
+ * host-owned AppDelegate because another host customization may still need it.
  */
 function removeLiveActivityUrlGuard(contents: string): string {
   if (!contents.includes(LIVE_ACTIVITY_URL_CALL)) {
@@ -679,9 +684,17 @@ function removeLiveActivityUrlGuard(contents: string): string {
     .replace(LIVE_ACTIVITY_URL_METHOD_REGEX, '')
     .replace(LIVE_ACTIVITY_URL_GUARD_REGEX, '');
 
-  return next.includes(LIVE_ACTIVITY_URL_CALL)
-    ? next
-    : next.replace(/^import CioLiveActivities\n?/m, '');
+  if (
+    next.includes(LIVE_ACTIVITY_URL_CALL) ||
+    next.includes(CONDITIONAL_LIVE_ACTIVITY_IMPORT)
+  ) {
+    return next;
+  }
+
+  return next.replace(
+    /^import CioLiveActivities$/m,
+    CONDITIONAL_LIVE_ACTIVITY_IMPORT
+  );
 }
 
 const APP_DELEGATE_PUSH_OPEN_URL_METHOD_REGEX =
@@ -734,7 +747,19 @@ function addSwiftImports(contents: string, imports: string[]): string {
   if (matches.length === 0) return contents;
 
   const last = matches[matches.length - 1];
-  const insertAt = (last.index ?? 0) + last[0].length;
+  let insertAt = (last.index ?? 0) + last[0].length;
+  const conditionalImportStart = contents.indexOf(
+    CONDITIONAL_LIVE_ACTIVITY_IMPORT
+  );
+  const conditionalImportEnd =
+    conditionalImportStart + CONDITIONAL_LIVE_ACTIVITY_IMPORT.length;
+  if (
+    conditionalImportStart >= 0 &&
+    (last.index ?? 0) >= conditionalImportStart &&
+    insertAt <= conditionalImportEnd
+  ) {
+    insertAt = conditionalImportEnd;
+  }
   return `${contents.slice(0, insertAt)}\n${missing.join('\n')}${contents.slice(
     insertAt
   )}`;

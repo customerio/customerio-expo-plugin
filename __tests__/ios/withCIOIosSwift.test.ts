@@ -681,7 +681,9 @@ describe('Expo scene AppDelegate', () => {
 
     expect(sdk57).toContain('CustomerIO.liveActivities.handleWidgetUrl');
     expect(sdk58).not.toContain('CustomerIO.liveActivities.handleWidgetUrl');
-    expect(sdk58).not.toContain('import CioLiveActivities');
+    expect(sdk58).toContain(`#if canImport(CioLiveActivities)
+import CioLiveActivities
+#endif`);
   });
 
   it('removes SDK 57 Live Activity routing when enabling push during an SDK 58 prebuild', () => {
@@ -690,10 +692,29 @@ describe('Expo scene AppDelegate', () => {
 
     expect(sdk57).toContain('CustomerIO.liveActivities.handleWidgetUrl');
     expect(sdk58).not.toContain('CustomerIO.liveActivities.handleWidgetUrl');
-    expect(sdk58).not.toContain('import CioLiveActivities');
+    expect(sdk58).toContain(`#if canImport(CioLiveActivities)
+import CioLiveActivities
+#endif`);
     expect(sdk58).toContain(
       'NativeCustomerIO.configureExpoSceneDeepLinkRouting()'
     );
+  });
+
+  it('preserves a host-owned Live Activities import and use while removing generated routing', () => {
+    const hostOwnedUse =
+      'private let hostOwnedLiveActivities = CustomerIO.liveActivities';
+    const customized = sceneAppDelegate.replace(
+      '@main',
+      `${hostOwnedUse}\n\n@main`
+    );
+    const sdk57 = modifyAppDelegateForLiveActivityUrl(customized);
+    const sdk58 = modifyAppDelegateForLiveActivityUrl(sdk57, true);
+
+    expect(sdk58).toContain(hostOwnedUse);
+    expect(sdk58).toContain(`#if canImport(CioLiveActivities)
+import CioLiveActivities
+#endif`);
+    expect(sdk58).not.toContain('CustomerIO.liveActivities.handleWidgetUrl');
   });
 
   it('is idempotent', () => {
