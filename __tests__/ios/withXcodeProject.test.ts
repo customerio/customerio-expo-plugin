@@ -11,24 +11,15 @@ describe('assertPushRemovalIsSafe', () => {
 
   it('allows a clean no-push project', () => {
     expect(() =>
-      assertPushRemovalIsSafe('/app/ios', 'Example', false)
+      assertPushRemovalIsSafe('/app/ios', 'Example')
     ).not.toThrow();
-  });
-
-  it('allows an existing push project while push stays enabled', () => {
-    mockExistsSync.mockReturnValue(true);
-
-    expect(() =>
-      assertPushRemovalIsSafe('/app/ios', 'Example', true)
-    ).not.toThrow();
-    expect(mockExistsSync).not.toHaveBeenCalled();
   });
 
   it('requires a clean prebuild before dropping push pods from a generated project', () => {
     mockExistsSync.mockReturnValue(true);
 
     expect(() =>
-      assertPushRemovalIsSafe('/app/ios', 'Example', false)
+      assertPushRemovalIsSafe('/app/ios', 'Example')
     ).toThrow('npx expo prebuild --clean --platform ios');
     expect(mockExistsSync).toHaveBeenCalledWith(
       '/app/ios/Example/CioSdkAppDelegateHandler.swift'

@@ -29,10 +29,9 @@ const PUSH_HANDLER_FILENAME = 'CioSdkAppDelegateHandler.swift';
  */
 export function assertPushRemovalIsSafe(
   iosPath: string,
-  projectName: string | undefined,
-  hasPush: boolean | undefined
+  projectName: string | undefined
 ): void {
-  if (hasPush !== false || !projectName) return;
+  if (!projectName) return;
 
   const generatedHandlerPath = path.join(
     iosPath,
@@ -47,6 +46,16 @@ export function assertPushRemovalIsSafe(
   );
 }
 
+export const withCioPushDisableGuard: ConfigPlugin = (config) => {
+  return withXcodeProject(config, (props) => {
+    assertPushRemovalIsSafe(
+      props.modRequest.platformProjectRoot,
+      props.modRequest.projectName
+    );
+    return props;
+  });
+};
+
 export const withCioXcodeProject: ConfigPlugin<WithCioXcodeProjectProps> = (
   config,
   cioProps
@@ -54,12 +63,6 @@ export const withCioXcodeProject: ConfigPlugin<WithCioXcodeProjectProps> = (
   return withXcodeProject(config, async (props) => {
     const iosPath = props.modRequest.platformProjectRoot;
     const podfileOptions = cioProps?.podfileOptions;
-
-    assertPushRemovalIsSafe(
-      iosPath,
-      props.modRequest.projectName,
-      podfileOptions?.hasPush
-    );
 
     await injectCIOPodfileCode(
       iosPath,

@@ -27,7 +27,10 @@ import { withGeofenceAppDelegate } from './withGeofenceAppDelegate';
 import { withGoogleServicesJsonFile } from './withGoogleServicesJsonFile';
 import { withLiveActivityInfoPlist } from './withLiveActivityInfoPlist';
 import { withCioNotificationsXcodeProject } from './withNotificationsXcodeProject';
-import { withCioXcodeProject } from './withXcodeProject';
+import {
+  withCioPushDisableGuard,
+  withCioXcodeProject,
+} from './withXcodeProject';
 
 export function withCIOIos(
   config: ExpoConfig,
@@ -50,6 +53,13 @@ export function withCIOIos(
   // the single push subspec to the explicit :subspecs array as soon as any of them is on.
   const optionalModulesEnabled =
     locationEnabled || geofenceEnabled || liveNotificationsEnabled;
+
+  // An incremental prebuild cannot safely remove the generated Swift handler and all of its Xcode
+  // references. Require Expo's clean regeneration path whenever a previously configured project
+  // removes push, including when push was the last Customer.io feature.
+  if (!platformConfig?.pushNotification) {
+    config = withCioPushDisableGuard(config);
+  }
 
   if (platformConfig?.pushNotification) {
     validatePushNotificationOptions(platformConfig.pushNotification);

@@ -4,6 +4,7 @@ import { isExpoVersion58OrHigher } from '../../plugin/src/ios/utils';
 import type { CustomerIOPluginGeofenceOptions, CustomerIOPluginLocationOptions, CustomerIOPluginOptionsIOS } from '../../plugin/src/types/cio-types';
 
 const mockWithCioXcodeProject = jest.fn((config: ExpoConfig, _props?: object) => config);
+const mockWithCioPushDisableGuard = jest.fn((config: ExpoConfig) => config);
 const mockWithCIOIosSwift = jest.fn((config: ExpoConfig, ..._args: unknown[]) => config);
 const mockWithCIOIosLiveActivityCleanup = jest.fn((config: ExpoConfig) => config);
 const mockWithAppDelegateModifications = jest.fn((config: ExpoConfig) => config);
@@ -27,6 +28,8 @@ jest.mock('@expo/config-plugins', () => ({
 jest.mock('../../plugin/src/ios/withXcodeProject', () => ({
   withCioXcodeProject: (config: ExpoConfig, props?: object) =>
     mockWithCioXcodeProject(config, props),
+  withCioPushDisableGuard: (config: ExpoConfig) =>
+    mockWithCioPushDisableGuard(config),
 }));
 jest.mock('../../plugin/src/ios/withCIOIosSwift', () => ({
   withCIOIosSwift: (config: ExpoConfig, ...args: unknown[]) =>
@@ -132,6 +135,7 @@ describe('withCIOIos', () => {
         mockConfig
       );
       expect(mockWithCioNotificationsXcodeProject).not.toHaveBeenCalled();
+      expect(mockWithCioPushDisableGuard).toHaveBeenCalledWith(mockConfig);
       expect(mockWithCioXcodeProject).toHaveBeenCalledTimes(1);
       expect(mockWithCioXcodeProject).toHaveBeenCalledWith(mockConfig, {
         podfileOptions: {
@@ -158,8 +162,18 @@ describe('withCIOIos', () => {
     it('does not remove existing native dependencies when location is omitted', () => {
       withCIOIos(mockConfig, undefined, undefined, undefined);
 
+      expect(mockWithCioPushDisableGuard).toHaveBeenCalledWith(mockConfig);
       expect(mockWithCioXcodeProject).not.toHaveBeenCalled();
     });
+  });
+
+  it('does not register the push removal guard while push is configured', () => {
+    withCIOIos(mockConfig, undefined, {
+      iosPath: '/test/ios',
+      pushNotification: { provider: 'apn' },
+    });
+
+    expect(mockWithCioPushDisableGuard).not.toHaveBeenCalled();
   });
 
   describe('host app entitlements when push is enabled', () => {
