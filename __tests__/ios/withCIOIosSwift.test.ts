@@ -734,8 +734,19 @@ public class AppDelegate: ExpoAppDelegate {
 
   it('cleans stale no-config Live Activity handling without adding SDK wiring', async () => {
     const { withAppDelegate } = require('@expo/config-plugins');
+    const hostNote = `  let integrationNote = """
+    // Report a Live Activity tap and route the deep link it carries
+    guard let url = CustomerIO.liveActivities.handleWidgetUrl(url) else { return true }
+    """
+`;
+    const template = fs
+      .readFileSync(getFixturePath('ios', 'AppDelegate.sdk55.swift'), 'utf8')
+      .replace(
+        '  public override func application(',
+        `${hostNote}\n  public override func application(`
+      );
     const enabled = modifyAppDelegateForLiveActivityUrl(
-      fs.readFileSync(getFixturePath('ios', 'AppDelegate.sdk55.swift'), 'utf8')
+      template
     );
 
     withCIOIosLiveActivityCleanup(mockConfig);
@@ -745,12 +756,13 @@ public class AppDelegate: ExpoAppDelegate {
     });
 
     expect(result.modResults.contents).not.toContain(
-      'CustomerIO.liveActivities.handleWidgetUrl'
-    );
-    expect(result.modResults.contents).not.toContain(
       'CustomerIOSDKInitializer.initialize()'
     );
     expect(result.modResults.contents).not.toContain('cioSdkHandler');
+    expect(result.modResults.contents).toContain(hostNote);
+    expect(maskSwiftNonCode(result.modResults.contents)).not.toContain(
+      'CustomerIO.liveActivities.handleWidgetUrl'
+    );
   });
 });
 

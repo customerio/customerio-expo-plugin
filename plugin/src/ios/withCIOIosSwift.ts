@@ -705,9 +705,14 @@ function removeLiveActivityUrlGuard(contents: string): string {
   }
   // Whole-method shape first: it contains the guard shape's text, so the narrower pattern would
   // otherwise strip the guard and leave an empty method behind.
-  const next = contents
-    .replace(LIVE_ACTIVITY_URL_METHOD_REGEX, '')
-    .replace(LIVE_ACTIVITY_URL_GUARD_REGEX, '');
+  const withoutGeneratedMethod = removeExecutableLiveActivityMatches(
+    contents,
+    LIVE_ACTIVITY_URL_METHOD_REGEX
+  );
+  const next = removeExecutableLiveActivityMatches(
+    withoutGeneratedMethod,
+    LIVE_ACTIVITY_URL_GUARD_REGEX
+  );
 
   if (
     next.includes(LIVE_ACTIVITY_URL_CALL) ||
@@ -720,6 +725,20 @@ function removeLiveActivityUrlGuard(contents: string): string {
     /^import CioLiveActivities$/m,
     CONDITIONAL_LIVE_ACTIVITY_IMPORT
   );
+}
+
+function removeExecutableLiveActivityMatches(
+  contents: string,
+  pattern: RegExp
+): string {
+  const executableContents = maskSwiftNonCode(contents);
+  return contents.replace(pattern, (match: string, offset: number) => {
+    const executableMatch = executableContents.slice(
+      offset,
+      offset + match.length
+    );
+    return executableMatch.includes(LIVE_ACTIVITY_URL_CALL) ? '' : match;
+  });
 }
 
 const APP_DELEGATE_PUSH_OPEN_URL_METHOD_REGEX =
