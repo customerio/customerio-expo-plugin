@@ -154,6 +154,21 @@ import customerio_reactnative
     expect(output).toContain('func transformURLForAnalytics');
   });
 
+  it('does not treat a comment containing the Customer.io helper as an installed transform', () => {
+    const customized = baseline.replace(
+      '  // Extension point for config plugins.',
+      `  // NativeCustomerIO.handleLiveActivityWidgetUrl(url)
+  let customerOwnedValue = true`
+    );
+
+    const output = modifySceneDelegateForCustomerIO(customized, {
+      liveNotificationsEnabled: true,
+    });
+
+    expect(output).toContain('override func transformURL(_ url: URL) -> URL?');
+    expect(output).toContain('let customerOwnedValue = true');
+  });
+
   it('leaves an existing URL transform untouched', () => {
     const customized = baseline.replace(
       '  // Extension point for config plugins.',

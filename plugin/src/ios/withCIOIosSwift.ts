@@ -9,7 +9,6 @@ import { PLATFORM } from '../helpers/constants/common';
 import {
   CIO_CONFIGUREDEEPLINK_KILLEDSTATE_SWIFT_SNIPPET,
   CIO_MESSAGING_PUSH_APP_DELEGATE_INIT_REGEX,
-  CIO_NATIVE_SDK_INITIALIZE_CALL,
   CIO_NATIVE_SDK_INITIALIZE_SNIPPET,
   CIO_REGISTER_PUSHNOTIFICATION_SNIPPET_v2,
   CIO_REGISTER_PUSH_NOTIFICATION_PLACEHOLDER,
@@ -40,6 +39,14 @@ const CIO_SDK_APP_DELEGATE_HANDLER_FILENAME = `${CIO_SDK_APP_DELEGATE_HANDLER_CL
 const REACT_NATIVE_IMPORT = 'import customerio_reactnative';
 const CONFIGURE_SCENE_ROUTING_CALL =
   'NativeCustomerIO.configureExpoSceneDeepLinkRouting()';
+const CONFIGURE_SCENE_ROUTING_LINE_REGEX =
+  /^[ \t]*NativeCustomerIO\.configureExpoSceneDeepLinkRouting\(\)[ \t]*(?:\/\/.*)?$/m;
+const PUSH_INITIALIZATION_LINE_REGEX =
+  /^[ \t]*cioSdkHandler\.application\(application, didFinishLaunchingWithOptions: launchOptions\)[ \t]*(?:\/\/.*)?$/m;
+const NATIVE_INITIALIZATION_LINE_REGEX =
+  /^[ \t]*CustomerIOSDKInitializer\.initialize\(\)[ \t]*(?:\/\/.*)?$/m;
+const APP_DELEGATE_HANDLER_DECLARATION_REGEX =
+  /^[ \t]*let[ \t]+cioSdkHandler[ \t]*=[ \t]*CioSdkAppDelegateHandler\(\)[ \t]*(?:\/\/.*)?$/m;
 
 /**
  * Copy and configure the CioSdkAppDelegateHandler.swift file
@@ -368,7 +375,7 @@ export function modifyAppDelegateForPushHandler(
 ): string {
   let next = contents;
 
-  if (next.includes(CIO_SDK_APP_DELEGATE_HANDLER_CLASS)) {
+  if (APP_DELEGATE_HANDLER_DECLARATION_REGEX.test(next)) {
     logger.info(
       'CustomerIO Swift AppDelegate changes already exist. Adding anything newer...'
     );
@@ -380,7 +387,7 @@ export function modifyAppDelegateForPushHandler(
     }
 
     const withSceneRouting = addSceneRoutingBeforeNativeInitialization(next);
-    return withSceneRouting.includes(CONFIGURE_SCENE_ROUTING_CALL)
+    return hasExecutableSceneRouting(withSceneRouting)
       ? removeLegacyAppDelegateDeepLinkHandling(withSceneRouting)
       : next;
   }
@@ -394,11 +401,11 @@ export function modifyAppDelegateForPushHandler(
   next = addDidFailToRegisterForRemoteNotificationsWithError(next);
   if (usesSceneLifecycle) {
     next = addSceneRoutingBeforeNativeInitialization(next);
-    if (next.includes(CONFIGURE_SCENE_ROUTING_CALL)) {
+    if (hasExecutableSceneRouting(next)) {
       next = removeLegacyAppDelegateDeepLinkHandling(next);
     }
     if (
-      next.includes(CONFIGURE_SCENE_ROUTING_CALL) &&
+      hasExecutableSceneRouting(next) &&
       props.pushNotification?.handleDeeplinkInKilledState === true
     ) {
       logger.warn(
@@ -483,7 +490,7 @@ export function modifyAppDelegateForNativeSDKInitializer(
   contents: string,
   usesSceneLifecycle = false
 ): string {
-  if (contents.includes(CIO_NATIVE_SDK_INITIALIZE_CALL)) {
+  if (NATIVE_INITIALIZATION_LINE_REGEX.test(contents)) {
     logger.info(
       'CustomerIO Swift AppDelegate changes already exist. Skipping...'
     );
@@ -504,18 +511,14 @@ export function modifyAppDelegateForNativeSDKInitializer(
 
 /** Install React Native routing before native Customer.io initialization in a scene host. */
 function addSceneRoutingBeforeNativeInitialization(contents: string): string {
-  if (contents.includes(CONFIGURE_SCENE_ROUTING_CALL)) {
+  if (hasExecutableSceneRouting(contents)) {
     return contents;
   }
 
-  const initializationCalls = [
-    'cioSdkHandler.application(application, didFinishLaunchingWithOptions: launchOptions)',
-    CIO_NATIVE_SDK_INITIALIZE_CALL,
-  ];
-  const initializationCall = initializationCalls.find((call) =>
-    contents.includes(call)
-  );
-  if (!initializationCall) {
+  const initializationMatch =
+    contents.match(PUSH_INITIALIZATION_LINE_REGEX) ??
+    contents.match(NATIVE_INITIALIZATION_LINE_REGEX);
+  if (!initializationMatch || initializationMatch.index === undefined) {
     throw new Error(
       logger.format(
         'Could not install Expo scene deep-link routing because the Customer.io initialization call was not added to AppDelegate. Preserve Expo\'s super.application(application, didFinishLaunchingWithOptions: launchOptions) return shape or integrate Customer.io initialization manually.'
@@ -523,19 +526,17 @@ function addSceneRoutingBeforeNativeInitialization(contents: string): string {
     );
   }
 
-  const initializationIndex = contents.indexOf(initializationCall);
-  const lineStart = contents.lastIndexOf('\n', initializationIndex) + 1;
-  const nextLine = contents.indexOf('\n', initializationIndex);
-  const lineEnd = nextLine < 0 ? contents.length : nextLine;
-  const initializationLine = contents.slice(lineStart, lineEnd);
+  const initializationLine = initializationMatch[0];
   const indentation = initializationLine.match(/^[ \t]*/)?.[0] ?? '';
   const next = addSwiftImports(contents, [REACT_NATIVE_IMPORT]);
-  return next.replace(initializationLine, () =>
-    initializationLine.replace(
-      initializationCall,
-      `${CONFIGURE_SCENE_ROUTING_CALL}\n${indentation}${initializationCall}`
-    )
+  return next.replace(
+    initializationLine,
+    `${indentation}${CONFIGURE_SCENE_ROUTING_CALL}\n${initializationLine}`
   );
+}
+
+function hasExecutableSceneRouting(contents: string): boolean {
+  return CONFIGURE_SCENE_ROUTING_LINE_REGEX.test(contents);
 }
 
 /**

@@ -8,8 +8,6 @@ import { addSwiftImports, hasExpoSceneLifecycle } from './utils';
 const SCENE_DELEGATE_CLASS_REGEX =
   /class\s+SceneDelegate\s*:\s*[^{}]*\bExpoAppSceneDelegate\b[^{}]*\{/;
 const REACT_NATIVE_IMPORT = 'import customerio_reactnative';
-const LIVE_ACTIVITY_TRANSFORM_MARKER =
-  'NativeCustomerIO.handleLiveActivityWidgetUrl(';
 const TRANSFORM_METHOD_DECLARATION_REGEX =
   /^[ \t]*(?:\w+[ \t]+)*override[ \t]+func[ \t]+transformURL[ \t]*\(/m;
 const CUSTOMER_IO_TRANSFORM_METHOD_REGEX =
@@ -39,7 +37,7 @@ export function modifySceneDelegateForCustomerIO(
     return contents;
   }
 
-  if (contents.includes(LIVE_ACTIVITY_TRANSFORM_MARKER)) {
+  if (CUSTOMER_IO_TRANSFORM_METHOD_REGEX.test(contents)) {
     return contents;
   }
 

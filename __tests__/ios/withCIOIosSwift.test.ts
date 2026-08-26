@@ -717,6 +717,25 @@ describe('Expo scene AppDelegate', () => {
     );
   });
 
+  it('does not treat a commented scene-routing call as installed', () => {
+    const customized = sceneAppDelegate.replace(
+      'return super.application(application, didFinishLaunchingWithOptions: launchOptions)',
+      `// NativeCustomerIO.configureExpoSceneDeepLinkRouting()
+    return super.application(application, didFinishLaunchingWithOptions: launchOptions)`
+    );
+    const output = modifyAppDelegateForPushHandler(
+      customized,
+      pushProps,
+      true
+    );
+
+    expect(
+      output.match(
+        /^[ \t]*NativeCustomerIO\.configureExpoSceneDeepLinkRouting\(\)$/gm
+      )
+    ).toHaveLength(1);
+  });
+
   it('leaves Live Activity URL ownership to SceneDelegate', () => {
     expect(modifyAppDelegateForLiveActivityUrl(sceneAppDelegate, true)).toBe(
       sceneAppDelegate
@@ -739,6 +758,22 @@ describe('Expo scene AppDelegate', () => {
     const customized = sceneAppDelegate.replace(
       'return super.application(application, didFinishLaunchingWithOptions: launchOptions)',
       `let didStart = super.application(application, didFinishLaunchingWithOptions: launchOptions)
+    return didStart`
+    );
+
+    expect(() =>
+      modifyAppDelegateForPushHandler(customized, pushProps, true)
+    ).toThrow(
+      'Could not install Expo scene deep-link routing because the Customer.io initialization call was not added to AppDelegate'
+    );
+  });
+
+  it('does not accept commented initialization calls as a safe scene-routing anchor', () => {
+    const customized = sceneAppDelegate.replace(
+      'return super.application(application, didFinishLaunchingWithOptions: launchOptions)',
+      `// cioSdkHandler.application(application, didFinishLaunchingWithOptions: launchOptions)
+    // CustomerIOSDKInitializer.initialize()
+    let didStart = super.application(application, didFinishLaunchingWithOptions: launchOptions)
     return didStart`
     );
 
