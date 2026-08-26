@@ -206,13 +206,13 @@ export const isExpoVersion53OrHigher = (config: ExpoConfig): boolean => {
   return isExpoVersionOrHigher(config, '53.0.0');
 };
 
-/** Returns true if Expo uses the generated UIScene lifecycle (SDK >= 57.0.0). */
-export const isExpoVersion57OrHigher = (config: ExpoConfig): boolean => {
+/** Returns true if Expo uses the generated UIScene lifecycle (SDK >= 58.0.0). */
+export const isExpoVersion58OrHigher = (config: ExpoConfig): boolean => {
   // Expo prereleases already use the next SDK's native template. Compare the coerced major version
   // here without changing prerelease behavior for the older version gates above.
   const coercedVersion = semver.coerce(config.sdkVersion || '');
   return coercedVersion
-    ? semver.gte(coercedVersion, '57.0.0')
+    ? semver.gte(coercedVersion, '58.0.0')
     : false;
 };
 

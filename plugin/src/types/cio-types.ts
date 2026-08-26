@@ -474,8 +474,8 @@ export type CustomerIOPluginPushNotificationOptions = {
   showPushAppInForeground?: boolean;
   disableNotificationRegistration?: boolean;
   /**
-   * Adds the legacy AppDelegate killed-state deep-link workaround on Expo SDK 53–56.
-   * Expo SDK 57+ delivers cold-start URLs through SceneDelegate instead.
+   * Adds the legacy AppDelegate killed-state deep-link workaround on Expo SDK 53–57.
+   * Expo SDK 58+ delivers cold-start URLs through SceneDelegate instead.
    */
   handleDeeplinkInKilledState?: boolean;
 

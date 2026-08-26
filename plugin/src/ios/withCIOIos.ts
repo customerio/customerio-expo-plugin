@@ -12,7 +12,7 @@ import { isLiveNotificationsEnabled } from '../helpers/utils/liveNotificationsEn
 import { mergeConfigWithEnvValues } from '../utils/config';
 import { logger } from '../utils/logger';
 import { validatePushNotificationOptions } from '../utils/validation';
-import { isExpoVersion53OrHigher, isExpoVersion57OrHigher } from './utils';
+import { isExpoVersion53OrHigher, isExpoVersion58OrHigher } from './utils';
 import { withAppDelegateModifications } from './withAppDelegateModifications';
 import {
   withCIOIosLiveActivityCleanup,
@@ -35,7 +35,7 @@ export function withCIOIos(
   liveNotifications?: CustomerIOPluginLiveNotificationsOptions
 ) {
   const isSwiftProject = isExpoVersion53OrHigher(config);
-  const usesSceneLifecycle = isExpoVersion57OrHigher(config);
+  const usesSceneLifecycle = isExpoVersion58OrHigher(config);
   const platformConfig = mergeDeprecatedPropertiesAndLogWarnings(props);
   const locationEnabled = location?.enabled === true;
   const geofenceEnabled = geofence?.enabled === true;
