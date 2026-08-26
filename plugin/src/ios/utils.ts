@@ -103,7 +103,9 @@ function isExpoVersionOrHigher(
   minVersion: string
 ): boolean {
   const sdkVersion = config.sdkVersion || '';
-  const validVersion = semver.valid(sdkVersion) || semver.coerce(sdkVersion);
+  // Expo prereleases already use the next SDK's native template. Compare the coerced major version
+  // so 58.0.0-beta and 58.0.0-rc projects take the same scene path as the stable SDK.
+  const validVersion = semver.coerce(sdkVersion) || semver.valid(sdkVersion);
   if (!validVersion) return false;
   return semver.gte(validVersion, minVersion);
 }

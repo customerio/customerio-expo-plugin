@@ -516,10 +516,11 @@ function addSceneRoutingBeforeNativeInitialization(contents: string): string {
     contents.includes(call)
   );
   if (!initializationCall) {
-    logger.warn(
-      'Could not find Customer.io native initialization call for scene routing setup'
+    throw new Error(
+      logger.format(
+        'Could not install Expo scene deep-link routing because the Customer.io initialization call was not added to AppDelegate. Preserve Expo\'s super.application(application, didFinishLaunchingWithOptions: launchOptions) return shape or integrate Customer.io initialization manually.'
+      )
     );
-    return contents;
   }
 
   const initializationIndex = contents.indexOf(initializationCall);

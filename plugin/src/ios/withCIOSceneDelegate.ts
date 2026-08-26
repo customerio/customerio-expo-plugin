@@ -8,9 +8,12 @@ import { addSwiftImports, hasExpoSceneLifecycle } from './utils';
 const SCENE_DELEGATE_CLASS_REGEX =
   /class\s+SceneDelegate\s*:\s*[^{}]*\bExpoAppSceneDelegate\b[^{}]*\{/;
 const REACT_NATIVE_IMPORT = 'import customerio_reactnative';
-const LIVE_ACTIVITY_TRANSFORM_MARKER = 'NativeLiveActivities.handleWidgetUrl(';
+const LIVE_ACTIVITY_TRANSFORM_MARKER =
+  'NativeCustomerIO.handleLiveActivityWidgetUrl(';
+const TRANSFORM_METHOD_DECLARATION_REGEX =
+  /^[ \t]*(?:\w+[ \t]+)*override[ \t]+func[ \t]+transformURL[ \t]*\(/m;
 const CUSTOMER_IO_TRANSFORM_METHOD_REGEX =
-  /\n[ \t]*override\s+func\s+transformURL\s*\(\s*_\s+([A-Za-z_][A-Za-z0-9_]*)\s*:\s*URL\s*\)\s*->\s*URL\?\s*\{\s*NativeLiveActivities\.handleWidgetUrl\(\1\)\s*\}\n?/;
+  /\n[ \t]*override\s+func\s+transformURL\s*\(\s*_\s+([A-Za-z_][A-Za-z0-9_]*)\s*:\s*URL\s*\)\s*->\s*URL\?\s*\{\s*(?:return\s+)?NativeCustomerIO\.handleLiveActivityWidgetUrl\(\1\)\s*\}\n?/;
 
 export type SceneDelegateOptions = {
   liveNotificationsEnabled: boolean;
@@ -41,7 +44,7 @@ export function modifySceneDelegateForCustomerIO(
   }
 
   let next = contents;
-  if (next.includes('func transformURL')) {
+  if (TRANSFORM_METHOD_DECLARATION_REGEX.test(next)) {
     logger.warn(
       'SceneDelegate.transformURL is already owned by another integration; Live Activity URL routing was not added'
     );
@@ -52,7 +55,7 @@ export function modifySceneDelegateForCustomerIO(
 
   const method = `
   override func transformURL(_ url: URL) -> URL? {
-    NativeLiveActivities.handleWidgetUrl(url)
+    NativeCustomerIO.handleLiveActivityWidgetUrl(url)
   }
 `;
 

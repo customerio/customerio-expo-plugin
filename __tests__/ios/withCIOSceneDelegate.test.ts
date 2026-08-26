@@ -6,7 +6,8 @@ const baseline = fs.readFileSync(
   getFixturePath('ios', 'SceneDelegate.sdk58.swift'),
   'utf8'
 );
-const LIVE_ACTIVITY_CALL = 'NativeLiveActivities.handleWidgetUrl';
+const LIVE_ACTIVITY_CALL =
+  'NativeCustomerIO.handleLiveActivityWidgetUrl';
 
 describe('modifySceneDelegateForCustomerIO', () => {
   it('does nothing when no scene integration is enabled', () => {
@@ -55,7 +56,9 @@ describe('modifySceneDelegateForCustomerIO', () => {
 
     expect(output).toContain('import customerio_reactnative');
     expect(output).toContain('override func transformURL(_ url: URL) -> URL?');
-    expect(output).toContain('NativeLiveActivities.handleWidgetUrl(url)');
+    expect(output).toContain(
+      'NativeCustomerIO.handleLiveActivityWidgetUrl(url)'
+    );
     expect(output).not.toContain('connectionOptions.notificationResponse');
   });
 
@@ -115,8 +118,40 @@ import customerio_reactnative
     expect(twice).toBe(once);
     expect(twice).toContain('let customerOwnedValue = true');
     expect(
-      (twice.match(/NativeLiveActivities\.handleWidgetUrl/g) ?? []).length
+      (twice.match(/NativeCustomerIO\.handleLiveActivityWidgetUrl/g) ?? [])
+        .length
     ).toBe(1);
+  });
+
+  it('removes a formatted generated transform when Live Notifications is disabled', () => {
+    const enabled = modifySceneDelegateForCustomerIO(baseline, {
+      liveNotificationsEnabled: true,
+    }).replace(
+      'NativeCustomerIO.handleLiveActivityWidgetUrl(url)',
+      'return NativeCustomerIO.handleLiveActivityWidgetUrl(url)'
+    );
+
+    const disabled = modifySceneDelegateForCustomerIO(enabled, {
+      liveNotificationsEnabled: false,
+    });
+
+    expect(disabled).not.toContain(LIVE_ACTIVITY_CALL);
+    expect(disabled).not.toContain('override func transformURL');
+  });
+
+  it('does not mistake comments or similarly named methods for a URL transform', () => {
+    const customized = baseline.replace(
+      '  // Extension point for config plugins.',
+      `  // TODO: consider override func transformURL later
+  func transformURLForAnalytics(_ url: URL) -> URL { url }`
+    );
+
+    const output = modifySceneDelegateForCustomerIO(customized, {
+      liveNotificationsEnabled: true,
+    });
+
+    expect(output).toContain(LIVE_ACTIVITY_CALL);
+    expect(output).toContain('func transformURLForAnalytics');
   });
 
   it('leaves an existing URL transform untouched', () => {
@@ -171,7 +206,7 @@ import customerio_reactnative
       liveNotificationsEnabled: true,
     });
 
-    expect(output).toContain('NativeLiveActivities.handleWidgetUrl(url)');
+    expect(output).toContain(LIVE_ACTIVITY_CALL);
   });
 
   it('accepts an Expo scene delegate that also conforms to a protocol', () => {
@@ -183,7 +218,7 @@ import customerio_reactnative
       liveNotificationsEnabled: true,
     });
 
-    expect(output).toContain('NativeLiveActivities.handleWidgetUrl(url)');
+    expect(output).toContain(LIVE_ACTIVITY_CALL);
   });
 
   it('accepts a multiline Expo scene inheritance list', () => {
@@ -196,6 +231,6 @@ import customerio_reactnative
       liveNotificationsEnabled: true,
     });
 
-    expect(output).toContain('NativeLiveActivities.handleWidgetUrl(url)');
+    expect(output).toContain(LIVE_ACTIVITY_CALL);
   });
 });

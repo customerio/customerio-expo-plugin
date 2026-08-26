@@ -9,6 +9,7 @@ import {
   modifyAppDelegateForPushHandler,
   withCIOIosSwift,
 } from '../../plugin/src/ios/withCIOIosSwift';
+import { isExpoVersion58OrHigher } from '../../plugin/src/ios/utils';
 import type { CustomerIOPluginOptionsIOS, NativeSDKConfig } from '../../plugin/src/types/cio-types';
 import { getFixturePath } from '../utils';
 
@@ -50,6 +51,17 @@ describe('hasExpoSceneLifecycle', () => {
     );
     expect(hasExpoSceneLifecycle(projectRoot, projectName)).toBe(true);
   });
+});
+
+describe('Expo scene version detection', () => {
+  it.each(['58.0.0-beta.0', '58.0.0-rc.1', '58.0.0-canary-20260826'])(
+    'treats the Expo 58 prerelease %s as scene-based',
+    (sdkVersion) => {
+      expect(
+        isExpoVersion58OrHigher({ name: 'Test', slug: 'test', sdkVersion })
+      ).toBe(true);
+    }
+  );
 });
 
 // Mock dependencies
@@ -723,23 +735,17 @@ describe('Expo scene AppDelegate', () => {
     expect(sdk58).toContain('NativeCustomerIO.configureExpoSceneDeepLinkRouting()');
   });
 
-  it('preserves legacy routing when a customized AppDelegate has no safe scene-routing anchor', () => {
+  it('fails prebuild when a customized AppDelegate has no safe scene-routing anchor', () => {
     const customized = sceneAppDelegate.replace(
       'return super.application(application, didFinishLaunchingWithOptions: launchOptions)',
       `let didStart = super.application(application, didFinishLaunchingWithOptions: launchOptions)
     return didStart`
     );
-    const sdk57 = modifyAppDelegateForPushHandler(customized, pushProps);
-    const sdk58 = modifyAppDelegateForPushHandler(sdk57, pushProps, true);
 
-    expect(sdk57).toContain(
-      'cioSdkHandler.application(app, open: url, options: options)'
-    );
-    expect(sdk58).toContain(
-      'cioSdkHandler.application(app, open: url, options: options)'
-    );
-    expect(sdk58).not.toContain(
-      'NativeCustomerIO.configureExpoSceneDeepLinkRouting()'
+    expect(() =>
+      modifyAppDelegateForPushHandler(customized, pushProps, true)
+    ).toThrow(
+      'Could not install Expo scene deep-link routing because the Customer.io initialization call was not added to AppDelegate'
     );
   });
 
