@@ -4,6 +4,7 @@ import type {
 } from '@expo/config-plugins';
 import { withAppDelegate, withXcodeProject } from '@expo/config-plugins';
 import type { ExpoConfig } from '@expo/config-types';
+import fs from 'fs';
 import path from 'path';
 import { PLATFORM } from '../helpers/constants/common';
 import {
@@ -34,6 +35,25 @@ const CIO_SDK_APP_DELEGATE_HANDLER_FILENAME = `${CIO_SDK_APP_DELEGATE_HANDLER_CL
 const REACT_NATIVE_IMPORT = 'import customerio_reactnative';
 const CONFIGURE_SCENE_ROUTING_CALL =
   'NativeCustomerIO.configureExpoSceneDeepLinkRouting()';
+
+/** Confirm the generated native project actually adopted Expo's scene lifecycle. */
+export function hasExpoSceneLifecycle(
+  platformProjectRoot?: string,
+  projectName?: string | null
+): boolean {
+  if (!platformProjectRoot || !projectName) return false;
+
+  const projectDirectory = path.join(platformProjectRoot, projectName);
+  const sceneDelegatePath = path.join(projectDirectory, 'SceneDelegate.swift');
+  const infoPlistPath = path.join(projectDirectory, 'Info.plist');
+  if (!fs.existsSync(sceneDelegatePath) || !fs.existsSync(infoPlistPath)) {
+    return false;
+  }
+
+  return fs
+    .readFileSync(infoPlistPath, 'utf8')
+    .includes('<key>UIApplicationSceneManifest</key>');
+}
 
 /**
  * Copy and configure the CioSdkAppDelegateHandler.swift file
@@ -275,10 +295,16 @@ export const withCIOIosSwift = (
   if (props?.pushNotification) {
     // With push notifications: delegate to CioSdkAppDelegateHandler for both push and auto-init
     return withAppDelegate(configOuter, async (config) => {
+      const projectUsesSceneLifecycle =
+        usesSceneLifecycle &&
+        hasExpoSceneLifecycle(
+          config.modRequest?.platformProjectRoot,
+          config.modRequest?.projectName
+        );
       config.modResults.contents = modifyAppDelegateForPushHandler(
         config.modResults.contents,
         props,
-        usesSceneLifecycle
+        projectUsesSceneLifecycle
       );
       return config;
     });
@@ -288,15 +314,24 @@ export const withCIOIosSwift = (
     // the push module, which this configuration does not install — so the tap goes straight to the
     // Live Activities module instead.
     return withAppDelegate(configOuter, async (config) => {
+      const projectUsesSceneLifecycle =
+        usesSceneLifecycle &&
+        hasExpoSceneLifecycle(
+          config.modRequest?.platformProjectRoot,
+          config.modRequest?.projectName
+        );
       let next = config.modResults.contents;
       if (sdkConfig) {
         next = modifyAppDelegateForNativeSDKInitializer(
           next,
-          usesSceneLifecycle
+          projectUsesSceneLifecycle
         );
       }
       if (liveNotificationsEnabled) {
-        next = modifyAppDelegateForLiveActivityUrl(next, usesSceneLifecycle);
+        next = modifyAppDelegateForLiveActivityUrl(
+          next,
+          projectUsesSceneLifecycle
+        );
       }
       config.modResults.contents = next;
       return config;
@@ -664,7 +699,7 @@ function removeLegacyAppDelegateDeepLinkHandling(contents: string): string {
         'didFinishLaunchingWithOptions: launchOptions'
       );
   }
-  return next;
+  return removeLiveActivityUrlGuard(next);
 }
 
 /**

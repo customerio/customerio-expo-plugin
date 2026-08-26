@@ -1,6 +1,9 @@
 import type { ExpoConfig } from '@expo/config-types';
 import * as fs from 'fs';
+import os from 'os';
+import path from 'path';
 import {
+  hasExpoSceneLifecycle,
   modifyAppDelegateForLiveActivityUrl,
   modifyAppDelegateForNativeSDKInitializer,
   modifyAppDelegateForPushHandler,
@@ -8,6 +11,40 @@ import {
 } from '../../plugin/src/ios/withCIOIosSwift';
 import type { CustomerIOPluginOptionsIOS, NativeSDKConfig } from '../../plugin/src/types/cio-types';
 import { getFixturePath } from '../utils';
+
+describe('hasExpoSceneLifecycle', () => {
+  let projectRoot: string;
+  const projectName = 'TestApp';
+
+  beforeEach(() => {
+    projectRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'cio-expo-scenes-'));
+    fs.mkdirSync(path.join(projectRoot, projectName));
+  });
+
+  afterEach(() => {
+    fs.rmSync(projectRoot, { recursive: true, force: true });
+  });
+
+  it('requires both Expo SceneDelegate and the scene manifest before moving URL ownership', () => {
+    expect(hasExpoSceneLifecycle(projectRoot, projectName)).toBe(false);
+
+    fs.writeFileSync(
+      path.join(projectRoot, projectName, 'SceneDelegate.swift'),
+      'class SceneDelegate: ExpoAppSceneDelegate {}'
+    );
+    fs.writeFileSync(
+      path.join(projectRoot, projectName, 'Info.plist'),
+      '<plist><dict></dict></plist>'
+    );
+    expect(hasExpoSceneLifecycle(projectRoot, projectName)).toBe(false);
+
+    fs.writeFileSync(
+      path.join(projectRoot, projectName, 'Info.plist'),
+      '<plist><dict><key>UIApplicationSceneManifest</key><dict/></dict></plist>'
+    );
+    expect(hasExpoSceneLifecycle(projectRoot, projectName)).toBe(true);
+  });
+});
 
 // Mock dependencies
 jest.mock('@expo/config-plugins', () => ({
@@ -574,6 +611,17 @@ describe('Expo scene AppDelegate', () => {
 
     expect(sdk57).toContain('CustomerIO.liveActivities.handleWidgetUrl');
     expect(sdk58).not.toContain('CustomerIO.liveActivities.handleWidgetUrl');
+  });
+
+  it('removes SDK 57 Live Activity routing when enabling push during an SDK 58 prebuild', () => {
+    const sdk57 = modifyAppDelegateForLiveActivityUrl(sceneAppDelegate);
+    const sdk58 = modifyAppDelegateForPushHandler(sdk57, pushProps, true);
+
+    expect(sdk57).toContain('CustomerIO.liveActivities.handleWidgetUrl');
+    expect(sdk58).not.toContain('CustomerIO.liveActivities.handleWidgetUrl');
+    expect(sdk58).toContain(
+      'NativeCustomerIO.configureExpoSceneDeepLinkRouting()'
+    );
   });
 
   it('is idempotent', () => {
