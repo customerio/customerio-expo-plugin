@@ -3,13 +3,15 @@ import * as fs from 'fs';
 import os from 'os';
 import path from 'path';
 import {
-  hasExpoSceneLifecycle,
   modifyAppDelegateForLiveActivityUrl,
   modifyAppDelegateForNativeSDKInitializer,
   modifyAppDelegateForPushHandler,
   withCIOIosSwift,
 } from '../../plugin/src/ios/withCIOIosSwift';
 import {
+  hasExpoSceneLifecycle,
+  isExpoVersion53OrHigher,
+  isExpoVersion53OrLower,
   isExpoVersion58OrHigher,
   maskSwiftNonCode,
 } from '../../plugin/src/ios/utils';
@@ -71,6 +73,23 @@ describe('Expo scene version detection', () => {
       ).toBe(true);
     }
   );
+
+  it('preserves the existing prerelease behavior of older SDK gates', () => {
+    expect(
+      isExpoVersion53OrHigher({
+        name: 'Test',
+        slug: 'test',
+        sdkVersion: '53.0.0-beta.1',
+      })
+    ).toBe(false);
+    expect(
+      isExpoVersion53OrLower({
+        name: 'Test',
+        slug: 'test',
+        sdkVersion: '54.0.0-canary-20260826',
+      })
+    ).toBe(true);
+  });
 });
 
 describe('Swift non-code masking', () => {

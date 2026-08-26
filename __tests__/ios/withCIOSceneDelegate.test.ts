@@ -31,6 +31,11 @@ describe('modifySceneDelegateForCustomerIO', () => {
     expect(disabled).not.toContain('override func transformURL');
     // Import ownership is unknown, so leave the harmless import in place.
     expect(disabled).toContain('import customerio_reactnative');
+    expect(
+      modifySceneDelegateForCustomerIO(disabled, {
+        liveNotificationsEnabled: true,
+      })
+    ).toBe(enabled);
   });
 
   it('preserves a host-owned React Native import when Live Notifications is disabled', () => {

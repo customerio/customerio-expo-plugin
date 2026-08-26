@@ -196,9 +196,7 @@ function isExpoVersionOrHigher(
   minVersion: string
 ): boolean {
   const sdkVersion = config.sdkVersion || '';
-  // Expo prereleases already use the next SDK's native template. Compare the coerced major version
-  // so 58.0.0-beta and 58.0.0-rc projects take the same scene path as the stable SDK.
-  const validVersion = semver.coerce(sdkVersion) || semver.valid(sdkVersion);
+  const validVersion = semver.valid(sdkVersion) || semver.coerce(sdkVersion);
   if (!validVersion) return false;
   return semver.gte(validVersion, minVersion);
 }
@@ -210,7 +208,12 @@ export const isExpoVersion53OrHigher = (config: ExpoConfig): boolean => {
 
 /** Returns true if Expo uses the generated UIScene lifecycle (SDK >= 58.0.0). */
 export const isExpoVersion58OrHigher = (config: ExpoConfig): boolean => {
-  return isExpoVersionOrHigher(config, '58.0.0');
+  // Expo prereleases already use the next SDK's native template. Compare the coerced major version
+  // here without changing prerelease behavior for the older version gates above.
+  const coercedVersion = semver.coerce(config.sdkVersion || '');
+  return coercedVersion
+    ? semver.gte(coercedVersion, '58.0.0')
+    : false;
 };
 
 /** Returns true if Expo SDK version is <= 53.x.x (used for Android 16 compat detection) */

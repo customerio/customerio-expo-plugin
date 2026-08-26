@@ -32,8 +32,6 @@ import {
   maskSwiftNonCode,
 } from './utils';
 
-export { hasExpoSceneLifecycle };
-
 // Constants
 const CIO_SDK_APP_DELEGATE_HANDLER_CLASS = 'CioSdkAppDelegateHandler';
 const CIO_SDK_APP_DELEGATE_HANDLER_FILENAME = `${CIO_SDK_APP_DELEGATE_HANDLER_CLASS}.swift`;
@@ -41,13 +39,13 @@ const REACT_NATIVE_IMPORT = 'import customerio_reactnative';
 const CONFIGURE_SCENE_ROUTING_CALL =
   'NativeCustomerIO.configureExpoSceneDeepLinkRouting()';
 const CONFIGURE_SCENE_ROUTING_LINE_REGEX =
-  /^[ \t]*NativeCustomerIO\.configureExpoSceneDeepLinkRouting\(\)[ \t]*(?:\/\/.*)?$/m;
+  /^[ \t]*NativeCustomerIO\.configureExpoSceneDeepLinkRouting\(\)[ \t]*$/m;
 const PUSH_INITIALIZATION_LINE_REGEX =
-  /^[ \t]*cioSdkHandler\.application\(application, didFinishLaunchingWithOptions: launchOptions\)[ \t]*(?:\/\/.*)?$/m;
+  /^[ \t]*cioSdkHandler\.application\(application, didFinishLaunchingWithOptions: launchOptions\)[ \t]*$/m;
 const NATIVE_INITIALIZATION_LINE_REGEX =
-  /^[ \t]*CustomerIOSDKInitializer\.initialize\(\)[ \t]*(?:\/\/.*)?$/m;
+  /^[ \t]*CustomerIOSDKInitializer\.initialize\(\)[ \t]*$/m;
 const APP_DELEGATE_HANDLER_DECLARATION_REGEX =
-  /^[ \t]*let[ \t]+cioSdkHandler[ \t]*=[ \t]*CioSdkAppDelegateHandler\(\)[ \t]*(?:\/\/.*)?$/m;
+  /^[ \t]*let[ \t]+cioSdkHandler[ \t]*=[ \t]*CioSdkAppDelegateHandler\(\)[ \t]*$/m;
 
 /**
  * Copy and configure the CioSdkAppDelegateHandler.swift file
@@ -387,10 +385,9 @@ export function modifyAppDelegateForPushHandler(
       return addOpenURLHandling(next);
     }
 
-    const withSceneRouting = addSceneRoutingBeforeNativeInitialization(next);
-    return hasExecutableSceneRouting(withSceneRouting)
-      ? removeLegacyAppDelegateDeepLinkHandling(withSceneRouting)
-      : next;
+    return removeLegacyAppDelegateDeepLinkHandling(
+      addSceneRoutingBeforeNativeInitialization(next)
+    );
   }
 
   next = addHandlerPropertyDeclaration(next);
@@ -402,13 +399,8 @@ export function modifyAppDelegateForPushHandler(
   next = addDidFailToRegisterForRemoteNotificationsWithError(next);
   if (usesSceneLifecycle) {
     next = addSceneRoutingBeforeNativeInitialization(next);
-    if (hasExecutableSceneRouting(next)) {
-      next = removeLegacyAppDelegateDeepLinkHandling(next);
-    }
-    if (
-      hasExecutableSceneRouting(next) &&
-      props.pushNotification?.handleDeeplinkInKilledState === true
-    ) {
+    next = removeLegacyAppDelegateDeepLinkHandling(next);
+    if (props.pushNotification?.handleDeeplinkInKilledState === true) {
       logger.warn(
         'handleDeeplinkInKilledState is not applied to Expo SDK 58+ scene projects; ' +
           'scene routing replaces the legacy AppDelegate launch-options workaround'

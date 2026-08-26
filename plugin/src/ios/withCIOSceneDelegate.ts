@@ -79,7 +79,7 @@ function removeCustomerIOURLTransform(contents: string): string {
   if (!match) return contents;
 
   const start = match.index ?? 0;
-  return `${contents.slice(0, start)}\n${contents.slice(
+  return `${contents.slice(0, start)}${contents.slice(
     start + match[0].length
   )}`;
 }
