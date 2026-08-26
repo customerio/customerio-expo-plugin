@@ -507,6 +507,33 @@ public class AppDelegate: ExpoAppDelegate {
       expect(initializeOccurrences).toBe(1);
     });
 
+    it.each([
+      'private let cioSdkHandler = CioSdkAppDelegateHandler()',
+      'let cioSdkHandler: CioSdkAppDelegateHandler = CioSdkAppDelegateHandler()',
+      'private lazy var cioSdkHandler: CioSdkAppDelegateHandler = .init()',
+    ])('preserves a host-modified push handler declaration: %s', (declaration) => {
+      const contents = `import Expo
+
+class AppDelegate: ExpoAppDelegate {
+  ${declaration}
+
+  override func application(
+    _ application: UIApplication,
+    didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
+  ) -> Bool {
+    cioSdkHandler.application(application, didFinishLaunchingWithOptions: launchOptions)
+    return super.application(application, didFinishLaunchingWithOptions: launchOptions)
+  }
+}`;
+
+      const result = modifyAppDelegateForPushHandler(contents, {
+        iosPath: '/test/ios',
+        pushNotification: { provider: 'apn' },
+      });
+
+      expect(result.match(/cioSdkHandler\s*(?::[^=]+)?=/g)).toHaveLength(1);
+    });
+
     it('should inject .appGroupId(...) builder line when appGroupId is set', () => {
       const { FileManagement } = require('../../plugin/src/helpers/utils/fileManagement');
       const propsWithAppGroup: CustomerIOPluginOptionsIOS = {

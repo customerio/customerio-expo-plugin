@@ -24,6 +24,10 @@ export type CustomerIOPluginOptionsIOS = {
 
   useFrameworks?: 'static' | 'dynamic';
 
+  /**
+   * Push notification build configuration. After removing this from an already generated iOS
+   * project, run `npx expo prebuild --clean --platform ios` so Expo removes generated push files.
+   */
   pushNotification?: CustomerIOPluginPushNotificationOptions;
 
   /**

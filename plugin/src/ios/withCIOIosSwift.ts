@@ -46,7 +46,7 @@ const PUSH_INITIALIZATION_LINE_REGEX =
 const NATIVE_INITIALIZATION_LINE_REGEX =
   /^[ \t]*CustomerIOSDKInitializer\.initialize\(\)[ \t]*$/m;
 const APP_DELEGATE_HANDLER_DECLARATION_REGEX =
-  /^[ \t]*let[ \t]+cioSdkHandler[ \t]*=[ \t]*CioSdkAppDelegateHandler\(\)[ \t]*$/m;
+  /^[ \t]*(?:(?:private|fileprivate|internal|public|open|final|lazy)[ \t]+)*(?:let|var)[ \t]+cioSdkHandler(?:[ \t]*:[ \t]*CioSdkAppDelegateHandler)?[ \t]*=[ \t]*(?:CioSdkAppDelegateHandler|\.init)\(\)/m;
 
 /**
  * Copy and configure the CioSdkAppDelegateHandler.swift file
