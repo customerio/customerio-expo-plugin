@@ -735,7 +735,45 @@ public class AppDelegate: ExpoAppDelegate {
   it('cleans stale no-config Live Activity handling without adding SDK wiring', async () => {
     const { withAppDelegate } = require('@expo/config-plugins');
     const hostNote = `  let integrationNote = """
+    import CioLiveActivities
     // Report a Live Activity tap and route the deep link it carries
+    guard let url = CustomerIO.liveActivities.handleWidgetUrl(url) else { return true }
+    """
+`;
+    const template = fs.readFileSync(
+      getFixturePath('ios', 'AppDelegate.sdk55.swift'),
+      'utf8'
+    );
+    const enabled = modifyAppDelegateForLiveActivityUrl(template);
+    expect(maskSwiftNonCode(enabled)).toContain(
+      'CustomerIO.liveActivities.handleWidgetUrl'
+    );
+    const enabledWithHostNote = enabled.replace(
+        '  public override func application(',
+        `${hostNote}\n  public override func application(`
+      );
+
+    withCIOIosLiveActivityCleanup(mockConfig);
+    const appDelegateCallback = withAppDelegate.mock.calls[0][1];
+    const result = await appDelegateCallback({
+      modResults: { contents: enabledWithHostNote },
+    });
+
+    expect(result.modResults.contents).not.toContain(
+      'CustomerIOSDKInitializer.initialize()'
+    );
+    expect(result.modResults.contents).not.toContain('cioSdkHandler');
+    expect(result.modResults.contents).toContain(hostNote);
+    expect(maskSwiftNonCode(result.modResults.contents)).not.toContain(
+      'CustomerIO.liveActivities.handleWidgetUrl'
+    );
+    expect(maskSwiftNonCode(result.modResults.contents)).toContain(
+      '#if canImport(CioLiveActivities)\nimport CioLiveActivities\n#endif'
+    );
+  });
+
+  it('does not let a host string suppress Live Activity URL injection', () => {
+    const hostNote = `  let integrationNote = """
     guard let url = CustomerIO.liveActivities.handleWidgetUrl(url) else { return true }
     """
 `;
@@ -745,22 +783,11 @@ public class AppDelegate: ExpoAppDelegate {
         '  public override func application(',
         `${hostNote}\n  public override func application(`
       );
-    const enabled = modifyAppDelegateForLiveActivityUrl(
-      template
-    );
 
-    withCIOIosLiveActivityCleanup(mockConfig);
-    const appDelegateCallback = withAppDelegate.mock.calls[0][1];
-    const result = await appDelegateCallback({
-      modResults: { contents: enabled },
-    });
+    const enabled = modifyAppDelegateForLiveActivityUrl(template);
 
-    expect(result.modResults.contents).not.toContain(
-      'CustomerIOSDKInitializer.initialize()'
-    );
-    expect(result.modResults.contents).not.toContain('cioSdkHandler');
-    expect(result.modResults.contents).toContain(hostNote);
-    expect(maskSwiftNonCode(result.modResults.contents)).not.toContain(
+    expect(enabled).toContain(hostNote);
+    expect(maskSwiftNonCode(enabled)).toContain(
       'CustomerIO.liveActivities.handleWidgetUrl'
     );
   });

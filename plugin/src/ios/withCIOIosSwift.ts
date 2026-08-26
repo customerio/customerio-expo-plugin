@@ -445,8 +445,9 @@ export function modifyAppDelegateForLiveActivityUrl(
     return removeLiveActivityUrlGuard(contents);
   }
 
+  const executableContents = maskSwiftNonCode(contents);
   if (
-    contents.includes(LIVE_ACTIVITY_URL_CALL) ||
+    executableContents.includes(LIVE_ACTIVITY_URL_CALL) ||
     hasCioOpenUrlHandling(contents)
   ) {
     return contents;
@@ -660,9 +661,10 @@ const LIVE_ACTIVITY_URL_CALL = 'CustomerIO.liveActivities.handleWidgetUrl';
  * guard inside the same method on a re-prebuild.
  */
 function hasCioOpenUrlHandling(contents: string): boolean {
+  const executableContents = maskSwiftNonCode(contents);
   return (
-    contents.includes(`${CIO_OPEN_URL_MARKER}app, open:`) ||
-    contents.includes(`${CIO_OPEN_URL_MARKER}application, open:`)
+    executableContents.includes(`${CIO_OPEN_URL_MARKER}app, open:`) ||
+    executableContents.includes(`${CIO_OPEN_URL_MARKER}application, open:`)
   );
 }
 
@@ -700,7 +702,7 @@ const LIVE_ACTIVITY_URL_GUARD_REGEX =
  * host-owned AppDelegate because another host customization may still need it.
  */
 function removeLiveActivityUrlGuard(contents: string): string {
-  if (!contents.includes(LIVE_ACTIVITY_URL_CALL)) {
+  if (!maskSwiftNonCode(contents).includes(LIVE_ACTIVITY_URL_CALL)) {
     return contents;
   }
   // Whole-method shape first: it contains the guard shape's text, so the narrower pattern would
@@ -714,17 +716,30 @@ function removeLiveActivityUrlGuard(contents: string): string {
     LIVE_ACTIVITY_URL_GUARD_REGEX
   );
 
+  if (next === contents) {
+    return contents;
+  }
+
+  const executableNext = maskSwiftNonCode(next);
   if (
-    next.includes(LIVE_ACTIVITY_URL_CALL) ||
-    next.includes(CONDITIONAL_LIVE_ACTIVITY_IMPORT)
+    executableNext.includes(LIVE_ACTIVITY_URL_CALL) ||
+    executableNext.includes(CONDITIONAL_LIVE_ACTIVITY_IMPORT)
   ) {
     return next;
   }
 
-  return next.replace(
-    /^import CioLiveActivities$/m,
-    CONDITIONAL_LIVE_ACTIVITY_IMPORT
-  );
+  const liveActivityImport = executableNext.match(/^import CioLiveActivities$/m);
+  if (!liveActivityImport || liveActivityImport.index === undefined) {
+    return next;
+  }
+
+  const importStart = liveActivityImport.index;
+  return `${next.slice(
+    0,
+    importStart
+  )}${CONDITIONAL_LIVE_ACTIVITY_IMPORT}${next.slice(
+    importStart + liveActivityImport[0].length
+  )}`;
 }
 
 function removeExecutableLiveActivityMatches(
