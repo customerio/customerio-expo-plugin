@@ -19,7 +19,10 @@ import {
   withCIOIosSwift,
 } from './withCIOIosSwift';
 import { withCIOSceneDelegate } from './withCIOSceneDelegate';
-import { withCioLiveActivityWidgetXcodeProject } from './withCioLiveActivityWidgetXcodeProject';
+import {
+  withCioLiveActivityDisableGuard,
+  withCioLiveActivityWidgetXcodeProject,
+} from './withCioLiveActivityWidgetXcodeProject';
 import { withGeofenceAppDelegate } from './withGeofenceAppDelegate';
 import { withGoogleServicesJsonFile } from './withGoogleServicesJsonFile';
 import { withLiveActivityInfoPlist } from './withLiveActivityInfoPlist';
@@ -112,15 +115,17 @@ export function withCIOIos(
       liveNotificationsEnabled,
       usesSceneLifecycle
     );
-    config = withCioXcodeProject(config, {
-      ...platformConfig,
-      podfileOptions: {
-        locationEnabled,
-        geofenceEnabled,
-        hasPush: false,
-        liveNotificationsEnabled,
-      },
-    });
+    if (optionalModulesEnabled) {
+      config = withCioXcodeProject(config, {
+        ...platformConfig,
+        podfileOptions: {
+          locationEnabled,
+          geofenceEnabled,
+          hasPush: false,
+          liveNotificationsEnabled,
+        },
+      });
+    }
   } else if (optionalModulesEnabled) {
     // No push, no config. Still add the Podfile subspecs so the relevant native modules are
     // compiled in and their flags set (CIO_LOCATION_ENABLED / CIO_GEOFENCE_ENABLED, live activities).
@@ -155,18 +160,7 @@ export function withCIOIos(
       },
     });
   } else if (isSwiftProject) {
-    // Reconcile artifacts from an earlier optional-module configuration even when the last module
-    // and native SDK config were removed on an incremental prebuild.
     config = withCIOIosLiveActivityCleanup(config);
-    config = withCioXcodeProject(config, {
-      ...platformConfig,
-      podfileOptions: {
-        locationEnabled: false,
-        geofenceEnabled: false,
-        hasPush: false,
-        liveNotificationsEnabled: false,
-      },
-    });
   }
 
   // Live Activities: set the host Info.plist flag and inject the widget extension target,
@@ -185,6 +179,8 @@ export function withCIOIos(
       // widget whether the app initializes automatically or from JavaScript.
       buildOptions: liveNotifications,
     });
+  } else {
+    config = withCioLiveActivityDisableGuard(config);
   }
 
   // Geofence requires the iOS AppDelegate background-delivery bootstrap so cold-wake

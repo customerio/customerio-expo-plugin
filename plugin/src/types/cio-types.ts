@@ -248,7 +248,9 @@ export type CustomerIOPluginLiveNotificationsOptions = {
    * initialization, `config.liveNotifications` implies this and you can omit it.
    *
    * Setting it to `false` explicitly turns the build-time setup off on either
-   * path, so an app can keep `config.liveNotifications` and still opt out.
+   * path, so an app can keep `config.liveNotifications` and still opt out. If
+   * the native iOS project was already generated with Live Notifications, run
+   * `npx expo prebuild --clean --platform ios` to remove its widget target.
    */
   enabled?: boolean;
   /**

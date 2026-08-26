@@ -84,7 +84,9 @@ export function addSwiftImports(
 export function maskSwiftNonCode(contents: string): string {
   const output = contents.split('');
   let blockDepth = 0;
-  let stringDelimiter: '"' | '"""' | undefined;
+  let stringDelimiter:
+    | { quote: '"' | '"""'; hashCount: number }
+    | undefined;
   let index = 0;
 
   const mask = (start: number, end: number): void => {
@@ -124,12 +126,15 @@ export function maskSwiftNonCode(contents: string): string {
     }
 
     if (stringDelimiter) {
+      const closingDelimiter = `${stringDelimiter.quote}${'#'.repeat(
+        stringDelimiter.hashCount
+      )}`;
       if (
-        contents.startsWith(stringDelimiter, index) &&
-        !isEscaped(index)
+        contents.startsWith(closingDelimiter, index) &&
+        (stringDelimiter.hashCount > 0 || !isEscaped(index))
       ) {
-        mask(index, index + stringDelimiter.length);
-        index += stringDelimiter.length;
+        mask(index, index + closingDelimiter.length);
+        index += closingDelimiter.length;
         stringDelimiter = undefined;
       } else {
         mask(index, index + 1);
@@ -138,12 +143,22 @@ export function maskSwiftNonCode(contents: string): string {
       continue;
     }
 
-    if (contents.startsWith('"""', index)) {
-      stringDelimiter = '"""';
+    const rawStringStart = contents
+      .slice(index)
+      .match(/^(#+)("""|")/);
+    if (rawStringStart) {
+      stringDelimiter = {
+        quote: rawStringStart[2] as '"' | '"""',
+        hashCount: rawStringStart[1].length,
+      };
+      mask(index, index + rawStringStart[0].length);
+      index += rawStringStart[0].length;
+    } else if (contents.startsWith('"""', index)) {
+      stringDelimiter = { quote: '"""', hashCount: 0 };
       mask(index, index + 3);
       index += 3;
     } else if (contents[index] === '"') {
-      stringDelimiter = '"';
+      stringDelimiter = { quote: '"', hashCount: 0 };
       mask(index, index + 1);
       index += 1;
     } else if (contents.startsWith('//', index)) {

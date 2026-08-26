@@ -113,6 +113,23 @@ CustomerIOSDKInitializer.initialize()`;
       1
     );
   });
+
+  it('masks extended raw strings through their matching hash delimiter', () => {
+    const contents = `let inline = #"prefix " import customerio_reactnative " suffix"#
+let notes = ##"""
+override func transformURL(_ url: URL) -> URL? {
+  NativeCustomerIO.handleLiveActivityWidgetUrl(url)
+}
+"""##
+NativeCustomerIO.handleLiveActivityWidgetUrl(url)`;
+    const masked = maskSwiftNonCode(contents);
+
+    expect(masked).not.toContain('import customerio_reactnative');
+    expect(masked).not.toContain('override func transformURL');
+    expect(
+      masked.match(/NativeCustomerIO\.handleLiveActivityWidgetUrl/g)
+    ).toHaveLength(1);
+  });
 });
 
 // Mock dependencies
@@ -1043,6 +1060,25 @@ describe('Expo scene AppDelegate', () => {
     cioSdkHandler.application(application, didFinishLaunchingWithOptions: launchOptions)
     CustomerIOSDKInitializer.initialize()
     """
+    let didStart = super.application(application, didFinishLaunchingWithOptions: launchOptions)
+    return didStart`
+    );
+
+    expect(() =>
+      modifyAppDelegateForPushHandler(customized, pushProps, true)
+    ).toThrow(
+      'Could not install Expo scene deep-link routing because the Customer.io initialization call was not added to AppDelegate'
+    );
+  });
+
+  it('does not accept routing and initialization calls inside an extended raw string', () => {
+    const customized = sceneAppDelegate.replace(
+      'return super.application(application, didFinishLaunchingWithOptions: launchOptions)',
+      `let debugText = #"""
+    NativeCustomerIO.configureExpoSceneDeepLinkRouting()
+    cioSdkHandler.application(application, didFinishLaunchingWithOptions: launchOptions)
+    CustomerIOSDKInitializer.initialize()
+    """#
     let didStart = super.application(application, didFinishLaunchingWithOptions: launchOptions)
     return didStart`
     );

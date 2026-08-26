@@ -26,6 +26,10 @@ Customer.io notification deep links are delivered to that listener as `url` even
 
 Expo SDK 58 and later deliver cold-start URLs through `SceneDelegate`, so `handleDeeplinkInKilledState` is not injected for those versions. The scene router replaces that legacy AppDelegate launch-options workaround.
 
+If another config plugin already owns `SceneDelegate.transformURL`, compose the handlers in that plugin rather than editing the generated native file. Call `NativeCustomerIO.handleLiveActivityWidgetUrl(url)` first; if it returns a URL, pass that URL to the existing transform. Return `nil` when Customer.io returns `nil`.
+
+After disabling Live Notifications in a previously generated iOS project, run `npx expo prebuild --clean --platform ios`. An incremental prebuild stops with this instruction so it cannot leave the generated widget target or linked Live Activities code behind.
+
 # Local development
 
 [Here is a quick start guide to start with local development.](/local-development-readme.md)

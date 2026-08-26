@@ -159,6 +159,27 @@ export const withCioLiveActivityWidgetXcodeProject: ConfigPlugin<{
   });
 };
 
+/**
+ * Prevents an incremental prebuild from leaving a previously generated widget target behind after
+ * Live Notifications are disabled. Expo safely removes that target only when it regenerates the
+ * native project; node-xcode does not expose a complete target-removal operation.
+ */
+export const withCioLiveActivityDisableGuard: ConfigPlugin = (configOuter) => {
+  return withXcodeProject(configOuter, (config) => {
+    if (
+      config.modResults.pbxTargetByName(
+        CIO_LIVE_ACTIVITY_WIDGET_TARGET_NAME
+      )
+    ) {
+      throw new Error(
+        'Disabling Customer.io Live Notifications in an existing iOS project requires a clean prebuild. ' +
+          'Run `npx expo prebuild --clean --platform ios` so Expo removes the generated widget target and related build artifacts.'
+      );
+    }
+    return config;
+  });
+};
+
 type AddLiveActivityWidgetInternalOptions = {
   iosPath: string;
   bundleIdentifier: string;

@@ -12,6 +12,7 @@ const mockWithGoogleServicesJsonFile = jest.fn((config: ExpoConfig) => config);
 const mockWithGeofenceAppDelegate = jest.fn((config: ExpoConfig) => config);
 const mockWithLiveActivityInfoPlist = jest.fn((config: ExpoConfig) => config);
 const mockWithCioLiveActivityWidgetXcodeProject = jest.fn((config: ExpoConfig) => config);
+const mockWithCioLiveActivityDisableGuard = jest.fn((config: ExpoConfig) => config);
 const mockWithCIOSceneDelegate = jest.fn((config: ExpoConfig, _options: object) => config);
 const mockWithEntitlementsPlist = jest.fn((config: ExpoConfig, callback: (c: unknown) => unknown) => {
   callback({ ios: { bundleIdentifier: 'com.test.app' }, modResults: {} });
@@ -56,6 +57,8 @@ jest.mock('../../plugin/src/ios/withLiveActivityInfoPlist', () => ({
 jest.mock('../../plugin/src/ios/withCioLiveActivityWidgetXcodeProject', () => ({
   withCioLiveActivityWidgetXcodeProject: (config: ExpoConfig) =>
     mockWithCioLiveActivityWidgetXcodeProject(config),
+  withCioLiveActivityDisableGuard: (config: ExpoConfig) =>
+    mockWithCioLiveActivityDisableGuard(config),
 }));
 jest.mock('../../plugin/src/ios/withCIOSceneDelegate', () => ({
   withCIOSceneDelegate: (config: ExpoConfig, options: object) =>
@@ -141,7 +144,7 @@ describe('withCIOIos', () => {
       expect(mockWithGeofenceAppDelegate).not.toHaveBeenCalled();
     });
 
-    it('reconciles stale Podfile state when location.enabled is false', () => {
+    it('does not remove existing native dependencies when location.enabled is false', () => {
       const location: CustomerIOPluginLocationOptions = { enabled: false };
 
       withCIOIos(mockConfig, undefined, undefined, location);
@@ -149,27 +152,13 @@ describe('withCIOIos', () => {
       expect(mockWithCIOIosLiveActivityCleanup).toHaveBeenCalledWith(
         mockConfig
       );
-      expect(mockWithCioXcodeProject).toHaveBeenCalledWith(mockConfig, {
-        podfileOptions: {
-          locationEnabled: false,
-          geofenceEnabled: false,
-          hasPush: false,
-          liveNotificationsEnabled: false,
-        },
-      });
+      expect(mockWithCioXcodeProject).not.toHaveBeenCalled();
     });
 
-    it('reconciles stale Podfile state when location is omitted', () => {
+    it('does not remove existing native dependencies when location is omitted', () => {
       withCIOIos(mockConfig, undefined, undefined, undefined);
 
-      expect(mockWithCioXcodeProject).toHaveBeenCalledWith(mockConfig, {
-        podfileOptions: {
-          locationEnabled: false,
-          geofenceEnabled: false,
-          hasPush: false,
-          liveNotificationsEnabled: false,
-        },
-      });
+      expect(mockWithCioXcodeProject).not.toHaveBeenCalled();
     });
   });
 
@@ -276,14 +265,7 @@ describe('withCIOIos', () => {
     it('does nothing when geofence.enabled is false', () => {
       withCIOIos(mockConfig, undefined, undefined, undefined, { enabled: false });
 
-      expect(mockWithCioXcodeProject).toHaveBeenCalledWith(mockConfig, {
-        podfileOptions: {
-          locationEnabled: false,
-          geofenceEnabled: false,
-          hasPush: false,
-          liveNotificationsEnabled: false,
-        },
-      });
+      expect(mockWithCioXcodeProject).not.toHaveBeenCalled();
       expect(mockWithGeofenceAppDelegate).not.toHaveBeenCalled();
     });
 
@@ -391,15 +373,10 @@ describe('withCIOIos', () => {
 
       expect(mockWithLiveActivityInfoPlist).not.toHaveBeenCalled();
       expect(mockWithCioLiveActivityWidgetXcodeProject).not.toHaveBeenCalled();
-      expect(mockWithCioXcodeProject).toHaveBeenCalledWith(mockConfig, {
-        iosPath: '/test/ios',
-        podfileOptions: {
-          locationEnabled: false,
-          geofenceEnabled: false,
-          hasPush: false,
-          liveNotificationsEnabled: false,
-        },
-      });
+      expect(mockWithCioXcodeProject).not.toHaveBeenCalled();
+      expect(mockWithCioLiveActivityDisableGuard).toHaveBeenCalledWith(
+        mockConfig
+      );
     });
 
     // app.json is untyped, so `ios` being required in CustomerIOPluginOptions doesn't stop an app
@@ -450,15 +427,10 @@ describe('withCIOIos', () => {
 
       expect(mockWithLiveActivityInfoPlist).not.toHaveBeenCalled();
       expect(mockWithCioLiveActivityWidgetXcodeProject).not.toHaveBeenCalled();
-      expect(mockWithCioXcodeProject).toHaveBeenCalledWith(mockConfig, {
-        iosPath: '/test/ios',
-        podfileOptions: {
-          locationEnabled: false,
-          geofenceEnabled: false,
-          hasPush: false,
-          liveNotificationsEnabled: false,
-        },
-      });
+      expect(mockWithCioXcodeProject).not.toHaveBeenCalled();
+      expect(mockWithCioLiveActivityDisableGuard).toHaveBeenCalledWith(
+        mockConfig
+      );
     });
   });
 
