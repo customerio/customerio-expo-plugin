@@ -182,4 +182,28 @@ describe('ios scenarios — injectHostAppPodfileCode', () => {
     const twice = injectHostAppPodfileCode(once, IOS_PATH, false);
     expect(twice).toEqual(once);
   });
+
+  it('updates provider and optional modules in an existing managed block', () => {
+    const apn = injectHostAppPodfileCode(baseline, IOS_PATH, false);
+    const fcmWithLiveActivities = injectHostAppPodfileCode(
+      apn,
+      IOS_PATH,
+      true,
+      {
+        hasPush: true,
+        liveNotificationsEnabled: true,
+      }
+    );
+    const fcm = injectHostAppPodfileCode(
+      fcmWithLiveActivities,
+      IOS_PATH,
+      true
+    );
+
+    expect(fcmWithLiveActivities).toContain("['fcm', 'liveactivities']");
+    expect(fcmWithLiveActivities).not.toContain("['apn'");
+    expect(fcm).toContain("customerio-reactnative/fcm'");
+    expect(fcm).not.toContain('liveactivities');
+    expect((fcm.match(/CustomerIO Host App START/g) ?? []).length).toBe(1);
+  });
 });

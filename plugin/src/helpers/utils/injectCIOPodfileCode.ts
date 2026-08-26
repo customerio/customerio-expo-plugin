@@ -67,8 +67,9 @@ const LIVE_ACTIVITY_BLOCK_END = '# --- CustomerIO Live Activity END ---';
 /**
  * Pure string transform: given the existing Podfile contents, returns the
  * Podfile with the CustomerIO host-app block injected before the Expo
- * `post_install do |installer|` anchor. Idempotent — returns input unchanged
- * if the block is already present.
+ * `post_install do |installer|` anchor. If the plugin already owns a block, it
+ * is replaced so provider and optional-module changes are reflected on
+ * incremental prebuilds.
  */
 export function injectHostAppPodfileCode(
   podfileContent: string,
@@ -76,21 +77,26 @@ export function injectHostAppPodfileCode(
   isFcmPushProvider: boolean,
   options?: InjectCIOPodfileOptions
 ): string {
-  if (podfileContent.match(new RegExp(HOST_APP_BLOCK_START))) {
-    return podfileContent;
-  }
-
-  // We need to decide what line of code in the Podfile to insert our native code.
-  // The "post_install" line is always present in an Expo project Podfile so it's reliable.
-  // Find that line in the Podfile and then we will insert our code above that line.
-  const lineInPodfileToInjectSnippetBefore = /post_install do \|installer\|/;
   const podLine = buildHostAppPodSnippet(iosPath, isFcmPushProvider, options);
-
   const snippetToInjectInPodfile = `
 ${HOST_APP_BLOCK_START}
   ${podLine}
 ${HOST_APP_BLOCK_END}
 `.trim();
+
+  const replaced = replaceManagedBlock(
+    podfileContent,
+    HOST_APP_BLOCK_START,
+    HOST_APP_BLOCK_END,
+    snippetToInjectInPodfile
+  );
+  if (replaced !== undefined) {
+    return replaced;
+  }
+
+  // The "post_install" line is always present in an Expo project Podfile, so
+  // it is a reliable anchor for the initial insertion.
+  const lineInPodfileToInjectSnippetBefore = /post_install do \|installer\|/;
 
   return injectCodeByRegex(
     podfileContent,
