@@ -31,7 +31,6 @@ import { isFcmPushProvider } from './utils';
 // Constants
 const CIO_SDK_APP_DELEGATE_HANDLER_CLASS = 'CioSdkAppDelegateHandler';
 const CIO_SDK_APP_DELEGATE_HANDLER_FILENAME = `${CIO_SDK_APP_DELEGATE_HANDLER_CLASS}.swift`;
-const EXPO_SCENE_APP_DELEGATE_MARKER = 'ExpoReactNativeFactoryProvider';
 const REACT_NATIVE_IMPORT = 'import customerio_reactnative';
 const CONFIGURE_SCENE_ROUTING_CALL =
   'NativeCustomerIO.configureExpoSceneDeepLinkRouting()';
@@ -44,14 +43,12 @@ const copyAndConfigureAppDelegateHandler = (
   sdkConfig?: NativeSDKConfig,
   props?: CustomerIOPluginOptionsIOS,
   location?: CustomerIOPluginLocationOptions,
-  geofence?: CustomerIOPluginGeofenceOptions,
+  geofence?: CustomerIOPluginGeofenceOptions
 ): ExportedConfigWithProps<XcodeProject> => {
   // Destination path in the iOS project
   const projectName = config.modRequest.projectName || '';
   if (!projectName) {
-    logger.warn(
-      'Project name is undefined, cannot copy CustomerIO files'
-    );
+    logger.warn('Project name is undefined, cannot copy CustomerIO files');
     return config;
   }
 
@@ -185,10 +182,21 @@ const copyAndConfigurePushAppDelegateHandler = ({
   // Add auto initialization if sdkConfig is provided
   if (sdkConfig) {
     // Also copy CustomerIOSDKInitializer.swift for auto-initialization
-    copyAndConfigureNativeSDKInitializer({ xcodeProject, group, iosProjectRoot, projectName, sdkConfig, location, geofence });
+    copyAndConfigureNativeSDKInitializer({
+      xcodeProject,
+      group,
+      iosProjectRoot,
+      projectName,
+      sdkConfig,
+      location,
+      geofence,
+    });
 
     // Inject auto initialization call before MessagingPush initialization
-    handlerFileContent = handlerFileContent.replace(CIO_MESSAGING_PUSH_APP_DELEGATE_INIT_REGEX, CIO_NATIVE_SDK_INITIALIZE_SNIPPET + '$1');
+    handlerFileContent = handlerFileContent.replace(
+      CIO_MESSAGING_PUSH_APP_DELEGATE_INIT_REGEX,
+      CIO_NATIVE_SDK_INITIALIZE_SNIPPET + '$1'
+    );
   }
 
   FileManagement.writeFile(handlerDestPath, handlerFileContent);
@@ -232,7 +240,13 @@ const copyAndConfigureNativeSDKInitializer = ({
     sourceFilePath: sourcePath,
     targetFileName: filename,
     transform: (content) =>
-      patchNativeSDKInitializer(content, PLATFORM.IOS, sdkConfig, locationOptions, geofenceOptions),
+      patchNativeSDKInitializer(
+        content,
+        PLATFORM.IOS,
+        sdkConfig,
+        locationOptions,
+        geofenceOptions
+      ),
     customerIOGroup: group,
   });
 };
@@ -244,10 +258,17 @@ export const withCIOIosSwift = (
   location?: CustomerIOPluginLocationOptions,
   geofence?: CustomerIOPluginGeofenceOptions,
   liveNotificationsEnabled = false,
+  usesSceneLifecycle = false
 ) => {
   // First, copy required swift files to iOS folder and add it to Xcode project
   configOuter = withXcodeProject(configOuter, async (config) => {
-    return copyAndConfigureAppDelegateHandler(config, sdkConfig, props, location, geofence);
+    return copyAndConfigureAppDelegateHandler(
+      config,
+      sdkConfig,
+      props,
+      location,
+      geofence
+    );
   });
 
   // Modify the AppDelegate based on configuration
@@ -256,7 +277,8 @@ export const withCIOIosSwift = (
     return withAppDelegate(configOuter, async (config) => {
       config.modResults.contents = modifyAppDelegateForPushHandler(
         config.modResults.contents,
-        props
+        props,
+        usesSceneLifecycle
       );
       return config;
     });
@@ -268,10 +290,13 @@ export const withCIOIosSwift = (
     return withAppDelegate(configOuter, async (config) => {
       let next = config.modResults.contents;
       if (sdkConfig) {
-        next = modifyAppDelegateForNativeSDKInitializer(next);
+        next = modifyAppDelegateForNativeSDKInitializer(
+          next,
+          usesSceneLifecycle
+        );
       }
       if (liveNotificationsEnabled) {
-        next = modifyAppDelegateForLiveActivityUrl(next);
+        next = modifyAppDelegateForLiveActivityUrl(next, usesSceneLifecycle);
       }
       config.modResults.contents = next;
       return config;
@@ -288,10 +313,9 @@ export const withCIOIosSwift = (
  */
 export function modifyAppDelegateForPushHandler(
   contents: string,
-  props: CustomerIOPluginOptionsIOS
+  props: CustomerIOPluginOptionsIOS,
+  usesSceneLifecycle = false
 ): string {
-  const usesSceneLifecycle = isExpoSceneAppDelegate(contents);
-
   if (contents.includes(CIO_SDK_APP_DELEGATE_HANDLER_CLASS)) {
     logger.info(
       'CustomerIO Swift AppDelegate changes already exist. Adding anything newer...'
@@ -315,6 +339,12 @@ export function modifyAppDelegateForPushHandler(
   next = addDidFailToRegisterForRemoteNotificationsWithError(next);
   if (usesSceneLifecycle) {
     next = addSceneRoutingBeforeNativeInitialization(next);
+    if (props.pushNotification?.handleDeeplinkInKilledState === true) {
+      logger.warn(
+        'handleDeeplinkInKilledState is not applied to Expo SDK 58+ scene projects; ' +
+          'scene routing replaces the legacy AppDelegate launch-options workaround'
+      );
+    }
   } else {
     next = addOpenURLHandling(next);
     if (props.pushNotification?.handleDeeplinkInKilledState === true) {
@@ -334,12 +364,18 @@ export function modifyAppDelegateForPushHandler(
  *
  * Idempotent, and a no-op if the push handler already owns the method.
  */
-export function modifyAppDelegateForLiveActivityUrl(contents: string): string {
-  if (isExpoSceneAppDelegate(contents)) {
+export function modifyAppDelegateForLiveActivityUrl(
+  contents: string,
+  usesSceneLifecycle = false
+): string {
+  if (usesSceneLifecycle) {
     return contents;
   }
 
-  if (contents.includes(LIVE_ACTIVITY_URL_CALL) || hasCioOpenUrlHandling(contents)) {
+  if (
+    contents.includes(LIVE_ACTIVITY_URL_CALL) ||
+    hasCioOpenUrlHandling(contents)
+  ) {
     return contents;
   }
 
@@ -382,8 +418,10 @@ export function modifyAppDelegateForLiveActivityUrl(contents: string): string {
  * Pure string transform: injects the auto-init snippet into the Swift AppDelegate's
  * didFinishLaunchingWithOptions for the no-push path. Idempotent.
  */
-export function modifyAppDelegateForNativeSDKInitializer(contents: string): string {
-  const usesSceneLifecycle = isExpoSceneAppDelegate(contents);
+export function modifyAppDelegateForNativeSDKInitializer(
+  contents: string,
+  usesSceneLifecycle = false
+): string {
   if (contents.includes(CIO_NATIVE_SDK_INITIALIZE_CALL)) {
     logger.info(
       'CustomerIO Swift AppDelegate changes already exist. Skipping...'
@@ -395,16 +433,12 @@ export function modifyAppDelegateForNativeSDKInitializer(contents: string): stri
 
   let next = modifyDidFinishLaunchingWithOptions(
     contents,
-    CIO_NATIVE_SDK_INITIALIZE_SNIPPET,
+    CIO_NATIVE_SDK_INITIALIZE_SNIPPET
   );
   if (usesSceneLifecycle) {
     next = addSceneRoutingBeforeNativeInitialization(next);
   }
   return next;
-}
-
-function isExpoSceneAppDelegate(contents: string): boolean {
-  return contents.includes(EXPO_SCENE_APP_DELEGATE_MARKER);
 }
 
 /** Install React Native routing before native Customer.io initialization in a scene host. */
@@ -438,13 +472,11 @@ function addSceneRoutingBeforeNativeInitialization(contents: string): string {
   }
   const indentation = initializationLine.match(/^[ \t]*/)?.[0] ?? '';
   const next = addSwiftImports(contents, [REACT_NATIVE_IMPORT]);
-  return next.replace(
-    initializationLine,
-    () =>
-      initializationLine.replace(
-        initializationCall,
-        `${CONFIGURE_SCENE_ROUTING_CALL}\n${indentation}${initializationCall}`
-      )
+  return next.replace(initializationLine, () =>
+    initializationLine.replace(
+      initializationCall,
+      `${CONFIGURE_SCENE_ROUTING_CALL}\n${indentation}${initializationCall}`
+    )
   );
 }
 
@@ -488,7 +520,10 @@ const addHandlerPropertyDeclaration = (content: string): string => {
  * Modify didFinishLaunchingWithOptions to inject Customer.io code
  * Injects the provided code (either handler call or auto initialization) before the return statement
  */
-const modifyDidFinishLaunchingWithOptions = (content: string, codeToInject: string): string => {
+const modifyDidFinishLaunchingWithOptions = (
+  content: string,
+  codeToInject: string
+): string => {
   // Find the return statement in didFinishLaunchingWithOptions
   // Always look for launchOptions since modifiedLaunchOptions is only set later
   const returnStatementRegex =
@@ -617,7 +652,9 @@ function addSwiftImports(contents: string, imports: string[]): string {
 
   const last = matches[matches.length - 1];
   const insertAt = (last.index ?? 0) + last[0].length;
-  return `${contents.slice(0, insertAt)}\n${missing.join('\n')}${contents.slice(insertAt)}`;
+  return `${contents.slice(0, insertAt)}\n${missing.join('\n')}${contents.slice(
+    insertAt
+  )}`;
 }
 
 const addOpenURLHandling = (content: string): string => {

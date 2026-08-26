@@ -22,6 +22,8 @@ You'll find our [complete SDK documentation at https://customer.io/docs/sdk/expo
 
 When using Expo's scene lifecycle with Customer.io native auto-initialization, register your React Native `Linking` URL listener and then call `CustomerIO.setDeepLinkRoutingReady()`. This lets the plugin deliver URLs buffered during cold launch without requiring a second SDK initialization from JavaScript.
 
+Expo SDK 58 and later deliver cold-start URLs through `SceneDelegate`, so `handleDeeplinkInKilledState` is not injected for those versions. The scene router replaces that legacy AppDelegate launch-options workaround.
+
 # Local development
 
 [Here is a quick start guide to start with local development.](/local-development-readme.md)

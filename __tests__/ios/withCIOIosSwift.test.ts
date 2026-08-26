@@ -488,7 +488,8 @@ describe('Expo scene AppDelegate', () => {
   it('installs React Native routing before native push auto-initialization', () => {
     const output = modifyAppDelegateForPushHandler(
       sceneAppDelegate,
-      pushProps
+      pushProps,
+      true
     );
 
     expect(output).toContain('import customerio_reactnative');
@@ -512,7 +513,8 @@ describe('Expo scene AppDelegate', () => {
   it('installs routing before push handling when JavaScript initializes the SDK', () => {
     const output = modifyAppDelegateForPushHandler(
       sceneAppDelegate,
-      pushProps
+      pushProps,
+      true
     );
 
     expect(output.indexOf('NativeCustomerIO.configureExpoSceneDeepLinkRouting()'))
@@ -524,7 +526,7 @@ describe('Expo scene AppDelegate', () => {
   });
 
   it('installs routing before no-push native auto-initialization', () => {
-    const output = modifyAppDelegateForNativeSDKInitializer(sceneAppDelegate);
+    const output = modifyAppDelegateForNativeSDKInitializer(sceneAppDelegate, true);
 
     expect(output).toContain(
       'NativeCustomerIO.configureExpoSceneDeepLinkRouting()'
@@ -539,7 +541,7 @@ describe('Expo scene AppDelegate', () => {
       `CustomerIOSDKInitializer.initialize() // Added by another config plugin
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)`
     );
-    const output = modifyAppDelegateForNativeSDKInitializer(customized);
+    const output = modifyAppDelegateForNativeSDKInitializer(customized, true);
 
     expect(output.indexOf('NativeCustomerIO.configureExpoSceneDeepLinkRouting()'))
       .toBeLessThan(output.indexOf('CustomerIOSDKInitializer.initialize()'));
@@ -549,7 +551,7 @@ describe('Expo scene AppDelegate', () => {
   });
 
   it('leaves Live Activity URL ownership to SceneDelegate', () => {
-    expect(modifyAppDelegateForLiveActivityUrl(sceneAppDelegate)).toBe(
+    expect(modifyAppDelegateForLiveActivityUrl(sceneAppDelegate, true)).toBe(
       sceneAppDelegate
     );
   });
@@ -557,9 +559,10 @@ describe('Expo scene AppDelegate', () => {
   it('is idempotent', () => {
     const once = modifyAppDelegateForPushHandler(
       sceneAppDelegate,
-      pushProps
+      pushProps,
+      true
     );
-    const twice = modifyAppDelegateForPushHandler(once, pushProps);
+    const twice = modifyAppDelegateForPushHandler(once, pushProps, true);
 
     expect(twice).toBe(once);
     expect(

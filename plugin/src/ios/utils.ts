@@ -14,7 +14,10 @@ export const isFcmPushProvider = (
 };
 
 /** Checks if Expo SDK version meets minimum version requirement */
-function isExpoVersionOrHigher(config: ExpoConfig, minVersion: string): boolean {
+function isExpoVersionOrHigher(
+  config: ExpoConfig,
+  minVersion: string
+): boolean {
   const sdkVersion = config.sdkVersion || '';
   const validVersion = semver.valid(sdkVersion) || semver.coerce(sdkVersion);
   if (!validVersion) return false;
@@ -24,6 +27,11 @@ function isExpoVersionOrHigher(config: ExpoConfig, minVersion: string): boolean 
 /** Returns true if Expo SDK version is >= 53.0.0 */
 export const isExpoVersion53OrHigher = (config: ExpoConfig): boolean => {
   return isExpoVersionOrHigher(config, '53.0.0');
+};
+
+/** Returns true if Expo uses the generated UIScene lifecycle (SDK >= 58.0.0). */
+export const isExpoVersion58OrHigher = (config: ExpoConfig): boolean => {
+  return isExpoVersionOrHigher(config, '58.0.0');
 };
 
 /** Returns true if Expo SDK version is <= 53.x.x (used for Android 16 compat detection) */

@@ -86,6 +86,11 @@ export function withCIOSceneDelegate(
         'SceneDelegate.swift'
       );
       if (!fs.existsSync(sceneDelegatePath)) {
+        if (options.liveNotificationsEnabled) {
+          logger.warn(
+            'Could not find the Expo SceneDelegate; Live Activity URL routing was not added'
+          );
+        }
         return modConfig;
       }
 
