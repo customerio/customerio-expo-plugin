@@ -1,6 +1,6 @@
 import type { ExpoConfig } from '@expo/config-types';
 import { withCIOIos } from '../../plugin/src/ios/withCIOIos';
-import { isExpoVersion58OrHigher } from '../../plugin/src/ios/utils';
+import { isExpoVersion57OrHigher } from '../../plugin/src/ios/utils';
 import type { CustomerIOPluginGeofenceOptions, CustomerIOPluginLocationOptions, CustomerIOPluginOptionsIOS } from '../../plugin/src/types/cio-types';
 
 const mockWithCioXcodeProject = jest.fn((config: ExpoConfig, _props?: object) => config);
@@ -63,7 +63,7 @@ jest.mock('../../plugin/src/ios/withCIOSceneDelegate', () => ({
 }));
 jest.mock('../../plugin/src/ios/utils', () => ({
   isExpoVersion53OrHigher: jest.fn(() => true),
-  isExpoVersion58OrHigher: jest.fn(() => false),
+  isExpoVersion57OrHigher: jest.fn(() => false),
 }));
 jest.mock('../../plugin/src/utils/config', () => ({
   mergeConfigWithEnvValues: jest.fn(),
@@ -79,11 +79,11 @@ describe('withCIOIos', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    (isExpoVersion58OrHigher as jest.Mock).mockReturnValue(false);
+    (isExpoVersion57OrHigher as jest.Mock).mockReturnValue(false);
   });
 
   describe('scene lifecycle', () => {
-    it('does not modify SceneDelegate before Expo SDK 58', () => {
+    it('does not modify SceneDelegate before Expo SDK 57', () => {
       withCIOIos(mockConfig, undefined, undefined, undefined, undefined, { enabled: true });
 
       expect(mockWithCIOSceneDelegate).not.toHaveBeenCalled();
@@ -98,8 +98,8 @@ describe('withCIOIos', () => {
       );
     });
 
-    it('uses the scene integration for Expo SDK 58 and later', () => {
-      (isExpoVersion58OrHigher as jest.Mock).mockReturnValue(true);
+    it('uses the scene integration for Expo SDK 57 and later', () => {
+      (isExpoVersion57OrHigher as jest.Mock).mockReturnValue(true);
 
       withCIOIos(mockConfig, undefined, undefined, undefined, undefined, { enabled: true });
 
@@ -301,7 +301,7 @@ describe('withCIOIos', () => {
   });
 
   describe('live activities', () => {
-    it('injects the SDK 58 scene, widget, Info.plist and liveactivities subspec (no push/config)', () => {
+    it('injects the SDK 57 scene, widget, Info.plist and liveactivities subspec (no push/config)', () => {
       // Live Notifications without push is supported: an app can obtain a device token elsewhere and
       // hand it to Customer.io for backend-driven activities. withCIOIosSwift has to run on this path
       // too — it is what routes a tapped activity's URL through the SDK, so without it the `opened`
@@ -309,7 +309,7 @@ describe('withCIOIos', () => {
       const props: CustomerIOPluginOptionsIOS = {
         iosPath: '/test/ios',
       };
-      (isExpoVersion58OrHigher as jest.Mock).mockReturnValue(true);
+      (isExpoVersion57OrHigher as jest.Mock).mockReturnValue(true);
 
       withCIOIos(mockConfig, undefined, props, undefined, undefined, { enabled: true });
 

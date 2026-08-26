@@ -24,7 +24,7 @@ When using Expo's scene lifecycle with Customer.io native auto-initialization, r
 
 Customer.io notification deep links are delivered to that listener as `url` events after readiness; they are not returned by `Linking.getInitialURL()`. If readiness is not signaled within ten seconds, Customer.io falls back to opening the destination through the system.
 
-Expo SDK 58 and later deliver cold-start URLs through `SceneDelegate`, so `handleDeeplinkInKilledState` is not injected for those versions. The scene router replaces that legacy AppDelegate launch-options workaround.
+Expo SDK 57 and later deliver cold-start URLs through `SceneDelegate`, so `handleDeeplinkInKilledState` is not injected for those versions. The scene router replaces that legacy AppDelegate launch-options workaround.
 
 # Local development
 

@@ -4,7 +4,7 @@ import { maskSwiftNonCode } from '../../plugin/src/ios/utils';
 import { getFixturePath } from '../utils';
 
 const baseline = fs.readFileSync(
-  getFixturePath('ios', 'SceneDelegate.sdk58.swift'),
+  getFixturePath('ios', 'SceneDelegate.scene.swift'),
   'utf8'
 );
 const LIVE_ACTIVITY_CALL =

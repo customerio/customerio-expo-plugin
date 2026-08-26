@@ -295,7 +295,7 @@ export const withCIOIosSwift = (
         );
       if (usesSceneLifecycle && !projectUsesSceneLifecycle) {
         logger.warn(
-          'Expo SDK 58+ was detected, but the generated iOS project does not have an Expo SceneDelegate and scene manifest; keeping AppDelegate URL routing'
+          'Expo SDK 57+ was detected, but the generated iOS project does not have an Expo SceneDelegate and scene manifest; keeping AppDelegate URL routing'
         );
       }
       warnIfNativeAutoInitializationNeedsSceneReadiness(
@@ -323,7 +323,7 @@ export const withCIOIosSwift = (
         );
       if (usesSceneLifecycle && !projectUsesSceneLifecycle) {
         logger.warn(
-          'Expo SDK 58+ was detected, but the generated iOS project does not have an Expo SceneDelegate and scene manifest; keeping AppDelegate URL routing'
+          'Expo SDK 57+ was detected, but the generated iOS project does not have an Expo SceneDelegate and scene manifest; keeping AppDelegate URL routing'
         );
       }
       warnIfNativeAutoInitializationNeedsSceneReadiness(
@@ -414,7 +414,7 @@ export function modifyAppDelegateForPushHandler(
     next = removeLegacyAppDelegateDeepLinkHandling(next);
     if (props.pushNotification?.handleDeeplinkInKilledState === true) {
       logger.warn(
-        'handleDeeplinkInKilledState is not applied to Expo SDK 58+ scene projects; ' +
+        'handleDeeplinkInKilledState is not applied to Expo SDK 57+ scene projects; ' +
           'scene routing replaces the legacy AppDelegate launch-options workaround'
       );
     }
