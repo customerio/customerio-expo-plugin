@@ -33,7 +33,10 @@ export function modifySceneDelegateForCustomerIO(
     return removeCustomerIOURLTransform(contents);
   }
 
-  const sceneDelegateClass = contents.match(SCENE_DELEGATE_CLASS_REGEX);
+  const executableContents = maskSwiftNonCode(contents);
+  const sceneDelegateClass = executableContents.match(
+    SCENE_DELEGATE_CLASS_REGEX
+  );
   if (!sceneDelegateClass) {
     logger.warn(
       'Could not find SceneDelegate inheriting from ExpoAppSceneDelegate; Live Activity URL routing was not added'
@@ -41,7 +44,6 @@ export function modifySceneDelegateForCustomerIO(
     return contents;
   }
 
-  const executableContents = maskSwiftNonCode(contents);
   if (CUSTOMER_IO_TRANSFORM_METHOD_REGEX.test(executableContents)) {
     return contents;
   }
@@ -62,7 +64,7 @@ export function modifySceneDelegateForCustomerIO(
   }
 `;
 
-  const classMatch = next.match(SCENE_DELEGATE_CLASS_REGEX);
+  const classMatch = maskSwiftNonCode(next).match(SCENE_DELEGATE_CLASS_REGEX);
   if (!classMatch) {
     return next;
   }

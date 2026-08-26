@@ -235,6 +235,25 @@ import customerio_reactnative
     ).toBe(customSceneDelegate);
   });
 
+  it('does not treat a commented Expo scene delegate as the active class', () => {
+    const customSceneDelegate = `internal import Expo
+
+/*
+class SceneDelegate: ExpoAppSceneDelegate {
+}
+*/
+@objc(SceneDelegate)
+class SceneDelegate: UIResponder, UIWindowSceneDelegate {
+}
+`;
+
+    expect(
+      modifySceneDelegateForCustomerIO(customSceneDelegate, {
+        liveNotificationsEnabled: true,
+      })
+    ).toBe(customSceneDelegate);
+  });
+
   it('does not add a duplicate method when an unfamiliar transform signature exists', () => {
     const customized = baseline.replace(
       '  // Extension point for config plugins.',
