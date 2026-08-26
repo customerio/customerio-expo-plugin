@@ -263,6 +263,54 @@ public class AppDelegate: ExpoAppDelegate {
       expect(result.modResults.contents).not.toContain('let cioSdkHandler = CioSdkAppDelegateHandler()');
     });
 
+    it('warns about the explicit Linking readiness signal for scene auto-initialization', async () => {
+      const { withAppDelegate } = require('@expo/config-plugins');
+      const projectRoot = fs.mkdtempSync(
+        path.join(os.tmpdir(), 'cio-expo-auto-init-scenes-')
+      );
+      const projectName = 'TestApp';
+      const projectDirectory = path.join(projectRoot, projectName);
+      fs.mkdirSync(projectDirectory);
+      fs.writeFileSync(
+        path.join(projectDirectory, 'SceneDelegate.swift'),
+        'class SceneDelegate: ExpoAppSceneDelegate {}'
+      );
+      fs.writeFileSync(
+        path.join(projectDirectory, 'Info.plist'),
+        '<plist><dict><key>UIApplicationSceneManifest</key><dict><key>UISceneDelegateClassName</key><string>$(PRODUCT_MODULE_NAME).SceneDelegate</string></dict></dict></plist>'
+      );
+      const warn = jest.spyOn(console, 'warn').mockImplementation();
+
+      try {
+        withCIOIosSwift(
+          mockConfig,
+          mockSdkConfig,
+          mockPropsAutoInitOnly,
+          undefined,
+          undefined,
+          false,
+          true
+        );
+        const appDelegateCallback = withAppDelegate.mock.calls[0][1];
+        await appDelegateCallback({
+          modRequest: { platformProjectRoot: projectRoot, projectName },
+          modResults: {
+            contents: fs.readFileSync(
+              getFixturePath('ios', 'AppDelegate.sdk58.swift'),
+              'utf8'
+            ),
+          },
+        });
+
+        expect(warn).toHaveBeenCalledWith(
+          expect.stringContaining('CustomerIO.setDeepLinkRoutingReady()')
+        );
+      } finally {
+        warn.mockRestore();
+        fs.rmSync(projectRoot, { recursive: true, force: true });
+      }
+    });
+
   });
 
   describe('without sdkConfig', () => {
@@ -673,6 +721,49 @@ describe('Expo scene AppDelegate', () => {
     expect(sdk58).not.toContain('modifiedLaunchOptions');
     expect(sdk58).not.toContain('cioSdkHandler.application(app, open: url, options: options)');
     expect(sdk58).toContain('NativeCustomerIO.configureExpoSceneDeepLinkRouting()');
+  });
+
+  it('preserves legacy routing when a customized AppDelegate has no safe scene-routing anchor', () => {
+    const customized = sceneAppDelegate.replace(
+      'return super.application(application, didFinishLaunchingWithOptions: launchOptions)',
+      `let didStart = super.application(application, didFinishLaunchingWithOptions: launchOptions)
+    return didStart`
+    );
+    const sdk57 = modifyAppDelegateForPushHandler(customized, pushProps);
+    const sdk58 = modifyAppDelegateForPushHandler(sdk57, pushProps, true);
+
+    expect(sdk57).toContain(
+      'cioSdkHandler.application(app, open: url, options: options)'
+    );
+    expect(sdk58).toContain(
+      'cioSdkHandler.application(app, open: url, options: options)'
+    );
+    expect(sdk58).not.toContain(
+      'NativeCustomerIO.configureExpoSceneDeepLinkRouting()'
+    );
+  });
+
+  it('adds Customer.io imports outside a host-owned conditional import block', () => {
+    const customized = sceneAppDelegate.replace(
+      'import ReactAppDependencyProvider',
+      `import ReactAppDependencyProvider
+#if canImport(EXNotifications)
+import EXNotifications
+#endif`
+    );
+    const output = modifyAppDelegateForPushHandler(
+      customized,
+      pushProps,
+      true
+    );
+    const conditionalStart = output.indexOf('#if canImport(EXNotifications)');
+    const conditionalEnd = output.indexOf('#endif', conditionalStart);
+    const conditionalBlock = output.slice(conditionalStart, conditionalEnd);
+
+    expect(output.indexOf('import customerio_reactnative')).toBeLessThan(
+      conditionalStart
+    );
+    expect(conditionalBlock).not.toContain('import customerio_reactnative');
   });
 
   it('removes SDK 57 Live Activity AppDelegate routing on an incremental SDK 58 prebuild', () => {

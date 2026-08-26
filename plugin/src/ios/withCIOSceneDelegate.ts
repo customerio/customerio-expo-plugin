@@ -3,6 +3,7 @@ import type { ExpoConfig } from '@expo/config-types';
 import fs from 'fs';
 import path from 'path';
 import { logger } from '../utils/logger';
+import { addSwiftImports, hasExpoSceneLifecycle } from './utils';
 
 const SCENE_DELEGATE_CLASS_REGEX =
   /class\s+SceneDelegate\s*:\s*[^{}]*\bExpoAppSceneDelegate\b[^{}]*\{/;
@@ -47,7 +48,7 @@ export function modifySceneDelegateForCustomerIO(
     return next;
   }
 
-  next = addSwiftImport(next, REACT_NATIVE_IMPORT);
+  next = addSwiftImports(next, [REACT_NATIVE_IMPORT]);
 
   const method = `
   override func transformURL(_ url: URL) -> URL? {
@@ -80,6 +81,20 @@ export function withCIOSceneDelegate(
         return modConfig;
       }
 
+      if (
+        !hasExpoSceneLifecycle(
+          modConfig.modRequest.platformProjectRoot,
+          projectName
+        )
+      ) {
+        if (options.liveNotificationsEnabled) {
+          logger.warn(
+            'The generated iOS project has not adopted Expo scenes; Live Activity URL routing remains in AppDelegate'
+          );
+        }
+        return modConfig;
+      }
+
       const sceneDelegatePath = path.join(
         modConfig.modRequest.platformProjectRoot,
         projectName,
@@ -102,21 +117,4 @@ export function withCIOSceneDelegate(
       return modConfig;
     },
   ]);
-}
-
-function addSwiftImport(contents: string, importLine: string): string {
-  if (contents.includes(importLine)) {
-    return contents;
-  }
-
-  const imports = [...contents.matchAll(/^(?:\w+[ \t]+)?import[ \t]+\S+.*$/gm)];
-  const lastImport = imports[imports.length - 1];
-  if (!lastImport) {
-    return `${importLine}\n${contents}`;
-  }
-
-  const insertAt = (lastImport.index ?? 0) + lastImport[0].length;
-  return `${contents.slice(0, insertAt)}\n${importLine}${contents.slice(
-    insertAt
-  )}`;
 }

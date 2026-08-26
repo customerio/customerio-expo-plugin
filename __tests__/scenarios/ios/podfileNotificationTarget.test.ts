@@ -61,10 +61,10 @@ describe('ios scenarios — appendNotificationTargetToPodfile', () => {
     `);
   });
 
-  it('appends the fcm notification target block with use_frameworks: dynamic', () => {
+  it('preserves the existing extension behavior for dynamic host frameworks', () => {
     expect(
       appendNotificationTargetToPodfile(baseline, IOS_PATH, true, 'dynamic')
-    ).toContain('use_frameworks! :linkage => :dynamic');
+    ).not.toContain('use_frameworks!');
   });
 
   it('omits the use_frameworks line when useFrameworks is undefined', () => {
@@ -136,9 +136,8 @@ describe('ios scenarios — appendNotificationTargetToPodfile', () => {
       undefined
     );
 
-    expect(fcmDynamic).toContain('use_frameworks! :linkage => :dynamic');
+    expect(fcmDynamic).not.toContain('use_frameworks!');
     expect(fcmDynamic).toContain('customerio-reactnative-richpush/fcm');
-    expect(fcmDynamic).not.toContain(':linkage => :static');
     expect(fcmDynamic).not.toContain('customerio-reactnative-richpush/apn');
     expect(fcmWithoutFrameworks).not.toContain('use_frameworks!');
     expect(

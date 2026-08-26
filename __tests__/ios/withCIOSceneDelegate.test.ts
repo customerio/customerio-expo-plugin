@@ -59,6 +59,27 @@ describe('modifySceneDelegateForCustomerIO', () => {
     expect(output).not.toContain('connectionOptions.notificationResponse');
   });
 
+  it('adds the React Native import outside a host-owned conditional block', () => {
+    const customized = baseline.replace(
+      'internal import Expo',
+      `internal import Expo
+#if canImport(EXNotifications)
+import EXNotifications
+#endif`
+    );
+    const output = modifySceneDelegateForCustomerIO(customized, {
+      liveNotificationsEnabled: true,
+    });
+    const conditionalStart = output.indexOf('#if canImport(EXNotifications)');
+    const conditionalEnd = output.indexOf('#endif', conditionalStart);
+    const conditionalBlock = output.slice(conditionalStart, conditionalEnd);
+
+    expect(output.indexOf('import customerio_reactnative')).toBeLessThan(
+      conditionalStart
+    );
+    expect(conditionalBlock).not.toContain('import customerio_reactnative');
+  });
+
   it('is idempotent and preserves custom SceneDelegate code', () => {
     const customized = baseline.replace(
       '  // Extension point for config plugins.',

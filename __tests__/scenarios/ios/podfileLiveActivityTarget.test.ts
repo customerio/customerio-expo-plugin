@@ -35,10 +35,10 @@ describe('ios scenarios — appendLiveActivityWidgetTargetToPodfile', () => {
     `);
   });
 
-  it('appends the widget target block with use_frameworks: dynamic', () => {
+  it('preserves the existing extension behavior for dynamic host frameworks', () => {
     expect(
       appendLiveActivityWidgetTargetToPodfile(baseline, 'dynamic')
-    ).toContain('use_frameworks! :linkage => :dynamic');
+    ).not.toContain('use_frameworks!');
   });
 
   it('omits the use_frameworks line when useFrameworks is undefined', () => {
@@ -90,8 +90,7 @@ describe('ios scenarios — appendLiveActivityWidgetTargetToPodfile', () => {
       undefined
     );
 
-    expect(widgetDynamic).toContain('use_frameworks! :linkage => :dynamic');
-    expect(widgetDynamic).not.toContain(':linkage => :static');
+    expect(widgetDynamic).not.toContain('use_frameworks!');
     expect(widgetWithoutFrameworks).not.toContain('use_frameworks!');
     expect(
       (widgetWithoutFrameworks.match(/CustomerIO Live Activity START/g) ?? [])

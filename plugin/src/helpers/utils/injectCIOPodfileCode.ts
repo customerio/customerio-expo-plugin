@@ -139,7 +139,7 @@ export function appendNotificationTargetToPodfile(
   const snippetToAppend = `
 ${NOTIFICATION_BLOCK_START}
 target 'NotificationService' do
-  ${useFrameworks ? `use_frameworks! :linkage => :${useFrameworks}` : ''}
+  ${useFrameworks === 'static' ? 'use_frameworks! :linkage => :static' : ''}
   pod 'customerio-reactnative-richpush/${isFcmPushProvider ? 'fcm' : 'apn'}', :path => '${getRelativePathToRNSDK(iosPath)}'
 end
 ${NOTIFICATION_BLOCK_END}
@@ -204,7 +204,7 @@ export function appendLiveActivityWidgetTargetToPodfile(
   const snippetToAppend = `
 ${LIVE_ACTIVITY_BLOCK_START}
 target '${CIO_LIVE_ACTIVITY_WIDGET_TARGET_NAME}' do
-  ${useFrameworks ? `use_frameworks! :linkage => :${useFrameworks}` : ''}
+  ${useFrameworks === 'static' ? 'use_frameworks! :linkage => :static' : ''}
 ${WIDGET_PODS.map((pod) => `  pod '${pod}'`).join('\n')}
 end
 ${LIVE_ACTIVITY_BLOCK_END}

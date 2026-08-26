@@ -4,7 +4,6 @@ import type {
 } from '@expo/config-plugins';
 import { withAppDelegate, withXcodeProject } from '@expo/config-plugins';
 import type { ExpoConfig } from '@expo/config-types';
-import fs from 'fs';
 import path from 'path';
 import { PLATFORM } from '../helpers/constants/common';
 import {
@@ -27,7 +26,13 @@ import type {
 import { logger } from '../utils/logger';
 import { getIosNativeFilesPath } from '../utils/plugin';
 import { copyFileToXcode, getOrCreateCustomerIOGroup } from '../utils/xcode';
-import { isFcmPushProvider } from './utils';
+import {
+  addSwiftImports,
+  hasExpoSceneLifecycle,
+  isFcmPushProvider,
+} from './utils';
+
+export { hasExpoSceneLifecycle };
 
 // Constants
 const CIO_SDK_APP_DELEGATE_HANDLER_CLASS = 'CioSdkAppDelegateHandler';
@@ -35,27 +40,6 @@ const CIO_SDK_APP_DELEGATE_HANDLER_FILENAME = `${CIO_SDK_APP_DELEGATE_HANDLER_CL
 const REACT_NATIVE_IMPORT = 'import customerio_reactnative';
 const CONFIGURE_SCENE_ROUTING_CALL =
   'NativeCustomerIO.configureExpoSceneDeepLinkRouting()';
-
-/** Confirm the generated native project actually adopted Expo's scene lifecycle. */
-export function hasExpoSceneLifecycle(
-  platformProjectRoot?: string,
-  projectName?: string | null
-): boolean {
-  if (!platformProjectRoot || !projectName) return false;
-
-  const projectDirectory = path.join(platformProjectRoot, projectName);
-  const sceneDelegatePath = path.join(projectDirectory, 'SceneDelegate.swift');
-  const infoPlistPath = path.join(projectDirectory, 'Info.plist');
-  if (!fs.existsSync(sceneDelegatePath) || !fs.existsSync(infoPlistPath)) {
-    return false;
-  }
-
-  const infoPlist = fs.readFileSync(infoPlistPath, 'utf8');
-  return (
-    infoPlist.includes('<key>UIApplicationSceneManifest</key>') &&
-    infoPlist.includes('<key>UISceneDelegateClassName</key>')
-  );
-}
 
 /**
  * Copy and configure the CioSdkAppDelegateHandler.swift file
@@ -308,6 +292,10 @@ export const withCIOIosSwift = (
           'Expo SDK 58+ was detected, but the generated iOS project does not have an Expo SceneDelegate and scene manifest; keeping AppDelegate URL routing'
         );
       }
+      warnIfNativeAutoInitializationNeedsSceneReadiness(
+        sdkConfig,
+        projectUsesSceneLifecycle
+      );
       config.modResults.contents = modifyAppDelegateForPushHandler(
         config.modResults.contents,
         props,
@@ -332,6 +320,10 @@ export const withCIOIosSwift = (
           'Expo SDK 58+ was detected, but the generated iOS project does not have an Expo SceneDelegate and scene manifest; keeping AppDelegate URL routing'
         );
       }
+      warnIfNativeAutoInitializationNeedsSceneReadiness(
+        sdkConfig,
+        projectUsesSceneLifecycle
+      );
       let next = config.modResults.contents;
       if (sdkConfig) {
         next = modifyAppDelegateForNativeSDKInitializer(
@@ -353,6 +345,17 @@ export const withCIOIosSwift = (
   }
 };
 
+function warnIfNativeAutoInitializationNeedsSceneReadiness(
+  sdkConfig: NativeSDKConfig | undefined,
+  usesSceneLifecycle: boolean
+): void {
+  if (!sdkConfig || !usesSceneLifecycle) return;
+
+  logger.warn(
+    'Expo scene projects using native auto-initialization must call CustomerIO.setDeepLinkRoutingReady() after registering the React Native Linking listener'
+  );
+}
+
 /**
  * Pure string transform: produces the Swift AppDelegate contents wired to delegate to
  * `CioSdkAppDelegateHandler` for both push notifications and (when configured) auto-init.
@@ -363,9 +366,7 @@ export function modifyAppDelegateForPushHandler(
   props: CustomerIOPluginOptionsIOS,
   usesSceneLifecycle = false
 ): string {
-  let next = usesSceneLifecycle
-    ? removeLegacyAppDelegateDeepLinkHandling(contents)
-    : contents;
+  let next = contents;
 
   if (next.includes(CIO_SDK_APP_DELEGATE_HANDLER_CLASS)) {
     logger.info(
@@ -374,9 +375,14 @@ export function modifyAppDelegateForPushHandler(
     // Don't return the file untouched: an AppDelegate integrated by an earlier plugin version has
     // the handler but not the Live Activity tap route, and skipping outright leaves every upgraded
     // app without it. `addOpenURLHandling` is idempotent, so re-running it is safe.
-    return usesSceneLifecycle
-      ? addSceneRoutingBeforeNativeInitialization(next)
-      : addOpenURLHandling(next);
+    if (!usesSceneLifecycle) {
+      return addOpenURLHandling(next);
+    }
+
+    const withSceneRouting = addSceneRoutingBeforeNativeInitialization(next);
+    return withSceneRouting.includes(CONFIGURE_SCENE_ROUTING_CALL)
+      ? removeLegacyAppDelegateDeepLinkHandling(withSceneRouting)
+      : next;
   }
 
   next = addHandlerPropertyDeclaration(next);
@@ -388,7 +394,13 @@ export function modifyAppDelegateForPushHandler(
   next = addDidFailToRegisterForRemoteNotificationsWithError(next);
   if (usesSceneLifecycle) {
     next = addSceneRoutingBeforeNativeInitialization(next);
-    if (props.pushNotification?.handleDeeplinkInKilledState === true) {
+    if (next.includes(CONFIGURE_SCENE_ROUTING_CALL)) {
+      next = removeLegacyAppDelegateDeepLinkHandling(next);
+    }
+    if (
+      next.includes(CONFIGURE_SCENE_ROUTING_CALL) &&
+      props.pushNotification?.handleDeeplinkInKilledState === true
+    ) {
       logger.warn(
         'handleDeeplinkInKilledState is not applied to Expo SDK 58+ scene projects; ' +
           'scene routing replaces the legacy AppDelegate launch-options workaround'
@@ -729,40 +741,6 @@ function removeLegacyAppDelegateDeepLinkHandling(contents: string): string {
       );
   }
   return removeLiveActivityUrlGuard(next);
-}
-
-/**
- * Add Swift imports after the file's last existing import.
- *
- * Matches an optional leading modifier because React Native 0.83 emits `internal import Expo` as the
- * first line of AppDelegate.swift. An expression anchored to a bare `import` at the start of the
- * file silently matches nothing there, which leaves the injected call referencing symbols that were
- * never imported — a failure that only surfaces at compile time.
- */
-function addSwiftImports(contents: string, imports: string[]): string {
-  const missing = imports.filter((line) => !contents.includes(line));
-  if (missing.length === 0) return contents;
-
-  const matches = [...contents.matchAll(/^(?:\w+[ \t]+)?import[ \t]+\S+.*$/gm)];
-  if (matches.length === 0) return contents;
-
-  const last = matches[matches.length - 1];
-  let insertAt = (last.index ?? 0) + last[0].length;
-  const conditionalImportStart = contents.indexOf(
-    CONDITIONAL_LIVE_ACTIVITY_IMPORT
-  );
-  const conditionalImportEnd =
-    conditionalImportStart + CONDITIONAL_LIVE_ACTIVITY_IMPORT.length;
-  if (
-    conditionalImportStart >= 0 &&
-    (last.index ?? 0) >= conditionalImportStart &&
-    insertAt <= conditionalImportEnd
-  ) {
-    insertAt = conditionalImportEnd;
-  }
-  return `${contents.slice(0, insertAt)}\n${missing.join('\n')}${contents.slice(
-    insertAt
-  )}`;
 }
 
 const addOpenURLHandling = (content: string): string => {
