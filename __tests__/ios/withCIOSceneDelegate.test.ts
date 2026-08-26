@@ -27,7 +27,25 @@ describe('modifySceneDelegateForCustomerIO', () => {
 
     expect(disabled).not.toContain(LIVE_ACTIVITY_CALL);
     expect(disabled).not.toContain('override func transformURL');
-    expect(disabled).not.toContain('import customerio_reactnative');
+    // Import ownership is unknown, so leave the harmless import in place.
+    expect(disabled).toContain('import customerio_reactnative');
+  });
+
+  it('preserves a host-owned React Native import when Live Notifications is disabled', () => {
+    const customized = `import customerio_reactnative\n${baseline}`.replace(
+      '  // Extension point for config plugins.',
+      '  let customerOwnedType = NativeCustomerIO.self'
+    );
+    const enabled = modifySceneDelegateForCustomerIO(customized, {
+      liveNotificationsEnabled: true,
+    });
+    const disabled = modifySceneDelegateForCustomerIO(enabled, {
+      liveNotificationsEnabled: false,
+    });
+
+    expect(disabled).toContain('import customerio_reactnative');
+    expect(disabled).toContain('let customerOwnedType = NativeCustomerIO.self');
+    expect(disabled).not.toContain(LIVE_ACTIVITY_CALL);
   });
 
   it('routes warm and cold Live Activity URLs through the Expo scene hook', () => {
