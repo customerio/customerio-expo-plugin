@@ -35,7 +35,14 @@ export function addSwiftImports(
       /^(?:(?:@_\w+|\w+)[ \t]+)?import[ \t]+(\S+).*$/gm
     ),
   ];
-  const importedModules = new Set(matches.map((match) => match[1]));
+  const importedModules = new Set(
+    matches
+      .filter(
+        (match) =>
+          enclosingConditionalStart(contents, match.index ?? 0) === undefined
+      )
+      .map((match) => match[1])
+  );
   const missing = imports.filter((line) => {
     const moduleName = line.match(/^import[ \t]+(\S+)$/)?.[1];
     return moduleName ? !importedModules.has(moduleName) : true;

@@ -766,6 +766,29 @@ import EXNotifications
     expect(conditionalBlock).not.toContain('import customerio_reactnative');
   });
 
+  it('adds an unconditional import when the host imports React Native only conditionally', () => {
+    const customized = sceneAppDelegate.replace(
+      'import ReactAppDependencyProvider',
+      `import ReactAppDependencyProvider
+#if DEBUG
+import customerio_reactnative
+#endif`
+    );
+    const output = modifyAppDelegateForPushHandler(
+      customized,
+      pushProps,
+      true
+    );
+    const conditionalStart = output.indexOf('#if DEBUG');
+
+    expect(output.indexOf('import customerio_reactnative')).toBeLessThan(
+      conditionalStart
+    );
+    expect(
+      (output.match(/^import customerio_reactnative$/gm) ?? []).length
+    ).toBe(2);
+  });
+
   it('removes SDK 57 Live Activity AppDelegate routing on an incremental SDK 58 prebuild', () => {
     const sdk57 = modifyAppDelegateForLiveActivityUrl(sceneAppDelegate);
     const sdk58 = modifyAppDelegateForLiveActivityUrl(sdk57, true);
