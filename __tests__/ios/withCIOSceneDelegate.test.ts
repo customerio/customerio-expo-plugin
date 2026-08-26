@@ -1,5 +1,6 @@
 import * as fs from 'fs';
 import { modifySceneDelegateForCustomerIO } from '../../plugin/src/ios/withCIOSceneDelegate';
+import { maskSwiftNonCode } from '../../plugin/src/ios/utils';
 import { getFixturePath } from '../utils';
 
 const baseline = fs.readFileSync(
@@ -104,6 +105,26 @@ import customerio_reactnative
     ).toBe(2);
   });
 
+  it('does not treat an import inside a multiline string as executable', () => {
+    const integrationNotes = `let integrationNotes = """
+import customerio_reactnative
+"""`;
+    const customized = baseline.replace(
+      '@objc(SceneDelegate)',
+      `${integrationNotes}
+
+@objc(SceneDelegate)`
+    );
+    const output = modifySceneDelegateForCustomerIO(customized, {
+      liveNotificationsEnabled: true,
+    });
+
+    expect(
+      maskSwiftNonCode(output).match(/^import customerio_reactnative$/gm)
+    ).toHaveLength(1);
+    expect(output).toContain(integrationNotes);
+  });
+
   it('is idempotent and preserves custom SceneDelegate code', () => {
     const customized = baseline.replace(
       '  // Extension point for config plugins.',
@@ -137,6 +158,30 @@ import customerio_reactnative
 
     expect(disabled).not.toContain(LIVE_ACTIVITY_CALL);
     expect(disabled).not.toContain('override func transformURL');
+  });
+
+  it('preserves a transform example inside a multiline string when disabling the generated hook', () => {
+    const integrationNotes = `override func transformURL(_ url: URL) -> URL? {
+    NativeCustomerIO.handleLiveActivityWidgetUrl(url)
+  }`;
+    const customized = baseline.replace(
+      '  // Extension point for config plugins.',
+      `  let integrationNotes = """
+  ${integrationNotes}
+  """
+  // Extension point for config plugins.`
+    );
+    const enabled = modifySceneDelegateForCustomerIO(customized, {
+      liveNotificationsEnabled: true,
+    });
+    const disabled = modifySceneDelegateForCustomerIO(enabled, {
+      liveNotificationsEnabled: false,
+    });
+
+    expect(disabled).toContain(integrationNotes);
+    expect(
+      maskSwiftNonCode(disabled).match(/override\s+func\s+transformURL/g) ?? []
+    ).toHaveLength(0);
   });
 
   it('does not mistake comments or similarly named methods for a URL transform', () => {

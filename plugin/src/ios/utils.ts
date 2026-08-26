@@ -35,8 +35,9 @@ export function addSwiftImports(
   contents: string,
   imports: string[]
 ): string {
+  const executableContents = maskSwiftNonCode(contents);
   const matches = [
-    ...contents.matchAll(
+    ...executableContents.matchAll(
       /^(?:(?:@_\w+|\w+)[ \t]+)?import[ \t]+(\S+).*$/gm
     ),
   ];
@@ -44,7 +45,8 @@ export function addSwiftImports(
     matches
       .filter(
         (match) =>
-          enclosingConditionalStart(contents, match.index ?? 0) === undefined
+          enclosingConditionalStart(executableContents, match.index ?? 0) ===
+          undefined
       )
       .map((match) => match[1])
   );
@@ -60,7 +62,7 @@ export function addSwiftImports(
   }
 
   const conditionalStart = enclosingConditionalStart(
-    contents,
+    executableContents,
     lastImport.index ?? 0
   );
   if (conditionalStart !== undefined) {

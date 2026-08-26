@@ -73,7 +73,15 @@ export function modifySceneDelegateForCustomerIO(
 }
 
 function removeCustomerIOURLTransform(contents: string): string {
-  return contents.replace(CUSTOMER_IO_TRANSFORM_METHOD_REGEX, '\n');
+  const match = maskSwiftNonCode(contents).match(
+    CUSTOMER_IO_TRANSFORM_METHOD_REGEX
+  );
+  if (!match) return contents;
+
+  const start = match.index ?? 0;
+  return `${contents.slice(0, start)}\n${contents.slice(
+    start + match[0].length
+  )}`;
 }
 
 export function withCIOSceneDelegate(
