@@ -556,6 +556,26 @@ describe('Expo scene AppDelegate', () => {
     );
   });
 
+  it('removes SDK 57 AppDelegate URL handling on an incremental SDK 58 prebuild', () => {
+    const sdk57 = modifyAppDelegateForPushHandler(sceneAppDelegate, pushProps);
+    const sdk58 = modifyAppDelegateForPushHandler(sdk57, pushProps, true);
+
+    expect(sdk57).toContain('Deep link workaround for app killed state start');
+    expect(sdk57).toContain('cioSdkHandler.application(app, open: url, options: options)');
+    expect(sdk58).not.toContain('Deep link workaround for app killed state start');
+    expect(sdk58).not.toContain('modifiedLaunchOptions');
+    expect(sdk58).not.toContain('cioSdkHandler.application(app, open: url, options: options)');
+    expect(sdk58).toContain('NativeCustomerIO.configureExpoSceneDeepLinkRouting()');
+  });
+
+  it('removes SDK 57 Live Activity AppDelegate routing on an incremental SDK 58 prebuild', () => {
+    const sdk57 = modifyAppDelegateForLiveActivityUrl(sceneAppDelegate);
+    const sdk58 = modifyAppDelegateForLiveActivityUrl(sdk57, true);
+
+    expect(sdk57).toContain('CustomerIO.liveActivities.handleWidgetUrl');
+    expect(sdk58).not.toContain('CustomerIO.liveActivities.handleWidgetUrl');
+  });
+
   it('is idempotent', () => {
     const once = modifyAppDelegateForPushHandler(
       sceneAppDelegate,

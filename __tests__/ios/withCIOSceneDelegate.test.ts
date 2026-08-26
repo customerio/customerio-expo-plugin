@@ -27,6 +27,7 @@ describe('modifySceneDelegateForCustomerIO', () => {
 
     expect(disabled).not.toContain(LIVE_ACTIVITY_CALL);
     expect(disabled).not.toContain('override func transformURL');
+    expect(disabled).not.toContain('import customerio_reactnative');
   });
 
   it('routes warm and cold Live Activity URLs through the Expo scene hook', () => {

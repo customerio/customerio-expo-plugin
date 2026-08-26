@@ -251,6 +251,9 @@ function replaceManagedBlock(
 
   const endMarkerStart = contents.indexOf(endMarker, start + startMarker.length);
   if (endMarkerStart < 0) {
+    logger.warn(
+      `Found ${startMarker} without ${endMarker}; Customer.io left the Podfile unchanged`
+    );
     return contents;
   }
 

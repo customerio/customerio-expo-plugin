@@ -206,4 +206,16 @@ describe('ios scenarios — injectHostAppPodfileCode', () => {
     expect(fcm).not.toContain('liveactivities');
     expect((fcm.match(/CustomerIO Host App START/g) ?? []).length).toBe(1);
   });
+
+  it('warns and preserves a truncated managed block', () => {
+    const warn = jest.spyOn(console, 'warn').mockImplementation();
+    const truncated = `${baseline}\n# --- CustomerIO Host App START ---\n`;
+
+    expect(injectHostAppPodfileCode(truncated, IOS_PATH, false)).toBe(truncated);
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining('without # --- CustomerIO Host App END ---')
+    );
+
+    warn.mockRestore();
+  });
 });

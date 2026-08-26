@@ -64,7 +64,14 @@ export function modifySceneDelegateForCustomerIO(
 }
 
 function removeCustomerIOURLTransform(contents: string): string {
-  return contents.replace(CUSTOMER_IO_TRANSFORM_METHOD_REGEX, '\n');
+  const withoutMethod = contents.replace(CUSTOMER_IO_TRANSFORM_METHOD_REGEX, '\n');
+  if (withoutMethod === contents) {
+    return contents;
+  }
+  return withoutMethod.replace(
+    new RegExp(`^${REACT_NATIVE_IMPORT}\\n?`, 'm'),
+    ''
+  );
 }
 
 export function withCIOSceneDelegate(
