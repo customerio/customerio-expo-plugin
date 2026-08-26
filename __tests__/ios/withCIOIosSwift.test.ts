@@ -9,7 +9,10 @@ import {
   modifyAppDelegateForPushHandler,
   withCIOIosSwift,
 } from '../../plugin/src/ios/withCIOIosSwift';
-import { isExpoVersion58OrHigher } from '../../plugin/src/ios/utils';
+import {
+  isExpoVersion58OrHigher,
+  maskSwiftComments,
+} from '../../plugin/src/ios/utils';
 import type { CustomerIOPluginOptionsIOS, NativeSDKConfig } from '../../plugin/src/types/cio-types';
 import { getFixturePath } from '../utils';
 
@@ -62,6 +65,28 @@ describe('Expo scene version detection', () => {
       ).toBe(true);
     }
   );
+});
+
+describe('Swift comment masking', () => {
+  it('masks line and nested block comments without masking string literals', () => {
+    const contents = `let marker = "/* not a comment */"
+// NativeCustomerIO.configureExpoSceneDeepLinkRouting()
+/* outer
+  /* nested */
+  CustomerIOSDKInitializer.initialize()
+*/
+CustomerIOSDKInitializer.initialize()`;
+    const masked = maskSwiftComments(contents);
+
+    expect(masked).toContain('let marker = "/* not a comment */"');
+    expect(masked).toContain('\nCustomerIOSDKInitializer.initialize()');
+    expect(masked).not.toContain(
+      '// NativeCustomerIO.configureExpoSceneDeepLinkRouting()'
+    );
+    expect(masked.match(/CustomerIOSDKInitializer\.initialize\(\)/g)).toHaveLength(
+      1
+    );
+  });
 });
 
 // Mock dependencies
@@ -773,6 +798,25 @@ describe('Expo scene AppDelegate', () => {
       'return super.application(application, didFinishLaunchingWithOptions: launchOptions)',
       `// cioSdkHandler.application(application, didFinishLaunchingWithOptions: launchOptions)
     // CustomerIOSDKInitializer.initialize()
+    let didStart = super.application(application, didFinishLaunchingWithOptions: launchOptions)
+    return didStart`
+    );
+
+    expect(() =>
+      modifyAppDelegateForPushHandler(customized, pushProps, true)
+    ).toThrow(
+      'Could not install Expo scene deep-link routing because the Customer.io initialization call was not added to AppDelegate'
+    );
+  });
+
+  it('does not accept block-commented routing and initialization calls', () => {
+    const customized = sceneAppDelegate.replace(
+      'return super.application(application, didFinishLaunchingWithOptions: launchOptions)',
+      `/*
+    NativeCustomerIO.configureExpoSceneDeepLinkRouting()
+    cioSdkHandler.application(application, didFinishLaunchingWithOptions: launchOptions)
+    CustomerIOSDKInitializer.initialize()
+    */
     let didStart = super.application(application, didFinishLaunchingWithOptions: launchOptions)
     return didStart`
     );

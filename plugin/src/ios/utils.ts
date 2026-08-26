@@ -70,6 +70,88 @@ export function addSwiftImports(
   )}`;
 }
 
+/**
+ * Replaces Swift comments with spaces while preserving indexes and line breaks.
+ * Presence checks can then distinguish executable generated hooks from code a host commented out.
+ */
+export function maskSwiftComments(contents: string): string {
+  const output = contents.split('');
+  let blockDepth = 0;
+  let stringDelimiter: '"' | '"""' | undefined;
+  let index = 0;
+
+  const mask = (start: number, end: number): void => {
+    for (let position = start; position < end; position += 1) {
+      if (output[position] !== '\n' && output[position] !== '\r') {
+        output[position] = ' ';
+      }
+    }
+  };
+  const isEscaped = (position: number): boolean => {
+    let backslashes = 0;
+    for (
+      let cursor = position - 1;
+      cursor >= 0 && contents[cursor] === '\\';
+      cursor -= 1
+    ) {
+      backslashes += 1;
+    }
+    return backslashes % 2 === 1;
+  };
+
+  while (index < contents.length) {
+    if (blockDepth > 0) {
+      if (contents.startsWith('/*', index)) {
+        blockDepth += 1;
+        mask(index, index + 2);
+        index += 2;
+      } else if (contents.startsWith('*/', index)) {
+        blockDepth -= 1;
+        mask(index, index + 2);
+        index += 2;
+      } else {
+        mask(index, index + 1);
+        index += 1;
+      }
+      continue;
+    }
+
+    if (stringDelimiter) {
+      if (
+        contents.startsWith(stringDelimiter, index) &&
+        !isEscaped(index)
+      ) {
+        index += stringDelimiter.length;
+        stringDelimiter = undefined;
+      } else {
+        index += 1;
+      }
+      continue;
+    }
+
+    if (contents.startsWith('"""', index)) {
+      stringDelimiter = '"""';
+      index += 3;
+    } else if (contents[index] === '"') {
+      stringDelimiter = '"';
+      index += 1;
+    } else if (contents.startsWith('//', index)) {
+      const lineEnd = contents.indexOf('\n', index);
+      const commentEnd = lineEnd < 0 ? contents.length : lineEnd;
+      mask(index, commentEnd);
+      index = commentEnd;
+    } else if (contents.startsWith('/*', index)) {
+      blockDepth = 1;
+      mask(index, index + 2);
+      index += 2;
+    } else {
+      index += 1;
+    }
+  }
+
+  return output.join('');
+}
+
 function enclosingConditionalStart(
   contents: string,
   position: number

@@ -29,6 +29,7 @@ import {
   addSwiftImports,
   hasExpoSceneLifecycle,
   isFcmPushProvider,
+  maskSwiftComments,
 } from './utils';
 
 export { hasExpoSceneLifecycle };
@@ -375,7 +376,7 @@ export function modifyAppDelegateForPushHandler(
 ): string {
   let next = contents;
 
-  if (APP_DELEGATE_HANDLER_DECLARATION_REGEX.test(next)) {
+  if (APP_DELEGATE_HANDLER_DECLARATION_REGEX.test(maskSwiftComments(next))) {
     logger.info(
       'CustomerIO Swift AppDelegate changes already exist. Adding anything newer...'
     );
@@ -490,7 +491,7 @@ export function modifyAppDelegateForNativeSDKInitializer(
   contents: string,
   usesSceneLifecycle = false
 ): string {
-  if (NATIVE_INITIALIZATION_LINE_REGEX.test(contents)) {
+  if (NATIVE_INITIALIZATION_LINE_REGEX.test(maskSwiftComments(contents))) {
     logger.info(
       'CustomerIO Swift AppDelegate changes already exist. Skipping...'
     );
@@ -515,9 +516,10 @@ function addSceneRoutingBeforeNativeInitialization(contents: string): string {
     return contents;
   }
 
+  const executableContents = maskSwiftComments(contents);
   const initializationMatch =
-    contents.match(PUSH_INITIALIZATION_LINE_REGEX) ??
-    contents.match(NATIVE_INITIALIZATION_LINE_REGEX);
+    executableContents.match(PUSH_INITIALIZATION_LINE_REGEX) ??
+    executableContents.match(NATIVE_INITIALIZATION_LINE_REGEX);
   if (!initializationMatch || initializationMatch.index === undefined) {
     throw new Error(
       logger.format(
@@ -526,7 +528,10 @@ function addSceneRoutingBeforeNativeInitialization(contents: string): string {
     );
   }
 
-  const initializationLine = initializationMatch[0];
+  const lineStart = contents.lastIndexOf('\n', initializationMatch.index) + 1;
+  const nextLine = contents.indexOf('\n', initializationMatch.index);
+  const lineEnd = nextLine < 0 ? contents.length : nextLine;
+  const initializationLine = contents.slice(lineStart, lineEnd);
   const indentation = initializationLine.match(/^[ \t]*/)?.[0] ?? '';
   const next = addSwiftImports(contents, [REACT_NATIVE_IMPORT]);
   return next.replace(
@@ -536,7 +541,7 @@ function addSceneRoutingBeforeNativeInitialization(contents: string): string {
 }
 
 function hasExecutableSceneRouting(contents: string): boolean {
-  return CONFIGURE_SCENE_ROUTING_LINE_REGEX.test(contents);
+  return CONFIGURE_SCENE_ROUTING_LINE_REGEX.test(maskSwiftComments(contents));
 }
 
 /**

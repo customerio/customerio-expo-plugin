@@ -3,7 +3,11 @@ import type { ExpoConfig } from '@expo/config-types';
 import fs from 'fs';
 import path from 'path';
 import { logger } from '../utils/logger';
-import { addSwiftImports, hasExpoSceneLifecycle } from './utils';
+import {
+  addSwiftImports,
+  hasExpoSceneLifecycle,
+  maskSwiftComments,
+} from './utils';
 
 const SCENE_DELEGATE_CLASS_REGEX =
   /class\s+SceneDelegate\s*:\s*[^{}]*\bExpoAppSceneDelegate\b[^{}]*\{/;
@@ -37,12 +41,13 @@ export function modifySceneDelegateForCustomerIO(
     return contents;
   }
 
-  if (CUSTOMER_IO_TRANSFORM_METHOD_REGEX.test(contents)) {
+  const executableContents = maskSwiftComments(contents);
+  if (CUSTOMER_IO_TRANSFORM_METHOD_REGEX.test(executableContents)) {
     return contents;
   }
 
   let next = contents;
-  if (TRANSFORM_METHOD_DECLARATION_REGEX.test(next)) {
+  if (TRANSFORM_METHOD_DECLARATION_REGEX.test(executableContents)) {
     logger.warn(
       'SceneDelegate.transformURL is already owned by another integration; Live Activity URL routing was not added'
     );
