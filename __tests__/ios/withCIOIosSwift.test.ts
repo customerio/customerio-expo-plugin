@@ -50,6 +50,12 @@ describe('hasExpoSceneLifecycle', () => {
 
     fs.writeFileSync(
       path.join(projectRoot, projectName, 'Info.plist'),
+      '<plist><dict><key>UIApplicationSceneManifest</key><dict><key>UISceneDelegateClassName</key><string>$(PRODUCT_MODULE_NAME).CustomSceneDelegate</string></dict></dict></plist>'
+    );
+    expect(hasExpoSceneLifecycle(projectRoot, projectName)).toBe(false);
+
+    fs.writeFileSync(
+      path.join(projectRoot, projectName, 'Info.plist'),
       '<plist><dict><key>UIApplicationSceneManifest</key><dict><key>UISceneDelegateClassName</key><string>$(PRODUCT_MODULE_NAME).SceneDelegate</string></dict></dict></plist>'
     );
     expect(hasExpoSceneLifecycle(projectRoot, projectName)).toBe(true);
@@ -243,6 +249,22 @@ public class AppDelegate: ExpoAppDelegate {
           path.join(projectDirectory, 'SceneDelegate.swift'),
           'class SceneDelegate: ExpoAppSceneDelegate {}'
         );
+        fs.writeFileSync(
+          path.join(projectDirectory, 'Info.plist'),
+          '<plist><dict><key>UIApplicationSceneManifest</key><dict><key>UISceneDelegateClassName</key><string>$(PRODUCT_MODULE_NAME).CustomSceneDelegate</string></dict></dict></plist>'
+        );
+
+        const withCustomSceneDelegate = await appDelegateCallback({
+          modRequest,
+          modResults: { contents },
+        });
+        expect(withCustomSceneDelegate.modResults.contents).not.toContain(
+          'NativeCustomerIO.configureExpoSceneDeepLinkRouting()'
+        );
+        expect(withCustomSceneDelegate.modResults.contents).toContain(
+          'cioSdkHandler.application(app, open: url, options: options)'
+        );
+
         fs.writeFileSync(
           path.join(projectDirectory, 'Info.plist'),
           '<plist><dict><key>UIApplicationSceneManifest</key><dict><key>UISceneDelegateClassName</key><string>$(PRODUCT_MODULE_NAME).SceneDelegate</string></dict></dict></plist>'

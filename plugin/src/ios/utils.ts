@@ -19,9 +19,14 @@ export function hasExpoSceneLifecycle(
   }
 
   const infoPlist = fs.readFileSync(infoPlistPath, 'utf8');
+  const sceneDelegateClassName = infoPlist
+    .match(
+      /<key>UISceneDelegateClassName<\/key>\s*<string>([^<]+)<\/string>/
+    )?.[1]
+    ?.trim();
   return (
     infoPlist.includes('<key>UIApplicationSceneManifest</key>') &&
-    infoPlist.includes('<key>UISceneDelegateClassName</key>')
+    sceneDelegateClassName === '$(PRODUCT_MODULE_NAME).SceneDelegate'
   );
 }
 
