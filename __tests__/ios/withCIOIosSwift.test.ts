@@ -42,6 +42,12 @@ describe('hasExpoSceneLifecycle', () => {
       path.join(projectRoot, projectName, 'Info.plist'),
       '<plist><dict><key>UIApplicationSceneManifest</key><dict/></dict></plist>'
     );
+    expect(hasExpoSceneLifecycle(projectRoot, projectName)).toBe(false);
+
+    fs.writeFileSync(
+      path.join(projectRoot, projectName, 'Info.plist'),
+      '<plist><dict><key>UIApplicationSceneManifest</key><dict><key>UISceneDelegateClassName</key><string>$(PRODUCT_MODULE_NAME).SceneDelegate</string></dict></dict></plist>'
+    );
     expect(hasExpoSceneLifecycle(projectRoot, projectName)).toBe(true);
   });
 });
@@ -154,6 +160,70 @@ public class AppDelegate: ExpoAppDelegate {
 
       expect(result.modResults.contents).toContain('cioSdkHandler.application(application, didFinishLaunchingWithOptions: launchOptions)');
       expect(result.modResults.contents).toContain('let cioSdkHandler = CioSdkAppDelegateHandler()');
+    });
+
+    it('moves URL routing only after the generated project has adopted scenes', async () => {
+      const { withAppDelegate } = require('@expo/config-plugins');
+      const projectRoot = fs.mkdtempSync(
+        path.join(os.tmpdir(), 'cio-expo-scene-wiring-')
+      );
+      const projectName = 'TestApp';
+      const projectDirectory = path.join(projectRoot, projectName);
+      fs.mkdirSync(projectDirectory);
+
+      try {
+        withCIOIosSwift(
+          mockConfig,
+          mockSdkConfig,
+          mockPropsWithPush,
+          undefined,
+          undefined,
+          false,
+          true
+        );
+        const appDelegateCallback = withAppDelegate.mock.calls[0][1];
+        const contents = fs.readFileSync(
+          getFixturePath('ios', 'AppDelegate.sdk58.swift'),
+          'utf8'
+        );
+        const modRequest = {
+          platformProjectRoot: projectRoot,
+          projectName,
+        };
+
+        const withoutScenes = await appDelegateCallback({
+          modRequest,
+          modResults: { contents },
+        });
+        expect(withoutScenes.modResults.contents).not.toContain(
+          'NativeCustomerIO.configureExpoSceneDeepLinkRouting()'
+        );
+        expect(withoutScenes.modResults.contents).toContain(
+          'cioSdkHandler.application(app, open: url, options: options)'
+        );
+
+        fs.writeFileSync(
+          path.join(projectDirectory, 'SceneDelegate.swift'),
+          'class SceneDelegate: ExpoAppSceneDelegate {}'
+        );
+        fs.writeFileSync(
+          path.join(projectDirectory, 'Info.plist'),
+          '<plist><dict><key>UIApplicationSceneManifest</key><dict><key>UISceneDelegateClassName</key><string>$(PRODUCT_MODULE_NAME).SceneDelegate</string></dict></dict></plist>'
+        );
+
+        const withScenes = await appDelegateCallback({
+          modRequest,
+          modResults: { contents },
+        });
+        expect(withScenes.modResults.contents).toContain(
+          'NativeCustomerIO.configureExpoSceneDeepLinkRouting()'
+        );
+        expect(withScenes.modResults.contents).not.toContain(
+          'cioSdkHandler.application(app, open: url, options: options)'
+        );
+      } finally {
+        fs.rmSync(projectRoot, { recursive: true, force: true });
+      }
     });
   });
 
@@ -611,6 +681,7 @@ describe('Expo scene AppDelegate', () => {
 
     expect(sdk57).toContain('CustomerIO.liveActivities.handleWidgetUrl');
     expect(sdk58).not.toContain('CustomerIO.liveActivities.handleWidgetUrl');
+    expect(sdk58).not.toContain('import CioLiveActivities');
   });
 
   it('removes SDK 57 Live Activity routing when enabling push during an SDK 58 prebuild', () => {
@@ -619,6 +690,7 @@ describe('Expo scene AppDelegate', () => {
 
     expect(sdk57).toContain('CustomerIO.liveActivities.handleWidgetUrl');
     expect(sdk58).not.toContain('CustomerIO.liveActivities.handleWidgetUrl');
+    expect(sdk58).not.toContain('import CioLiveActivities');
     expect(sdk58).toContain(
       'NativeCustomerIO.configureExpoSceneDeepLinkRouting()'
     );

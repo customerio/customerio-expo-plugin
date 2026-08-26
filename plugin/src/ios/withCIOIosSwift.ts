@@ -50,9 +50,11 @@ export function hasExpoSceneLifecycle(
     return false;
   }
 
-  return fs
-    .readFileSync(infoPlistPath, 'utf8')
-    .includes('<key>UIApplicationSceneManifest</key>');
+  const infoPlist = fs.readFileSync(infoPlistPath, 'utf8');
+  return (
+    infoPlist.includes('<key>UIApplicationSceneManifest</key>') &&
+    infoPlist.includes('<key>UISceneDelegateClassName</key>')
+  );
 }
 
 /**
@@ -301,6 +303,11 @@ export const withCIOIosSwift = (
           config.modRequest?.platformProjectRoot,
           config.modRequest?.projectName
         );
+      if (usesSceneLifecycle && !projectUsesSceneLifecycle) {
+        logger.warn(
+          'Expo SDK 58+ was detected, but the generated iOS project does not have an Expo SceneDelegate and scene manifest; keeping AppDelegate URL routing'
+        );
+      }
       config.modResults.contents = modifyAppDelegateForPushHandler(
         config.modResults.contents,
         props,
@@ -320,6 +327,11 @@ export const withCIOIosSwift = (
           config.modRequest?.platformProjectRoot,
           config.modRequest?.projectName
         );
+      if (usesSceneLifecycle && !projectUsesSceneLifecycle) {
+        logger.warn(
+          'Expo SDK 58+ was detected, but the generated iOS project does not have an Expo SceneDelegate and scene manifest; keeping AppDelegate URL routing'
+        );
+      }
       let next = config.modResults.contents;
       if (sdkConfig) {
         next = modifyAppDelegateForNativeSDKInitializer(
@@ -663,9 +675,13 @@ function removeLiveActivityUrlGuard(contents: string): string {
   }
   // Whole-method shape first: it contains the guard shape's text, so the narrower pattern would
   // otherwise strip the guard and leave an empty method behind.
-  return contents
+  const next = contents
     .replace(LIVE_ACTIVITY_URL_METHOD_REGEX, '')
     .replace(LIVE_ACTIVITY_URL_GUARD_REGEX, '');
+
+  return next.includes(LIVE_ACTIVITY_URL_CALL)
+    ? next
+    : next.replace(/^import CioLiveActivities\n?/m, '');
 }
 
 const APP_DELEGATE_PUSH_OPEN_URL_METHOD_REGEX =
