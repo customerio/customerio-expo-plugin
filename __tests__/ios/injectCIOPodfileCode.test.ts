@@ -1,5 +1,6 @@
 import {
   buildHostAppPodSnippet,
+  injectHostAppPodfileCode,
   type InjectCIOPodfileOptions,
 } from '../../plugin/src/helpers/utils/injectCIOPodfileCode';
 
@@ -140,5 +141,44 @@ describe('buildHostAppPodSnippet', () => {
     // Lambda was the previous shape; we resolve at prebuild now and bake.
     expect(snippet).not.toContain('lambda do');
     expect(snippet).not.toContain('require.resolve');
+  });
+});
+
+describe('injectHostAppPodfileCode', () => {
+  it('removes a managed host block when push and every optional module are disabled', () => {
+    const podfile = `target 'Example' do
+# --- CustomerIO Host App START ---
+  pod 'customerio-reactnative', :subspecs => ['liveactivities'], :path => '../node_modules/customerio-reactnative'
+# --- CustomerIO Host App END ---
+  post_install do |installer|
+  end
+end
+`;
+
+    const result = injectHostAppPodfileCode(podfile, IOS_PATH, false, {
+      hasPush: false,
+      locationEnabled: false,
+      geofenceEnabled: false,
+      liveNotificationsEnabled: false,
+    });
+
+    expect(result).not.toContain('CustomerIO Host App');
+    expect(result).not.toContain("subspecs => ['liveactivities']");
+    expect(result).toContain("target 'Example' do");
+    expect(result).toContain('post_install do |installer|');
+  });
+
+  it('does nothing when no managed host block exists', () => {
+    const podfile = `target 'Example' do
+  post_install do |installer|
+  end
+end
+`;
+
+    expect(
+      injectHostAppPodfileCode(podfile, IOS_PATH, false, {
+        hasPush: false,
+      })
+    ).toBe(podfile);
   });
 });

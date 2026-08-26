@@ -112,17 +112,15 @@ export function withCIOIos(
       liveNotificationsEnabled,
       usesSceneLifecycle
     );
-    if (optionalModulesEnabled) {
-      config = withCioXcodeProject(config, {
-        ...platformConfig,
-        podfileOptions: {
-          locationEnabled,
-          geofenceEnabled,
-          hasPush: false,
-          liveNotificationsEnabled,
-        },
-      });
-    }
+    config = withCioXcodeProject(config, {
+      ...platformConfig,
+      podfileOptions: {
+        locationEnabled,
+        geofenceEnabled,
+        hasPush: false,
+        liveNotificationsEnabled,
+      },
+    });
   } else if (optionalModulesEnabled) {
     // No push, no config. Still add the Podfile subspecs so the relevant native modules are
     // compiled in and their flags set (CIO_LOCATION_ENABLED / CIO_GEOFENCE_ENABLED, live activities).
@@ -154,6 +152,19 @@ export function withCIOIos(
         geofenceEnabled,
         hasPush: false,
         liveNotificationsEnabled,
+      },
+    });
+  } else if (isSwiftProject) {
+    // Reconcile artifacts from an earlier optional-module configuration even when the last module
+    // and native SDK config were removed on an incremental prebuild.
+    config = withCIOIosLiveActivityCleanup(config);
+    config = withCioXcodeProject(config, {
+      ...platformConfig,
+      podfileOptions: {
+        locationEnabled: false,
+        geofenceEnabled: false,
+        hasPush: false,
+        liveNotificationsEnabled: false,
       },
     });
   }

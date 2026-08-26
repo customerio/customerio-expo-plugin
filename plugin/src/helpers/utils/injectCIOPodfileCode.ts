@@ -77,6 +77,21 @@ export function injectHostAppPodfileCode(
   isFcmPushProvider: boolean,
   options?: InjectCIOPodfileOptions
 ): string {
+  const hasOptionalModule =
+    options?.locationEnabled === true ||
+    options?.geofenceEnabled === true ||
+    options?.liveNotificationsEnabled === true;
+  if (options?.hasPush === false && !hasOptionalModule) {
+    return (
+      replaceManagedBlock(
+        podfileContent,
+        HOST_APP_BLOCK_START,
+        HOST_APP_BLOCK_END,
+        ''
+      ) ?? podfileContent
+    );
+  }
+
   const podLine = buildHostAppPodSnippet(iosPath, isFcmPushProvider, options);
   const snippetToInjectInPodfile = `
 ${HOST_APP_BLOCK_START}

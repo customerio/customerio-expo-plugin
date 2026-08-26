@@ -445,6 +445,7 @@ export function modifyAppDelegateForLiveActivityUrl(
     return removeLiveActivityUrlGuard(contents);
   }
 
+  contents = enableLiveActivityImport(contents);
   const executableContents = maskSwiftNonCode(contents);
   if (
     executableContents.includes(LIVE_ACTIVITY_URL_CALL) ||
@@ -685,7 +686,7 @@ const LIVE_ACTIVITY_URL_METHOD_REGEX =
  * constants, because a removal has to match the emitted text exactly, indentation included.
  */
 const LIVE_ACTIVITY_URL_GUARD_REGEX =
-  /\n[ \t]*\/\/ Report a Live Activity tap and route the deep link it carries\n[ \t]*guard let url = CustomerIO\.liveActivities\.handleWidgetUrl\(url\) else \{ return true \}/g;
+  /\n[ \t]*\/\/ Report a Live Activity tap and route the deep link it carries\n[ \t]*guard let url = CustomerIO\.liveActivities\.handleWidgetUrl\(url\) else \{ return true \}\n/g;
 
 /**
  * Strips the no-push Live Activity guard so the push handler can take over.
@@ -703,7 +704,9 @@ const LIVE_ACTIVITY_URL_GUARD_REGEX =
  */
 function removeLiveActivityUrlGuard(contents: string): string {
   if (!maskSwiftNonCode(contents).includes(LIVE_ACTIVITY_URL_CALL)) {
-    return contents;
+    return hasConditionalLiveActivityImport(contents)
+      ? disableLiveActivityImport(contents)
+      : contents;
   }
   // Whole-method shape first: it contains the guard shape's text, so the narrower pattern would
   // otherwise strip the guard and leave an empty method behind.
@@ -721,24 +724,77 @@ function removeLiveActivityUrlGuard(contents: string): string {
   }
 
   const executableNext = maskSwiftNonCode(next);
-  if (
-    executableNext.includes(LIVE_ACTIVITY_URL_CALL) ||
-    executableNext.includes(CONDITIONAL_LIVE_ACTIVITY_IMPORT)
-  ) {
+  if (executableNext.includes(LIVE_ACTIVITY_URL_CALL)) {
     return next;
   }
 
-  const liveActivityImport = executableNext.match(/^import CioLiveActivities$/m);
-  if (!liveActivityImport || liveActivityImport.index === undefined) {
-    return next;
-  }
+  return disableLiveActivityImport(next);
+}
 
-  const importStart = liveActivityImport.index;
-  return `${next.slice(
-    0,
-    importStart
-  )}${CONDITIONAL_LIVE_ACTIVITY_IMPORT}${next.slice(
-    importStart + liveActivityImport[0].length
+type SourceMatch = { index: number; length: number };
+
+function conditionalLiveActivityImportMatch(
+  contents: string
+): SourceMatch | undefined {
+  const match = maskSwiftNonCode(contents).match(
+    /#if canImport\(CioLiveActivities\)\nimport CioLiveActivities\n#endif/
+  );
+  return match?.index === undefined
+    ? undefined
+    : { index: match.index, length: match[0].length };
+}
+
+function hasConditionalLiveActivityImport(contents: string): boolean {
+  return conditionalLiveActivityImportMatch(contents) !== undefined;
+}
+
+function unconditionalLiveActivityImportMatch(
+  contents: string,
+  conditionalImport?: SourceMatch
+): SourceMatch | undefined {
+  const executableContents = maskSwiftNonCode(contents);
+  for (const match of executableContents.matchAll(/^import CioLiveActivities$/gm)) {
+    if (match.index === undefined) continue;
+    const isInsideConditional =
+      conditionalImport !== undefined &&
+      match.index >= conditionalImport.index &&
+      match.index < conditionalImport.index + conditionalImport.length;
+    if (!isInsideConditional) {
+      return { index: match.index, length: match[0].length };
+    }
+  }
+  return undefined;
+}
+
+/** Restore the generated import before adding an unconditional Live Activities call. */
+function enableLiveActivityImport(contents: string): string {
+  const conditionalImport = conditionalLiveActivityImportMatch(contents);
+  if (!conditionalImport) return contents;
+
+  const unconditionalImport = unconditionalLiveActivityImportMatch(
+    contents,
+    conditionalImport
+  );
+  const replacement = unconditionalImport ? '' : 'import CioLiveActivities';
+  return `${contents.slice(0, conditionalImport.index)}${replacement}${contents.slice(
+    conditionalImport.index + conditionalImport.length
+  )}`;
+}
+
+/** Keep a generated import compilable after the Live Activities subspec is removed. */
+function disableLiveActivityImport(contents: string): string {
+  const conditionalImport = conditionalLiveActivityImportMatch(contents);
+  const unconditionalImport = unconditionalLiveActivityImportMatch(
+    contents,
+    conditionalImport
+  );
+  if (!unconditionalImport) return contents;
+
+  const replacement = conditionalImport
+    ? ''
+    : CONDITIONAL_LIVE_ACTIVITY_IMPORT;
+  return `${contents.slice(0, unconditionalImport.index)}${replacement}${contents.slice(
+    unconditionalImport.index + unconditionalImport.length
   )}`;
 }
 
