@@ -18,6 +18,10 @@ After you add the plugin to your project, you'll need to install our React Nativ
 
 You'll find our [complete SDK documentation at https://customer.io/docs/sdk/expo](https://customer.io/docs/sdk/expo/).
 
+## Scene deep links with native auto-initialization
+
+When using Expo's scene lifecycle with Customer.io native auto-initialization, register your React Native `Linking` URL listener and then call `CustomerIO.setDeepLinkRoutingReady()`. This lets the plugin deliver URLs buffered during cold launch without requiring a second SDK initialization from JavaScript.
+
 # Local development
 
 [Here is a quick start guide to start with local development.](/local-development-readme.md)

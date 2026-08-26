@@ -15,6 +15,7 @@ import { validatePushNotificationOptions } from '../utils/validation';
 import { isExpoVersion53OrHigher } from './utils';
 import { withAppDelegateModifications } from './withAppDelegateModifications';
 import { withCIOIosSwift } from './withCIOIosSwift';
+import { withCIOSceneDelegate } from './withCIOSceneDelegate';
 import { withCioLiveActivityWidgetXcodeProject } from './withCioLiveActivityWidgetXcodeProject';
 import { withGeofenceAppDelegate } from './withGeofenceAppDelegate';
 import { withGoogleServicesJsonFile } from './withGoogleServicesJsonFile';
@@ -139,6 +140,10 @@ export function withCIOIos(
   // projects (Expo SDK 53+) at the plugin entry point.
   if (geofenceEnabled && isSwiftProject) {
     config = withGeofenceAppDelegate(config);
+  }
+
+  if (isSwiftProject) {
+    config = withCIOSceneDelegate(config, { liveNotificationsEnabled });
   }
 
   return config;

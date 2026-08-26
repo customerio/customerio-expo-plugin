@@ -10,6 +10,7 @@ const mockWithGoogleServicesJsonFile = jest.fn((config: ExpoConfig) => config);
 const mockWithGeofenceAppDelegate = jest.fn((config: ExpoConfig) => config);
 const mockWithLiveActivityInfoPlist = jest.fn((config: ExpoConfig) => config);
 const mockWithCioLiveActivityWidgetXcodeProject = jest.fn((config: ExpoConfig) => config);
+const mockWithCIOSceneDelegate = jest.fn((config: ExpoConfig, _options: object) => config);
 const mockWithEntitlementsPlist = jest.fn((config: ExpoConfig, callback: (c: unknown) => unknown) => {
   callback({ ios: { bundleIdentifier: 'com.test.app' }, modResults: {} });
   return config;
@@ -50,6 +51,10 @@ jest.mock('../../plugin/src/ios/withLiveActivityInfoPlist', () => ({
 jest.mock('../../plugin/src/ios/withCioLiveActivityWidgetXcodeProject', () => ({
   withCioLiveActivityWidgetXcodeProject: (config: ExpoConfig) =>
     mockWithCioLiveActivityWidgetXcodeProject(config),
+}));
+jest.mock('../../plugin/src/ios/withCIOSceneDelegate', () => ({
+  withCIOSceneDelegate: (config: ExpoConfig, options: object) =>
+    mockWithCIOSceneDelegate(config, options),
 }));
 jest.mock('../../plugin/src/ios/utils', () => ({
   isExpoVersion53OrHigher: jest.fn(() => true),
@@ -261,6 +266,9 @@ describe('withCIOIos', () => {
       expect(mockWithCIOIosSwift).toHaveBeenCalledTimes(1);
       expect(mockWithLiveActivityInfoPlist).toHaveBeenCalledTimes(1);
       expect(mockWithCioLiveActivityWidgetXcodeProject).toHaveBeenCalledTimes(1);
+      expect(mockWithCIOSceneDelegate).toHaveBeenCalledWith(mockConfig, {
+        liveNotificationsEnabled: true,
+      });
       expect(mockWithCioNotificationsXcodeProject).not.toHaveBeenCalled();
       expect(mockWithGeofenceAppDelegate).not.toHaveBeenCalled();
       expect(mockWithCioXcodeProject).toHaveBeenCalledWith(mockConfig, {

@@ -120,9 +120,9 @@ export async function injectCIOPodfileCode(
 
 /**
  * Pure string transform: given the existing Podfile contents, returns the
- * Podfile with the rich-push NotificationService target block appended at
- * the end. Idempotent — returns input unchanged if the block is already
- * present.
+ * Podfile with the rich-push NotificationService target block appended at the
+ * end. If the plugin already owns a block, it is replaced so provider and
+ * linkage changes are reflected on incremental prebuilds.
  */
 export function appendNotificationTargetToPodfile(
   podfileContent: string,
@@ -130,22 +130,27 @@ export function appendNotificationTargetToPodfile(
   isFcmPushProvider: boolean,
   useFrameworks: CustomerIOPluginOptionsIOS['useFrameworks'],
 ): string {
-  if (podfileContent.match(new RegExp(NOTIFICATION_BLOCK_START))) {
-    return podfileContent;
-  }
-
   const snippetToAppend = `
 ${NOTIFICATION_BLOCK_START}
 target 'NotificationService' do
-  ${useFrameworks === 'static' ? 'use_frameworks! :linkage => :static' : ''}
+  ${useFrameworks ? `use_frameworks! :linkage => :${useFrameworks}` : ''}
   pod 'customerio-reactnative-richpush/${isFcmPushProvider ? 'fcm' : 'apn'}', :path => '${getRelativePathToRNSDK(iosPath)}'
 end
 ${NOTIFICATION_BLOCK_END}
 `.trim();
 
-  // Mirror FileManagement.append: append directly with no separator (real
-  // Podfiles end with a trailing newline, so the appended block starts on a
-  // fresh line in practice).
+  const replaced = replaceManagedBlock(
+    podfileContent,
+    NOTIFICATION_BLOCK_START,
+    NOTIFICATION_BLOCK_END,
+    snippetToAppend
+  );
+  if (replaced !== undefined) {
+    return replaced;
+  }
+
+  // Real Podfiles end with a trailing newline, so the appended block starts on
+  // a fresh line in practice.
   return `${podfileContent}${snippetToAppend}`;
 }
 
@@ -163,9 +168,7 @@ export async function injectCIONotificationPodfileCode(
     useFrameworks,
   );
   if (next !== podfile) {
-    // FileManagement.append matches what the previous direct-append did.
-    // Slice off the leading content (already on disk) and append only the new tail.
-    await FileManagement.append(filename, next.slice(podfile.length));
+    await FileManagement.write(filename, next);
   }
 }
 
@@ -184,25 +187,32 @@ const WIDGET_PODS = [
 /**
  * Pure string transform: given the existing Podfile contents, returns the Podfile with the Live
  * Activity widget target block appended at the end. The widget links the Customer.io iOS SDK's Live
- * Activity template + attributes pods (published to CocoaPods on release). Idempotent — returns
- * input unchanged if the block is already present. Exported for tests.
+ * Activity template + attributes pods (published to CocoaPods on release). If the plugin already
+ * owns a block, it is replaced so linkage changes are reflected on incremental prebuilds. Exported
+ * for tests.
  */
 export function appendLiveActivityWidgetTargetToPodfile(
   podfileContent: string,
   useFrameworks: CustomerIOPluginOptionsIOS['useFrameworks'],
 ): string {
-  if (podfileContent.match(new RegExp(LIVE_ACTIVITY_BLOCK_START))) {
-    return podfileContent;
-  }
-
   const snippetToAppend = `
 ${LIVE_ACTIVITY_BLOCK_START}
 target '${CIO_LIVE_ACTIVITY_WIDGET_TARGET_NAME}' do
-  ${useFrameworks === 'static' ? 'use_frameworks! :linkage => :static' : ''}
+  ${useFrameworks ? `use_frameworks! :linkage => :${useFrameworks}` : ''}
 ${WIDGET_PODS.map((pod) => `  pod '${pod}'`).join('\n')}
 end
 ${LIVE_ACTIVITY_BLOCK_END}
 `.trim();
+
+  const replaced = replaceManagedBlock(
+    podfileContent,
+    LIVE_ACTIVITY_BLOCK_START,
+    LIVE_ACTIVITY_BLOCK_END,
+    snippetToAppend
+  );
+  if (replaced !== undefined) {
+    return replaced;
+  }
 
   // Separate from any preceding CIO block (the notification block is appended trimmed, without a
   // trailing newline) and leave a trailing newline so a following block starts on its own line.
@@ -218,6 +228,26 @@ export async function injectCIOLiveActivityWidgetPodfileCode(
   const podfile = await FileManagement.read(filename);
   const next = appendLiveActivityWidgetTargetToPodfile(podfile, useFrameworks);
   if (next !== podfile) {
-    await FileManagement.append(filename, next.slice(podfile.length));
+    await FileManagement.write(filename, next);
   }
+}
+
+function replaceManagedBlock(
+  contents: string,
+  startMarker: string,
+  endMarker: string,
+  replacement: string
+): string | undefined {
+  const start = contents.indexOf(startMarker);
+  if (start < 0) {
+    return undefined;
+  }
+
+  const endMarkerStart = contents.indexOf(endMarker, start + startMarker.length);
+  if (endMarkerStart < 0) {
+    return contents;
+  }
+
+  const end = endMarkerStart + endMarker.length;
+  return `${contents.slice(0, start)}${replacement}${contents.slice(end)}`;
 }

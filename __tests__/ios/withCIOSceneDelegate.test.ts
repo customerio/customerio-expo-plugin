@@ -1,0 +1,140 @@
+import * as fs from 'fs';
+import { modifySceneDelegateForCustomerIO } from '../../plugin/src/ios/withCIOSceneDelegate';
+import { getFixturePath } from '../utils';
+
+const baseline = fs.readFileSync(
+  getFixturePath('ios', 'SceneDelegate.sdk58.swift'),
+  'utf8'
+);
+const LIVE_ACTIVITY_CALL = 'NativeLiveActivities.handleWidgetUrl';
+
+describe('modifySceneDelegateForCustomerIO', () => {
+  it('does nothing when no scene integration is enabled', () => {
+    expect(
+      modifySceneDelegateForCustomerIO(baseline, {
+        liveNotificationsEnabled: false,
+      })
+    ).toBe(baseline);
+  });
+
+  it('removes the generated transform when Live Notifications is disabled', () => {
+    const enabled = modifySceneDelegateForCustomerIO(baseline, {
+      liveNotificationsEnabled: true,
+    });
+    const disabled = modifySceneDelegateForCustomerIO(enabled, {
+      liveNotificationsEnabled: false,
+    });
+
+    expect(disabled).not.toContain(LIVE_ACTIVITY_CALL);
+    expect(disabled).not.toContain('override func transformURL');
+  });
+
+  it('routes warm and cold Live Activity URLs through the Expo scene hook', () => {
+    const output = modifySceneDelegateForCustomerIO(baseline, {
+      liveNotificationsEnabled: true,
+    });
+
+    expect(output).toContain('import customerio_reactnative');
+    expect(output).toContain('override func transformURL(_ url: URL) -> URL?');
+    expect(output).toContain('NativeLiveActivities.handleWidgetUrl(url)');
+    expect(output).not.toContain('connectionOptions.notificationResponse');
+  });
+
+  it('is idempotent and preserves custom SceneDelegate code', () => {
+    const customized = baseline.replace(
+      '  // Extension point for config plugins.',
+      '  let customerOwnedValue = true'
+    );
+    const options = {
+      liveNotificationsEnabled: true,
+    };
+    const once = modifySceneDelegateForCustomerIO(customized, options);
+    const twice = modifySceneDelegateForCustomerIO(once, options);
+
+    expect(twice).toBe(once);
+    expect(twice).toContain('let customerOwnedValue = true');
+    expect(
+      (twice.match(/NativeLiveActivities\.handleWidgetUrl/g) ?? []).length
+    ).toBe(1);
+  });
+
+  it('leaves an existing URL transform untouched', () => {
+    const customized = baseline.replace(
+      '  // Extension point for config plugins.',
+      `  override func transformURL(_ incomingURL: URL) -> URL? {
+    if ExistingPlugin.shouldConsume(incomingURL) { nil } else { incomingURL }
+  }`
+    );
+
+    expect(
+      modifySceneDelegateForCustomerIO(customized, {
+        liveNotificationsEnabled: true,
+      })
+    ).toBe(customized);
+  });
+
+  it('does not edit a custom scene delegate with a different base class', () => {
+    const customSceneDelegate = baseline.replace(
+      'class SceneDelegate: ExpoAppSceneDelegate',
+      'class SceneDelegate: UIResponder, UIWindowSceneDelegate'
+    );
+
+    expect(
+      modifySceneDelegateForCustomerIO(customSceneDelegate, {
+        liveNotificationsEnabled: true,
+      })
+    ).toBe(customSceneDelegate);
+  });
+
+  it('does not add a duplicate method when an unfamiliar transform signature exists', () => {
+    const customized = baseline.replace(
+      '  // Extension point for config plugins.',
+      `  override func transformURL(_ incomingURL: URL) -> URL! {
+    ExistingPlugin.transform(incomingURL)
+  }`
+    );
+    const output = modifySceneDelegateForCustomerIO(customized, {
+      liveNotificationsEnabled: true,
+    });
+
+    expect((output.match(/func transformURL/g) ?? []).length).toBe(1);
+    expect(output).not.toContain(LIVE_ACTIVITY_CALL);
+  });
+
+  it('accepts harmless formatting differences in the generated class declaration', () => {
+    const reformatted = baseline.replace(
+      'class SceneDelegate: ExpoAppSceneDelegate {',
+      'class  SceneDelegate : ExpoAppSceneDelegate  {'
+    );
+    const output = modifySceneDelegateForCustomerIO(reformatted, {
+      liveNotificationsEnabled: true,
+    });
+
+    expect(output).toContain('NativeLiveActivities.handleWidgetUrl(url)');
+  });
+
+  it('accepts an Expo scene delegate that also conforms to a protocol', () => {
+    const customized = baseline.replace(
+      'class SceneDelegate: ExpoAppSceneDelegate {',
+      'class SceneDelegate: ExpoAppSceneDelegate, CustomerSceneProtocol {'
+    );
+    const output = modifySceneDelegateForCustomerIO(customized, {
+      liveNotificationsEnabled: true,
+    });
+
+    expect(output).toContain('NativeLiveActivities.handleWidgetUrl(url)');
+  });
+
+  it('accepts a multiline Expo scene inheritance list', () => {
+    const customized = baseline.replace(
+      'class SceneDelegate: ExpoAppSceneDelegate {',
+      `class SceneDelegate: ExpoAppSceneDelegate,
+  CustomerSceneProtocol {`
+    );
+    const output = modifySceneDelegateForCustomerIO(customized, {
+      liveNotificationsEnabled: true,
+    });
+
+    expect(output).toContain('NativeLiveActivities.handleWidgetUrl(url)');
+  });
+});

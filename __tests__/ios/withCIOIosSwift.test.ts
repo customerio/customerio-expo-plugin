@@ -1,10 +1,13 @@
 import type { ExpoConfig } from '@expo/config-types';
+import * as fs from 'fs';
 import {
   modifyAppDelegateForLiveActivityUrl,
+  modifyAppDelegateForNativeSDKInitializer,
   modifyAppDelegateForPushHandler,
   withCIOIosSwift,
 } from '../../plugin/src/ios/withCIOIosSwift';
 import type { CustomerIOPluginOptionsIOS, NativeSDKConfig } from '../../plugin/src/types/cio-types';
+import { getFixturePath } from '../utils';
 
 // Mock dependencies
 jest.mock('@expo/config-plugins', () => ({
@@ -466,6 +469,103 @@ public class AppDelegate: ExpoAppDelegate {
 `;
 
     expect(modifyAppDelegateForLiveActivityUrl(withPushHandler)).toBe(withPushHandler);
+  });
+});
+
+describe('Expo scene AppDelegate', () => {
+  const sceneAppDelegate = fs.readFileSync(
+    getFixturePath('ios', 'AppDelegate.sdk58.swift'),
+    'utf8'
+  );
+  const pushProps: CustomerIOPluginOptionsIOS = {
+    iosPath: '/test/ios',
+    pushNotification: {
+      provider: 'apn',
+      handleDeeplinkInKilledState: true,
+    },
+  };
+
+  it('installs React Native routing before native push auto-initialization', () => {
+    const output = modifyAppDelegateForPushHandler(
+      sceneAppDelegate,
+      pushProps
+    );
+
+    expect(output).toContain('import customerio_reactnative');
+    expect(output).toContain(
+      'NativeCustomerIO.configureExpoSceneDeepLinkRouting()'
+    );
+    expect(output.indexOf('NativeCustomerIO.configureExpoSceneDeepLinkRouting()'))
+      .toBeLessThan(
+        output.indexOf(
+          'cioSdkHandler.application(application, didFinishLaunchingWithOptions: launchOptions)'
+        )
+      );
+    expect(output).not.toContain(
+      'Deep link workaround for app killed state start'
+    );
+    expect(output).not.toContain(
+      'cioSdkHandler.application(application, open: url, options: options)'
+    );
+  });
+
+  it('installs routing before push handling when JavaScript initializes the SDK', () => {
+    const output = modifyAppDelegateForPushHandler(
+      sceneAppDelegate,
+      pushProps
+    );
+
+    expect(output.indexOf('NativeCustomerIO.configureExpoSceneDeepLinkRouting()'))
+      .toBeLessThan(
+        output.indexOf(
+          'cioSdkHandler.application(application, didFinishLaunchingWithOptions: launchOptions)'
+        )
+      );
+  });
+
+  it('installs routing before no-push native auto-initialization', () => {
+    const output = modifyAppDelegateForNativeSDKInitializer(sceneAppDelegate);
+
+    expect(output).toContain(
+      'NativeCustomerIO.configureExpoSceneDeepLinkRouting()'
+    );
+    expect(output.indexOf('NativeCustomerIO.configureExpoSceneDeepLinkRouting()'))
+      .toBeLessThan(output.indexOf('CustomerIOSDKInitializer.initialize()'));
+  });
+
+  it('installs routing when the generated initialization line has a trailing comment', () => {
+    const customized = sceneAppDelegate.replace(
+      'return super.application(application, didFinishLaunchingWithOptions: launchOptions)',
+      `CustomerIOSDKInitializer.initialize() // Added by another config plugin
+    return super.application(application, didFinishLaunchingWithOptions: launchOptions)`
+    );
+    const output = modifyAppDelegateForNativeSDKInitializer(customized);
+
+    expect(output.indexOf('NativeCustomerIO.configureExpoSceneDeepLinkRouting()'))
+      .toBeLessThan(output.indexOf('CustomerIOSDKInitializer.initialize()'));
+    expect(output).toContain(
+      'CustomerIOSDKInitializer.initialize() // Added by another config plugin'
+    );
+  });
+
+  it('leaves Live Activity URL ownership to SceneDelegate', () => {
+    expect(modifyAppDelegateForLiveActivityUrl(sceneAppDelegate)).toBe(
+      sceneAppDelegate
+    );
+  });
+
+  it('is idempotent', () => {
+    const once = modifyAppDelegateForPushHandler(
+      sceneAppDelegate,
+      pushProps
+    );
+    const twice = modifyAppDelegateForPushHandler(once, pushProps);
+
+    expect(twice).toBe(once);
+    expect(
+      (twice.match(/NativeCustomerIO\.configureExpoSceneDeepLinkRouting/g) ?? [])
+        .length
+    ).toBe(1);
   });
 });
 

@@ -35,6 +35,12 @@ describe('ios scenarios — appendLiveActivityWidgetTargetToPodfile', () => {
     `);
   });
 
+  it('appends the widget target block with use_frameworks: dynamic', () => {
+    expect(
+      appendLiveActivityWidgetTargetToPodfile(baseline, 'dynamic')
+    ).toContain('use_frameworks! :linkage => :dynamic');
+  });
+
   it('omits the use_frameworks line when useFrameworks is undefined', () => {
     expect(appendLiveActivityWidgetTargetToPodfile(baseline, undefined))
       .toMatchInlineSnapshot(`
@@ -68,5 +74,28 @@ describe('ios scenarios — appendLiveActivityWidgetTargetToPodfile', () => {
     const once = appendLiveActivityWidgetTargetToPodfile(baseline, 'static');
     const twice = appendLiveActivityWidgetTargetToPodfile(once, 'static');
     expect(twice).toEqual(once);
+  });
+
+  it('updates linkage in an existing managed block', () => {
+    const widgetStatic = appendLiveActivityWidgetTargetToPodfile(
+      baseline,
+      'static'
+    );
+    const widgetDynamic = appendLiveActivityWidgetTargetToPodfile(
+      widgetStatic,
+      'dynamic'
+    );
+    const widgetWithoutFrameworks = appendLiveActivityWidgetTargetToPodfile(
+      widgetDynamic,
+      undefined
+    );
+
+    expect(widgetDynamic).toContain('use_frameworks! :linkage => :dynamic');
+    expect(widgetDynamic).not.toContain(':linkage => :static');
+    expect(widgetWithoutFrameworks).not.toContain('use_frameworks!');
+    expect(
+      (widgetWithoutFrameworks.match(/CustomerIO Live Activity START/g) ?? [])
+        .length
+    ).toBe(1);
   });
 });

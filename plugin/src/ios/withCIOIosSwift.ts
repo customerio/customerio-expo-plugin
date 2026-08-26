@@ -31,6 +31,10 @@ import { isFcmPushProvider } from './utils';
 // Constants
 const CIO_SDK_APP_DELEGATE_HANDLER_CLASS = 'CioSdkAppDelegateHandler';
 const CIO_SDK_APP_DELEGATE_HANDLER_FILENAME = `${CIO_SDK_APP_DELEGATE_HANDLER_CLASS}.swift`;
+const EXPO_SCENE_APP_DELEGATE_MARKER = 'ExpoReactNativeFactoryProvider';
+const REACT_NATIVE_IMPORT = 'import customerio_reactnative';
+const CONFIGURE_SCENE_ROUTING_CALL =
+  'NativeCustomerIO.configureExpoSceneDeepLinkRouting()';
 
 /**
  * Copy and configure the CioSdkAppDelegateHandler.swift file
@@ -286,6 +290,8 @@ export function modifyAppDelegateForPushHandler(
   contents: string,
   props: CustomerIOPluginOptionsIOS
 ): string {
+  const usesSceneLifecycle = isExpoSceneAppDelegate(contents);
+
   if (contents.includes(CIO_SDK_APP_DELEGATE_HANDLER_CLASS)) {
     logger.info(
       'CustomerIO Swift AppDelegate changes already exist. Adding anything newer...'
@@ -293,7 +299,11 @@ export function modifyAppDelegateForPushHandler(
     // Don't return the file untouched: an AppDelegate integrated by an earlier plugin version has
     // the handler but not the Live Activity tap route, and skipping outright leaves every upgraded
     // app without it. `addOpenURLHandling` is idempotent, so re-running it is safe.
-    return addOpenURLHandling(contents);
+    let next = usesSceneLifecycle ? contents : addOpenURLHandling(contents);
+    if (usesSceneLifecycle) {
+      next = addSceneRoutingBeforeNativeInitialization(next);
+    }
+    return next;
   }
 
   let next = addHandlerPropertyDeclaration(contents);
@@ -303,10 +313,13 @@ export function modifyAppDelegateForPushHandler(
   );
   next = addDidRegisterForRemoteNotificationsWithDeviceToken(next);
   next = addDidFailToRegisterForRemoteNotificationsWithError(next);
-  next = addOpenURLHandling(next);
-
-  if (props.pushNotification?.handleDeeplinkInKilledState === true) {
-    next = addHandleDeeplinkInKilledState(next);
+  if (usesSceneLifecycle) {
+    next = addSceneRoutingBeforeNativeInitialization(next);
+  } else {
+    next = addOpenURLHandling(next);
+    if (props.pushNotification?.handleDeeplinkInKilledState === true) {
+      next = addHandleDeeplinkInKilledState(next);
+    }
   }
 
   return next;
@@ -322,6 +335,10 @@ export function modifyAppDelegateForPushHandler(
  * Idempotent, and a no-op if the push handler already owns the method.
  */
 export function modifyAppDelegateForLiveActivityUrl(contents: string): string {
+  if (isExpoSceneAppDelegate(contents)) {
+    return contents;
+  }
+
   if (contents.includes(LIVE_ACTIVITY_URL_CALL) || hasCioOpenUrlHandling(contents)) {
     return contents;
   }
@@ -366,16 +383,68 @@ export function modifyAppDelegateForLiveActivityUrl(contents: string): string {
  * didFinishLaunchingWithOptions for the no-push path. Idempotent.
  */
 export function modifyAppDelegateForNativeSDKInitializer(contents: string): string {
+  const usesSceneLifecycle = isExpoSceneAppDelegate(contents);
   if (contents.includes(CIO_NATIVE_SDK_INITIALIZE_CALL)) {
     logger.info(
       'CustomerIO Swift AppDelegate changes already exist. Skipping...'
     );
+    return usesSceneLifecycle
+      ? addSceneRoutingBeforeNativeInitialization(contents)
+      : contents;
+  }
+
+  let next = modifyDidFinishLaunchingWithOptions(
+    contents,
+    CIO_NATIVE_SDK_INITIALIZE_SNIPPET,
+  );
+  if (usesSceneLifecycle) {
+    next = addSceneRoutingBeforeNativeInitialization(next);
+  }
+  return next;
+}
+
+function isExpoSceneAppDelegate(contents: string): boolean {
+  return contents.includes(EXPO_SCENE_APP_DELEGATE_MARKER);
+}
+
+/** Install React Native routing before native Customer.io initialization in a scene host. */
+function addSceneRoutingBeforeNativeInitialization(contents: string): string {
+  if (contents.includes(CONFIGURE_SCENE_ROUTING_CALL)) {
     return contents;
   }
 
-  return modifyDidFinishLaunchingWithOptions(
-    contents,
-    CIO_NATIVE_SDK_INITIALIZE_SNIPPET,
+  const initializationCalls = [
+    'cioSdkHandler.application(application, didFinishLaunchingWithOptions: launchOptions)',
+    CIO_NATIVE_SDK_INITIALIZE_CALL,
+  ];
+  const initializationCall = initializationCalls.find((call) =>
+    contents.includes(call)
+  );
+  if (!initializationCall) {
+    logger.warn(
+      'Could not find Customer.io native initialization call for scene routing setup'
+    );
+    return contents;
+  }
+
+  const initializationLine = contents
+    .split('\n')
+    .find((line) => line.includes(initializationCall));
+  if (!initializationLine) {
+    logger.warn(
+      'Could not find Customer.io native initialization line for scene routing setup'
+    );
+    return contents;
+  }
+  const indentation = initializationLine.match(/^[ \t]*/)?.[0] ?? '';
+  const next = addSwiftImports(contents, [REACT_NATIVE_IMPORT]);
+  return next.replace(
+    initializationLine,
+    () =>
+      initializationLine.replace(
+        initializationCall,
+        `${CONFIGURE_SCENE_ROUTING_CALL}\n${indentation}${initializationCall}`
+      )
   );
 }
 
