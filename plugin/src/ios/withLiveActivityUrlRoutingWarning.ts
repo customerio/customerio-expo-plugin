@@ -8,18 +8,11 @@ const NATIVE_INTENT_EXTENSIONS = ['tsx', 'ts', 'jsx', 'js'];
 
 export function hasExpoRouterNativeIntent(projectRoot: string): boolean {
   return ['app', path.join('src', 'app')].some((appRoot) =>
-    NATIVE_INTENT_EXTENSIONS.some((extension) => {
-      const nativeIntentPath = path.join(
-        projectRoot,
-        appRoot,
-        `+native-intent.${extension}`
-      );
-      if (!fs.existsSync(nativeIntentPath)) return false;
-
-      return /^[ \t]*(?:(?:return|await)[ \t]+|(?:const|let|var)[ \t]+[A-Za-z_$][A-Za-z0-9_$]*[ \t]*=[ \t]*(?:await[ \t]+)?)?CustomerIO\s*\.\s*liveActivities\s*\.\s*handleWidgetUrl\s*\(/m.test(
-        fs.readFileSync(nativeIntentPath, 'utf8')
-      );
-    })
+    NATIVE_INTENT_EXTENSIONS.some((extension) =>
+      fs.existsSync(
+        path.join(projectRoot, appRoot, `+native-intent.${extension}`)
+      )
+    )
   );
 }
 

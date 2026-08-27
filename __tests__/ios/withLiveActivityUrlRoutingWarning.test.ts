@@ -40,13 +40,7 @@ describe('Expo scene Live Activity URL routing warning', () => {
     (relativePath) => {
       const nativeIntentPath = path.join(projectRoot, relativePath);
       fs.mkdirSync(path.dirname(nativeIntentPath), { recursive: true });
-      fs.writeFileSync(
-        nativeIntentPath,
-        `import { CustomerIO } from 'customerio-reactnative';
-export function redirectSystemPath({ path }: { path: string }) {
-  return CustomerIO.liveActivities.handleWidgetUrl(path);
-}`
-      );
+      fs.writeFileSync(nativeIntentPath, 'export function redirectSystemPath() {}');
 
       expect(hasExpoRouterNativeIntent(projectRoot)).toBe(true);
       withLiveActivityUrlRoutingWarning({ name: 'Test', slug: 'test' });
@@ -64,22 +58,4 @@ export function redirectSystemPath({ path }: { path: string }) {
     );
   });
 
-  it('warns when native-intent does not process Live Activity URLs', () => {
-    const nativeIntentPath = path.join(projectRoot, 'app/+native-intent.tsx');
-    fs.mkdirSync(path.dirname(nativeIntentPath), { recursive: true });
-    fs.writeFileSync(
-      nativeIntentPath,
-      `const example = 'CustomerIO.liveActivities.handleWidgetUrl(path)';
-// CustomerIO.liveActivities.handleWidgetUrl(path)
-export function redirectSystemPath({ path }: { path: string }) { return path; }`
-    );
-
-    expect(hasExpoRouterNativeIntent(projectRoot)).toBe(false);
-
-    withLiveActivityUrlRoutingWarning({ name: 'Test', slug: 'test' });
-
-    expect(logger.warn).toHaveBeenCalledWith(
-      expect.stringContaining('CustomerIO.liveActivities.handleWidgetUrl')
-    );
-  });
 });
