@@ -6,7 +6,6 @@ import type { CustomerIOPluginGeofenceOptions, CustomerIOPluginLocationOptions, 
 const mockWithCioXcodeProject = jest.fn((config: ExpoConfig, _props?: object) => config);
 const mockWithCioPushDisableGuard = jest.fn((config: ExpoConfig) => config);
 const mockWithCIOIosSwift = jest.fn((config: ExpoConfig, ..._args: unknown[]) => config);
-const mockWithCIOIosLiveActivityCleanup = jest.fn((config: ExpoConfig) => config);
 const mockWithAppDelegateModifications = jest.fn((config: ExpoConfig) => config);
 const mockWithCioNotificationsXcodeProject = jest.fn((config: ExpoConfig) => config);
 const mockWithGoogleServicesJsonFile = jest.fn((config: ExpoConfig) => config);
@@ -34,8 +33,6 @@ jest.mock('../../plugin/src/ios/withXcodeProject', () => ({
 jest.mock('../../plugin/src/ios/withCIOIosSwift', () => ({
   withCIOIosSwift: (config: ExpoConfig, ...args: unknown[]) =>
     mockWithCIOIosSwift(config, ...args),
-  withCIOIosLiveActivityCleanup: (config: ExpoConfig) =>
-    mockWithCIOIosLiveActivityCleanup(config),
 }));
 jest.mock('../../plugin/src/ios/withAppDelegateModifications', () => ({
   withAppDelegateModifications: (config: ExpoConfig) =>
@@ -131,9 +128,6 @@ describe('withCIOIos', () => {
       withCIOIos(mockConfig, undefined, undefined, location);
 
       expect(mockWithCIOIosSwift).not.toHaveBeenCalled();
-      expect(mockWithCIOIosLiveActivityCleanup).toHaveBeenCalledWith(
-        mockConfig
-      );
       expect(mockWithCioNotificationsXcodeProject).not.toHaveBeenCalled();
       expect(mockWithCioPushDisableGuard).toHaveBeenCalledWith(mockConfig);
       expect(mockWithCioXcodeProject).toHaveBeenCalledTimes(1);
@@ -153,9 +147,6 @@ describe('withCIOIos', () => {
 
       withCIOIos(mockConfig, undefined, undefined, location);
 
-      expect(mockWithCIOIosLiveActivityCleanup).toHaveBeenCalledWith(
-        mockConfig
-      );
       expect(mockWithCioXcodeProject).not.toHaveBeenCalled();
     });
 
@@ -261,9 +252,6 @@ describe('withCIOIos', () => {
       withCIOIos(mockConfig, undefined, undefined, undefined, geofence);
 
       expect(mockWithCIOIosSwift).not.toHaveBeenCalled();
-      expect(mockWithCIOIosLiveActivityCleanup).toHaveBeenCalledWith(
-        mockConfig
-      );
       expect(mockWithCioXcodeProject).toHaveBeenCalledTimes(1);
       expect(mockWithCioXcodeProject).toHaveBeenCalledWith(mockConfig, {
         podfileOptions: {

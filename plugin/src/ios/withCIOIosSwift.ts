@@ -354,16 +354,6 @@ export const withCIOIosSwift = (
   }
 };
 
-/** Remove no-push Live Activity URL handling after an incremental disable. */
-export const withCIOIosLiveActivityCleanup = (configOuter: ExpoConfig) => {
-  return withAppDelegate(configOuter, async (config) => {
-    config.modResults.contents = removeLiveActivityUrlGuard(
-      config.modResults.contents
-    );
-    return config;
-  });
-};
-
 function warnIfNativeAutoInitializationNeedsSceneReadiness(
   sdkConfig: NativeSDKConfig | undefined,
   usesSceneLifecycle: boolean

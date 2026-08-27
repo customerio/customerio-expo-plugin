@@ -6,7 +6,6 @@ import {
   modifyAppDelegateForLiveActivityUrl,
   modifyAppDelegateForNativeSDKInitializer,
   modifyAppDelegateForPushHandler,
-  withCIOIosLiveActivityCleanup,
   withCIOIosSwift,
 } from '../../plugin/src/ios/withCIOIosSwift';
 import {
@@ -824,46 +823,6 @@ public class AppDelegate: ExpoAppDelegate {
 `;
 
     expect(modifyAppDelegateForLiveActivityUrl(withPushHandler)).toBe(withPushHandler);
-  });
-
-  it('cleans stale no-config Live Activity handling without adding SDK wiring', async () => {
-    const { withAppDelegate } = require('@expo/config-plugins');
-    const hostNote = `  let integrationNote = """
-    import CioLiveActivities
-    // Report a Live Activity tap and route the deep link it carries
-    guard let url = CustomerIO.liveActivities.handleWidgetUrl(url) else { return true }
-    """
-`;
-    const template = fs.readFileSync(
-      getFixturePath('ios', 'AppDelegate.sdk55.swift'),
-      'utf8'
-    );
-    const enabled = modifyAppDelegateForLiveActivityUrl(template);
-    expect(maskSwiftNonCode(enabled)).toContain(
-      'CustomerIO.liveActivities.handleWidgetUrl'
-    );
-    const enabledWithHostNote = enabled.replace(
-        '  public override func application(',
-        `${hostNote}\n  public override func application(`
-      );
-
-    withCIOIosLiveActivityCleanup(mockConfig);
-    const appDelegateCallback = withAppDelegate.mock.calls[0][1];
-    const result = await appDelegateCallback({
-      modResults: { contents: enabledWithHostNote },
-    });
-
-    expect(result.modResults.contents).not.toContain(
-      'CustomerIOSDKInitializer.initialize()'
-    );
-    expect(result.modResults.contents).not.toContain('cioSdkHandler');
-    expect(result.modResults.contents).toContain(hostNote);
-    expect(maskSwiftNonCode(result.modResults.contents)).not.toContain(
-      'CustomerIO.liveActivities.handleWidgetUrl'
-    );
-    expect(maskSwiftNonCode(result.modResults.contents)).toContain(
-      '#if canImport(CioLiveActivities)\nimport CioLiveActivities\n#endif'
-    );
   });
 
   it('does not let a host string suppress Live Activity URL injection', () => {
