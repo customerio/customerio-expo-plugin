@@ -1,15 +1,19 @@
 import type { ExpoConfig } from '@expo/config-types';
 import { withCIOIos } from '../../plugin/src/ios/withCIOIos';
+import { isExpoVersion58OrHigher } from '../../plugin/src/ios/utils';
 import type { CustomerIOPluginGeofenceOptions, CustomerIOPluginLocationOptions, CustomerIOPluginOptionsIOS } from '../../plugin/src/types/cio-types';
 
 const mockWithCioXcodeProject = jest.fn((config: ExpoConfig, _props?: object) => config);
-const mockWithCIOIosSwift = jest.fn((config: ExpoConfig) => config);
+const mockWithCioPushDisableGuard = jest.fn((config: ExpoConfig) => config);
+const mockWithCIOIosSwift = jest.fn((config: ExpoConfig, ..._args: unknown[]) => config);
 const mockWithAppDelegateModifications = jest.fn((config: ExpoConfig) => config);
 const mockWithCioNotificationsXcodeProject = jest.fn((config: ExpoConfig) => config);
 const mockWithGoogleServicesJsonFile = jest.fn((config: ExpoConfig) => config);
 const mockWithGeofenceAppDelegate = jest.fn((config: ExpoConfig) => config);
 const mockWithLiveActivityInfoPlist = jest.fn((config: ExpoConfig) => config);
 const mockWithCioLiveActivityWidgetXcodeProject = jest.fn((config: ExpoConfig) => config);
+const mockWithCioLiveActivityDisableGuard = jest.fn((config: ExpoConfig) => config);
+const mockWithLiveActivityUrlRoutingWarning = jest.fn((config: ExpoConfig) => config);
 const mockWithEntitlementsPlist = jest.fn((config: ExpoConfig, callback: (c: unknown) => unknown) => {
   callback({ ios: { bundleIdentifier: 'com.test.app' }, modResults: {} });
   return config;
@@ -23,9 +27,12 @@ jest.mock('@expo/config-plugins', () => ({
 jest.mock('../../plugin/src/ios/withXcodeProject', () => ({
   withCioXcodeProject: (config: ExpoConfig, props?: object) =>
     mockWithCioXcodeProject(config, props),
+  withCioPushDisableGuard: (config: ExpoConfig) =>
+    mockWithCioPushDisableGuard(config),
 }));
 jest.mock('../../plugin/src/ios/withCIOIosSwift', () => ({
-  withCIOIosSwift: (config: ExpoConfig) => mockWithCIOIosSwift(config),
+  withCIOIosSwift: (config: ExpoConfig, ...args: unknown[]) =>
+    mockWithCIOIosSwift(config, ...args),
 }));
 jest.mock('../../plugin/src/ios/withAppDelegateModifications', () => ({
   withAppDelegateModifications: (config: ExpoConfig) =>
@@ -50,9 +57,16 @@ jest.mock('../../plugin/src/ios/withLiveActivityInfoPlist', () => ({
 jest.mock('../../plugin/src/ios/withCioLiveActivityWidgetXcodeProject', () => ({
   withCioLiveActivityWidgetXcodeProject: (config: ExpoConfig) =>
     mockWithCioLiveActivityWidgetXcodeProject(config),
+  withCioLiveActivityDisableGuard: (config: ExpoConfig) =>
+    mockWithCioLiveActivityDisableGuard(config),
+}));
+jest.mock('../../plugin/src/ios/withLiveActivityUrlRoutingWarning', () => ({
+  withLiveActivityUrlRoutingWarning: (config: ExpoConfig) =>
+    mockWithLiveActivityUrlRoutingWarning(config),
 }));
 jest.mock('../../plugin/src/ios/utils', () => ({
   isExpoVersion53OrHigher: jest.fn(() => true),
+  isExpoVersion58OrHigher: jest.fn(() => false),
 }));
 jest.mock('../../plugin/src/utils/config', () => ({
   mergeConfigWithEnvValues: jest.fn(),
@@ -68,6 +82,43 @@ describe('withCIOIos', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    (isExpoVersion58OrHigher as jest.Mock).mockReturnValue(false);
+  });
+
+  describe('scene lifecycle', () => {
+    it('does not require JavaScript Live Activity routing before Expo SDK 58', () => {
+      withCIOIos(mockConfig, undefined, undefined, undefined, undefined, { enabled: true });
+
+      expect(mockWithLiveActivityUrlRoutingWarning).not.toHaveBeenCalled();
+      expect(mockWithCIOIosSwift).toHaveBeenCalledWith(
+        mockConfig,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        true,
+        false
+      );
+    });
+
+    it('requires JavaScript Live Activity routing for Expo SDK 58 and later', () => {
+      (isExpoVersion58OrHigher as jest.Mock).mockReturnValue(true);
+
+      withCIOIos(mockConfig, undefined, undefined, undefined, undefined, { enabled: true });
+
+      expect(mockWithLiveActivityUrlRoutingWarning).toHaveBeenCalledWith(
+        mockConfig
+      );
+      expect(mockWithCIOIosSwift).toHaveBeenCalledWith(
+        mockConfig,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        true,
+        true
+      );
+    });
   });
 
   describe('location-only (no push, no config)', () => {
@@ -78,6 +129,7 @@ describe('withCIOIos', () => {
 
       expect(mockWithCIOIosSwift).not.toHaveBeenCalled();
       expect(mockWithCioNotificationsXcodeProject).not.toHaveBeenCalled();
+      expect(mockWithCioPushDisableGuard).toHaveBeenCalledWith(mockConfig);
       expect(mockWithCioXcodeProject).toHaveBeenCalledTimes(1);
       expect(mockWithCioXcodeProject).toHaveBeenCalledWith(mockConfig, {
         podfileOptions: {
@@ -90,7 +142,7 @@ describe('withCIOIos', () => {
       expect(mockWithGeofenceAppDelegate).not.toHaveBeenCalled();
     });
 
-    it('does not call withCioXcodeProject when location.enabled is false', () => {
+    it('does not remove existing native dependencies when location.enabled is false', () => {
       const location: CustomerIOPluginLocationOptions = { enabled: false };
 
       withCIOIos(mockConfig, undefined, undefined, location);
@@ -98,11 +150,21 @@ describe('withCIOIos', () => {
       expect(mockWithCioXcodeProject).not.toHaveBeenCalled();
     });
 
-    it('does not call withCioXcodeProject when location is omitted', () => {
+    it('does not remove existing native dependencies when location is omitted', () => {
       withCIOIos(mockConfig, undefined, undefined, undefined);
 
+      expect(mockWithCioPushDisableGuard).toHaveBeenCalledWith(mockConfig);
       expect(mockWithCioXcodeProject).not.toHaveBeenCalled();
     });
+  });
+
+  it('does not register the push removal guard while push is configured', () => {
+    withCIOIos(mockConfig, undefined, {
+      iosPath: '/test/ios',
+      pushNotification: { provider: 'apn' },
+    });
+
+    expect(mockWithCioPushDisableGuard).not.toHaveBeenCalled();
   });
 
   describe('host app entitlements when push is enabled', () => {
@@ -247,20 +309,23 @@ describe('withCIOIos', () => {
   });
 
   describe('live activities', () => {
-    it('injects the widget target and Info.plist, adding the liveactivities subspec (no push/config)', () => {
+    it('configures SDK 58 Live Activities and the JavaScript routing warning (no push/config)', () => {
       // Live Notifications without push is supported: an app can obtain a device token elsewhere and
-      // hand it to Customer.io for backend-driven activities. withCIOIosSwift has to run on this path
-      // too — it is what routes a tapped activity's URL through the SDK, so without it the `opened`
-      // metric is lost and the deep link is never forwarded.
+      // hand it to Customer.io for backend-driven activities. withCIOIosSwift still configures the
+      // native module, while the warning points scene hosts to the supported JavaScript URL hook.
       const props: CustomerIOPluginOptionsIOS = {
         iosPath: '/test/ios',
       };
+      (isExpoVersion58OrHigher as jest.Mock).mockReturnValue(true);
 
       withCIOIos(mockConfig, undefined, props, undefined, undefined, { enabled: true });
 
       expect(mockWithCIOIosSwift).toHaveBeenCalledTimes(1);
       expect(mockWithLiveActivityInfoPlist).toHaveBeenCalledTimes(1);
       expect(mockWithCioLiveActivityWidgetXcodeProject).toHaveBeenCalledTimes(1);
+      expect(mockWithLiveActivityUrlRoutingWarning).toHaveBeenCalledWith(
+        mockConfig
+      );
       expect(mockWithCioNotificationsXcodeProject).not.toHaveBeenCalled();
       expect(mockWithGeofenceAppDelegate).not.toHaveBeenCalled();
       expect(mockWithCioXcodeProject).toHaveBeenCalledWith(mockConfig, {
@@ -310,6 +375,9 @@ describe('withCIOIos', () => {
       expect(mockWithLiveActivityInfoPlist).not.toHaveBeenCalled();
       expect(mockWithCioLiveActivityWidgetXcodeProject).not.toHaveBeenCalled();
       expect(mockWithCioXcodeProject).not.toHaveBeenCalled();
+      expect(mockWithCioLiveActivityDisableGuard).toHaveBeenCalledWith(
+        mockConfig
+      );
     });
 
     // app.json is untyped, so `ios` being required in CustomerIOPluginOptions doesn't stop an app
@@ -361,6 +429,9 @@ describe('withCIOIos', () => {
       expect(mockWithLiveActivityInfoPlist).not.toHaveBeenCalled();
       expect(mockWithCioLiveActivityWidgetXcodeProject).not.toHaveBeenCalled();
       expect(mockWithCioXcodeProject).not.toHaveBeenCalled();
+      expect(mockWithCioLiveActivityDisableGuard).toHaveBeenCalledWith(
+        mockConfig
+      );
     });
   });
 

@@ -61,6 +61,12 @@ describe('ios scenarios — appendNotificationTargetToPodfile', () => {
     `);
   });
 
+  it('preserves the existing extension behavior for dynamic host frameworks', () => {
+    expect(
+      appendNotificationTargetToPodfile(baseline, IOS_PATH, true, 'dynamic')
+    ).not.toContain('use_frameworks!');
+  });
+
   it('omits the use_frameworks line when useFrameworks is undefined', () => {
     expect(
       appendNotificationTargetToPodfile(baseline, IOS_PATH, true, undefined)
@@ -108,5 +114,35 @@ describe('ios scenarios — appendNotificationTargetToPodfile', () => {
       'static'
     );
     expect(twice).toEqual(once);
+  });
+
+  it('updates provider and linkage in an existing managed block', () => {
+    const apnStatic = appendNotificationTargetToPodfile(
+      baseline,
+      IOS_PATH,
+      false,
+      'static'
+    );
+    const fcmDynamic = appendNotificationTargetToPodfile(
+      apnStatic,
+      IOS_PATH,
+      true,
+      'dynamic'
+    );
+    const fcmWithoutFrameworks = appendNotificationTargetToPodfile(
+      fcmDynamic,
+      IOS_PATH,
+      true,
+      undefined
+    );
+
+    expect(fcmDynamic).not.toContain('use_frameworks!');
+    expect(fcmDynamic).toContain('customerio-reactnative-richpush/fcm');
+    expect(fcmDynamic).not.toContain('customerio-reactnative-richpush/apn');
+    expect(fcmWithoutFrameworks).not.toContain('use_frameworks!');
+    expect(
+      (fcmWithoutFrameworks.match(/CustomerIO Notification START/g) ?? [])
+        .length
+    ).toBe(1);
   });
 });

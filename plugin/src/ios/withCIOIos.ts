@@ -12,15 +12,22 @@ import { isLiveNotificationsEnabled } from '../helpers/utils/liveNotificationsEn
 import { mergeConfigWithEnvValues } from '../utils/config';
 import { logger } from '../utils/logger';
 import { validatePushNotificationOptions } from '../utils/validation';
-import { isExpoVersion53OrHigher } from './utils';
+import { isExpoVersion53OrHigher, isExpoVersion58OrHigher } from './utils';
 import { withAppDelegateModifications } from './withAppDelegateModifications';
 import { withCIOIosSwift } from './withCIOIosSwift';
-import { withCioLiveActivityWidgetXcodeProject } from './withCioLiveActivityWidgetXcodeProject';
+import { withLiveActivityUrlRoutingWarning } from './withLiveActivityUrlRoutingWarning';
+import {
+  withCioLiveActivityDisableGuard,
+  withCioLiveActivityWidgetXcodeProject,
+} from './withCioLiveActivityWidgetXcodeProject';
 import { withGeofenceAppDelegate } from './withGeofenceAppDelegate';
 import { withGoogleServicesJsonFile } from './withGoogleServicesJsonFile';
 import { withLiveActivityInfoPlist } from './withLiveActivityInfoPlist';
 import { withCioNotificationsXcodeProject } from './withNotificationsXcodeProject';
-import { withCioXcodeProject } from './withXcodeProject';
+import {
+  withCioPushDisableGuard,
+  withCioXcodeProject,
+} from './withXcodeProject';
 
 export function withCIOIos(
   config: ExpoConfig,
@@ -28,9 +35,10 @@ export function withCIOIos(
   props?: CustomerIOPluginOptionsIOS,
   location?: CustomerIOPluginLocationOptions,
   geofence?: CustomerIOPluginGeofenceOptions,
-  liveNotifications?: CustomerIOPluginLiveNotificationsOptions,
+  liveNotifications?: CustomerIOPluginLiveNotificationsOptions
 ) {
   const isSwiftProject = isExpoVersion53OrHigher(config);
+  const usesSceneLifecycle = isExpoVersion58OrHigher(config);
   const platformConfig = mergeDeprecatedPropertiesAndLogWarnings(props);
   const locationEnabled = location?.enabled === true;
   const geofenceEnabled = geofence?.enabled === true;
@@ -43,18 +51,34 @@ export function withCIOIos(
   const optionalModulesEnabled =
     locationEnabled || geofenceEnabled || liveNotificationsEnabled;
 
+  // An incremental prebuild cannot safely remove the generated Swift handler and all of its Xcode
+  // references. Require Expo's clean regeneration path whenever a previously configured project
+  // removes push, including when push was the last Customer.io feature.
+  if (!platformConfig?.pushNotification) {
+    config = withCioPushDisableGuard(config);
+  }
+
   if (platformConfig?.pushNotification) {
     validatePushNotificationOptions(platformConfig.pushNotification);
     if (isSwiftProject) {
-      config = withCIOIosSwift(config, sdkConfig, platformConfig, location, geofence, liveNotificationsEnabled);
+      config = withCIOIosSwift(
+        config,
+        sdkConfig,
+        platformConfig,
+        location,
+        geofence,
+        liveNotificationsEnabled,
+        usesSceneLifecycle
+      );
     } else {
       // Auto initialization is only supported in Swift projects (Expo SDK 53+)
       // Legacy Objective-C projects only support push notifications
       config = withAppDelegateModifications(config, platformConfig);
     }
 
-    platformConfig.pushNotification.env = platformConfig.pushNotification.env
-      || mergeConfigWithEnvValues(platformConfig, sdkConfig);
+    platformConfig.pushNotification.env =
+      platformConfig.pushNotification.env ||
+      mergeConfigWithEnvValues(platformConfig, sdkConfig);
     config = withCioNotificationsXcodeProject(config, platformConfig);
     config = withCioXcodeProject(config, {
       ...platformConfig,
@@ -71,16 +95,33 @@ export function withCIOIos(
     const appGroupId = platformConfig.pushNotification?.appGroupId;
     if (appGroupId) {
       config = withEntitlementsPlist(config, (entitlementsConfig) => {
-        const entitlements = entitlementsConfig.modResults as Record<string, unknown>;
-        const existing = (entitlements['com.apple.security.application-groups'] as string[] | undefined) ?? [];
+        const entitlements = entitlementsConfig.modResults as Record<
+          string,
+          unknown
+        >;
+        const existing =
+          (entitlements['com.apple.security.application-groups'] as
+            | string[]
+            | undefined) ?? [];
         if (!existing.includes(appGroupId)) {
-          entitlements['com.apple.security.application-groups'] = [...existing, appGroupId];
+          entitlements['com.apple.security.application-groups'] = [
+            ...existing,
+            appGroupId,
+          ];
         }
         return entitlementsConfig;
       });
     }
   } else if (sdkConfig && isSwiftProject) {
-    config = withCIOIosSwift(config, sdkConfig, platformConfig, location, geofence, liveNotificationsEnabled);
+    config = withCIOIosSwift(
+      config,
+      sdkConfig,
+      platformConfig,
+      location,
+      geofence,
+      liveNotificationsEnabled,
+      usesSceneLifecycle
+    );
     if (optionalModulesEnabled) {
       config = withCioXcodeProject(config, {
         ...platformConfig,
@@ -101,8 +142,18 @@ export function withCIOIos(
     // the deep link the activity carries is never forwarded. `withCIOIosSwift` is built for exactly
     // this shape — no push and no SDK config — and calls the Live Activities module directly, since
     // `CioSdkAppDelegateHandler` imports the push module this configuration does not install.
-    if (liveNotificationsEnabled && isSwiftProject) {
-      config = withCIOIosSwift(config, sdkConfig, platformConfig, location, geofence, liveNotificationsEnabled);
+    if (isSwiftProject) {
+      if (liveNotificationsEnabled) {
+        config = withCIOIosSwift(
+          config,
+          sdkConfig,
+          platformConfig,
+          location,
+          geofence,
+          liveNotificationsEnabled,
+          usesSceneLifecycle
+        );
+      }
     }
     config = withCioXcodeProject(config, {
       ...platformConfig,
@@ -131,6 +182,8 @@ export function withCIOIos(
       // widget whether the app initializes automatically or from JavaScript.
       buildOptions: liveNotifications,
     });
+  } else {
+    config = withCioLiveActivityDisableGuard(config);
   }
 
   // Geofence requires the iOS AppDelegate background-delivery bootstrap so cold-wake
@@ -139,6 +192,10 @@ export function withCIOIos(
   // projects (Expo SDK 53+) at the plugin entry point.
   if (geofenceEnabled && isSwiftProject) {
     config = withGeofenceAppDelegate(config);
+  }
+
+  if (usesSceneLifecycle && liveNotificationsEnabled) {
+    config = withLiveActivityUrlRoutingWarning(config);
   }
 
   return config;
@@ -151,7 +208,7 @@ export function withCIOIos(
   while the rest of the plugin code remains unchanged.
 */
 const mergeDeprecatedPropertiesAndLogWarnings = (
-  props?: CustomerIOPluginOptionsIOS,
+  props?: CustomerIOPluginOptionsIOS
 ): CustomerIOPluginOptionsIOS | undefined => {
   // The deprecatedTopLevelProperties maps the top level properties
   // that are deprecated to the new ios.pushNotification.* properties
@@ -160,7 +217,7 @@ const mergeDeprecatedPropertiesAndLogWarnings = (
   // be removed in the future.
 
   if (!props) {
-    return props
+    return props;
   }
 
   const deprecatedTopLevelProperties = {

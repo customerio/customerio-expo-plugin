@@ -24,6 +24,10 @@ export type CustomerIOPluginOptionsIOS = {
 
   useFrameworks?: 'static' | 'dynamic';
 
+  /**
+   * Push notification build configuration. After removing this from an already generated iOS
+   * project, run `npx expo prebuild --clean --platform ios` so Expo removes generated push files.
+   */
   pushNotification?: CustomerIOPluginPushNotificationOptions;
 
   /**
@@ -248,7 +252,9 @@ export type CustomerIOPluginLiveNotificationsOptions = {
    * initialization, `config.liveNotifications` implies this and you can omit it.
    *
    * Setting it to `false` explicitly turns the build-time setup off on either
-   * path, so an app can keep `config.liveNotifications` and still opt out.
+   * path, so an app can keep `config.liveNotifications` and still opt out. If
+   * the native iOS project was already generated with Live Notifications, run
+   * `npx expo prebuild --clean --platform ios` to remove its widget target.
    */
   enabled?: boolean;
   /**
@@ -473,6 +479,10 @@ export type CustomerIOPluginPushNotificationOptions = {
   autoTrackPushEvents?: boolean;
   showPushAppInForeground?: boolean;
   disableNotificationRegistration?: boolean;
+  /**
+   * Adds the legacy AppDelegate killed-state deep-link workaround on Expo SDK 53–57.
+   * Expo SDK 58+ delivers cold-start URLs through SceneDelegate instead.
+   */
   handleDeeplinkInKilledState?: boolean;
 
   /**

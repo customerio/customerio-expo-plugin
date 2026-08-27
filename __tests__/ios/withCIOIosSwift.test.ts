@@ -1,10 +1,148 @@
 import type { ExpoConfig } from '@expo/config-types';
+import * as fs from 'fs';
+import os from 'os';
+import path from 'path';
 import {
   modifyAppDelegateForLiveActivityUrl,
+  modifyAppDelegateForNativeSDKInitializer,
   modifyAppDelegateForPushHandler,
   withCIOIosSwift,
 } from '../../plugin/src/ios/withCIOIosSwift';
+import {
+  hasExpoSceneLifecycle,
+  isExpoVersion53OrHigher,
+  isExpoVersion53OrLower,
+  isExpoVersion58OrHigher,
+  maskSwiftNonCode,
+} from '../../plugin/src/ios/utils';
 import type { CustomerIOPluginOptionsIOS, NativeSDKConfig } from '../../plugin/src/types/cio-types';
+import { logger } from '../../plugin/src/utils/logger';
+import { getFixturePath } from '../utils';
+
+describe('hasExpoSceneLifecycle', () => {
+  let projectRoot: string;
+  const projectName = 'TestApp';
+
+  beforeEach(() => {
+    projectRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'cio-expo-scenes-'));
+    fs.mkdirSync(path.join(projectRoot, projectName));
+  });
+
+  afterEach(() => {
+    fs.rmSync(projectRoot, { recursive: true, force: true });
+  });
+
+  it('requires both Expo SceneDelegate and the scene manifest before moving URL ownership', () => {
+    expect(hasExpoSceneLifecycle(projectRoot, projectName)).toBe(false);
+
+    fs.writeFileSync(
+      path.join(projectRoot, projectName, 'SceneDelegate.swift'),
+      'class SceneDelegate: ExpoAppSceneDelegate {}'
+    );
+    fs.writeFileSync(
+      path.join(projectRoot, projectName, 'Info.plist'),
+      '<plist><dict></dict></plist>'
+    );
+    expect(hasExpoSceneLifecycle(projectRoot, projectName)).toBe(false);
+
+    fs.writeFileSync(
+      path.join(projectRoot, projectName, 'Info.plist'),
+      '<plist><dict><key>UIApplicationSceneManifest</key><dict/></dict></plist>'
+    );
+    expect(hasExpoSceneLifecycle(projectRoot, projectName)).toBe(false);
+
+    fs.writeFileSync(
+      path.join(projectRoot, projectName, 'Info.plist'),
+      '<plist><dict><key>UIApplicationSceneManifest</key><dict><key>UISceneDelegateClassName</key><string>$(PRODUCT_MODULE_NAME).CustomSceneDelegate</string></dict></dict></plist>'
+    );
+    expect(hasExpoSceneLifecycle(projectRoot, projectName)).toBe(false);
+
+    fs.writeFileSync(
+      path.join(projectRoot, projectName, 'Info.plist'),
+      '<plist><dict><key>UIApplicationSceneManifest</key><dict><key>UISceneDelegateClassName</key><string>$(PRODUCT_MODULE_NAME).SceneDelegate</string></dict></dict></plist>'
+    );
+    expect(hasExpoSceneLifecycle(projectRoot, projectName)).toBe(true);
+
+    fs.writeFileSync(
+      path.join(projectRoot, projectName, 'SceneDelegate.swift'),
+      'class SceneDelegate: UIResponder, UIWindowSceneDelegate {}'
+    );
+    expect(hasExpoSceneLifecycle(projectRoot, projectName)).toBe(false);
+
+    fs.writeFileSync(
+      path.join(projectRoot, projectName, 'SceneDelegate.swift'),
+      '// class SceneDelegate: ExpoAppSceneDelegate {}\nclass SceneDelegate: UIResponder, UIWindowSceneDelegate {}'
+    );
+    expect(hasExpoSceneLifecycle(projectRoot, projectName)).toBe(false);
+  });
+});
+
+describe('Expo scene version detection', () => {
+  it.each(['58.0.0-beta.0', '58.0.0-rc.1', '58.0.0-canary-20260826'])(
+    'treats the Expo 58 prerelease %s as scene-based',
+    (sdkVersion) => {
+      expect(
+        isExpoVersion58OrHigher({ name: 'Test', slug: 'test', sdkVersion })
+      ).toBe(true);
+    }
+  );
+
+  it('preserves the existing prerelease behavior of older SDK gates', () => {
+    expect(
+      isExpoVersion53OrHigher({
+        name: 'Test',
+        slug: 'test',
+        sdkVersion: '53.0.0-beta.1',
+      })
+    ).toBe(false);
+    expect(
+      isExpoVersion53OrLower({
+        name: 'Test',
+        slug: 'test',
+        sdkVersion: '54.0.0-canary-20260826',
+      })
+    ).toBe(true);
+  });
+});
+
+describe('Swift non-code masking', () => {
+  it('masks strings, line comments and nested block comments', () => {
+    const contents = `let marker = "/* not a comment */"
+// NativeCustomerIO.configureExpoSceneDeepLinkRouting()
+/* outer
+  /* nested */
+  CustomerIOSDKInitializer.initialize()
+*/
+CustomerIOSDKInitializer.initialize()`;
+    const masked = maskSwiftNonCode(contents);
+
+    expect(masked).not.toContain('/* not a comment */');
+    expect(masked).toContain('\nCustomerIOSDKInitializer.initialize()');
+    expect(masked).not.toContain(
+      '// NativeCustomerIO.configureExpoSceneDeepLinkRouting()'
+    );
+    expect(masked.match(/CustomerIOSDKInitializer\.initialize\(\)/g)).toHaveLength(
+      1
+    );
+  });
+
+  it('masks extended raw strings through their matching hash delimiter', () => {
+    const contents = `let inline = #"prefix " import customerio_reactnative " suffix"#
+let notes = ##"""
+func routeURL(_ url: URL) -> URL? {
+  NativeCustomerIO.exampleCall(url)
+}
+"""##
+NativeCustomerIO.exampleCall(url)`;
+    const masked = maskSwiftNonCode(contents);
+
+    expect(masked).not.toContain('import customerio_reactnative');
+    expect(masked).not.toContain('func routeURL');
+    expect(
+      masked.match(/NativeCustomerIO\.exampleCall/g)
+    ).toHaveLength(1);
+  });
+});
 
 // Mock dependencies
 jest.mock('@expo/config-plugins', () => ({
@@ -115,6 +253,86 @@ public class AppDelegate: ExpoAppDelegate {
       expect(result.modResults.contents).toContain('cioSdkHandler.application(application, didFinishLaunchingWithOptions: launchOptions)');
       expect(result.modResults.contents).toContain('let cioSdkHandler = CioSdkAppDelegateHandler()');
     });
+
+    it('moves URL routing only after the generated project has adopted scenes', async () => {
+      const { withAppDelegate } = require('@expo/config-plugins');
+      const projectRoot = fs.mkdtempSync(
+        path.join(os.tmpdir(), 'cio-expo-scene-wiring-')
+      );
+      const projectName = 'TestApp';
+      const projectDirectory = path.join(projectRoot, projectName);
+      fs.mkdirSync(projectDirectory);
+
+      try {
+        withCIOIosSwift(
+          mockConfig,
+          mockSdkConfig,
+          mockPropsWithPush,
+          undefined,
+          undefined,
+          false,
+          true
+        );
+        const appDelegateCallback = withAppDelegate.mock.calls[0][1];
+        const contents = fs.readFileSync(
+          getFixturePath('ios', 'AppDelegate.sdk58.swift'),
+          'utf8'
+        );
+        const modRequest = {
+          platformProjectRoot: projectRoot,
+          projectName,
+        };
+
+        const withoutScenes = await appDelegateCallback({
+          modRequest,
+          modResults: { contents },
+        });
+        expect(withoutScenes.modResults.contents).not.toContain(
+          'NativeCustomerIO.configureExpoSceneDeepLinkRouting()'
+        );
+        expect(withoutScenes.modResults.contents).toContain(
+          'cioSdkHandler.application(app, open: url, options: options)'
+        );
+
+        fs.writeFileSync(
+          path.join(projectDirectory, 'SceneDelegate.swift'),
+          'class SceneDelegate: ExpoAppSceneDelegate {}'
+        );
+        fs.writeFileSync(
+          path.join(projectDirectory, 'Info.plist'),
+          '<plist><dict><key>UIApplicationSceneManifest</key><dict><key>UISceneDelegateClassName</key><string>$(PRODUCT_MODULE_NAME).CustomSceneDelegate</string></dict></dict></plist>'
+        );
+
+        const withCustomSceneDelegate = await appDelegateCallback({
+          modRequest,
+          modResults: { contents },
+        });
+        expect(withCustomSceneDelegate.modResults.contents).not.toContain(
+          'NativeCustomerIO.configureExpoSceneDeepLinkRouting()'
+        );
+        expect(withCustomSceneDelegate.modResults.contents).toContain(
+          'cioSdkHandler.application(app, open: url, options: options)'
+        );
+
+        fs.writeFileSync(
+          path.join(projectDirectory, 'Info.plist'),
+          '<plist><dict><key>UIApplicationSceneManifest</key><dict><key>UISceneDelegateClassName</key><string>$(PRODUCT_MODULE_NAME).SceneDelegate</string></dict></dict></plist>'
+        );
+
+        const withScenes = await appDelegateCallback({
+          modRequest,
+          modResults: { contents },
+        });
+        expect(withScenes.modResults.contents).toContain(
+          'NativeCustomerIO.configureExpoSceneDeepLinkRouting()'
+        );
+        expect(withScenes.modResults.contents).not.toContain(
+          'cioSdkHandler.application(app, open: url, options: options)'
+        );
+      } finally {
+        fs.rmSync(projectRoot, { recursive: true, force: true });
+      }
+    });
   });
 
   describe('with auto-init only (no push notifications)', () => {
@@ -151,6 +369,81 @@ public class AppDelegate: ExpoAppDelegate {
       // Should NOT inject CioSdkAppDelegateHandler code
       expect(result.modResults.contents).not.toContain('cioSdkHandler.application');
       expect(result.modResults.contents).not.toContain('let cioSdkHandler = CioSdkAppDelegateHandler()');
+    });
+
+    it('removes stale Live Activity handling when the module is disabled', async () => {
+      const { withAppDelegate } = require('@expo/config-plugins');
+      const enabled = modifyAppDelegateForLiveActivityUrl(
+        fs.readFileSync(getFixturePath('ios', 'AppDelegate.sdk55.swift'), 'utf8')
+      );
+
+      withCIOIosSwift(
+        mockConfig,
+        mockSdkConfig,
+        mockPropsAutoInitOnly,
+        undefined,
+        undefined,
+        false
+      );
+      const appDelegateCallback = withAppDelegate.mock.calls[0][1];
+      const result = await appDelegateCallback({
+        modResults: { contents: enabled },
+      });
+
+      expect(result.modResults.contents).not.toContain(
+        'CustomerIO.liveActivities.handleWidgetUrl'
+      );
+      expect(result.modResults.contents).toContain(
+        '#if canImport(CioLiveActivities)\nimport CioLiveActivities\n#endif'
+      );
+    });
+
+    it('logs the explicit Linking readiness signal for scene auto-initialization', async () => {
+      const { withAppDelegate } = require('@expo/config-plugins');
+      const projectRoot = fs.mkdtempSync(
+        path.join(os.tmpdir(), 'cio-expo-auto-init-scenes-')
+      );
+      const projectName = 'TestApp';
+      const projectDirectory = path.join(projectRoot, projectName);
+      fs.mkdirSync(projectDirectory);
+      fs.writeFileSync(
+        path.join(projectDirectory, 'SceneDelegate.swift'),
+        'class SceneDelegate: ExpoAppSceneDelegate {}'
+      );
+      fs.writeFileSync(
+        path.join(projectDirectory, 'Info.plist'),
+        '<plist><dict><key>UIApplicationSceneManifest</key><dict><key>UISceneDelegateClassName</key><string>$(PRODUCT_MODULE_NAME).SceneDelegate</string></dict></dict></plist>'
+      );
+      const info = jest.spyOn(logger, 'info').mockImplementation();
+
+      try {
+        withCIOIosSwift(
+          mockConfig,
+          mockSdkConfig,
+          mockPropsAutoInitOnly,
+          undefined,
+          undefined,
+          false,
+          true
+        );
+        const appDelegateCallback = withAppDelegate.mock.calls[0][1];
+        await appDelegateCallback({
+          modRequest: { platformProjectRoot: projectRoot, projectName },
+          modResults: {
+            contents: fs.readFileSync(
+              getFixturePath('ios', 'AppDelegate.sdk58.swift'),
+              'utf8'
+            ),
+          },
+        });
+
+        expect(info).toHaveBeenCalledWith(
+          expect.stringContaining('CustomerIO.setDeepLinkRoutingReady()')
+        );
+      } finally {
+        info.mockRestore();
+        fs.rmSync(projectRoot, { recursive: true, force: true });
+      }
     });
 
   });
@@ -224,6 +517,33 @@ public class AppDelegate: ExpoAppDelegate {
       // Should not inject duplicate code
       const initializeOccurrences = (result.modResults.contents.match(/CustomerIOSDKInitializer\.initialize\(\)/g) || []).length;
       expect(initializeOccurrences).toBe(1);
+    });
+
+    it.each([
+      'private let cioSdkHandler = CioSdkAppDelegateHandler()',
+      'let cioSdkHandler: CioSdkAppDelegateHandler = CioSdkAppDelegateHandler()',
+      'private lazy var cioSdkHandler: CioSdkAppDelegateHandler = .init()',
+    ])('preserves a host-modified push handler declaration: %s', (declaration) => {
+      const contents = `import Expo
+
+class AppDelegate: ExpoAppDelegate {
+  ${declaration}
+
+  override func application(
+    _ application: UIApplication,
+    didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
+  ) -> Bool {
+    cioSdkHandler.application(application, didFinishLaunchingWithOptions: launchOptions)
+    return super.application(application, didFinishLaunchingWithOptions: launchOptions)
+  }
+}`;
+
+      const result = modifyAppDelegateForPushHandler(contents, {
+        iosPath: '/test/ios',
+        pushNotification: { provider: 'apn' },
+      });
+
+      expect(result.match(/cioSdkHandler\s*(?::[^=]+)?=/g)).toHaveLength(1);
     });
 
     it('should inject .appGroupId(...) builder line when appGroupId is set', () => {
@@ -437,6 +757,56 @@ public class AppDelegate: ExpoAppDelegate {
     expect((twice.match(/import CioDataPipelines/g) || []).length).toBe(1);
   });
 
+  test('is stable across repeated enable and disable cycles', () => {
+    const firstEnabled = modifyAppDelegateForLiveActivityUrl(
+      RN_083_APP_DELEGATE
+    );
+    const firstDisabled = modifyAppDelegateForLiveActivityUrl(
+      firstEnabled,
+      true
+    );
+    const secondEnabled = modifyAppDelegateForLiveActivityUrl(firstDisabled);
+    const secondDisabled = modifyAppDelegateForLiveActivityUrl(
+      secondEnabled,
+      true
+    );
+
+    expect(secondDisabled).toBe(firstDisabled);
+    expect(maskSwiftNonCode(secondDisabled)).not.toContain(
+      'CustomerIO.liveActivities.handleWidgetUrl'
+    );
+    expect(secondDisabled).toContain(
+      '#if canImport(CioLiveActivities)\nimport CioLiveActivities\n#endif'
+    );
+    expect(
+      maskSwiftNonCode(secondDisabled).match(/^import CioLiveActivities$/gm)
+    ).toHaveLength(1);
+  });
+
+  test('preserves a host conditional Live Activities import across disable cycles', () => {
+    const hostImport = `#if DEBUG && canImport(CioLiveActivities)
+import CioLiveActivities
+#endif`;
+    const template = RN_083_APP_DELEGATE.replace(
+      'import Expo',
+      `import Expo\n${hostImport}`
+    );
+
+    const enabled = modifyAppDelegateForLiveActivityUrl(template);
+    const disabled = modifyAppDelegateForLiveActivityUrl(enabled, true);
+
+    expect(disabled).toContain(hostImport);
+    expect(maskSwiftNonCode(disabled)).not.toContain(
+      'CustomerIO.liveActivities.handleWidgetUrl'
+    );
+    expect(disabled).toContain(
+      '#if canImport(CioLiveActivities)\nimport CioLiveActivities\n#endif'
+    );
+    expect(
+      maskSwiftNonCode(disabled).match(/^import CioLiveActivities$/gm)
+    ).toHaveLength(2);
+  });
+
   test('defers to the push handler when it already owns the method', () => {
     const withPushHandler = `import Expo
 
@@ -466,6 +836,375 @@ public class AppDelegate: ExpoAppDelegate {
 `;
 
     expect(modifyAppDelegateForLiveActivityUrl(withPushHandler)).toBe(withPushHandler);
+  });
+
+  it('does not let a host string suppress Live Activity URL injection', () => {
+    const hostNote = `  let integrationNote = """
+    guard let url = CustomerIO.liveActivities.handleWidgetUrl(url) else { return true }
+    """
+`;
+    const template = fs
+      .readFileSync(getFixturePath('ios', 'AppDelegate.sdk55.swift'), 'utf8')
+      .replace(
+        '  public override func application(',
+        `${hostNote}\n  public override func application(`
+      );
+
+    const enabled = modifyAppDelegateForLiveActivityUrl(template);
+
+    expect(enabled).toContain(hostNote);
+    expect(maskSwiftNonCode(enabled)).toContain(
+      'CustomerIO.liveActivities.handleWidgetUrl'
+    );
+  });
+});
+
+describe('Expo scene AppDelegate', () => {
+  const sceneAppDelegate = fs.readFileSync(
+    getFixturePath('ios', 'AppDelegate.sdk58.swift'),
+    'utf8'
+  );
+  const pushProps: CustomerIOPluginOptionsIOS = {
+    iosPath: '/test/ios',
+    pushNotification: {
+      provider: 'apn',
+      handleDeeplinkInKilledState: true,
+    },
+  };
+
+  it('installs React Native routing before native push auto-initialization', () => {
+    const output = modifyAppDelegateForPushHandler(
+      sceneAppDelegate,
+      pushProps,
+      true
+    );
+
+    expect(output).toContain('import customerio_reactnative');
+    expect(output).toContain(
+      'NativeCustomerIO.configureExpoSceneDeepLinkRouting()'
+    );
+    expect(output.indexOf('NativeCustomerIO.configureExpoSceneDeepLinkRouting()'))
+      .toBeLessThan(
+        output.indexOf(
+          'cioSdkHandler.application(application, didFinishLaunchingWithOptions: launchOptions)'
+        )
+      );
+    expect(output).not.toContain(
+      'Deep link workaround for app killed state start'
+    );
+    expect(output).not.toContain(
+      'cioSdkHandler.application(application, open: url, options: options)'
+    );
+  });
+
+  it('installs routing before push handling when JavaScript initializes the SDK', () => {
+    const output = modifyAppDelegateForPushHandler(
+      sceneAppDelegate,
+      pushProps,
+      true
+    );
+
+    expect(output.indexOf('NativeCustomerIO.configureExpoSceneDeepLinkRouting()'))
+      .toBeLessThan(
+        output.indexOf(
+          'cioSdkHandler.application(application, didFinishLaunchingWithOptions: launchOptions)'
+        )
+      );
+  });
+
+  it('installs routing before no-push native auto-initialization', () => {
+    const output = modifyAppDelegateForNativeSDKInitializer(sceneAppDelegate, true);
+
+    expect(output).toContain(
+      'NativeCustomerIO.configureExpoSceneDeepLinkRouting()'
+    );
+    expect(output.indexOf('NativeCustomerIO.configureExpoSceneDeepLinkRouting()'))
+      .toBeLessThan(output.indexOf('CustomerIOSDKInitializer.initialize()'));
+  });
+
+  it('installs routing when the generated initialization line has a trailing comment', () => {
+    const customized = sceneAppDelegate.replace(
+      'return super.application(application, didFinishLaunchingWithOptions: launchOptions)',
+      `CustomerIOSDKInitializer.initialize() // Added by another config plugin
+    return super.application(application, didFinishLaunchingWithOptions: launchOptions)`
+    );
+    const output = modifyAppDelegateForNativeSDKInitializer(customized, true);
+
+    expect(output.indexOf('NativeCustomerIO.configureExpoSceneDeepLinkRouting()'))
+      .toBeLessThan(output.indexOf('CustomerIOSDKInitializer.initialize()'));
+    expect(output).toContain(
+      'CustomerIOSDKInitializer.initialize() // Added by another config plugin'
+    );
+  });
+
+  it('inserts routing at the executable initialization when a string contains the same line', () => {
+    const customized = sceneAppDelegate.replace(
+      'return super.application(application, didFinishLaunchingWithOptions: launchOptions)',
+      `let debugText = """
+    CustomerIOSDKInitializer.initialize()
+    """
+    return super.application(application, didFinishLaunchingWithOptions: launchOptions)`
+    );
+    const output = modifyAppDelegateForNativeSDKInitializer(customized, true);
+    const executableOutput = maskSwiftNonCode(output);
+
+    expect(output).toContain(`let debugText = """
+    CustomerIOSDKInitializer.initialize()
+    """`);
+    expect(
+      executableOutput.match(
+        /^[ \t]*NativeCustomerIO\.configureExpoSceneDeepLinkRouting\(\)$/gm
+      )
+    ).toHaveLength(1);
+    expect(
+      executableOutput.indexOf(
+        'NativeCustomerIO.configureExpoSceneDeepLinkRouting()'
+      )
+    ).toBeLessThan(
+      executableOutput.indexOf('CustomerIOSDKInitializer.initialize()')
+    );
+  });
+
+  it('does not treat a commented scene-routing call as installed', () => {
+    const customized = sceneAppDelegate.replace(
+      'return super.application(application, didFinishLaunchingWithOptions: launchOptions)',
+      `// NativeCustomerIO.configureExpoSceneDeepLinkRouting()
+    return super.application(application, didFinishLaunchingWithOptions: launchOptions)`
+    );
+    const output = modifyAppDelegateForPushHandler(
+      customized,
+      pushProps,
+      true
+    );
+
+    expect(
+      output.match(
+        /^[ \t]*NativeCustomerIO\.configureExpoSceneDeepLinkRouting\(\)$/gm
+      )
+    ).toHaveLength(1);
+  });
+
+  it('leaves Live Activity URL ownership to SceneDelegate', () => {
+    expect(modifyAppDelegateForLiveActivityUrl(sceneAppDelegate, true)).toBe(
+      sceneAppDelegate
+    );
+  });
+
+  it('removes SDK 57 AppDelegate URL handling on an incremental SDK 58 prebuild', () => {
+    const sdk57 = modifyAppDelegateForPushHandler(sceneAppDelegate, pushProps);
+    const sdk58 = modifyAppDelegateForPushHandler(sdk57, pushProps, true);
+
+    expect(sdk57).toContain('Deep link workaround for app killed state start');
+    expect(sdk57).toContain('cioSdkHandler.application(app, open: url, options: options)');
+    expect(sdk58).not.toContain('Deep link workaround for app killed state start');
+    expect(sdk58).not.toContain('modifiedLaunchOptions');
+    expect(sdk58).not.toContain('cioSdkHandler.application(app, open: url, options: options)');
+    expect(sdk58).toContain('NativeCustomerIO.configureExpoSceneDeepLinkRouting()');
+  });
+
+  it('upgrades a host-formatted push initialization call without aborting prebuild', () => {
+    const sdk57 = modifyAppDelegateForPushHandler(sceneAppDelegate, pushProps);
+    const customized = sdk57.replace(
+      'cioSdkHandler.application(application, didFinishLaunchingWithOptions: launchOptions)',
+      '_ = cioSdkHandler.application(application, didFinishLaunchingWithOptions: launchOptions) // Kept by the host'
+    );
+    const sdk58 = modifyAppDelegateForPushHandler(customized, pushProps, true);
+
+    expect(sdk58).toContain(
+      '_ = cioSdkHandler.application(application, didFinishLaunchingWithOptions: launchOptions) // Kept by the host'
+    );
+    expect(sdk58.indexOf('NativeCustomerIO.configureExpoSceneDeepLinkRouting()'))
+      .toBeLessThan(sdk58.indexOf('_ = cioSdkHandler.application'));
+  });
+
+  it('fails prebuild when a customized AppDelegate has no safe scene-routing anchor', () => {
+    const customized = sceneAppDelegate.replace(
+      'return super.application(application, didFinishLaunchingWithOptions: launchOptions)',
+      `let didStart = super.application(application, didFinishLaunchingWithOptions: launchOptions)
+    return didStart`
+    );
+
+    expect(() =>
+      modifyAppDelegateForPushHandler(customized, pushProps, true)
+    ).toThrow(
+      'Could not install Expo scene deep-link routing because the Customer.io initialization call was not added to AppDelegate'
+    );
+  });
+
+  it('does not accept commented initialization calls as a safe scene-routing anchor', () => {
+    const customized = sceneAppDelegate.replace(
+      'return super.application(application, didFinishLaunchingWithOptions: launchOptions)',
+      `// cioSdkHandler.application(application, didFinishLaunchingWithOptions: launchOptions)
+    // CustomerIOSDKInitializer.initialize()
+    let didStart = super.application(application, didFinishLaunchingWithOptions: launchOptions)
+    return didStart`
+    );
+
+    expect(() =>
+      modifyAppDelegateForPushHandler(customized, pushProps, true)
+    ).toThrow(
+      'Could not install Expo scene deep-link routing because the Customer.io initialization call was not added to AppDelegate'
+    );
+  });
+
+  it('does not accept block-commented routing and initialization calls', () => {
+    const customized = sceneAppDelegate.replace(
+      'return super.application(application, didFinishLaunchingWithOptions: launchOptions)',
+      `/*
+    NativeCustomerIO.configureExpoSceneDeepLinkRouting()
+    cioSdkHandler.application(application, didFinishLaunchingWithOptions: launchOptions)
+    CustomerIOSDKInitializer.initialize()
+    */
+    let didStart = super.application(application, didFinishLaunchingWithOptions: launchOptions)
+    return didStart`
+    );
+
+    expect(() =>
+      modifyAppDelegateForPushHandler(customized, pushProps, true)
+    ).toThrow(
+      'Could not install Expo scene deep-link routing because the Customer.io initialization call was not added to AppDelegate'
+    );
+  });
+
+  it('does not accept routing and initialization calls inside a multiline string', () => {
+    const customized = sceneAppDelegate.replace(
+      'return super.application(application, didFinishLaunchingWithOptions: launchOptions)',
+      `let debugText = """
+    NativeCustomerIO.configureExpoSceneDeepLinkRouting()
+    cioSdkHandler.application(application, didFinishLaunchingWithOptions: launchOptions)
+    CustomerIOSDKInitializer.initialize()
+    """
+    let didStart = super.application(application, didFinishLaunchingWithOptions: launchOptions)
+    return didStart`
+    );
+
+    expect(() =>
+      modifyAppDelegateForPushHandler(customized, pushProps, true)
+    ).toThrow(
+      'Could not install Expo scene deep-link routing because the Customer.io initialization call was not added to AppDelegate'
+    );
+  });
+
+  it('does not accept routing and initialization calls inside an extended raw string', () => {
+    const customized = sceneAppDelegate.replace(
+      'return super.application(application, didFinishLaunchingWithOptions: launchOptions)',
+      `let debugText = #"""
+    NativeCustomerIO.configureExpoSceneDeepLinkRouting()
+    cioSdkHandler.application(application, didFinishLaunchingWithOptions: launchOptions)
+    CustomerIOSDKInitializer.initialize()
+    """#
+    let didStart = super.application(application, didFinishLaunchingWithOptions: launchOptions)
+    return didStart`
+    );
+
+    expect(() =>
+      modifyAppDelegateForPushHandler(customized, pushProps, true)
+    ).toThrow(
+      'Could not install Expo scene deep-link routing because the Customer.io initialization call was not added to AppDelegate'
+    );
+  });
+
+  it('adds Customer.io imports outside a host-owned conditional import block', () => {
+    const customized = sceneAppDelegate.replace(
+      'import ReactAppDependencyProvider',
+      `import ReactAppDependencyProvider
+#if canImport(EXNotifications)
+import EXNotifications
+#endif`
+    );
+    const output = modifyAppDelegateForPushHandler(
+      customized,
+      pushProps,
+      true
+    );
+    const conditionalStart = output.indexOf('#if canImport(EXNotifications)');
+    const conditionalEnd = output.indexOf('#endif', conditionalStart);
+    const conditionalBlock = output.slice(conditionalStart, conditionalEnd);
+
+    expect(output.indexOf('import customerio_reactnative')).toBeLessThan(
+      conditionalStart
+    );
+    expect(conditionalBlock).not.toContain('import customerio_reactnative');
+  });
+
+  it('adds an unconditional import when the host imports React Native only conditionally', () => {
+    const customized = sceneAppDelegate.replace(
+      'import ReactAppDependencyProvider',
+      `import ReactAppDependencyProvider
+#if DEBUG
+import customerio_reactnative
+#endif`
+    );
+    const output = modifyAppDelegateForPushHandler(
+      customized,
+      pushProps,
+      true
+    );
+    const conditionalStart = output.indexOf('#if DEBUG');
+
+    expect(output.indexOf('import customerio_reactnative')).toBeLessThan(
+      conditionalStart
+    );
+    expect(
+      (output.match(/^import customerio_reactnative$/gm) ?? []).length
+    ).toBe(2);
+  });
+
+  it('removes SDK 57 Live Activity AppDelegate routing on an incremental SDK 58 prebuild', () => {
+    const sdk57 = modifyAppDelegateForLiveActivityUrl(sceneAppDelegate);
+    const sdk58 = modifyAppDelegateForLiveActivityUrl(sdk57, true);
+
+    expect(sdk57).toContain('CustomerIO.liveActivities.handleWidgetUrl');
+    expect(sdk58).not.toContain('CustomerIO.liveActivities.handleWidgetUrl');
+    expect(sdk58).toContain(`#if canImport(CioLiveActivities)
+import CioLiveActivities
+#endif`);
+  });
+
+  it('removes SDK 57 Live Activity routing when enabling push during an SDK 58 prebuild', () => {
+    const sdk57 = modifyAppDelegateForLiveActivityUrl(sceneAppDelegate);
+    const sdk58 = modifyAppDelegateForPushHandler(sdk57, pushProps, true);
+
+    expect(sdk57).toContain('CustomerIO.liveActivities.handleWidgetUrl');
+    expect(sdk58).not.toContain('CustomerIO.liveActivities.handleWidgetUrl');
+    expect(sdk58).toContain(`#if canImport(CioLiveActivities)
+import CioLiveActivities
+#endif`);
+    expect(sdk58).toContain(
+      'NativeCustomerIO.configureExpoSceneDeepLinkRouting()'
+    );
+  });
+
+  it('preserves a host-owned Live Activities import and use while removing generated routing', () => {
+    const hostOwnedUse =
+      'private let hostOwnedLiveActivities = CustomerIO.liveActivities';
+    const customized = sceneAppDelegate.replace(
+      '@main',
+      `${hostOwnedUse}\n\n@main`
+    );
+    const sdk57 = modifyAppDelegateForLiveActivityUrl(customized);
+    const sdk58 = modifyAppDelegateForLiveActivityUrl(sdk57, true);
+
+    expect(sdk58).toContain(hostOwnedUse);
+    expect(sdk58).toContain(`#if canImport(CioLiveActivities)
+import CioLiveActivities
+#endif`);
+    expect(sdk58).not.toContain('CustomerIO.liveActivities.handleWidgetUrl');
+  });
+
+  it('is idempotent', () => {
+    const once = modifyAppDelegateForPushHandler(
+      sceneAppDelegate,
+      pushProps,
+      true
+    );
+    const twice = modifyAppDelegateForPushHandler(once, pushProps, true);
+
+    expect(twice).toBe(once);
+    expect(
+      (twice.match(/NativeCustomerIO\.configureExpoSceneDeepLinkRouting/g) ?? [])
+        .length
+    ).toBe(1);
   });
 });
 

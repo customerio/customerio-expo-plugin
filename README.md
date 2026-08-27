@@ -18,6 +18,37 @@ After you add the plugin to your project, you'll need to install our React Nativ
 
 You'll find our [complete SDK documentation at https://customer.io/docs/sdk/expo](https://customer.io/docs/sdk/expo/).
 
+## Scene deep links with native auto-initialization
+
+When using Expo's scene lifecycle with Customer.io native auto-initialization, register your React Native `Linking` URL listener and then call `CustomerIO.setDeepLinkRoutingReady()`. This lets the plugin deliver URLs buffered during cold launch without requiring a second SDK initialization from JavaScript.
+
+Customer.io notification deep links are delivered to that listener as `url` events after readiness; they are not returned by `Linking.getInitialURL()`. If readiness is not signaled within ten seconds, Customer.io falls back to opening the destination through the system.
+
+Expo SDK 58 and later deliver cold-start URLs through `SceneDelegate`, so `handleDeeplinkInKilledState` is not injected for those versions. The scene router replaces that legacy AppDelegate launch-options workaround.
+
+## Live Activity links in Expo scene apps
+
+Expo Router apps using the scene lifecycle must process Live Activity URLs once in a top-level
+`app/+native-intent.tsx` file:
+
+```ts
+import { CustomerIO } from 'customerio-reactnative';
+
+export async function redirectSystemPath({ path }: { path: string }) {
+  return CustomerIO.liveActivities.handleWidgetUrl(path);
+}
+```
+
+The helper reports the opened event and returns the customer's destination before Expo Router
+navigates. Ordinary URLs pass through unchanged, and a Customer.io tracking URL without a
+destination returns `null`. Do not also call the helper from a `Linking` listener because processing
+the same tracking URL twice reports two opened events.
+
+Expo apps without Expo Router should apply the same helper exactly once in their central initial-URL
+and URL-subscription pipeline. The plugin does not edit customer-owned routing files.
+
+After disabling Live Notifications in a previously generated iOS project, run `npx expo prebuild --clean --platform ios`. An incremental prebuild stops with this instruction so it cannot leave the generated widget target or linked Live Activities code behind.
+
 # Local development
 
 [Here is a quick start guide to start with local development.](/local-development-readme.md)

@@ -9,7 +9,6 @@ import { PLATFORM } from '../helpers/constants/common';
 import {
   CIO_CONFIGUREDEEPLINK_KILLEDSTATE_SWIFT_SNIPPET,
   CIO_MESSAGING_PUSH_APP_DELEGATE_INIT_REGEX,
-  CIO_NATIVE_SDK_INITIALIZE_CALL,
   CIO_NATIVE_SDK_INITIALIZE_SNIPPET,
   CIO_REGISTER_PUSHNOTIFICATION_SNIPPET_v2,
   CIO_REGISTER_PUSH_NOTIFICATION_PLACEHOLDER,
@@ -26,11 +25,28 @@ import type {
 import { logger } from '../utils/logger';
 import { getIosNativeFilesPath } from '../utils/plugin';
 import { copyFileToXcode, getOrCreateCustomerIOGroup } from '../utils/xcode';
-import { isFcmPushProvider } from './utils';
+import {
+  addSwiftImports,
+  enclosingConditionalStart,
+  hasExpoSceneLifecycle,
+  isFcmPushProvider,
+  maskSwiftNonCode,
+} from './utils';
 
 // Constants
 const CIO_SDK_APP_DELEGATE_HANDLER_CLASS = 'CioSdkAppDelegateHandler';
 const CIO_SDK_APP_DELEGATE_HANDLER_FILENAME = `${CIO_SDK_APP_DELEGATE_HANDLER_CLASS}.swift`;
+const REACT_NATIVE_IMPORT = 'import customerio_reactnative';
+const CONFIGURE_SCENE_ROUTING_CALL =
+  'NativeCustomerIO.configureExpoSceneDeepLinkRouting()';
+const CONFIGURE_SCENE_ROUTING_LINE_REGEX =
+  /^[ \t]*NativeCustomerIO\.configureExpoSceneDeepLinkRouting\(\)[ \t]*$/m;
+const PUSH_INITIALIZATION_LINE_REGEX =
+  /^[ \t]*(?:_[ \t]*=[ \t]*)?cioSdkHandler\.application\([ \t]*[A-Za-z_][A-Za-z0-9_]*[ \t]*,[ \t]*didFinishLaunchingWithOptions:[ \t]*[A-Za-z_][A-Za-z0-9_]*[ \t]*\)[ \t]*;?[ \t]*$/m;
+const NATIVE_INITIALIZATION_LINE_REGEX =
+  /^[ \t]*(?:_[ \t]*=[ \t]*)?CustomerIOSDKInitializer\.initialize\(\)[ \t]*;?[ \t]*$/m;
+const APP_DELEGATE_HANDLER_DECLARATION_REGEX =
+  /^[ \t]*(?:(?:private|fileprivate|internal|public|open|final|lazy)[ \t]+)*(?:let|var)[ \t]+cioSdkHandler(?:[ \t]*:[ \t]*CioSdkAppDelegateHandler)?[ \t]*=[ \t]*(?:CioSdkAppDelegateHandler|\.init)\(\)/m;
 
 /**
  * Copy and configure the CioSdkAppDelegateHandler.swift file
@@ -40,14 +56,12 @@ const copyAndConfigureAppDelegateHandler = (
   sdkConfig?: NativeSDKConfig,
   props?: CustomerIOPluginOptionsIOS,
   location?: CustomerIOPluginLocationOptions,
-  geofence?: CustomerIOPluginGeofenceOptions,
+  geofence?: CustomerIOPluginGeofenceOptions
 ): ExportedConfigWithProps<XcodeProject> => {
   // Destination path in the iOS project
   const projectName = config.modRequest.projectName || '';
   if (!projectName) {
-    logger.warn(
-      'Project name is undefined, cannot copy CustomerIO files'
-    );
+    logger.warn('Project name is undefined, cannot copy CustomerIO files');
     return config;
   }
 
@@ -181,10 +195,21 @@ const copyAndConfigurePushAppDelegateHandler = ({
   // Add auto initialization if sdkConfig is provided
   if (sdkConfig) {
     // Also copy CustomerIOSDKInitializer.swift for auto-initialization
-    copyAndConfigureNativeSDKInitializer({ xcodeProject, group, iosProjectRoot, projectName, sdkConfig, location, geofence });
+    copyAndConfigureNativeSDKInitializer({
+      xcodeProject,
+      group,
+      iosProjectRoot,
+      projectName,
+      sdkConfig,
+      location,
+      geofence,
+    });
 
     // Inject auto initialization call before MessagingPush initialization
-    handlerFileContent = handlerFileContent.replace(CIO_MESSAGING_PUSH_APP_DELEGATE_INIT_REGEX, CIO_NATIVE_SDK_INITIALIZE_SNIPPET + '$1');
+    handlerFileContent = handlerFileContent.replace(
+      CIO_MESSAGING_PUSH_APP_DELEGATE_INIT_REGEX,
+      CIO_NATIVE_SDK_INITIALIZE_SNIPPET + '$1'
+    );
   }
 
   FileManagement.writeFile(handlerDestPath, handlerFileContent);
@@ -228,7 +253,13 @@ const copyAndConfigureNativeSDKInitializer = ({
     sourceFilePath: sourcePath,
     targetFileName: filename,
     transform: (content) =>
-      patchNativeSDKInitializer(content, PLATFORM.IOS, sdkConfig, locationOptions, geofenceOptions),
+      patchNativeSDKInitializer(
+        content,
+        PLATFORM.IOS,
+        sdkConfig,
+        locationOptions,
+        geofenceOptions
+      ),
     customerIOGroup: group,
   });
 };
@@ -240,19 +271,42 @@ export const withCIOIosSwift = (
   location?: CustomerIOPluginLocationOptions,
   geofence?: CustomerIOPluginGeofenceOptions,
   liveNotificationsEnabled = false,
+  usesSceneLifecycle = false
 ) => {
   // First, copy required swift files to iOS folder and add it to Xcode project
   configOuter = withXcodeProject(configOuter, async (config) => {
-    return copyAndConfigureAppDelegateHandler(config, sdkConfig, props, location, geofence);
+    return copyAndConfigureAppDelegateHandler(
+      config,
+      sdkConfig,
+      props,
+      location,
+      geofence
+    );
   });
 
   // Modify the AppDelegate based on configuration
   if (props?.pushNotification) {
     // With push notifications: delegate to CioSdkAppDelegateHandler for both push and auto-init
     return withAppDelegate(configOuter, async (config) => {
+      const projectUsesSceneLifecycle =
+        usesSceneLifecycle &&
+        hasExpoSceneLifecycle(
+          config.modRequest?.platformProjectRoot,
+          config.modRequest?.projectName
+        );
+      if (usesSceneLifecycle && !projectUsesSceneLifecycle) {
+        logger.warn(
+          'Expo SDK 58+ was detected, but the generated iOS project does not have an Expo SceneDelegate and scene manifest; keeping AppDelegate URL routing'
+        );
+      }
+      logNativeAutoInitializationSceneReadiness(
+        sdkConfig,
+        projectUsesSceneLifecycle
+      );
       config.modResults.contents = modifyAppDelegateForPushHandler(
         config.modResults.contents,
-        props
+        props,
+        projectUsesSceneLifecycle
       );
       return config;
     });
@@ -262,12 +316,35 @@ export const withCIOIosSwift = (
     // the push module, which this configuration does not install — so the tap goes straight to the
     // Live Activities module instead.
     return withAppDelegate(configOuter, async (config) => {
+      const projectUsesSceneLifecycle =
+        usesSceneLifecycle &&
+        hasExpoSceneLifecycle(
+          config.modRequest?.platformProjectRoot,
+          config.modRequest?.projectName
+        );
+      if (usesSceneLifecycle && !projectUsesSceneLifecycle) {
+        logger.warn(
+          'Expo SDK 58+ was detected, but the generated iOS project does not have an Expo SceneDelegate and scene manifest; keeping AppDelegate URL routing'
+        );
+      }
+      logNativeAutoInitializationSceneReadiness(
+        sdkConfig,
+        projectUsesSceneLifecycle
+      );
       let next = config.modResults.contents;
       if (sdkConfig) {
-        next = modifyAppDelegateForNativeSDKInitializer(next);
+        next = modifyAppDelegateForNativeSDKInitializer(
+          next,
+          projectUsesSceneLifecycle
+        );
       }
       if (liveNotificationsEnabled) {
-        next = modifyAppDelegateForLiveActivityUrl(next);
+        next = modifyAppDelegateForLiveActivityUrl(
+          next,
+          projectUsesSceneLifecycle
+        );
+      } else {
+        next = removeLiveActivityUrlGuard(next);
       }
       config.modResults.contents = next;
       return config;
@@ -277,6 +354,17 @@ export const withCIOIosSwift = (
   }
 };
 
+function logNativeAutoInitializationSceneReadiness(
+  sdkConfig: NativeSDKConfig | undefined,
+  usesSceneLifecycle: boolean
+): void {
+  if (!sdkConfig || !usesSceneLifecycle) return;
+
+  logger.info(
+    'Expo scene projects using native auto-initialization must call CustomerIO.setDeepLinkRoutingReady() after registering the React Native Linking listener'
+  );
+}
+
 /**
  * Pure string transform: produces the Swift AppDelegate contents wired to delegate to
  * `CioSdkAppDelegateHandler` for both push notifications and (when configured) auto-init.
@@ -284,29 +372,48 @@ export const withCIOIosSwift = (
  */
 export function modifyAppDelegateForPushHandler(
   contents: string,
-  props: CustomerIOPluginOptionsIOS
+  props: CustomerIOPluginOptionsIOS,
+  usesSceneLifecycle = false
 ): string {
-  if (contents.includes(CIO_SDK_APP_DELEGATE_HANDLER_CLASS)) {
+  let next = contents;
+
+  if (APP_DELEGATE_HANDLER_DECLARATION_REGEX.test(maskSwiftNonCode(next))) {
     logger.info(
       'CustomerIO Swift AppDelegate changes already exist. Adding anything newer...'
     );
     // Don't return the file untouched: an AppDelegate integrated by an earlier plugin version has
     // the handler but not the Live Activity tap route, and skipping outright leaves every upgraded
     // app without it. `addOpenURLHandling` is idempotent, so re-running it is safe.
-    return addOpenURLHandling(contents);
+    if (!usesSceneLifecycle) {
+      return addOpenURLHandling(next);
+    }
+
+    return removeLegacyAppDelegateDeepLinkHandling(
+      addSceneRoutingBeforeNativeInitialization(next)
+    );
   }
 
-  let next = addHandlerPropertyDeclaration(contents);
+  next = addHandlerPropertyDeclaration(next);
   next = modifyDidFinishLaunchingWithOptions(
     next,
     `  cioSdkHandler.application(application, didFinishLaunchingWithOptions: launchOptions)\n\n    `
   );
   next = addDidRegisterForRemoteNotificationsWithDeviceToken(next);
   next = addDidFailToRegisterForRemoteNotificationsWithError(next);
-  next = addOpenURLHandling(next);
-
-  if (props.pushNotification?.handleDeeplinkInKilledState === true) {
-    next = addHandleDeeplinkInKilledState(next);
+  if (usesSceneLifecycle) {
+    next = addSceneRoutingBeforeNativeInitialization(next);
+    next = removeLegacyAppDelegateDeepLinkHandling(next);
+    if (props.pushNotification?.handleDeeplinkInKilledState === true) {
+      logger.warn(
+        'handleDeeplinkInKilledState is not applied to Expo SDK 58+ scene projects; ' +
+          'scene routing replaces the legacy AppDelegate launch-options workaround'
+      );
+    }
+  } else {
+    next = addOpenURLHandling(next);
+    if (props.pushNotification?.handleDeeplinkInKilledState === true) {
+      next = addHandleDeeplinkInKilledState(next);
+    }
   }
 
   return next;
@@ -321,8 +428,20 @@ export function modifyAppDelegateForPushHandler(
  *
  * Idempotent, and a no-op if the push handler already owns the method.
  */
-export function modifyAppDelegateForLiveActivityUrl(contents: string): string {
-  if (contents.includes(LIVE_ACTIVITY_URL_CALL) || hasCioOpenUrlHandling(contents)) {
+export function modifyAppDelegateForLiveActivityUrl(
+  contents: string,
+  usesSceneLifecycle = false
+): string {
+  if (usesSceneLifecycle) {
+    return removeLiveActivityUrlGuard(contents);
+  }
+
+  contents = enableLiveActivityImport(contents);
+  const executableContents = maskSwiftNonCode(contents);
+  if (
+    executableContents.includes(LIVE_ACTIVITY_URL_CALL) ||
+    hasCioOpenUrlHandling(contents)
+  ) {
     return contents;
   }
 
@@ -365,18 +484,63 @@ export function modifyAppDelegateForLiveActivityUrl(contents: string): string {
  * Pure string transform: injects the auto-init snippet into the Swift AppDelegate's
  * didFinishLaunchingWithOptions for the no-push path. Idempotent.
  */
-export function modifyAppDelegateForNativeSDKInitializer(contents: string): string {
-  if (contents.includes(CIO_NATIVE_SDK_INITIALIZE_CALL)) {
+export function modifyAppDelegateForNativeSDKInitializer(
+  contents: string,
+  usesSceneLifecycle = false
+): string {
+  if (NATIVE_INITIALIZATION_LINE_REGEX.test(maskSwiftNonCode(contents))) {
     logger.info(
       'CustomerIO Swift AppDelegate changes already exist. Skipping...'
     );
+    return usesSceneLifecycle
+      ? addSceneRoutingBeforeNativeInitialization(contents)
+      : contents;
+  }
+
+  let next = modifyDidFinishLaunchingWithOptions(
+    contents,
+    CIO_NATIVE_SDK_INITIALIZE_SNIPPET
+  );
+  if (usesSceneLifecycle) {
+    next = addSceneRoutingBeforeNativeInitialization(next);
+  }
+  return next;
+}
+
+/** Install React Native routing before native Customer.io initialization in a scene host. */
+function addSceneRoutingBeforeNativeInitialization(contents: string): string {
+  if (hasExecutableSceneRouting(contents)) {
     return contents;
   }
 
-  return modifyDidFinishLaunchingWithOptions(
-    contents,
-    CIO_NATIVE_SDK_INITIALIZE_SNIPPET,
-  );
+  const executableContents = maskSwiftNonCode(contents);
+  const initializationMatch =
+    executableContents.match(PUSH_INITIALIZATION_LINE_REGEX) ??
+    executableContents.match(NATIVE_INITIALIZATION_LINE_REGEX);
+  if (!initializationMatch || initializationMatch.index === undefined) {
+    throw new Error(
+      logger.format(
+        'Could not install Expo scene deep-link routing because the Customer.io initialization call was not added to AppDelegate. Preserve Expo\'s super.application(application, didFinishLaunchingWithOptions: launchOptions) return shape or integrate Customer.io initialization manually.'
+      )
+    );
+  }
+
+  const lineStart = contents.lastIndexOf('\n', initializationMatch.index) + 1;
+  const nextLine = contents.indexOf('\n', initializationMatch.index);
+  const lineEnd = nextLine < 0 ? contents.length : nextLine;
+  const initializationLine = contents.slice(lineStart, lineEnd);
+  const indentation = initializationLine.match(/^[ \t]*/)?.[0] ?? '';
+  const withSceneRouting = `${contents.slice(
+    0,
+    lineStart
+  )}${indentation}${CONFIGURE_SCENE_ROUTING_CALL}\n${contents.slice(
+    lineStart
+  )}`;
+  return addSwiftImports(withSceneRouting, [REACT_NATIVE_IMPORT]);
+}
+
+function hasExecutableSceneRouting(contents: string): boolean {
+  return CONFIGURE_SCENE_ROUTING_LINE_REGEX.test(maskSwiftNonCode(contents));
 }
 
 /**
@@ -419,7 +583,10 @@ const addHandlerPropertyDeclaration = (content: string): string => {
  * Modify didFinishLaunchingWithOptions to inject Customer.io code
  * Injects the provided code (either handler call or auto initialization) before the return statement
  */
-const modifyDidFinishLaunchingWithOptions = (content: string, codeToInject: string): string => {
+const modifyDidFinishLaunchingWithOptions = (
+  content: string,
+  codeToInject: string
+): string => {
   // Find the return statement in didFinishLaunchingWithOptions
   // Always look for launchOptions since modifiedLaunchOptions is only set later
   const returnStatementRegex =
@@ -472,6 +639,9 @@ const LIVE_ACTIVITY_IMPORTS = [
   'import CioDataPipelines',
   'import CioLiveActivities',
 ];
+const CONDITIONAL_LIVE_ACTIVITY_IMPORT = `#if canImport(CioLiveActivities)
+import CioLiveActivities
+#endif`;
 const LIVE_ACTIVITY_URL_CALL = 'CustomerIO.liveActivities.handleWidgetUrl';
 
 /**
@@ -483,9 +653,10 @@ const LIVE_ACTIVITY_URL_CALL = 'CustomerIO.liveActivities.handleWidgetUrl';
  * guard inside the same method on a re-prebuild.
  */
 function hasCioOpenUrlHandling(contents: string): boolean {
+  const executableContents = maskSwiftNonCode(contents);
   return (
-    contents.includes(`${CIO_OPEN_URL_MARKER}app, open:`) ||
-    contents.includes(`${CIO_OPEN_URL_MARKER}application, open:`)
+    executableContents.includes(`${CIO_OPEN_URL_MARKER}app, open:`) ||
+    executableContents.includes(`${CIO_OPEN_URL_MARKER}application, open:`)
   );
 }
 
@@ -506,7 +677,7 @@ const LIVE_ACTIVITY_URL_METHOD_REGEX =
  * constants, because a removal has to match the emitted text exactly, indentation included.
  */
 const LIVE_ACTIVITY_URL_GUARD_REGEX =
-  /\n[ \t]*\/\/ Report a Live Activity tap and route the deep link it carries\n[ \t]*guard let url = CustomerIO\.liveActivities\.handleWidgetUrl\(url\) else \{ return true \}/g;
+  /\n[ \t]*\/\/ Report a Live Activity tap and route the deep link it carries\n[ \t]*guard let url = CustomerIO\.liveActivities\.handleWidgetUrl\(url\) else \{ return true \}\n/g;
 
 /**
  * Strips the no-push Live Activity guard so the push handler can take over.
@@ -517,38 +688,144 @@ const LIVE_ACTIVITY_URL_GUARD_REGEX =
  * method that already holds it, whether that method came from Expo's template or was created by the
  * Live Activity injector.
  *
- * Leaves the imports alone: they stay valid while the feature is on, and `addSwiftImports` is
- * idempotent.
+ * If the generated route was the last known use, makes the Live Activities import conditional.
+ * That keeps a host-owned import/use intact when the module remains installed, while allowing an
+ * incremental prebuild that removes the module to compile. We cannot safely delete an import from a
+ * host-owned AppDelegate because another host customization may still need it.
  */
 function removeLiveActivityUrlGuard(contents: string): string {
-  if (!contents.includes(LIVE_ACTIVITY_URL_CALL)) {
-    return contents;
+  if (!maskSwiftNonCode(contents).includes(LIVE_ACTIVITY_URL_CALL)) {
+    return hasConditionalLiveActivityImport(contents)
+      ? disableLiveActivityImport(contents)
+      : contents;
   }
   // Whole-method shape first: it contains the guard shape's text, so the narrower pattern would
   // otherwise strip the guard and leave an empty method behind.
-  return contents
-    .replace(LIVE_ACTIVITY_URL_METHOD_REGEX, '')
-    .replace(LIVE_ACTIVITY_URL_GUARD_REGEX, '');
+  const withoutGeneratedMethod = removeExecutableLiveActivityMatches(
+    contents,
+    LIVE_ACTIVITY_URL_METHOD_REGEX
+  );
+  const next = removeExecutableLiveActivityMatches(
+    withoutGeneratedMethod,
+    LIVE_ACTIVITY_URL_GUARD_REGEX
+  );
+
+  if (next === contents) {
+    return contents;
+  }
+
+  const executableNext = maskSwiftNonCode(next);
+  if (executableNext.includes(LIVE_ACTIVITY_URL_CALL)) {
+    return next;
+  }
+
+  return disableLiveActivityImport(next);
 }
 
+type SourceMatch = { index: number; length: number };
+
+function conditionalLiveActivityImportMatch(
+  contents: string
+): SourceMatch | undefined {
+  const match = maskSwiftNonCode(contents).match(
+    /#if canImport\(CioLiveActivities\)\nimport CioLiveActivities\n#endif/
+  );
+  return match?.index === undefined
+    ? undefined
+    : { index: match.index, length: match[0].length };
+}
+
+function hasConditionalLiveActivityImport(contents: string): boolean {
+  return conditionalLiveActivityImportMatch(contents) !== undefined;
+}
+
+function unconditionalLiveActivityImportMatch(
+  contents: string
+): SourceMatch | undefined {
+  const executableContents = maskSwiftNonCode(contents);
+  for (const match of executableContents.matchAll(/^import CioLiveActivities$/gm)) {
+    if (match.index === undefined) continue;
+    if (
+      enclosingConditionalStart(executableContents, match.index) === undefined
+    ) {
+      return { index: match.index, length: match[0].length };
+    }
+  }
+  return undefined;
+}
+
+/** Restore the generated import before adding an unconditional Live Activities call. */
+function enableLiveActivityImport(contents: string): string {
+  const conditionalImport = conditionalLiveActivityImportMatch(contents);
+  if (!conditionalImport) return contents;
+
+  const unconditionalImport = unconditionalLiveActivityImportMatch(contents);
+  const replacement = unconditionalImport ? '' : 'import CioLiveActivities';
+  return `${contents.slice(0, conditionalImport.index)}${replacement}${contents.slice(
+    conditionalImport.index + conditionalImport.length
+  )}`;
+}
+
+/** Keep a generated import compilable after the Live Activities subspec is removed. */
+function disableLiveActivityImport(contents: string): string {
+  const conditionalImport = conditionalLiveActivityImportMatch(contents);
+  const unconditionalImport = unconditionalLiveActivityImportMatch(contents);
+  if (!unconditionalImport) return contents;
+
+  const replacement = conditionalImport
+    ? ''
+    : CONDITIONAL_LIVE_ACTIVITY_IMPORT;
+  return `${contents.slice(0, unconditionalImport.index)}${replacement}${contents.slice(
+    unconditionalImport.index + unconditionalImport.length
+  )}`;
+}
+
+function removeExecutableLiveActivityMatches(
+  contents: string,
+  pattern: RegExp
+): string {
+  const executableContents = maskSwiftNonCode(contents);
+  return contents.replace(pattern, (match: string, offset: number) => {
+    const executableMatch = executableContents.slice(
+      offset,
+      offset + match.length
+    );
+    return executableMatch.includes(LIVE_ACTIVITY_URL_CALL) ? '' : match;
+  });
+}
+
+const APP_DELEGATE_PUSH_OPEN_URL_METHOD_REGEX =
+  /\n[ \t]*\/\/ Report a Live Activity tap and route the deep link it carries\n[ \t]*public override func application\(_ (?:app|application): UIApplication, open url: URL, options: \[UIApplication\.OpenURLOptionsKey: Any\] = \[:\]\) -> Bool \{\n[ \t]*\/\/ Call CustomerIO SDK handler\n[ \t]*guard let url = cioSdkHandler\.application\((?:app|application), open: url, options: options\) else \{ return true \}\n[ \t]*return super\.application\((?:app|application), open: url, options: options\)\n[ \t]*\}\n/g;
+
+const APP_DELEGATE_PUSH_OPEN_URL_GUARD_REGEX =
+  /\n[ \t]*\/\/ Call CustomerIO SDK handler\n[ \t]*guard let url = cioSdkHandler\.application\((?:app|application), open: url, options: options\) else \{ return true \}/g;
+
+const KILLED_STATE_DEEP_LINK_BLOCK_REGEX =
+  /\n?[ \t]*\/\/ Deep link workaround for app killed state start[\s\S]*?\/\/ Deep link workaround for app killed state ends\n?/g;
+
 /**
- * Add Swift imports after the file's last existing import.
- *
- * Matches an optional leading modifier because React Native 0.83 emits `internal import Expo` as the
- * first line of AppDelegate.swift. An expression anchored to a bare `import` at the start of the
- * file silently matches nothing there, which leaves the injected call referencing symbols that were
- * never imported — a failure that only surfaces at compile time.
+ * Removes AppDelegate URL ownership generated by SDK 53–57 when an incremental prebuild upgrades
+ * the project to Expo's scene lifecycle. Push registration methods stay in AppDelegate; only URL
+ * delivery moves to SceneDelegate and the React Native router.
  */
-function addSwiftImports(contents: string, imports: string[]): string {
-  const missing = imports.filter((line) => !contents.includes(line));
-  if (missing.length === 0) return contents;
+function removeLegacyAppDelegateDeepLinkHandling(contents: string): string {
+  const hadKilledStateBlock = contents.includes(
+    'Deep link workaround for app killed state start'
+  );
+  let next = contents
+    .replace(KILLED_STATE_DEEP_LINK_BLOCK_REGEX, '\n')
+    .replace(APP_DELEGATE_PUSH_OPEN_URL_METHOD_REGEX, '')
+    .replace(APP_DELEGATE_PUSH_OPEN_URL_GUARD_REGEX, '');
 
-  const matches = [...contents.matchAll(/^(?:\w+[ \t]+)?import[ \t]+\S+.*$/gm)];
-  if (matches.length === 0) return contents;
-
-  const last = matches[matches.length - 1];
-  const insertAt = (last.index ?? 0) + last[0].length;
-  return `${contents.slice(0, insertAt)}\n${missing.join('\n')}${contents.slice(insertAt)}`;
+  if (hadKilledStateBlock) {
+    next = next
+      .replace(/launchOptions:\s*modifiedLaunchOptions/g, 'launchOptions: launchOptions')
+      .replace(
+        /didFinishLaunchingWithOptions:\s*modifiedLaunchOptions/g,
+        'didFinishLaunchingWithOptions: launchOptions'
+      );
+  }
+  return removeLiveActivityUrlGuard(next);
 }
 
 const addOpenURLHandling = (content: string): string => {

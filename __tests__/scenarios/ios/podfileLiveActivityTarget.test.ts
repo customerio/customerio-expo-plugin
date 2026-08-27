@@ -35,6 +35,12 @@ describe('ios scenarios — appendLiveActivityWidgetTargetToPodfile', () => {
     `);
   });
 
+  it('preserves the existing extension behavior for dynamic host frameworks', () => {
+    expect(
+      appendLiveActivityWidgetTargetToPodfile(baseline, 'dynamic')
+    ).not.toContain('use_frameworks!');
+  });
+
   it('omits the use_frameworks line when useFrameworks is undefined', () => {
     expect(appendLiveActivityWidgetTargetToPodfile(baseline, undefined))
       .toMatchInlineSnapshot(`
@@ -68,5 +74,27 @@ describe('ios scenarios — appendLiveActivityWidgetTargetToPodfile', () => {
     const once = appendLiveActivityWidgetTargetToPodfile(baseline, 'static');
     const twice = appendLiveActivityWidgetTargetToPodfile(once, 'static');
     expect(twice).toEqual(once);
+  });
+
+  it('updates linkage in an existing managed block', () => {
+    const widgetStatic = appendLiveActivityWidgetTargetToPodfile(
+      baseline,
+      'static'
+    );
+    const widgetDynamic = appendLiveActivityWidgetTargetToPodfile(
+      widgetStatic,
+      'dynamic'
+    );
+    const widgetWithoutFrameworks = appendLiveActivityWidgetTargetToPodfile(
+      widgetDynamic,
+      undefined
+    );
+
+    expect(widgetDynamic).not.toContain('use_frameworks!');
+    expect(widgetWithoutFrameworks).not.toContain('use_frameworks!');
+    expect(
+      (widgetWithoutFrameworks.match(/CustomerIO Live Activity START/g) ?? [])
+        .length
+    ).toBe(1);
   });
 });
