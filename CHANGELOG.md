@@ -1,3 +1,9 @@
+## [3.9.0](https://github.com/customerio/customerio-expo-plugin/compare/3.8.0...3.9.0) (2026-08-27)
+
+### Features
+
+* support Expo scene lifecycle routing (MBL-2304) ([#398](https://github.com/customerio/customerio-expo-plugin/issues/398)) ([38419b5](https://github.com/customerio/customerio-expo-plugin/commit/38419b5dc7f11c83cebdb285121d1e5efb5c7040))
+
 ## [3.8.0](https://github.com/customerio/customerio-expo-plugin/compare/3.7.2...3.8.0) (2026-08-25)
 
 ### Features
