@@ -117,17 +117,17 @@ CustomerIOSDKInitializer.initialize()`;
   it('masks extended raw strings through their matching hash delimiter', () => {
     const contents = `let inline = #"prefix " import customerio_reactnative " suffix"#
 let notes = ##"""
-override func transformURL(_ url: URL) -> URL? {
-  NativeCustomerIO.handleLiveActivityWidgetUrl(url)
+func routeURL(_ url: URL) -> URL? {
+  NativeCustomerIO.exampleCall(url)
 }
 """##
-NativeCustomerIO.handleLiveActivityWidgetUrl(url)`;
+NativeCustomerIO.exampleCall(url)`;
     const masked = maskSwiftNonCode(contents);
 
     expect(masked).not.toContain('import customerio_reactnative');
-    expect(masked).not.toContain('override func transformURL');
+    expect(masked).not.toContain('func routeURL');
     expect(
-      masked.match(/NativeCustomerIO\.handleLiveActivityWidgetUrl/g)
+      masked.match(/NativeCustomerIO\.exampleCall/g)
     ).toHaveLength(1);
   });
 });

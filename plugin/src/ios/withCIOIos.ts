@@ -18,7 +18,7 @@ import {
   withCIOIosLiveActivityCleanup,
   withCIOIosSwift,
 } from './withCIOIosSwift';
-import { withCIOSceneDelegate } from './withCIOSceneDelegate';
+import { withLiveActivityUrlRoutingWarning } from './withLiveActivityUrlRoutingWarning';
 import {
   withCioLiveActivityDisableGuard,
   withCioLiveActivityWidgetXcodeProject,
@@ -201,8 +201,8 @@ export function withCIOIos(
     config = withGeofenceAppDelegate(config);
   }
 
-  if (usesSceneLifecycle) {
-    config = withCIOSceneDelegate(config, { liveNotificationsEnabled });
+  if (usesSceneLifecycle && liveNotificationsEnabled) {
+    config = withLiveActivityUrlRoutingWarning(config);
   }
 
   return config;
