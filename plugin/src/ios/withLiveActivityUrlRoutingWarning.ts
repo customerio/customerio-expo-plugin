@@ -16,7 +16,7 @@ export function hasExpoRouterNativeIntent(projectRoot: string): boolean {
       );
       if (!fs.existsSync(nativeIntentPath)) return false;
 
-      return /\bCustomerIO\s*\.\s*liveActivities\s*\.\s*handleWidgetUrl\s*\(/.test(
+      return /^[ \t]*(?:(?:return|await)[ \t]+|(?:const|let|var)[ \t]+[A-Za-z_$][A-Za-z0-9_$]*[ \t]*=[ \t]*(?:await[ \t]+)?)?CustomerIO\s*\.\s*liveActivities\s*\.\s*handleWidgetUrl\s*\(/m.test(
         fs.readFileSync(nativeIntentPath, 'utf8')
       );
     })

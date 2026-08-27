@@ -69,7 +69,9 @@ export function redirectSystemPath({ path }: { path: string }) {
     fs.mkdirSync(path.dirname(nativeIntentPath), { recursive: true });
     fs.writeFileSync(
       nativeIntentPath,
-      'export function redirectSystemPath({ path }: { path: string }) { return path; }'
+      `const example = 'CustomerIO.liveActivities.handleWidgetUrl(path)';
+// CustomerIO.liveActivities.handleWidgetUrl(path)
+export function redirectSystemPath({ path }: { path: string }) { return path; }`
     );
 
     expect(hasExpoRouterNativeIntent(projectRoot)).toBe(false);
