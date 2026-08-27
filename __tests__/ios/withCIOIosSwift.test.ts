@@ -61,6 +61,18 @@ describe('hasExpoSceneLifecycle', () => {
       '<plist><dict><key>UIApplicationSceneManifest</key><dict><key>UISceneDelegateClassName</key><string>$(PRODUCT_MODULE_NAME).SceneDelegate</string></dict></dict></plist>'
     );
     expect(hasExpoSceneLifecycle(projectRoot, projectName)).toBe(true);
+
+    fs.writeFileSync(
+      path.join(projectRoot, projectName, 'SceneDelegate.swift'),
+      'class SceneDelegate: UIResponder, UIWindowSceneDelegate {}'
+    );
+    expect(hasExpoSceneLifecycle(projectRoot, projectName)).toBe(false);
+
+    fs.writeFileSync(
+      path.join(projectRoot, projectName, 'SceneDelegate.swift'),
+      '// class SceneDelegate: ExpoAppSceneDelegate {}\nclass SceneDelegate: UIResponder, UIWindowSceneDelegate {}'
+    );
+    expect(hasExpoSceneLifecycle(projectRoot, projectName)).toBe(false);
   });
 });
 

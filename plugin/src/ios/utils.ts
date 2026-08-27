@@ -18,6 +18,9 @@ export function hasExpoSceneLifecycle(
     return false;
   }
 
+  const sceneDelegate = maskSwiftNonCode(
+    fs.readFileSync(sceneDelegatePath, 'utf8')
+  );
   const infoPlist = fs.readFileSync(infoPlistPath, 'utf8');
   const sceneDelegateClassName = infoPlist
     .match(
@@ -26,7 +29,10 @@ export function hasExpoSceneLifecycle(
     ?.trim();
   return (
     infoPlist.includes('<key>UIApplicationSceneManifest</key>') &&
-    sceneDelegateClassName === '$(PRODUCT_MODULE_NAME).SceneDelegate'
+    sceneDelegateClassName === '$(PRODUCT_MODULE_NAME).SceneDelegate' &&
+    /\bclass\s+SceneDelegate\s*:\s*(?:Expo\.)?ExpoAppSceneDelegate\b/.test(
+      sceneDelegate
+    )
   );
 }
 
