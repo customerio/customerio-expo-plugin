@@ -16,6 +16,7 @@ import {
   maskSwiftNonCode,
 } from '../../plugin/src/ios/utils';
 import type { CustomerIOPluginOptionsIOS, NativeSDKConfig } from '../../plugin/src/types/cio-types';
+import { logger } from '../../plugin/src/utils/logger';
 import { getFixturePath } from '../utils';
 
 describe('hasExpoSceneLifecycle', () => {
@@ -397,7 +398,7 @@ public class AppDelegate: ExpoAppDelegate {
       );
     });
 
-    it('warns about the explicit Linking readiness signal for scene auto-initialization', async () => {
+    it('logs the explicit Linking readiness signal for scene auto-initialization', async () => {
       const { withAppDelegate } = require('@expo/config-plugins');
       const projectRoot = fs.mkdtempSync(
         path.join(os.tmpdir(), 'cio-expo-auto-init-scenes-')
@@ -413,7 +414,7 @@ public class AppDelegate: ExpoAppDelegate {
         path.join(projectDirectory, 'Info.plist'),
         '<plist><dict><key>UIApplicationSceneManifest</key><dict><key>UISceneDelegateClassName</key><string>$(PRODUCT_MODULE_NAME).SceneDelegate</string></dict></dict></plist>'
       );
-      const warn = jest.spyOn(console, 'warn').mockImplementation();
+      const info = jest.spyOn(logger, 'info').mockImplementation();
 
       try {
         withCIOIosSwift(
@@ -436,11 +437,11 @@ public class AppDelegate: ExpoAppDelegate {
           },
         });
 
-        expect(warn).toHaveBeenCalledWith(
+        expect(info).toHaveBeenCalledWith(
           expect.stringContaining('CustomerIO.setDeepLinkRoutingReady()')
         );
       } finally {
-        warn.mockRestore();
+        info.mockRestore();
         fs.rmSync(projectRoot, { recursive: true, force: true });
       }
     });
@@ -999,6 +1000,21 @@ describe('Expo scene AppDelegate', () => {
     expect(sdk58).not.toContain('modifiedLaunchOptions');
     expect(sdk58).not.toContain('cioSdkHandler.application(app, open: url, options: options)');
     expect(sdk58).toContain('NativeCustomerIO.configureExpoSceneDeepLinkRouting()');
+  });
+
+  it('upgrades a host-formatted push initialization call without aborting prebuild', () => {
+    const sdk57 = modifyAppDelegateForPushHandler(sceneAppDelegate, pushProps);
+    const customized = sdk57.replace(
+      'cioSdkHandler.application(application, didFinishLaunchingWithOptions: launchOptions)',
+      '_ = cioSdkHandler.application(application, didFinishLaunchingWithOptions: launchOptions) // Kept by the host'
+    );
+    const sdk58 = modifyAppDelegateForPushHandler(customized, pushProps, true);
+
+    expect(sdk58).toContain(
+      '_ = cioSdkHandler.application(application, didFinishLaunchingWithOptions: launchOptions) // Kept by the host'
+    );
+    expect(sdk58.indexOf('NativeCustomerIO.configureExpoSceneDeepLinkRouting()'))
+      .toBeLessThan(sdk58.indexOf('_ = cioSdkHandler.application'));
   });
 
   it('fails prebuild when a customized AppDelegate has no safe scene-routing anchor', () => {

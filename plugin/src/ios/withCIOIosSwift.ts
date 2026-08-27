@@ -42,9 +42,9 @@ const CONFIGURE_SCENE_ROUTING_CALL =
 const CONFIGURE_SCENE_ROUTING_LINE_REGEX =
   /^[ \t]*NativeCustomerIO\.configureExpoSceneDeepLinkRouting\(\)[ \t]*$/m;
 const PUSH_INITIALIZATION_LINE_REGEX =
-  /^[ \t]*cioSdkHandler\.application\(application, didFinishLaunchingWithOptions: launchOptions\)[ \t]*$/m;
+  /^[ \t]*(?:_[ \t]*=[ \t]*)?cioSdkHandler\.application\([ \t]*[A-Za-z_][A-Za-z0-9_]*[ \t]*,[ \t]*didFinishLaunchingWithOptions:[ \t]*[A-Za-z_][A-Za-z0-9_]*[ \t]*\)[ \t]*;?[ \t]*$/m;
 const NATIVE_INITIALIZATION_LINE_REGEX =
-  /^[ \t]*CustomerIOSDKInitializer\.initialize\(\)[ \t]*$/m;
+  /^[ \t]*(?:_[ \t]*=[ \t]*)?CustomerIOSDKInitializer\.initialize\(\)[ \t]*;?[ \t]*$/m;
 const APP_DELEGATE_HANDLER_DECLARATION_REGEX =
   /^[ \t]*(?:(?:private|fileprivate|internal|public|open|final|lazy)[ \t]+)*(?:let|var)[ \t]+cioSdkHandler(?:[ \t]*:[ \t]*CioSdkAppDelegateHandler)?[ \t]*=[ \t]*(?:CioSdkAppDelegateHandler|\.init)\(\)/m;
 
@@ -299,7 +299,7 @@ export const withCIOIosSwift = (
           'Expo SDK 58+ was detected, but the generated iOS project does not have an Expo SceneDelegate and scene manifest; keeping AppDelegate URL routing'
         );
       }
-      warnIfNativeAutoInitializationNeedsSceneReadiness(
+      logNativeAutoInitializationSceneReadiness(
         sdkConfig,
         projectUsesSceneLifecycle
       );
@@ -327,7 +327,7 @@ export const withCIOIosSwift = (
           'Expo SDK 58+ was detected, but the generated iOS project does not have an Expo SceneDelegate and scene manifest; keeping AppDelegate URL routing'
         );
       }
-      warnIfNativeAutoInitializationNeedsSceneReadiness(
+      logNativeAutoInitializationSceneReadiness(
         sdkConfig,
         projectUsesSceneLifecycle
       );
@@ -354,13 +354,13 @@ export const withCIOIosSwift = (
   }
 };
 
-function warnIfNativeAutoInitializationNeedsSceneReadiness(
+function logNativeAutoInitializationSceneReadiness(
   sdkConfig: NativeSDKConfig | undefined,
   usesSceneLifecycle: boolean
 ): void {
   if (!sdkConfig || !usesSceneLifecycle) return;
 
-  logger.warn(
+  logger.info(
     'Expo scene projects using native auto-initialization must call CustomerIO.setDeepLinkRoutingReady() after registering the React Native Linking listener'
   );
 }
