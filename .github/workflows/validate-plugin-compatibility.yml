@@ -1,15 +1,16 @@
 name: Validate Plugin Compatibility
 
-# Slim 3-cell PR-time smoke matrix at the latest Expo SDK. Catches real-build
-# regressions (Gradle / CocoaPods / xcodebuild) that the fast Jest scenario
-# suite can't see. The full multi-SDK matrix runs on merges to main via
-# `validate-plugin-compatibility-release.yml`, and on demand via
-# `validate-plugin-compatibility-manual.yml`.
+# A representative Android + iOS/FCM smoke matrix catches real-build regressions
+# that Jest cannot see. Add `ci:full` to include the redundant iOS/APN variant.
+# The full multi-SDK matrix still runs on main and on demand.
 on:
   pull_request:
+    types: [opened, synchronize, reopened, labeled]
+    paths-ignore:
+      - '**/*.md'
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ (github.event.action == 'labeled' && github.event.label.name != 'ci:full') && github.run_id || 'validation' }}
   cancel-in-progress: true
 
 env:
@@ -20,22 +21,34 @@ env:
   APP_NAME_PREFIX: ExpoPluginTestApp
 
 jobs:
+  prepare:
+    name: Select compatibility smoke matrix
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.select.outputs.matrix }}
+    steps:
+      - name: Select representative or full PR matrix
+        id: select
+        shell: bash
+        env:
+          FULL_PR: ${{ contains(github.event.pull_request.labels.*.name, 'ci:full') }}
+        run: |
+          if [[ "$FULL_PR" == 'true' ]]; then
+            echo 'matrix=[{"platform":"android","runs-on":"ubuntu-latest"},{"platform":"ios","runs-on":"macos-26","ios-push-provider":"fcm"},{"platform":"ios","runs-on":"macos-26","ios-push-provider":"apn"}]' >> "$GITHUB_OUTPUT"
+          else
+            echo 'matrix=[{"platform":"android","runs-on":"ubuntu-latest"},{"platform":"ios","runs-on":"macos-26","ios-push-provider":"fcm"}]' >> "$GITHUB_OUTPUT"
+          fi
+
   smoke:
     name: Expo latest - ${{ matrix.platform }}${{ matrix.ios-push-provider && format(' ({0})', matrix.ios-push-provider) }}
+    needs: prepare
+    if: github.event.action != 'labeled' || github.event.label.name == 'ci:full'
     runs-on: ${{ matrix.runs-on }}
 
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - platform: android
-            runs-on: ubuntu-latest
-          - platform: ios
-            runs-on: macos-26
-            ios-push-provider: apn
-          - platform: ios
-            runs-on: macos-26
-            ios-push-provider: fcm
+        include: ${{ fromJSON(needs.prepare.outputs.matrix) }}
 
     steps:
       - name: Checkout Repository

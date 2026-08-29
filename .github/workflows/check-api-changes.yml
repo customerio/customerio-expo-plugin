@@ -2,6 +2,8 @@ name: Check API Changes
 
 on:
   pull_request:
+    paths-ignore:
+      - '**/*.md'
   push:
     branches: [main]
 
@@ -36,4 +38,4 @@ jobs:
           echo ""
           npx api-extractor run --verbose
           echo ""
-          echo "✅ No API changes detected - API report is up to date!" 
+          echo "✅ No API changes detected - API report is up to date!"
