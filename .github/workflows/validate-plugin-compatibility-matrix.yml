@@ -66,6 +66,7 @@ jobs:
           cache: 'npm'
 
       - name: Setup Java
+        if: matrix.platform == 'android'
         uses: actions/setup-java@v4
         with:
           distribution: temurin
