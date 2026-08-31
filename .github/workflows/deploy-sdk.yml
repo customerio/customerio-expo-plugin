@@ -294,6 +294,12 @@ jobs:
         run: npm publish
 
   publish-sample-apps-public-builds:
-    needs: deploy-npm
+    # `deploy-git-tag` is needed for its `new_release_version` output, not for
+    # ordering — `needs` only exposes the outputs of directly-listed jobs.
+    # Without it the test apps resolve their version with `git describe`, which
+    # walks ancestors only and so names the PREVIOUS release on a release commit.
+    needs: [deploy-git-tag, deploy-npm]
     uses: ./.github/workflows/build-sample-app-for-sdk-release.yml
+    with:
+      sdk_version: ${{ needs.deploy-git-tag.outputs.new_release_version }}
     secrets: inherit

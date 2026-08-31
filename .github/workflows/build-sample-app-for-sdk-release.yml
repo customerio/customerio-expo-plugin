@@ -2,11 +2,23 @@ name: Publish test apps for SDK release
 
 on:
   workflow_dispatch:
+    inputs:
+      sdk_version:
+        description: "Published plugin version to build the test apps against (e.g. 3.9.0). Leave empty to use the newest tag reachable from this commit."
+        required: false
+        type: string
   workflow_call:
+    inputs:
+      sdk_version:
+        description: "Published plugin version to build the test apps against. The deploy workflow passes the version semantic-release just tagged."
+        required: false
+        type: string
+        default: ""
 
 jobs:
   build-sample-apps:
     uses: ./.github/workflows/reusable_build_sample_apps.yml
     with:
       use_latest_sdk_version: true
+      sdk_version: ${{ inputs.sdk_version }}
     secrets: inherit
