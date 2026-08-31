@@ -15,22 +15,19 @@ jobs:
       contents: read
     with:
       pr_title: ${{ github.event.pull_request.title }}
-      pr_body: ${{ github.event.pull_request.body || '' }}
       base_sha: ${{ github.event.pull_request.base.sha }}
       head_sha: ${{ github.event.pull_request.head.sha }}
-      head_repository: ${{ github.event.pull_request.head.repo.full_name }}
-      target_repository: ${{ github.repository }}
-      pr_author: ${{ github.event.pull_request.user.login }}
       ci_full: ${{ contains(github.event.pull_request.labels.*.name, 'ci:full') }}
 
-  # Metadata edits rerun full so a newer skipped check cannot replace a failure.
+  # Unsigned compatibility builds own correctness. Release intent or a manual
+  # ci:full label only controls this signed distribution workflow.
   full-sample-apps:
     needs: release_policy
     if: >-
       always() &&
-      (github.event.action == 'edited' ||
-      github.event.action == 'labeled' ||
-      needs.release_policy.outputs.full_validation == 'true') &&
+      needs.release_policy.outputs.full_validation == 'true' &&
+      (github.event.action != 'edited' || github.event.changes.title.from != '') &&
+      (github.event.action != 'labeled' || github.event.label.name == 'ci:full') &&
       github.event.pull_request.head.repo.full_name == github.repository &&
       github.event.pull_request.user.login != 'dependabot[bot]'
     uses: ./.github/workflows/reusable_build_sample_apps.yml

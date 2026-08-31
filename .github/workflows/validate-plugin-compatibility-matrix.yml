@@ -7,6 +7,11 @@ on:
         description: 'Git ref to check out and validate against. Defaults to the calling workflow''s ref.'
         type: string
         required: false
+      matrix:
+        description: 'JSON matrix. Defaults to the complete supported-version and latest-version matrix.'
+        type: string
+        required: false
+        default: '[{"expo-version":54,"platform":"android","runs-on":"ubuntu-latest"},{"expo-version":54,"platform":"ios","runs-on":"macos-26","ios-push-provider":"apn"},{"expo-version":54,"platform":"ios","runs-on":"macos-26","ios-push-provider":"fcm"},{"expo-version":"latest","platform":"android","runs-on":"ubuntu-latest"},{"expo-version":"latest","platform":"ios","runs-on":"macos-26","ios-push-provider":"apn"},{"expo-version":"latest","platform":"ios","runs-on":"macos-26","ios-push-provider":"fcm"}]'
 
 concurrency:
   group: ${{ github.workflow }}-${{ inputs.ref || github.ref }}
@@ -27,31 +32,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - expo-version: 54
-            platform: android
-            runs-on: ubuntu-latest
-          - expo-version: 54
-            platform: ios
-            runs-on: macos-26
-            ios-push-provider: apn
-          - expo-version: 54
-            platform: ios
-            runs-on: macos-26
-            ios-push-provider: fcm
-
-          # Running on latest version helps to catch issues early for new versions not listed above
-          - expo-version: latest
-            platform: android
-            runs-on: ubuntu-latest
-          - expo-version: latest
-            platform: ios
-            runs-on: macos-26
-            ios-push-provider: apn
-          - expo-version: latest
-            platform: ios
-            runs-on: macos-26
-            ios-push-provider: fcm
+        include: ${{ fromJSON(inputs.matrix) }}
 
     steps:
       - name: Checkout Repository
@@ -66,6 +47,7 @@ jobs:
           cache: 'npm'
 
       - name: Setup Java
+        if: matrix.platform == 'android'
         uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -82,8 +64,8 @@ jobs:
 
       - name: Set APP_NAME and APP_PATH
         run: |
-          echo "APP_NAME=${{ env.APP_NAME_PREFIX }}_${{ matrix.expo-version }}" >> $GITHUB_ENV
-          echo "APP_PATH=${{ env.APP_DIR }}/${{ env.APP_NAME_PREFIX }}_${{ matrix.expo-version }}" >> $GITHUB_ENV
+          echo "APP_NAME=${{ env.APP_NAME_PREFIX }}_${{ matrix.expo-version }}" >> "$GITHUB_ENV"
+          echo "APP_PATH=${{ env.APP_DIR }}/${{ env.APP_NAME_PREFIX }}_${{ matrix.expo-version }}" >> "$GITHUB_ENV"
 
       # The test app is generated fresh by `compatibility:create-test-app`, so
       # `Podfile.lock` / Gradle files don't exist at checkout. The cache keys
