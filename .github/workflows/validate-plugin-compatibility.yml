@@ -1,16 +1,22 @@
 name: Validate Plugin Compatibility
 
-# A representative Android + iOS/FCM smoke matrix catches real-build regressions
-# that Jest cannot see. Add `ci:full` to include the redundant iOS/APN variant.
-# The full multi-SDK matrix still runs on main and on demand.
+# A representative Android + iOS/APN smoke matrix catches real-build regressions
+# that Jest cannot see. The separate full-lane caller includes the FCM variant.
+# The full multi-SDK release matrix still runs on main and on demand.
 on:
   pull_request:
-    types: [opened, synchronize, reopened, labeled]
     paths-ignore:
       - '**/*.md'
+  workflow_call:
+    inputs:
+      full:
+        description: Include both iOS push-provider variants.
+        type: boolean
+        required: false
+        default: false
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}-${{ (github.event.action == 'labeled' && github.event.label.name != 'ci:full') && github.run_id || 'validation' }}
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 env:
@@ -23,6 +29,7 @@ env:
 jobs:
   prepare:
     name: Select compatibility smoke matrix
+    if: inputs.full == true || !contains(github.event.pull_request.labels.*.name, 'ci:full')
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.select.outputs.matrix }}
@@ -31,18 +38,17 @@ jobs:
         id: select
         shell: bash
         env:
-          FULL_PR: ${{ contains(github.event.pull_request.labels.*.name, 'ci:full') }}
+          FULL_PR: ${{ inputs.full == true }}
         run: |
           if [[ "$FULL_PR" == 'true' ]]; then
             echo 'matrix=[{"platform":"android","runs-on":"ubuntu-latest"},{"platform":"ios","runs-on":"macos-26","ios-push-provider":"fcm"},{"platform":"ios","runs-on":"macos-26","ios-push-provider":"apn"}]' >> "$GITHUB_OUTPUT"
           else
-            echo 'matrix=[{"platform":"android","runs-on":"ubuntu-latest"},{"platform":"ios","runs-on":"macos-26","ios-push-provider":"fcm"}]' >> "$GITHUB_OUTPUT"
+            echo 'matrix=[{"platform":"android","runs-on":"ubuntu-latest"},{"platform":"ios","runs-on":"macos-26","ios-push-provider":"apn"}]' >> "$GITHUB_OUTPUT"
           fi
 
   smoke:
     name: Expo latest - ${{ matrix.platform }}${{ matrix.ios-push-provider && format(' ({0})', matrix.ios-push-provider) }}
     needs: prepare
-    if: github.event.action != 'labeled' || github.event.label.name == 'ci:full'
     runs-on: ${{ matrix.runs-on }}
 
     strategy:

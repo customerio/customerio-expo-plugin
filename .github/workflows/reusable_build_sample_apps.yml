@@ -88,10 +88,13 @@ jobs:
         with:
           ruby-version: '3.4'
           bundler-cache: true
-          working-directory: test-app
 
       - name: Install sd CLI to use later in the workflow
         uses: kenji-miyake/setup-sd@08c14e27d65a1c215342ef00c81583ae67f4c5ef # v2.0.0
+
+      - name: Bundle install
+        working-directory: test-app
+        run: bundle install
 
       - name: Update test app version # This has to happen before we generate the native app
         uses: maierj/fastlane-action@5a3b971aaa26776459bb26894d6c1a1a84a311a7 # v3.1.0
@@ -234,10 +237,13 @@ jobs:
         with:
           ruby-version: '3.4'
           bundler-cache: true
-          working-directory: test-app
 
       - name: Install SD CLI
         run: brew install sd
+
+      - name: Bundle install
+        working-directory: test-app
+        run: bundle install
 
       - name: Update test app version # This has to happen before we generate the native app
         uses: maierj/fastlane-action@5a3b971aaa26776459bb26894d6c1a1a84a311a7 # v3.1.0
@@ -278,7 +284,8 @@ jobs:
       - name: Copy GoogleService-Info.plist to ios project
         run: |
           cp test-app/files/GoogleService-Info.plist test-app/ios/GoogleService-Info.plist
-          BUNDLE_GEMFILE=test-app/Gemfile bundle exec ruby scripts/add-google-service-ios.rb
+          gem install xcodeproj
+          ruby scripts/add-google-service-ios.rb
 
       - name: Build iOS app with fastlane
         id: ios_build

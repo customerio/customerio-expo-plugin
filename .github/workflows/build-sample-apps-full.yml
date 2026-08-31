@@ -1,0 +1,20 @@
+name: Full sample app builds
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  full-sample-apps:
+    if: >-
+      ((github.event.action == 'labeled' && github.event.label.name == 'ci:full') ||
+      (github.event.action != 'labeled' && contains(github.event.pull_request.labels.*.name, 'ci:full'))) &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    uses: ./.github/workflows/reusable_build_sample_apps.yml
+    with:
+      use_latest_sdk_version: false
+    secrets: inherit

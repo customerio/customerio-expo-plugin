@@ -1,0 +1,17 @@
+name: Full plugin compatibility validation
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled]
+
+permissions:
+  contents: read
+
+jobs:
+  full-compatibility:
+    if: >-
+      ((github.event.action == 'labeled' && github.event.label.name == 'ci:full') ||
+      (github.event.action != 'labeled' && contains(github.event.pull_request.labels.*.name, 'ci:full')))
+    uses: ./.github/workflows/validate-plugin-compatibility.yml
+    with:
+      full: true
