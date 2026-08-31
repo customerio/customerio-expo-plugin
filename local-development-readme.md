@@ -19,14 +19,17 @@ npm install
 
 You can use the test app included in this repository to run the plugin and test its functionality. You can also use this app to quickly test changes made locally to the plugin.
 
-Run the following commands in the `test-app` directory:
+Run the following command at the **root** of this repository:
 
 ```bash
-npm install
-npx expo prebuild
+npm run setup-test-app
 ```
 
-You can then use the following commands to run the test app on Android or iOS:
+That is now the supported entry point. It installs the test app's dependencies
+from the committed `test-app/package-lock.json` with `npm ci`, installs the
+Customer.io plugin, and runs `expo prebuild`.
+
+You can then use the following commands in the `test-app` directory to run the test app on Android or iOS:
 
 ```bash
 npx expo run:android
@@ -35,13 +38,24 @@ npx expo run:ios
 
 ### Plugin Dependency Installation
 
-> Note: For Node.js 18 or newer, this typically runs automatically with `npm install`.
+We use a tarball dependency to ensure our expo plugin is installed as if it was published, avoiding path issues and ensuring dependencies are resolved consistently.
 
-We use tarball dependency to ensure our expo plugin is installed as if it was published, avoiding path issues and ensuring dependencies are resolved consistently. If you face errors, run following command before running `npm install`:
+`npm run setup-test-app` builds and installs that tarball for you. It is installed
+with `--no-save`, so it never lands in `test-app/package.json` or the committed
+lockfile — a `file:` entry there would break `npm ci` as soon as the plugin is
+rebuilt.
+
+Running a bare `npm install` inside `test-app` is no longer the supported path:
+it will resolve the static dependencies afresh instead of from the lockfile, and
+it will not install the plugin at all. Use `npm run setup-test-app`.
+
+To build against a *published* plugin version instead of your local source, put
+the version in `test-app/local.env` before running the setup script:
 
 ```bash
-npm run preinstall
-``` 
+echo "sdkVersion=3.9.0" >> test-app/local.env
+npm run setup-test-app
+```
 
 ## Testing pnpm and monorepo layouts locally
 

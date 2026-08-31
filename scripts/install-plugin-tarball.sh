@@ -25,6 +25,9 @@ print_heading "Running install-plugin-tarball.sh script..."
 
 print_blue "Uninstalling existing expo plugin and installing tarball dependency to ensure it is up-to-date..."
 npm uninstall $PLUGIN_NAME --no-save
-npm install "$PLUGIN_PATH_RELATIVE/$TARBALL_NAME" --silent
+# --no-save: a `file:` tarball entry must never reach test-app/package-lock.json.
+# Its integrity hash changes every time the plugin source is rebuilt, so a
+# committed one would break `npm ci` on the next CI run.
+npm install "$PLUGIN_PATH_RELATIVE/$TARBALL_NAME" --no-save --silent
 
 print_success "✅ $TARBALL_NAME dependency installed successfully!"
