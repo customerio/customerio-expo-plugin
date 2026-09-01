@@ -2,8 +2,23 @@ name: Test pnpm Compatibility
 
 on:
   pull_request:
+    paths:
+      - '.github/workflows/test-pnpm-compatibility.yml'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'plugin/**'
+      - 'scripts/setup-test-app-pnpm.sh'
+      - 'scripts/setup-test-app-pnpm-monorepo.sh'
+      - 'scripts/create-plugin-tarball.sh'
+      - 'scripts/install-plugin-tarball.sh'
+      - 'scripts/verify-pnpm-dev-apps.sh'
+      - 'scripts/utils.sh'
+      - 'test-app-pnpm/**'
+      - 'test-app-pnpm-monorepo/**'
+      - '__tests__/scripts/**'
+      - '__tests__/workflows/**'
   push:
-    branches: [main, beta, feature/*]
+    branches: [main, beta]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}

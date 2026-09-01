@@ -1,0 +1,48 @@
+name: Full sample app builds
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited, labeled]
+
+concurrency:
+  # Unrelated labels and body-only edits must not cancel an in-flight release or
+  # ci:full run. They share a separate group from meaningful validation events.
+  group: >-
+    ${{ github.workflow }}-${{ github.ref }}-${{
+      github.event_name == 'pull_request' &&
+      ((github.event.action == 'labeled' && github.event.label.name != 'ci:full') ||
+      (github.event.action == 'edited' &&
+      github.event.changes.title == null &&
+      github.event.changes.base == null)) &&
+      'metadata' || 'validation'
+    }}
+  cancel-in-progress: true
+
+jobs:
+  release_policy:
+    uses: ./.github/workflows/reusable-release-policy.yml
+    permissions:
+      contents: read
+    with:
+      pr_title: ${{ github.event.pull_request.title }}
+      base_sha: ${{ github.event.pull_request.base.sha }}
+      head_sha: ${{ github.event.pull_request.head.sha }}
+      ci_full: ${{ contains(github.event.pull_request.labels.*.name, 'ci:full') }}
+
+  # Unsigned compatibility builds own correctness. Release intent or a manual
+  # ci:full label only controls this signed distribution workflow.
+  full-sample-apps:
+    needs: release_policy
+    if: >-
+      always() &&
+      needs.release_policy.outputs.full_validation == 'true' &&
+      (github.event.action != 'edited' ||
+      github.event.changes.title != null ||
+      github.event.changes.base != null) &&
+      (github.event.action != 'labeled' || github.event.label.name == 'ci:full') &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.user.login != 'dependabot[bot]'
+    uses: ./.github/workflows/reusable_build_sample_apps.yml
+    with:
+      use_latest_sdk_version: false
+    secrets: inherit

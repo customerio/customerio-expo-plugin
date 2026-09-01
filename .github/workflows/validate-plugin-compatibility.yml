@@ -1,12 +1,13 @@
 name: Validate Plugin Compatibility
 
-# Slim 3-cell PR-time smoke matrix at the latest Expo SDK. Catches real-build
-# regressions (Gradle / CocoaPods / xcodebuild) that the fast Jest scenario
-# suite can't see. The full multi-SDK matrix runs on merges to main via
-# `validate-plugin-compatibility-release.yml`, and on demand via
-# `validate-plugin-compatibility-manual.yml`.
+# Every code PR gets representative latest Android and iOS/APN real builds.
+# Compatibility-sensitive paths add the non-duplicated SDK-floor and FCM cells
+# in validate-plugin-compatibility-full.yml. Release validation remains separate.
 on:
   pull_request:
+    types: [opened, synchronize, reopened]
+    paths-ignore:
+      - '**/*.md'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -33,9 +34,6 @@ jobs:
           - platform: ios
             runs-on: macos-26
             ios-push-provider: apn
-          - platform: ios
-            runs-on: macos-26
-            ios-push-provider: fcm
 
     steps:
       - name: Checkout Repository
@@ -48,6 +46,7 @@ jobs:
           cache: 'npm'
 
       - name: Setup Java
+        if: matrix.platform == 'android'
         uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -64,8 +63,8 @@ jobs:
 
       - name: Set APP_NAME and APP_PATH
         run: |
-          echo "APP_NAME=${{ env.APP_NAME_PREFIX }}_latest" >> $GITHUB_ENV
-          echo "APP_PATH=${{ env.APP_DIR }}/${{ env.APP_NAME_PREFIX }}_latest" >> $GITHUB_ENV
+          echo "APP_NAME=${{ env.APP_NAME_PREFIX }}_latest" >> "$GITHUB_ENV"
+          echo "APP_PATH=${{ env.APP_DIR }}/${{ env.APP_NAME_PREFIX }}_latest" >> "$GITHUB_ENV"
 
       # The test app is generated fresh by `compatibility:create-test-app`, so
       # `Podfile.lock` / Gradle files don't exist at checkout. The cache keys

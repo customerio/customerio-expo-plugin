@@ -1,0 +1,23 @@
+name: Full plugin compatibility validation
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - 'plugin/**'
+      - 'scripts/compatibility/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/validate-plugin-compatibility*.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  # Correctness follows changed paths, not semantic-release naming. The latest
+  # Android and iOS/APN cells run in the smoke workflow, so this adds only the
+  # SDK-floor and FCM cells needed to complete the six-cell matrix.
+  full-compatibility:
+    uses: ./.github/workflows/validate-plugin-compatibility-matrix.yml
+    with:
+      matrix: '[{"expo-version":54,"platform":"android","runs-on":"ubuntu-latest"},{"expo-version":54,"platform":"ios","runs-on":"macos-26","ios-push-provider":"apn"},{"expo-version":54,"platform":"ios","runs-on":"macos-26","ios-push-provider":"fcm"},{"expo-version":"latest","platform":"ios","runs-on":"macos-26","ios-push-provider":"fcm"}]'
