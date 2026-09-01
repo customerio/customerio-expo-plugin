@@ -60,7 +60,18 @@ function getSdkVersion(sdkPackageName) {
     const sdkPackage = getSdkMetadataFromPackageLock(sdkPackageName);
 
     if (!sdkPackage) {
-      console.warn(`${sdkPackageName} not found in package-lock.json`);
+      // Both plugin install paths use `npm install --no-save`, so the plugin is
+      // absent from the lockfile by design: a `file:` tarball entry would break
+      // `npm ci`, and the published install must not rewrite committed files.
+      // Fall back to the manifest of what is actually installed.
+      const installed = getInstalledManifest(sdkPackageName);
+      if (installed) {
+        return resolveValidOrElse(installed.version);
+      }
+
+      console.warn(
+        `${sdkPackageName} not found in package-lock.json or node_modules`
+      );
       return undefined;
     }
 
@@ -81,6 +92,22 @@ function getSdkVersion(sdkPackageName) {
     );
     return undefined;
   }
+}
+
+// Static requires: the bundler resolves these at build time, so the specifier
+// cannot be built from a variable.
+function getInstalledManifest(packageName) {
+  try {
+    if (packageName === 'customerio-expo-plugin') {
+      return require('customerio-expo-plugin/package.json');
+    }
+    if (packageName === 'customerio-reactnative') {
+      return require('customerio-reactnative/package.json');
+    }
+  } catch (error) {
+    console.warn(`Failed to read ${packageName}/package.json: ${error.message}`);
+  }
+  return undefined;
 }
 
 function getSdkMetadataFromPackageLock(packageName) {
