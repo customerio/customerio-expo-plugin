@@ -22,10 +22,15 @@ npm ci
 # Installing it may also move `customerio-reactnative` within its `^` range,
 # because the plugin declares an exact peer on it — that is intended, and it is
 # the only package allowed to move after `npm ci`.
+#
+# `--no-save` keeps that movement in node_modules only. Without it, npm rewrites
+# the committed package.json and package-lock.json mid-run, which would leave a
+# dirty tree and make a later `npm ci` resolve something other than what is
+# committed — reintroducing the drift this lockfile exists to prevent.
 SDK_VERSION="$(node ../scripts/applyLocalEnvValues.js --print-sdk-version)"
 if [ -n "$SDK_VERSION" ]; then
   echo "Installing published customerio-expo-plugin@$SDK_VERSION..."
-  npm install "customerio-expo-plugin@$SDK_VERSION" --save-exact
+  npm install "customerio-expo-plugin@$SDK_VERSION" --no-save
 else
   echo "No sdkVersion in local.env — installing the locally built plugin tarball..."
   bash ../scripts/install-plugin-tarball.sh ..
