@@ -149,13 +149,99 @@ jobs:
           fi
           echo "APP_PRODUCT_PATH=$app_product_path" >> "$GITHUB_ENV"
 
+      # Expected to FAIL. The generated app is asserted against below rather
+      # than left to redden the job: see `.github/IOS-TOOLCHAIN-COMPATIBILITY.md`.
       - name: Install and launch generated app
+        id: launch
+        continue-on-error: true
         uses: customerio/mobile-ci-tools/github-actions/ios/launch-simulator-app/v1@main
         with:
           app-path: ${{ env.APP_PRODUCT_PATH }}
           expected-ios-major: '27'
           survival-seconds: ${{ env.LAUNCH_SURVIVAL_SECONDS }}
           log-path: ${{ runner.temp }}/${{ matrix.ios-push-provider }}-launch.log
+
+      # A permanently-red job trains everyone to ignore it, so a real regression
+      # here would go unnoticed. Invert the assertion instead of muting it: the
+      # job is GREEN while the known Expo defect holds unchanged, and RED the
+      # moment it moves. Gated on the step OUTCOME, not on the action's
+      # `failure-reason` output, which a failing composite step does not
+      # reliably propagate.
+      - name: Assert the known Expo UIScene launch failure
+        id: known-failure
+        shell: bash
+        env:
+          LAUNCH_OUTCOME: ${{ steps.launch.outcome }}
+          LAUNCH_LOG: ${{ runner.temp }}/${{ matrix.ios-push-provider }}-launch.log
+          EXPECTED_EXPO_MAJOR: '57'
+          KNOWN_SIGNATURE: 'UIScene life cycle is required|_UIApplicationEvaluateRuntimeIssueForNoSceneLifecycleAdoption'
+        run: |
+          set -uo pipefail
+
+          flip_reason=""
+          detail=""
+
+          # 1. The launch must still fail.
+          if [[ "$LAUNCH_OUTCOME" != "failure" ]]; then
+            flip_reason="launch-now-succeeds"
+            detail="The generated app launched and survived (step outcome: $LAUNCH_OUTCOME). Expo's UIScene host lifecycle appears to have landed — enable scene support and retire this expected-failure gate."
+          fi
+
+          # 2. It must fail with the KNOWN signature, not some other way.
+          if [[ -z "$flip_reason" ]]; then
+            if [[ ! -s "$LAUNCH_LOG" ]]; then
+              flip_reason="signature-changed"
+              detail="The launch failed but produced no readable log at $LAUNCH_LOG, so the failure could not be identified as the known UIScene defect."
+            elif ! grep -Eq "$KNOWN_SIGNATURE" "$LAUNCH_LOG"; then
+              flip_reason="signature-changed"
+              detail="The launch failed for a reason that does not match the known UIScene signature. This is a genuinely new problem, not the tracked Expo defect."
+            fi
+          fi
+
+          # 3. The assumption this gate encodes — Expo SDK 57 — must still hold.
+          resolved_expo="$(node -e 'const fs=require("fs"),p=require("path");try{const j=JSON.parse(fs.readFileSync(p.join(process.env.APP_PATH,"package.json"),"utf8"));process.stdout.write(String((j.dependencies||{}).expo||""))}catch(e){}' 2>/dev/null || true)"
+          resolved_major="$(printf '%s' "$resolved_expo" | sed -n 's/^[^0-9]*\([0-9][0-9]*\).*/\1/p')"
+          echo "Resolved Expo release in the generated app: ${resolved_expo:-unknown} (major: ${resolved_major:-unknown})"
+          # An unreadable probe is NOT evidence that Expo moved. Keep the two
+          # apart, or any failure to read package.json reports a stale premise
+          # that did not happen and sends someone chasing a non-event.
+          if [[ -z "$flip_reason" ]]; then
+            if [[ -z "$resolved_major" ]]; then
+              flip_reason="expo-version-unresolved"
+              detail="Could not read an Expo version from \$APP_PATH/package.json (resolved: '${resolved_expo:-empty}'). The gate could not confirm its own premise of SDK $EXPECTED_EXPO_MAJOR. This is a probe failure to fix here, not a change in Expo."
+            elif [[ "$resolved_major" != "$EXPECTED_EXPO_MAJOR" ]]; then
+              flip_reason="expo-sdk-moved"
+              detail="The generated app resolved Expo ${resolved_expo:-unknown}, not SDK $EXPECTED_EXPO_MAJOR. This gate's premise is stale — on SDK 58+ the plugin's own scene support (isExpoVersion58OrHigher) takes over and the expected failure no longer applies."
+            fi
+          fi
+
+          {
+            echo "flip-reason=$flip_reason"
+            echo "launch-outcome=$LAUNCH_OUTCOME"
+            echo "resolved-expo=${resolved_expo:-unknown}"
+          } >> "$GITHUB_OUTPUT"
+
+          if [[ -n "$flip_reason" ]]; then
+            echo "::error title=Xcode 27 preview::[$flip_reason] $detail"
+            {
+              echo '## Known Expo failure flipped'
+              echo
+              echo "**Reason:** \`$flip_reason\`"
+              echo "**Provider:** ${{ matrix.ios-push-provider }}"
+              echo "**Resolved Expo:** ${resolved_expo:-unknown}"
+              echo
+              echo "$detail"
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+
+          echo "The known Expo UIScene launch failure is unchanged (Expo ${resolved_expo:-unknown}, launch outcome: $LAUNCH_OUTCOME)."
+          {
+            echo '## Known Expo failure unchanged'
+            echo
+            echo "The generated ${{ matrix.ios-push-provider }} app still fails to launch with the tracked UIScene defect on Expo ${resolved_expo:-unknown}."
+            echo 'Green here means the known defect is unchanged — NOT that Expo works on iOS 27.'
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload compatibility logs
         if: always()
@@ -168,3 +254,54 @@ jobs:
             ${{ runner.temp }}/${{ matrix.ios-push-provider }}-build-start-epoch
           if-no-files-found: error
           retention-days: 7
+
+      # Only the nightly notifies. Pull-request runs of this workflow (it is
+      # triggered by changes to itself) stay quiet. A webhook post needs no
+      # GITHUB_TOKEN scope, so `permissions: contents: read` above is left as is.
+      - name: Notify team when the known Expo failure flips
+        # Gate on the assertion itself, not on failure(): a passing gate followed
+        # by a failed artifact upload would otherwise alert with an empty
+        # flip-reason, reporting a flip that did not happen.
+        #
+        # The two branches need different cancellation handling:
+        #   failure  -- a real flip, already established. Alert even if the run is
+        #               later cancelled, or a genuine flip is lost.
+        #   skipped  -- ambiguous. Either the job broke before the assertion ran
+        #               (worth alerting) or concurrency cancelled the run, which
+        #               also leaves it skipped (not worth alerting). Only the
+        #               `!cancelled()` guard separates those.
+        if: >-
+          always() && github.event_name == 'schedule'
+          && (steps.known-failure.outcome == 'failure'
+          || (!cancelled() && steps.known-failure.outcome == 'skipped'))
+        uses: slackapi/slack-github-action@70cd7be8e40a46e8b0eced40b0de447bdb42f68e # v1.26.0
+        with:
+          payload: |
+            {
+              "text": "Xcode 27 preview: known Expo failure flipped (${{ matrix.ios-push-provider }})",
+              "username": "Expo compatibility bot",
+              "icon_url": "https://logos-download.com/wp-content/uploads/2021/01/Expo_Logo.png",
+              "channel": "#mobile-deployments",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Expo* Xcode 27 preview nightly changed state — :mag: *${{ matrix.ios-push-provider }}* leg"
+                  }
+                },
+                {
+                  "type": "divider"
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Flip reason:* `${{ steps.known-failure.outputs.flip-reason || 'job-failed-before-assertion' }}`\n*Launch outcome:* `${{ steps.known-failure.outputs.launch-outcome || 'unknown' }}`\n*Resolved Expo:* `${{ steps.known-failure.outputs.resolved-expo || 'unknown' }}`\n\n• `launch-now-succeeds` — Expo's UIScene host lifecycle landed. Enable scene support and retire this gate.\n• `signature-changed` — the app still fails, but not with the tracked UIScene signature. Treat as a new problem.\n• `expo-sdk-moved` — the generated app is no longer on SDK 57, so this gate's premise is stale.\n• `expo-version-unresolved` — the gate could not read the app's Expo version. A probe bug in this workflow, not an Expo change.\n• `job-failed-before-assertion` — the nightly broke earlier than the launch step.\n\n<https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}|View the run>"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
