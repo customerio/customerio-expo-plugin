@@ -262,9 +262,12 @@ jobs:
         # Gate on the assertion itself, not on failure(): a passing gate followed
         # by a failed artifact upload would otherwise alert with an empty
         # flip-reason, reporting a flip that did not happen. `skipped` covers the
-        # genuine case where the job broke before the assertion ran.
+        # genuine case where the job broke before the assertion ran -- and
+        # `!cancelled()` keeps a cancelled run (concurrency has
+        # cancel-in-progress) from looking like one, since cancellation also
+        # leaves the assertion skipped.
         if: >-
-          always() && github.event_name == 'schedule'
+          !cancelled() && github.event_name == 'schedule'
           && (steps.known-failure.outcome == 'failure'
           || steps.known-failure.outcome == 'skipped')
         uses: slackapi/slack-github-action@70cd7be8e40a46e8b0eced40b0de447bdb42f68e # v1.26.0

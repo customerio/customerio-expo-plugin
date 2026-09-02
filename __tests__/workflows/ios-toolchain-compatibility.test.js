@@ -98,7 +98,17 @@ describe('Xcode 27 preview workflow', () => {
   it('notifies only the nightly, on the same pinned Slack action as deploy-sdk', () => {
     const notify = step('Notify team when the known Expo failure flips');
     expect(notify).toBeDefined();
-    expect(notify.if).toBe("failure() && github.event_name == 'schedule'");
+    // Gating on the assertion's own outcome rather than failure(): a passing
+    // gate followed by a failed upload must not alert, and a cancelled run
+    // (concurrency cancels in-progress nightlies) must not either -- both leave
+    // a misleading empty flip-reason.
+    expect(notify.if).toBe(
+      "!cancelled() && github.event_name == 'schedule' && " +
+        "(steps.known-failure.outcome == 'failure' || " +
+        "steps.known-failure.outcome == 'skipped')"
+    );
+    expect(notify.if).not.toContain('failure()');
+    expect(notify.if).toContain('!cancelled()');
     expect(notify.env.SLACK_WEBHOOK_TYPE).toBe('INCOMING_WEBHOOK');
     expect(notify.env.SLACK_WEBHOOK_URL).toBe(
       '${{ secrets.SLACK_WEBHOOK_URL }}'
@@ -119,6 +129,7 @@ describe('Xcode 27 preview workflow', () => {
     const payload = notify.with.payload;
     expect(payload).toContain('launch-now-succeeds');
     expect(payload).toContain('signature-changed');
+    expect(payload).toContain('expo-version-unresolved');
     expect(payload).toContain('steps.known-failure.outputs.flip-reason');
 
     // `permissions: contents: read` is enough for a webhook post; assert it was
