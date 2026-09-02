@@ -261,15 +261,19 @@ jobs:
       - name: Notify team when the known Expo failure flips
         # Gate on the assertion itself, not on failure(): a passing gate followed
         # by a failed artifact upload would otherwise alert with an empty
-        # flip-reason, reporting a flip that did not happen. `skipped` covers the
-        # genuine case where the job broke before the assertion ran -- and
-        # `!cancelled()` keeps a cancelled run (concurrency has
-        # cancel-in-progress) from looking like one, since cancellation also
-        # leaves the assertion skipped.
+        # flip-reason, reporting a flip that did not happen.
+        #
+        # The two branches need different cancellation handling:
+        #   failure  -- a real flip, already established. Alert even if the run is
+        #               later cancelled, or a genuine flip is lost.
+        #   skipped  -- ambiguous. Either the job broke before the assertion ran
+        #               (worth alerting) or concurrency cancelled the run, which
+        #               also leaves it skipped (not worth alerting). Only the
+        #               `!cancelled()` guard separates those.
         if: >-
-          !cancelled() && github.event_name == 'schedule'
+          always() && github.event_name == 'schedule'
           && (steps.known-failure.outcome == 'failure'
-          || steps.known-failure.outcome == 'skipped')
+          || (!cancelled() && steps.known-failure.outcome == 'skipped'))
         uses: slackapi/slack-github-action@70cd7be8e40a46e8b0eced40b0de447bdb42f68e # v1.26.0
         with:
           payload: |

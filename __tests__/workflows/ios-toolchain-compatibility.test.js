@@ -103,12 +103,14 @@ describe('Xcode 27 preview workflow', () => {
     // (concurrency cancels in-progress nightlies) must not either -- both leave
     // a misleading empty flip-reason.
     expect(notify.if).toBe(
-      "!cancelled() && github.event_name == 'schedule' && " +
+      "always() && github.event_name == 'schedule' && " +
         "(steps.known-failure.outcome == 'failure' || " +
-        "steps.known-failure.outcome == 'skipped')"
+        "(!cancelled() && steps.known-failure.outcome == 'skipped'))"
     );
-    expect(notify.if).not.toContain('failure()');
-    expect(notify.if).toContain('!cancelled()');
+    // A real flip must still alert if the run is cancelled afterwards, so
+    // !cancelled() guards only the ambiguous `skipped` branch.
+    expect(notify.if).not.toMatch(/^!cancelled\(\)/);
+    expect(notify.if).toContain("(!cancelled() && steps.known-failure.outcome == 'skipped')");
     expect(notify.env.SLACK_WEBHOOK_TYPE).toBe('INCOMING_WEBHOOK');
     expect(notify.env.SLACK_WEBHOOK_URL).toBe(
       '${{ secrets.SLACK_WEBHOOK_URL }}'
