@@ -57,28 +57,29 @@ function formatBuildDateWithRelativeTime(timestamp) {
 
 function getSdkVersion(sdkPackageName) {
   try {
-    const sdkPackage = getSdkMetadataFromPackageLock(sdkPackageName);
+    // The installed manifest is the source of truth for what is actually
+    // running. Both plugin install paths use `npm install --no-save`, so the
+    // plugin never reaches the lockfile — and that install can also move
+    // customerio-reactnative within its range without the lockfile recording
+    // it, which would otherwise report a stale version here.
+    //
+    // The lockfile is still consulted, but only for the `file:` marker that
+    // says the dependency was built from source rather than published.
+    const installed = getInstalledManifest(sdkPackageName);
+    const lockEntry = getSdkMetadataFromPackageLock(sdkPackageName);
 
-    if (!sdkPackage) {
-      // Both plugin install paths use `npm install --no-save`, so the plugin is
-      // absent from the lockfile by design: a `file:` tarball entry would break
-      // `npm ci`, and the published install must not rewrite committed files.
-      // Fall back to the manifest of what is actually installed.
-      const installed = getInstalledManifest(sdkPackageName);
-      if (installed) {
-        return resolveValidOrElse(installed.version);
-      }
-
+    if (!installed && !lockEntry) {
       console.warn(
-        `${sdkPackageName} not found in package-lock.json or node_modules`
+        `${sdkPackageName} not found in node_modules or package-lock.json`
       );
       return undefined;
     }
 
-    const version = resolveValidOrElse(sdkPackage.version);
-    const isPathDependency =
-      sdkPackage.resolved && sdkPackage.resolved.startsWith('file:');
-    if (isPathDependency) {
+    const version = resolveValidOrElse((installed || lockEntry).version);
+    const isBuiltFromSource = Boolean(
+      lockEntry && lockEntry.resolved && lockEntry.resolved.startsWith('file:')
+    );
+    if (isBuiltFromSource) {
       return `${version}-${resolveValidOrElse(
         extras.commitsAheadCount,
         () => 'as-source'
