@@ -1,56 +1,17 @@
 const fs = require('fs');
 const dotenv = require('dotenv');
-const { execSync } = require('child_process');
 
-function installPluginTarball() {
-  try {
-    console.log('Running update-dependency.sh...');
-    execSync('bash ../scripts/install-plugin-tarball.sh ..', {
-      stdio: 'inherit',
-    });
-  } catch (error) {
-    console.error(
-      'Error executing the install-plugin-tarball.sh script:',
-      error.message
-    );
-    process.exit(1);
-  }
-}
+const testAppPath = '../test-app';
 
-function updateSdkVersion() {
-  // Read the version from local.env
-  const expoPluginVersion = process.env.sdkVersion;
-  const cioExpoPackageName = 'customerio-expo-plugin';
-
-  const packageJsonPath = `${testAppPath}/package.json`;
-  const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
-
-  if (expoPluginVersion) {
-    if (
-      packageJson.dependencies &&
-      packageJson.dependencies[cioExpoPackageName]
-    ) {
-      packageJson.dependencies[cioExpoPackageName] = expoPluginVersion;
-      console.log(
-        `Updated ${cioExpoPackageName} to version ${expoPluginVersion}`
-      );
-    }
-  } else {
-    console.log(
-      'No Expo plugin version found in local.env. Using local tarball...'
-    );
-    installPluginTarball();
-  }
-
-  // Write the updated package.json back
-  fs.writeFileSync(
-    packageJsonPath,
-    JSON.stringify(packageJson, null, 2) + '\n'
-  );
-
-  console.log(`Updated ${packageJsonPath} with local.env values!`);
-}
-
+/**
+ * Writes the push provider from local.env into the test app's app.json.
+ *
+ * This is the only local.env value that belongs in a checked-in config file.
+ * The Customer.io plugin version is NOT applied here any more: this script used
+ * to rewrite `dependencies` in test-app/package.json at install time, which is
+ * exactly what made `npm ci` impossible. `scripts/setup-test-app.sh` now
+ * installs the plugin as an explicit step instead.
+ */
 function updatePushProvider() {
   const pushProvider = process.env.pushProvider;
 
@@ -95,18 +56,17 @@ function updatePushProvider() {
   console.log('Updated app.json successfully.');
 }
 
-const testAppPath = '../test-app';
+// Load the local.env file. A missing file is not an error: local and pull
+// request builds legitimately have no local.env and fall back to the locally
+// built plugin tarball.
+dotenv.config({ path: `${testAppPath}/local.env` });
 
-// Load the local.env file
-const envConfig = dotenv.config({ path: `${testAppPath}/local.env` });
-
-if (envConfig.error) {
-  console.log(
-    'No Expo plugin version found in local.env. Using local tarball...'
-  );
-  installPluginTarball();
-  process.exit(0); // Exit without error
+// `--print-sdk-version` makes this the single parser of local.env for the shell
+// too: it prints the requested plugin version (empty when there is none) and
+// changes nothing.
+if (process.argv.includes('--print-sdk-version')) {
+  process.stdout.write(`${process.env.sdkVersion || ''}\n`);
+  process.exit(0);
 }
 
 updatePushProvider();
-updateSdkVersion();

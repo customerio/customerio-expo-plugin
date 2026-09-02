@@ -57,17 +57,29 @@ function formatBuildDateWithRelativeTime(timestamp) {
 
 function getSdkVersion(sdkPackageName) {
   try {
-    const sdkPackage = getSdkMetadataFromPackageLock(sdkPackageName);
+    // The installed manifest is the source of truth for what is actually
+    // running. Both plugin install paths use `npm install --no-save`, so the
+    // plugin never reaches the lockfile — and that install can also move
+    // customerio-reactnative within its range without the lockfile recording
+    // it, which would otherwise report a stale version here.
+    //
+    // The lockfile is still consulted, but only for the `file:` marker that
+    // says the dependency was built from source rather than published.
+    const installed = getInstalledManifest(sdkPackageName);
+    const lockEntry = getSdkMetadataFromPackageLock(sdkPackageName);
 
-    if (!sdkPackage) {
-      console.warn(`${sdkPackageName} not found in package-lock.json`);
+    if (!installed && !lockEntry) {
+      console.warn(
+        `${sdkPackageName} not found in node_modules or package-lock.json`
+      );
       return undefined;
     }
 
-    const version = resolveValidOrElse(sdkPackage.version);
-    const isPathDependency =
-      sdkPackage.resolved && sdkPackage.resolved.startsWith('file:');
-    if (isPathDependency) {
+    const version = resolveValidOrElse((installed || lockEntry).version);
+    const isBuiltFromSource = Boolean(
+      lockEntry && lockEntry.resolved && lockEntry.resolved.startsWith('file:')
+    );
+    if (isBuiltFromSource) {
       return `${version}-${resolveValidOrElse(
         extras.commitsAheadCount,
         () => 'as-source'
@@ -81,6 +93,22 @@ function getSdkVersion(sdkPackageName) {
     );
     return undefined;
   }
+}
+
+// Static requires: the bundler resolves these at build time, so the specifier
+// cannot be built from a variable.
+function getInstalledManifest(packageName) {
+  try {
+    if (packageName === 'customerio-expo-plugin') {
+      return require('customerio-expo-plugin/package.json');
+    }
+    if (packageName === 'customerio-reactnative') {
+      return require('customerio-reactnative/package.json');
+    }
+  } catch (error) {
+    console.warn(`Failed to read ${packageName}/package.json: ${error.message}`);
+  }
+  return undefined;
 }
 
 function getSdkMetadataFromPackageLock(packageName) {
