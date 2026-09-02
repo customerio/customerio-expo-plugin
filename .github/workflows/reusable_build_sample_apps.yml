@@ -8,6 +8,11 @@ on:
         type: boolean
         required: false
         default: false
+      sdk_version:
+        description: "Published SDK version the sample apps should install. The release path passes the version it just published; leave empty to fall back to the newest tag reachable from this commit."
+        type: string
+        required: false
+        default: ""
 
 jobs:
   build-android-app:
@@ -48,11 +53,39 @@ jobs:
       - name: Capture Git Context
         shell: bash
         id: git-context
+        env:
+          SDK_VERSION_INPUT: ${{ inputs.sdk_version }}
+          USE_LATEST_SDK_VERSION: ${{ inputs.use_latest_sdk_version }}
+          EVENT_NAME: ${{ github.event_name }}
         run: |
           echo "BRANCH_NAME=${{ github.head_ref || github.ref_name }}" >> $GITHUB_ENV
           COMMIT_HASH="${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}"
           echo "COMMIT_HASH=${COMMIT_HASH:0:7}" >> $GITHUB_ENV
-          echo "LATEST_TAG=$(git describe --tags --abbrev=0)" >> $GITHUB_ENV
+
+          # `git describe` answers an ancestry question — "the newest tag
+          # reachable from this commit" — and stays the input to
+          # `commitsAheadCount` below. Do not repurpose it.
+          LATEST_TAG="$(git describe --tags --abbrev=0 2>/dev/null || true)"
+          echo "LATEST_TAG=$LATEST_TAG" >> $GITHUB_ENV
+
+          # "Which published SDK do these apps install" is a different question.
+          # semantic-release tags a NEW CHILD of the commit this job checks out,
+          # and `git describe` only walks ancestors, so on the release path it
+          # names the PREVIOUS release. The release caller therefore passes the
+          # version it just published.
+          if [ -n "$SDK_VERSION_INPUT" ]; then
+            SDK_BUILD_VERSION="$SDK_VERSION_INPUT"
+            echo "Resolved SDK version from the sdk_version input: $SDK_BUILD_VERSION"
+          elif [ "$USE_LATEST_SDK_VERSION" = "true" ] && [ "$EVENT_NAME" != "workflow_dispatch" ]; then
+            # Falling back silently here is what produced a release build whose
+            # app manifest asked for the new SDK while npm installed the old one.
+            echo "::error::Release sample-app build received no sdk_version input. Refusing to fall back to the last reachable tag ('${LATEST_TAG:-none}'), which names the previous release on a release commit."
+            exit 1
+          else
+            SDK_BUILD_VERSION="$LATEST_TAG"
+            echo "Resolved SDK version from the last reachable tag: ${SDK_BUILD_VERSION:-none}"
+          fi
+          echo "SDK_BUILD_VERSION=$SDK_BUILD_VERSION" >> $GITHUB_ENV
 
       - name: Set Default Firebase Distribution Groups
         shell: bash
@@ -81,7 +114,7 @@ jobs:
         if: ${{ inputs.use_latest_sdk_version == true }}
         run: |
           touch "test-app/local.env"
-          echo "sdkVersion=${{ env.LATEST_TAG }}" >> "test-app/local.env"
+          echo "sdkVersion=${{ env.SDK_BUILD_VERSION }}" >> "test-app/local.env"
 
       - name: Install tools from Gemfile (ruby language) used for building our apps with
         uses: ruby/setup-ruby@95ef2b042f9d7a56d8268cba8559e2842e2ad01b # v1.321.0
@@ -101,7 +134,7 @@ jobs:
         with:
           lane: update_expo_test_app_version
           subdirectory: test-app
-          options: ${{ inputs.use_latest_sdk_version == true && format('{{"sdk_version":"{0}"}}', env.LATEST_TAG) || '' }}
+          options: ${{ inputs.use_latest_sdk_version == true && format('{{"sdk_version":"{0}"}}', env.SDK_BUILD_VERSION) || '' }}
 
       - name: Install plugin dependencies
         working-directory: plugin
@@ -147,7 +180,7 @@ jobs:
           instructions_guide_link: ${{ secrets.SAMPLE_APPS_INSTRUCTIONS_GUIDE_LINK }}
           platform: "android"
           sdk_name: "Expo Plugin"
-          sdk_version: ${{ env.LATEST_TAG }}
+          sdk_version: ${{ env.SDK_BUILD_VERSION }}
           slack_webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
 
   build-ios-app:
@@ -173,11 +206,39 @@ jobs:
       - name: Capture Git Context
         shell: bash
         id: git-context
+        env:
+          SDK_VERSION_INPUT: ${{ inputs.sdk_version }}
+          USE_LATEST_SDK_VERSION: ${{ inputs.use_latest_sdk_version }}
+          EVENT_NAME: ${{ github.event_name }}
         run: |
           echo "BRANCH_NAME=${{ github.head_ref || github.ref_name }}" >> $GITHUB_ENV
           COMMIT_HASH="${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}"
           echo "COMMIT_HASH=${COMMIT_HASH:0:7}" >> $GITHUB_ENV
-          echo "LATEST_TAG=$(git describe --tags --abbrev=0)" >> $GITHUB_ENV
+
+          # `git describe` answers an ancestry question — "the newest tag
+          # reachable from this commit" — and stays the input to
+          # `commitsAheadCount` below. Do not repurpose it.
+          LATEST_TAG="$(git describe --tags --abbrev=0 2>/dev/null || true)"
+          echo "LATEST_TAG=$LATEST_TAG" >> $GITHUB_ENV
+
+          # "Which published SDK do these apps install" is a different question.
+          # semantic-release tags a NEW CHILD of the commit this job checks out,
+          # and `git describe` only walks ancestors, so on the release path it
+          # names the PREVIOUS release. The release caller therefore passes the
+          # version it just published.
+          if [ -n "$SDK_VERSION_INPUT" ]; then
+            SDK_BUILD_VERSION="$SDK_VERSION_INPUT"
+            echo "Resolved SDK version from the sdk_version input: $SDK_BUILD_VERSION"
+          elif [ "$USE_LATEST_SDK_VERSION" = "true" ] && [ "$EVENT_NAME" != "workflow_dispatch" ]; then
+            # Falling back silently here is what produced a release build whose
+            # app manifest asked for the new SDK while npm installed the old one.
+            echo "::error::Release sample-app build received no sdk_version input. Refusing to fall back to the last reachable tag ('${LATEST_TAG:-none}'), which names the previous release on a release commit."
+            exit 1
+          else
+            SDK_BUILD_VERSION="$LATEST_TAG"
+            echo "Resolved SDK version from the last reachable tag: ${SDK_BUILD_VERSION:-none}"
+          fi
+          echo "SDK_BUILD_VERSION=$SDK_BUILD_VERSION" >> $GITHUB_ENV
 
       - name: Set Default Firebase Distribution Groups
         shell: bash
@@ -210,7 +271,7 @@ jobs:
         run: |
           touch "test-app/local.env"
           if [ "${{ inputs.use_latest_sdk_version }}" == "true" ]; then
-            echo "sdkVersion=${{ env.LATEST_TAG }}" >> "test-app/local.env"
+            echo "sdkVersion=${{ env.SDK_BUILD_VERSION }}" >> "test-app/local.env"
           fi
           echo "pushProvider=${{ matrix.push_provider }}" >> "test-app/local.env"
 
@@ -250,7 +311,7 @@ jobs:
         with:
           lane: update_expo_test_app_version
           subdirectory: test-app
-          options: ${{ inputs.use_latest_sdk_version == true && format('{{"sdk_version":"{0}"}}', env.LATEST_TAG) || '' }}
+          options: ${{ inputs.use_latest_sdk_version == true && format('{{"sdk_version":"{0}"}}', env.SDK_BUILD_VERSION) || '' }}
 
       - name: Install plugin dependencies
         working-directory: plugin
@@ -312,5 +373,5 @@ jobs:
           instructions_guide_link: ${{ secrets.SAMPLE_APPS_INSTRUCTIONS_GUIDE_LINK }}
           platform: "ios"
           sdk_name: "Expo Plugin"
-          sdk_version: ${{ env.LATEST_TAG }}
+          sdk_version: ${{ env.SDK_BUILD_VERSION }}
           slack_webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
