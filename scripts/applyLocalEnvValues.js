@@ -69,4 +69,49 @@ if (process.argv.includes('--print-sdk-version')) {
   process.exit(0);
 }
 
+/**
+ * Records which plugin actually got installed, into app.json extras.
+ *
+ * The plugin is installed `--no-save` on both paths and is not declared in
+ * test-app/package.json, so nothing in the committed tree describes it: there
+ * is no lockfile entry to read, and the plugin's own `exports` map does not
+ * expose `./package.json`, so requiring that from the app would depend on a
+ * bundler fallback. Reading the manifest here with `fs` sidesteps the resolver
+ * entirely, and app.json extras is already how every other piece of build
+ * metadata reaches the app.
+ */
+function recordPluginInstall(source) {
+  const manifestPath = `${testAppPath}/node_modules/customerio-expo-plugin/package.json`;
+
+  let version;
+  try {
+    version = JSON.parse(fs.readFileSync(manifestPath, 'utf8')).version;
+  } catch (error) {
+    console.error(`Could not read ${manifestPath}: ${error.message}`);
+    process.exit(1);
+  }
+
+  const appJsonPath = `${testAppPath}/app.json`;
+  const appJson = JSON.parse(fs.readFileSync(appJsonPath, 'utf8'));
+  appJson.expo.extra = appJson.expo.extra || {};
+  appJson.expo.extra.pluginVersion = version;
+  appJson.expo.extra.pluginInstallSource = source;
+  fs.writeFileSync(appJsonPath, JSON.stringify(appJson, null, 2) + '\n');
+
+  console.log(`Recorded plugin ${version} installed from ${source}.`);
+}
+
+const recordFlagIndex = process.argv.indexOf('--record-plugin-install');
+if (recordFlagIndex !== -1) {
+  const source = process.argv[recordFlagIndex + 1];
+  if (source !== 'published' && source !== 'tarball') {
+    console.error(
+      "--record-plugin-install requires 'published' or 'tarball' as its value."
+    );
+    process.exit(1);
+  }
+  recordPluginInstall(source);
+  process.exit(0);
+}
+
 updatePushProvider();

@@ -5,7 +5,7 @@ const extras = expoConfig?.extra || {};
 
 const BuildMetadata = {
   sdkVersion: getSdkVersion('customerio-reactnative'),
-  pluginVersion: getSdkVersion('customerio-expo-plugin'),
+  pluginVersion: getPluginVersion(),
   appVersion: resolveValidOrElse(expoConfig?.version),
   buildDate: formatBuildDateWithRelativeTime(extras.buildTimestamp),
   gitMetadata: `${resolveValidOrElse(
@@ -95,13 +95,38 @@ function getSdkVersion(sdkPackageName) {
   }
 }
 
-// Static requires: the bundler resolves these at build time, so the specifier
-// cannot be built from a variable.
+/**
+ * The plugin's version and provenance are recorded into app.json extras by
+ * scripts/setup-test-app.sh at install time.
+ *
+ * They cannot be derived here: the plugin is installed `--no-save` on both
+ * paths and is not declared in package.json, so it has no lockfile entry -- and
+ * its `exports` map does not expose `./package.json`, so requiring that would
+ * rely on a bundler fallback rather than a supported entry point.
+ */
+function getPluginVersion() {
+  const version = resolveValidOrElse(extras.pluginVersion, () => undefined);
+
+  if (!version) {
+    console.warn('pluginVersion was not recorded in app.json extras');
+    return undefined;
+  }
+
+  if (extras.pluginInstallSource === 'tarball') {
+    return `${version}-${resolveValidOrElse(
+      extras.commitsAheadCount,
+      () => 'as-source'
+    )}`;
+  }
+
+  return version;
+}
+
+// Static require: the bundler resolves this at build time, so the specifier
+// cannot be built from a variable. customerio-reactnative exports
+// `./package.json` explicitly, so this is a supported entry point.
 function getInstalledManifest(packageName) {
   try {
-    if (packageName === 'customerio-expo-plugin') {
-      return require('customerio-expo-plugin/package.json');
-    }
     if (packageName === 'customerio-reactnative') {
       return require('customerio-reactnative/package.json');
     }

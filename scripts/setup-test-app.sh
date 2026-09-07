@@ -31,10 +31,17 @@ SDK_VERSION="$(node ../scripts/applyLocalEnvValues.js --print-sdk-version)"
 if [ -n "$SDK_VERSION" ]; then
   echo "Installing published customerio-expo-plugin@$SDK_VERSION..."
   npm install "customerio-expo-plugin@$SDK_VERSION" --no-save
+  PLUGIN_INSTALL_SOURCE=published
 else
   echo "No sdkVersion in local.env — installing the locally built plugin tarball..."
   bash ../scripts/install-plugin-tarball.sh ..
+  PLUGIN_INSTALL_SOURCE=tarball
 fi
+
+# Nothing in the committed tree records which plugin is installed, so capture it
+# now -- before prebuild -- or the app cannot tell a source build from a
+# published one.
+node ../scripts/applyLocalEnvValues.js --record-plugin-install "$PLUGIN_INSTALL_SOURCE"
 
 echo "Running expo prebuild..."
 npx expo prebuild
