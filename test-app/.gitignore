@@ -2,7 +2,9 @@
 
 # dependencies
 node_modules/
-package-lock.json
+# package-lock.json is COMMITTED on purpose: `scripts/setup-test-app.sh`
+# runs `npm ci` against it so two runs of the same commit build the same
+# app. Do not re-ignore it.
 
 # Expo
 .expo/

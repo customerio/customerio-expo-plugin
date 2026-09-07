@@ -25,6 +25,13 @@ print_heading "Running install-plugin-tarball.sh script..."
 
 print_blue "Uninstalling existing expo plugin and installing tarball dependency to ensure it is up-to-date..."
 npm uninstall $PLUGIN_NAME --no-save
-npm install "$PLUGIN_PATH_RELATIVE/$TARBALL_NAME" --silent
+# --no-save: a `file:` tarball entry must never reach test-app/package-lock.json.
+# Its integrity hash changes every time the plugin source is rebuilt, so a
+# committed one would break `npm ci` on the next CI run.
+# Not `--silent`: this runs under `set -e`, so a non-zero exit kills the script
+# and the caller reports only "Command failed". `--silent` threw away npm's own
+# error text, which made an intermittent failure of this exact line
+# undiagnosable from CI logs (customerio-expo-plugin run 33616883126).
+npm install "$PLUGIN_PATH_RELATIVE/$TARBALL_NAME" --no-save
 
 print_success "✅ $TARBALL_NAME dependency installed successfully!"

@@ -5,7 +5,7 @@ const extras = expoConfig?.extra || {};
 
 const BuildMetadata = {
   sdkVersion: getSdkVersion('customerio-reactnative'),
-  pluginVersion: getSdkVersion('customerio-expo-plugin'),
+  pluginVersion: getPluginVersion(),
   appVersion: resolveValidOrElse(expoConfig?.version),
   buildDate: formatBuildDateWithRelativeTime(extras.buildTimestamp),
   gitMetadata: `${resolveValidOrElse(
@@ -57,17 +57,29 @@ function formatBuildDateWithRelativeTime(timestamp) {
 
 function getSdkVersion(sdkPackageName) {
   try {
-    const sdkPackage = getSdkMetadataFromPackageLock(sdkPackageName);
+    // The installed manifest is the source of truth for what is actually
+    // running. Both plugin install paths use `npm install --no-save`, so the
+    // plugin never reaches the lockfile — and that install can also move
+    // customerio-reactnative within its range without the lockfile recording
+    // it, which would otherwise report a stale version here.
+    //
+    // The lockfile is still consulted, but only for the `file:` marker that
+    // says the dependency was built from source rather than published.
+    const installed = getInstalledManifest(sdkPackageName);
+    const lockEntry = getSdkMetadataFromPackageLock(sdkPackageName);
 
-    if (!sdkPackage) {
-      console.warn(`${sdkPackageName} not found in package-lock.json`);
+    if (!installed && !lockEntry) {
+      console.warn(
+        `${sdkPackageName} not found in node_modules or package-lock.json`
+      );
       return undefined;
     }
 
-    const version = resolveValidOrElse(sdkPackage.version);
-    const isPathDependency =
-      sdkPackage.resolved && sdkPackage.resolved.startsWith('file:');
-    if (isPathDependency) {
+    const version = resolveValidOrElse((installed || lockEntry).version);
+    const isBuiltFromSource = Boolean(
+      lockEntry && lockEntry.resolved && lockEntry.resolved.startsWith('file:')
+    );
+    if (isBuiltFromSource) {
       return `${version}-${resolveValidOrElse(
         extras.commitsAheadCount,
         () => 'as-source'
@@ -81,6 +93,47 @@ function getSdkVersion(sdkPackageName) {
     );
     return undefined;
   }
+}
+
+/**
+ * The plugin's version and provenance are recorded into app.json extras by
+ * scripts/setup-test-app.sh at install time.
+ *
+ * They cannot be derived here: the plugin is installed `--no-save` on both
+ * paths and is not declared in package.json, so it has no lockfile entry -- and
+ * its `exports` map does not expose `./package.json`, so requiring that would
+ * rely on a bundler fallback rather than a supported entry point.
+ */
+function getPluginVersion() {
+  const version = resolveValidOrElse(extras.pluginVersion, () => undefined);
+
+  if (!version) {
+    console.warn('pluginVersion was not recorded in app.json extras');
+    return undefined;
+  }
+
+  if (extras.pluginInstallSource === 'tarball') {
+    return `${version}-${resolveValidOrElse(
+      extras.commitsAheadCount,
+      () => 'as-source'
+    )}`;
+  }
+
+  return version;
+}
+
+// Static require: the bundler resolves this at build time, so the specifier
+// cannot be built from a variable. customerio-reactnative exports
+// `./package.json` explicitly, so this is a supported entry point.
+function getInstalledManifest(packageName) {
+  try {
+    if (packageName === 'customerio-reactnative') {
+      return require('customerio-reactnative/package.json');
+    }
+  } catch (error) {
+    console.warn(`Failed to read ${packageName}/package.json: ${error.message}`);
+  }
+  return undefined;
 }
 
 function getSdkMetadataFromPackageLock(packageName) {

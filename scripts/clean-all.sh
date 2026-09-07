@@ -26,9 +26,8 @@ echo -e "\nDeleting Test App node_modules directory..."
 rm -rf test-app/node_modules
 echo "Deleted Test App node_modules directory!"
 
-echo -e "\nDeleting Test App package-lock.json file..."
-rm -f test-app/package-lock.json
-echo "Deleted Test App package-lock.json file!"
+# test-app/package-lock.json is intentionally NOT deleted: it is committed and
+# is what `npm ci` reads. Removing it here would silently drop the pinned graph.
 
 echo -e "\nDeleting Test App .expo directories..."
 rm -rf test-app/.expo test-app/.expo-shared
