@@ -1,3 +1,9 @@
+## [3.9.1](https://github.com/customerio/customerio-expo-plugin/compare/3.9.0...3.9.1) (2026-09-08)
+
+### Bug Fixes
+
+* **deps:** update Faraday security pin to 1.10.6 ([#404](https://github.com/customerio/customerio-expo-plugin/issues/404)) ([fc5a588](https://github.com/customerio/customerio-expo-plugin/commit/fc5a588e090b039f3e735379b35c98601d08eb3f))
+
 ## [3.9.0](https://github.com/customerio/customerio-expo-plugin/compare/3.8.0...3.9.0) (2026-08-27)
 
 ### Features
