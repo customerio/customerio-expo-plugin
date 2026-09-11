@@ -13,7 +13,7 @@
     "@react-navigation/bottom-tabs": "^7.4.0",
     "@react-navigation/elements": "^2.6.3",
     "@react-navigation/native": "^7.1.8",
-    "customerio-reactnative": "^6.9.0",
+    "customerio-reactnative": "github:customerio/customerio-reactnative#mbl-2366-inbox-a11y-labels",
     "dotenv": "^17.2.2",
     "expo": "~55.0.23",
     "expo-build-properties": "~55.0.13",
