@@ -18,6 +18,29 @@ After you add the plugin to your project, you'll need to install our React Nativ
 
 You'll find our [complete SDK documentation at https://customer.io/docs/sdk/expo](https://customer.io/docs/sdk/expo/).
 
+## Visual notification inbox accessibility labels
+
+The SDK ships no text of its own in the visual notification inbox — the empty state is an icon and the loading state is a spinner — so accessibility labels are the one place a string is still needed. Apps supply their own through `inApp.notificationInboxAccessibilityLabels` when they call `CustomerIO.initialize()` from JavaScript:
+
+```ts
+CustomerIO.initialize({
+  cdpApiKey: '...',
+  inApp: {
+    siteId: '...',
+    notificationInboxAccessibilityLabels: {
+      bell: t('inbox.bell'),
+      bellWithUnreadCount: t('inbox.unread'), // e.g. "{count} unread notifications"
+      loadingIndicator: t('inbox.loading'),
+      emptyState: t('inbox.empty'),
+    },
+  },
+});
+```
+
+**These labels require JavaScript initialization.** With native auto-initialization (a `config` block in the plugin options), the SDK is initialized before JavaScript loads, so a later `CustomerIO.initialize()` call is a no-op and the labels never reach the SDK. They are deliberately not exposed as plugin options: values in `app.json` are baked in at prebuild, which would ship a capability that only works for one locale.
+
+An unset label leaves that element unlabeled rather than falling back to English, so an auto-initializing app simply gets no inbox labels.
+
 ## Scene deep links with native auto-initialization
 
 When using Expo's scene lifecycle with Customer.io native auto-initialization, register your React Native `Linking` URL listener and then call `CustomerIO.setDeepLinkRoutingReady()`. This lets the plugin deliver URLs buffered during cold launch without requiring a second SDK initialization from JavaScript.
