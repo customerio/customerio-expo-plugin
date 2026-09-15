@@ -37,6 +37,8 @@ CustomerIO.initialize({
 });
 ```
 
+`bellWithUnreadCount` is a template: `{count}` is replaced with the number of unread messages when the bell is announced. Spell it any other way and nothing is substituted, so the screen reader reads the text verbatim, braces included, and never says the count — the SDK warns in the JavaScript console when it spots that.
+
 **These labels require JavaScript initialization.** With native auto-initialization (a `config` block in the plugin options), the SDK is initialized before JavaScript loads, so a later `CustomerIO.initialize()` call is a no-op and the labels never reach the SDK. They are deliberately not exposed as plugin options: values in `app.json` are baked in at prebuild, which would ship a capability that only works for one locale.
 
 An unset label leaves that element unlabeled rather than falling back to English, so an auto-initializing app simply gets no inbox labels.
