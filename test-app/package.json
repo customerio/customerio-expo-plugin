@@ -13,7 +13,7 @@
     "@react-navigation/bottom-tabs": "^7.4.0",
     "@react-navigation/elements": "^2.6.3",
     "@react-navigation/native": "^7.1.8",
-    "customerio-reactnative": "github:customerio/customerio-reactnative#d067ecbe84c83268c56c2d01c0eedc86f37e9dee",
+    "customerio-reactnative": "6.11.0",
     "dotenv": "^17.2.2",
     "expo": "~55.0.23",
     "expo-build-properties": "~55.0.13",
