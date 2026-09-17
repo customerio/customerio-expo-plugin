@@ -43,6 +43,43 @@ CustomerIO.initialize({
 
 An unset label leaves that element unlabeled rather than falling back to English, so an auto-initializing app simply gets no inbox labels.
 
+## In-app message color scheme
+
+In-app messages follow the device's light or dark appearance by default. An app with its own
+appearance setting — one that can disagree with the operating system — tells the SDK which variant
+to render with `inApp.colorScheme`:
+
+```ts
+import { CioColorScheme, CustomerIO } from 'customerio-reactnative';
+
+CustomerIO.initialize({
+  cdpApiKey: '...',
+  inApp: {
+    siteId: '...',
+    colorScheme: CioColorScheme.Dark, // Auto (default) | Light | Dark
+  },
+});
+```
+
+Because an appearance setting can change while the app is running, the scheme can also be changed
+at any time:
+
+```ts
+CustomerIO.inAppMessaging.setColorScheme(CioColorScheme.Light);
+```
+
+That takes effect immediately — messages already on screen, inline views included, are re-themed in
+place, so it can be called straight from the app's own appearance toggle.
+
+**Unlike the inbox accessibility labels above, native auto-initialization only affects the config
+option, not the setter.** With a `config` block in the plugin options the SDK starts before
+JavaScript loads, so `inApp.colorScheme` never arrives — but `setColorScheme()` reaches the
+already-initialized SDK and works normally. An auto-initializing app can therefore still pin a
+variant by calling it once after startup.
+
+Whichever light and dark variants the message renders come from the Customer.io editor. A message
+authored with a single style looks the same under every scheme.
+
 ## Scene deep links with native auto-initialization
 
 When using Expo's scene lifecycle with Customer.io native auto-initialization, register your React Native `Linking` URL listener and then call `CustomerIO.setDeepLinkRoutingReady()`. This lets the plugin deliver URLs buffered during cold launch without requiring a second SDK initialization from JavaScript.
