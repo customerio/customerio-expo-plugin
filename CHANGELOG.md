@@ -1,3 +1,9 @@
+## [3.10.0](https://github.com/customerio/customerio-expo-plugin/compare/3.9.1...3.10.0) (2026-09-18)
+
+### Features
+
+* **in-app:** document the color scheme override and inbox accessibility labels ([#406](https://github.com/customerio/customerio-expo-plugin/issues/406)) ([64a16af](https://github.com/customerio/customerio-expo-plugin/commit/64a16af4fbfdc6a88c5c7980a1a066bc39fba19a))
+
 ## [3.9.1](https://github.com/customerio/customerio-expo-plugin/compare/3.9.0...3.9.1) (2026-09-08)
 
 ### Bug Fixes
