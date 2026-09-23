@@ -51,22 +51,24 @@ export function getRelativePathToRNSDK(iosPath: string) {
       : `RN >=${RN_REALPATH_AUTOLINKING_MIN_VERSION} or unknown — using realpath to match expo-modules-autolinking`
   );
 
-  let absolutePath: string;
-  if (useLexical) {
-    absolutePath = packageDir;
-  } else {
+  // TEMP NEGATIVE TEST (revert #339 pnpm realpath support): always emit the
+  // naive node_modules (symlink) path, never realpath to the .pnpm store.
+  // Under pnpm this makes our Podfile :path diverge from what
+  // expo-modules-autolinking (RN >=0.80) emits, reproducing the customer's
+  // "multiple dependencies with different sources" install failure.
+  const absolutePath = packageDir;
+  if (!useLexical) {
     try {
-      absolutePath = fs.realpathSync(packageDir);
-      if (absolutePath !== packageDir) {
-        logger.info(`Realpath differs from resolved dir: ${absolutePath}`);
-      }
+      const realpath = fs.realpathSync(packageDir);
+      logger.info(
+        `(negative test) discarding realpath ${realpath}; keeping symlink path ${packageDir}`
+      );
     } catch (err) {
       logger.warn(
         `realpathSync failed (${
           err instanceof Error ? err.message : String(err)
-        }); falling back to symlink path`
+        })`
       );
-      absolutePath = packageDir;
     }
   }
 
