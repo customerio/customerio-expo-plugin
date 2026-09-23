@@ -27,7 +27,7 @@ concurrency:
 jobs:
   pnpm-dev-apps:
     name: Build pnpm dev apps (isolated + hoisted) and verify artifacts
-    runs-on: macos-26
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -41,15 +41,18 @@ jobs:
         run: npm ci
 
       # Phase A — default pnpm (isolated) mode.
-      # Each setup script runs `expo prebuild --clean`, which on macOS
-      # automatically runs `pod install` against the generated Podfile.
-      # That's the step that fails with the customer's "multiple
-      # dependencies with different sources" error if the resolver
-      # regresses to emitting the .pnpm/ realpath.
-      - name: 'Phase A — set up test-app-pnpm (flat) — includes pod install'
+      # Each setup script runs `expo prebuild --clean`. On this Linux runner
+      # the scripts add `--no-install`, so the Podfile is generated but
+      # `pod install` is skipped (CocoaPods is macOS-only). The verify step
+      # below asserts only on generated text — the Podfile `:path` values and
+      # the installed `expoVersion` — neither of which needs pods. The
+      # "pods actually resolve" signal (the customer's "multiple dependencies
+      # with different sources" failure) is instead exercised by the real iOS
+      # build in the Validate Plugin Compatibility workflow.
+      - name: 'Phase A — set up test-app-pnpm (flat)'
         run: npm run setup-test-app-pnpm
 
-      - name: 'Phase A — set up test-app-pnpm-monorepo (workspace) — includes pod install'
+      - name: 'Phase A — set up test-app-pnpm-monorepo (workspace)'
         run: npm run setup-test-app-pnpm-monorepo
 
       - name: 'Phase A — verify Podfile :path values and expoVersion attribution'
