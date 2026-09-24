@@ -51,24 +51,10 @@ export function getRelativePathToRNSDK(iosPath: string) {
       : `RN >=${RN_REALPATH_AUTOLINKING_MIN_VERSION} or unknown — using realpath to match expo-modules-autolinking`
   );
 
-  let absolutePath: string;
-  if (useLexical) {
-    absolutePath = packageDir;
-  } else {
-    try {
-      absolutePath = fs.realpathSync(packageDir);
-      if (absolutePath !== packageDir) {
-        logger.info(`Realpath differs from resolved dir: ${absolutePath}`);
-      }
-    } catch (err) {
-      logger.warn(
-        `realpathSync failed (${
-          err instanceof Error ? err.message : String(err)
-        }); falling back to symlink path`
-      );
-      absolutePath = packageDir;
-    }
-  }
+  // TEMP NEGATIVE TEST: always emit the node_modules symlink path.
+  void useLexical;
+  void fs;
+  const absolutePath = packageDir;
 
   const relativePath = path.relative(iosPath, absolutePath);
   logger.info(`Final Podfile :path => '${relativePath}'`);
