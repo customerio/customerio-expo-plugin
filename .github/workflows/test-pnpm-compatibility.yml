@@ -69,6 +69,7 @@ jobs:
       - name: 'Phase A — pod install (flat)'
         working-directory: test-app-pnpm/ios
         run: |
+          set -o pipefail
           if ! pod install 2>&1 | tee "$RUNNER_TEMP/pod-install.log"; then
             if grep -q "multiple dependencies with different sources" "$RUNNER_TEMP/pod-install.log"; then
               echo "::error::pod install failed in test-app-pnpm/ios: pnpm Podfile :path divergence (the same pod resolved from different :path sources)"
@@ -82,6 +83,7 @@ jobs:
       - name: 'Phase A — pod install (monorepo)'
         working-directory: test-app-pnpm-monorepo/apps/mobile/ios
         run: |
+          set -o pipefail
           if ! pod install 2>&1 | tee "$RUNNER_TEMP/pod-install.log"; then
             if grep -q "multiple dependencies with different sources" "$RUNNER_TEMP/pod-install.log"; then
               echo "::error::pod install failed in test-app-pnpm-monorepo/apps/mobile/ios: pnpm Podfile :path divergence (the same pod resolved from different :path sources)"
@@ -120,6 +122,7 @@ jobs:
       - name: 'Phase B — pod install (monorepo, hoisted)'
         working-directory: test-app-pnpm-monorepo/apps/mobile/ios
         run: |
+          set -o pipefail
           if ! pod install 2>&1 | tee "$RUNNER_TEMP/pod-install.log"; then
             if grep -q "multiple dependencies with different sources" "$RUNNER_TEMP/pod-install.log"; then
               echo "::error::pod install failed in test-app-pnpm-monorepo/apps/mobile/ios: pnpm Podfile :path divergence (the same pod resolved from different :path sources)"
