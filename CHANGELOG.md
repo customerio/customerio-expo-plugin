@@ -1,3 +1,9 @@
+## [3.11.0](https://github.com/customerio/customerio-expo-plugin/compare/3.10.0...3.11.0) (2026-09-25)
+
+### Features
+
+* support polygon geofences ([#411](https://github.com/customerio/customerio-expo-plugin/issues/411)) ([03f7042](https://github.com/customerio/customerio-expo-plugin/commit/03f70422ba21d1dd18b9ad0f1cae6b9e088f4563))
+
 ## [3.10.0](https://github.com/customerio/customerio-expo-plugin/compare/3.9.1...3.10.0) (2026-09-18)
 
 ### Features
