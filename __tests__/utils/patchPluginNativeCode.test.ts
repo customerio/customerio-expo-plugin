@@ -352,6 +352,70 @@ describe('Native SDK Configuration Patching', () => {
       }
     });
 
+    describe('wk_ keys', () => {
+      test('takes the region from a wk_ key when none is set', () => {
+        const result = patchNativeSDKInitializer(mockContent, PLATFORM.IOS, {
+          cdpApiKey: 'wk_eu_abc',
+        });
+
+        expect(result).toContain('region: "EU"');
+      });
+
+      test('keeps the region the app sets over the key', () => {
+        const result = patchNativeSDKInitializer(mockContent, PLATFORM.IOS, {
+          cdpApiKey: 'wk_eu_abc',
+          region: 'US',
+        });
+
+        expect(result).toContain('region: "US"');
+      });
+
+      test('leaves the region empty for other keys', () => {
+        const result = patchNativeSDKInitializer(mockContent, PLATFORM.IOS, {
+          cdpApiKey: 'legacy-key',
+        });
+
+        expect(result).toContain('region: ""');
+      });
+
+      test.each([
+        [PLATFORM.IOS, 'if siteId != nil || cdpApiKey.hasPrefix("wk_")'],
+        [PLATFORM.ANDROID, 'if (!siteId.isNullOrBlank() || CDP_API_KEY.startsWith("wk_"))'],
+      ])('starts in-app on %s without a siteId', (platform, inAppCheck) => {
+        const template = platform === PLATFORM.IOS ? swiftTemplateContent : kotlinTemplateContent;
+        const result = patchNativeSDKInitializer(template, platform, { cdpApiKey: 'wk_us_abc' });
+
+        expect(result).toContain(inAppCheck);
+        expect(result).not.toMatch(/\{\{\w+\}\}/);
+      });
+    });
+
+    describe('cdpApiKey escaping', () => {
+      test('escapes quotes and backslashes on iOS', () => {
+        const result = patchNativeSDKInitializer(mockContent, PLATFORM.IOS, {
+          cdpApiKey: 'a"b\\c\\(d)',
+        });
+
+        expect(result).toContain('apiKey: a\\"b\\\\c\\\\(d)');
+      });
+
+      test('also escapes $ on Android so Kotlin does not read a template', () => {
+        const result = patchNativeSDKInitializer(mockContent, PLATFORM.ANDROID, {
+          cdpApiKey: 'a"b$c',
+        });
+
+        expect(result).toContain('apiKey: a\\"b\\$c');
+      });
+
+      test('keeps $& in the key as is', () => {
+        const result = patchNativeSDKInitializer(mockContent, PLATFORM.IOS, {
+          cdpApiKey: 'a$&b',
+        });
+
+        expect(result).toContain('apiKey: a$&b');
+      });
+    });
+
     describe('snapshots', () => {
       test('iOS complete', () => {
         const config = {

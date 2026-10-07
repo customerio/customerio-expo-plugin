@@ -1,5 +1,145 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`Native SDK Configuration Patching patchNativeSDKInitializer() snapshots Android complete 1`] = `
+"package io.customer.sdk.expo
+
+import android.app.Application
+import io.customer.datapipelines.config.ScreenView
+import io.customer.messaginginapp.MessagingInAppModuleConfig
+import io.customer.messaginginapp.ModuleMessagingInApp
+import io.customer.messagingpush.MessagingPushModuleConfig
+import io.customer.messagingpush.ModuleMessagingPushFCM
+import io.customer.reactnative.sdk.messaginginapp.ReactInAppEventListener
+import io.customer.sdk.CustomerIOBuilder
+import io.customer.sdk.core.util.CioLogLevel
+import io.customer.sdk.data.model.Region
+
+object CustomerIOSDKInitializer {
+    private const val CDP_API_KEY = "test-api-key"
+
+    fun initialize(application: Application) = with(
+        CustomerIOBuilder(application, CDP_API_KEY)
+    ) {
+        val siteId: String? = "android-site-456"
+        val migrationSiteId: String? = "android-site-456"
+        val region = Region.getRegion("EU")
+
+        setIfDefined("info", CustomerIOBuilder::logLevel) { CioLogLevel.getLogLevel(it) }
+        setIfDefined(region, CustomerIOBuilder::region)
+        setIfDefined(false, CustomerIOBuilder::autoTrackDeviceAttributes)
+        setIfDefined(true, CustomerIOBuilder::trackApplicationLifecycleEvents)
+        setIfDefined("all", CustomerIOBuilder::screenViewUse) { ScreenView.getScreenView(it) }
+        setIfDefined(migrationSiteId, CustomerIOBuilder::migrationSiteId)
+
+        // Add in-app if siteId is provided. A public wk_ key is enough without one.
+        if (!siteId.isNullOrBlank() || CDP_API_KEY.startsWith("wk_")) {
+            addCustomerIOModule(
+                ModuleMessagingInApp(
+                    MessagingInAppModuleConfig.Builder(siteId.orEmpty(), region)
+                        .setEventListener(ReactInAppEventListener.instance)
+                        .build()
+                )
+            )
+        }
+        addCustomerIOModule(
+            ModuleMessagingPushFCM(
+                MessagingPushModuleConfig.Builder().build()
+            )
+        )
+
+        build()
+    }
+}
+
+// Apply a value after transforming it, only if both the original and transformed values are non-nil
+private inline fun <R, T> CustomerIOBuilder.setIfDefined(
+    value: R?,
+    block: CustomerIOBuilder.(T) -> CustomerIOBuilder,
+    transform: (R) -> T,
+): CustomerIOBuilder = value?.let { block(transform(it)) } ?: this
+
+// Apply a value to a setter only if it's non-nil
+private inline fun <T> CustomerIOBuilder.setIfDefined(
+    value: T?,
+    block: CustomerIOBuilder.(T) -> CustomerIOBuilder,
+): CustomerIOBuilder = setIfDefined(
+    value = value,
+    block = block,
+    transform = { it },
+)
+"
+`;
+
+exports[`Native SDK Configuration Patching patchNativeSDKInitializer() snapshots Android minimal 1`] = `
+"package io.customer.sdk.expo
+
+import android.app.Application
+import io.customer.datapipelines.config.ScreenView
+import io.customer.messaginginapp.MessagingInAppModuleConfig
+import io.customer.messaginginapp.ModuleMessagingInApp
+import io.customer.messagingpush.MessagingPushModuleConfig
+import io.customer.messagingpush.ModuleMessagingPushFCM
+import io.customer.reactnative.sdk.messaginginapp.ReactInAppEventListener
+import io.customer.sdk.CustomerIOBuilder
+import io.customer.sdk.core.util.CioLogLevel
+import io.customer.sdk.data.model.Region
+
+object CustomerIOSDKInitializer {
+    private const val CDP_API_KEY = "test-api-key"
+
+    fun initialize(application: Application) = with(
+        CustomerIOBuilder(application, CDP_API_KEY)
+    ) {
+        val siteId: String? = null
+        val migrationSiteId: String? = null
+        val region = Region.getRegion("")
+
+        setIfDefined(null, CustomerIOBuilder::logLevel) { CioLogLevel.getLogLevel(it) }
+        setIfDefined(region, CustomerIOBuilder::region)
+        setIfDefined(null, CustomerIOBuilder::autoTrackDeviceAttributes)
+        setIfDefined(null, CustomerIOBuilder::trackApplicationLifecycleEvents)
+        setIfDefined(null, CustomerIOBuilder::screenViewUse) { ScreenView.getScreenView(it) }
+        setIfDefined(migrationSiteId, CustomerIOBuilder::migrationSiteId)
+
+        // Add in-app if siteId is provided. A public wk_ key is enough without one.
+        if (!siteId.isNullOrBlank() || CDP_API_KEY.startsWith("wk_")) {
+            addCustomerIOModule(
+                ModuleMessagingInApp(
+                    MessagingInAppModuleConfig.Builder(siteId.orEmpty(), region)
+                        .setEventListener(ReactInAppEventListener.instance)
+                        .build()
+                )
+            )
+        }
+        addCustomerIOModule(
+            ModuleMessagingPushFCM(
+                MessagingPushModuleConfig.Builder().build()
+            )
+        )
+
+        build()
+    }
+}
+
+// Apply a value after transforming it, only if both the original and transformed values are non-nil
+private inline fun <R, T> CustomerIOBuilder.setIfDefined(
+    value: R?,
+    block: CustomerIOBuilder.(T) -> CustomerIOBuilder,
+    transform: (R) -> T,
+): CustomerIOBuilder = value?.let { block(transform(it)) } ?: this
+
+// Apply a value to a setter only if it's non-nil
+private inline fun <T> CustomerIOBuilder.setIfDefined(
+    value: T?,
+    block: CustomerIOBuilder.(T) -> CustomerIOBuilder,
+): CustomerIOBuilder = setIfDefined(
+    value = value,
+    block = block,
+    transform = { it },
+)
+"
+`;
+
 exports[`Native SDK Configuration Patching patchNativeSDKInitializer() snapshots iOS complete 1`] = `
 "import CioDataPipelines
 import CioInternalCommon
@@ -28,8 +168,9 @@ class CustomerIOSDKInitializer {
 
         CustomerIO.initialize(withConfig: builder.build())
 
-        if let siteId = siteId {
-            let inAppConfig = MessagingInAppConfigBuilder(siteId: siteId, region: region).build()
+        // A public wk_ key is enough for in-app, so site ID is only needed for other keys.
+        if siteId != nil || cdpApiKey.hasPrefix("wk_") {
+            let inAppConfig = MessagingInAppConfigBuilder(siteId: siteId ?? "", region: region).build()
             MessagingInApp.initialize(withConfig: inAppConfig)
             let logger = DIGraphShared.shared.logger
             // Retrieves ReactInAppEventListener from DI graph, populated when it is accessed in React Native SDK.
@@ -92,8 +233,9 @@ class CustomerIOSDKInitializer {
 
         CustomerIO.initialize(withConfig: builder.build())
 
-        if let siteId = siteId {
-            let inAppConfig = MessagingInAppConfigBuilder(siteId: siteId, region: region).build()
+        // A public wk_ key is enough for in-app, so site ID is only needed for other keys.
+        if siteId != nil || cdpApiKey.hasPrefix("wk_") {
+            let inAppConfig = MessagingInAppConfigBuilder(siteId: siteId ?? "", region: region).build()
             MessagingInApp.initialize(withConfig: inAppConfig)
             let logger = DIGraphShared.shared.logger
             // Retrieves ReactInAppEventListener from DI graph, populated when it is accessed in React Native SDK.
@@ -125,141 +267,5 @@ class CustomerIOSDKInitializer {
         }
     }
 }
-"
-`;
-
-exports[`Native SDK Configuration Patching patchNativeSDKInitializer() snapshots Android complete 1`] = `
-"package io.customer.sdk.expo
-
-import android.app.Application
-import io.customer.datapipelines.config.ScreenView
-import io.customer.messaginginapp.MessagingInAppModuleConfig
-import io.customer.messaginginapp.ModuleMessagingInApp
-import io.customer.messagingpush.MessagingPushModuleConfig
-import io.customer.messagingpush.ModuleMessagingPushFCM
-import io.customer.reactnative.sdk.messaginginapp.ReactInAppEventListener
-import io.customer.sdk.CustomerIOBuilder
-import io.customer.sdk.core.util.CioLogLevel
-import io.customer.sdk.data.model.Region
-
-object CustomerIOSDKInitializer {
-    fun initialize(application: Application) = with(
-        CustomerIOBuilder(application, "test-api-key")
-    ) {
-        val siteId: String? = "android-site-456"
-        val migrationSiteId: String? = "android-site-456"
-        val region = Region.getRegion("EU")
-
-        setIfDefined("info", CustomerIOBuilder::logLevel) { CioLogLevel.getLogLevel(it) }
-        setIfDefined(region, CustomerIOBuilder::region)
-        setIfDefined(false, CustomerIOBuilder::autoTrackDeviceAttributes)
-        setIfDefined(true, CustomerIOBuilder::trackApplicationLifecycleEvents)
-        setIfDefined("all", CustomerIOBuilder::screenViewUse) { ScreenView.getScreenView(it) }
-        setIfDefined(migrationSiteId, CustomerIOBuilder::migrationSiteId)
-
-        // Add messaging modules if siteId is provided
-        if (!(siteId.isNullOrBlank())) {
-            addCustomerIOModule(
-                ModuleMessagingInApp(
-                    MessagingInAppModuleConfig.Builder(siteId, region)
-                        .setEventListener(ReactInAppEventListener.instance)
-                        .build()
-                )
-            )
-        }
-        addCustomerIOModule(
-            ModuleMessagingPushFCM(
-                MessagingPushModuleConfig.Builder().build()
-            )
-        )
-
-        build()
-    }
-}
-
-// Apply a value after transforming it, only if both the original and transformed values are non-nil
-private inline fun <R, T> CustomerIOBuilder.setIfDefined(
-    value: R?,
-    block: CustomerIOBuilder.(T) -> CustomerIOBuilder,
-    transform: (R) -> T,
-): CustomerIOBuilder = value?.let { block(transform(it)) } ?: this
-
-// Apply a value to a setter only if it's non-nil
-private inline fun <T> CustomerIOBuilder.setIfDefined(
-    value: T?,
-    block: CustomerIOBuilder.(T) -> CustomerIOBuilder,
-): CustomerIOBuilder = setIfDefined(
-    value = value,
-    block = block,
-    transform = { it },
-)
-"
-`;
-
-exports[`Native SDK Configuration Patching patchNativeSDKInitializer() snapshots Android minimal 1`] = `
-"package io.customer.sdk.expo
-
-import android.app.Application
-import io.customer.datapipelines.config.ScreenView
-import io.customer.messaginginapp.MessagingInAppModuleConfig
-import io.customer.messaginginapp.ModuleMessagingInApp
-import io.customer.messagingpush.MessagingPushModuleConfig
-import io.customer.messagingpush.ModuleMessagingPushFCM
-import io.customer.reactnative.sdk.messaginginapp.ReactInAppEventListener
-import io.customer.sdk.CustomerIOBuilder
-import io.customer.sdk.core.util.CioLogLevel
-import io.customer.sdk.data.model.Region
-
-object CustomerIOSDKInitializer {
-    fun initialize(application: Application) = with(
-        CustomerIOBuilder(application, "test-api-key")
-    ) {
-        val siteId: String? = null
-        val migrationSiteId: String? = null
-        val region = Region.getRegion("")
-
-        setIfDefined(null, CustomerIOBuilder::logLevel) { CioLogLevel.getLogLevel(it) }
-        setIfDefined(region, CustomerIOBuilder::region)
-        setIfDefined(null, CustomerIOBuilder::autoTrackDeviceAttributes)
-        setIfDefined(null, CustomerIOBuilder::trackApplicationLifecycleEvents)
-        setIfDefined(null, CustomerIOBuilder::screenViewUse) { ScreenView.getScreenView(it) }
-        setIfDefined(migrationSiteId, CustomerIOBuilder::migrationSiteId)
-
-        // Add messaging modules if siteId is provided
-        if (!(siteId.isNullOrBlank())) {
-            addCustomerIOModule(
-                ModuleMessagingInApp(
-                    MessagingInAppModuleConfig.Builder(siteId, region)
-                        .setEventListener(ReactInAppEventListener.instance)
-                        .build()
-                )
-            )
-        }
-        addCustomerIOModule(
-            ModuleMessagingPushFCM(
-                MessagingPushModuleConfig.Builder().build()
-            )
-        )
-
-        build()
-    }
-}
-
-// Apply a value after transforming it, only if both the original and transformed values are non-nil
-private inline fun <R, T> CustomerIOBuilder.setIfDefined(
-    value: R?,
-    block: CustomerIOBuilder.(T) -> CustomerIOBuilder,
-    transform: (R) -> T,
-): CustomerIOBuilder = value?.let { block(transform(it)) } ?: this
-
-// Apply a value to a setter only if it's non-nil
-private inline fun <T> CustomerIOBuilder.setIfDefined(
-    value: T?,
-    block: CustomerIOBuilder.(T) -> CustomerIOBuilder,
-): CustomerIOBuilder = setIfDefined(
-    value = value,
-    block = block,
-    transform = { it },
-)
 "
 `;

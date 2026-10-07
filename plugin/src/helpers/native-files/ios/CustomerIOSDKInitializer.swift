@@ -31,8 +31,9 @@ class CustomerIOSDKInitializer {
         {{LIVE_NOTIFICATION_MODULE_INIT}}
         CustomerIO.initialize(withConfig: builder.build())
 
-        if let siteId = siteId {
-            let inAppConfig = MessagingInAppConfigBuilder(siteId: siteId, region: region).build()
+        // A public wk_ key is enough for in-app, so site ID is only needed for other keys.
+        if siteId != nil || cdpApiKey.hasPrefix("wk_") {
+            let inAppConfig = MessagingInAppConfigBuilder(siteId: siteId ?? "", region: region).build()
             MessagingInApp.initialize(withConfig: inAppConfig)
             let logger = DIGraphShared.shared.logger
             // Retrieves ReactInAppEventListener from DI graph, populated when it is accessed in React Native SDK.
