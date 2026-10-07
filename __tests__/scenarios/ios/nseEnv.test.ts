@@ -27,6 +27,12 @@ describe('ios scenarios — applyRichPushConfigToEnv', () => {
     `);
   });
 
+  it('escapes quotes, backslashes and $& in the key', () => {
+    expect(
+      applyRichPushConfigToEnv(baseline, { cdpApiKey: 'a"b\\c$&', region: 'us' })
+    ).toContain('static var customerIOCdpApiKey: String = "a\\"b\\\\c$&"');
+  });
+
   it('accepts case-insensitive region keys (US, Us, etc.)', () => {
     expect(
       applyRichPushConfigToEnv(baseline, { cdpApiKey: 'key-123', region: 'US' })

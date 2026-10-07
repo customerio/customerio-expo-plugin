@@ -81,13 +81,13 @@ That takes effect immediately — messages already on screen, inline views inclu
 place, so it can be called straight from the app's own appearance toggle.
 
 **Unlike the inbox accessibility labels above, native auto-initialization only affects the config
-option, not the setter — provided the plugin config sets `siteId`.** With a `config` block in the
+option, not the setter — provided the plugin config sets `siteId` or uses a `wk_` key.** With a `config` block in the
 plugin options the SDK starts before JavaScript loads, so `inApp.colorScheme` never arrives, while
 `setColorScheme()` reaches the already-initialized SDK and works normally. Such an app can
 therefore still pin a variant by calling it once after startup.
 
-That depends on `config.siteId`, because the plugin only adds the in-app messaging module when one
-is present. Without it there is no module for either path to reach: the config option is dropped as
+That depends on `config.siteId` or a `wk_` `config.cdpApiKey`, because the plugin only adds the
+in-app messaging module when one of them is present. Without it there is no module for either path to reach: the config option is dropped as
 above, and the setter logs that in-app messaging is unavailable and leaves the scheme unchanged.
 
 Whichever light and dark variants the message renders come from the Customer.io editor. A message
