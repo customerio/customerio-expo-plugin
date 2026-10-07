@@ -1,11 +1,13 @@
 import type { ConfigPlugin, XcodeProject } from '@expo/config-plugins';
 import { withXcodeProject } from '@expo/config-plugins';
 
+import { PLATFORM } from '../helpers/constants/common';
 import {
   CIO_NOTIFICATION_TARGET_NAME,
   CIO_REGISTER_PUSHNOTIFICATION_SNIPPET,
   DEFAULT_BUNDLE_VERSION,
 } from '../helpers/constants/ios';
+import { escapeForStringLiteral } from '../helpers/utils/cdpApiKey';
 import { replaceCodeByRegex } from '../helpers/utils/codeInjection';
 import { injectCIONotificationPodfileCode } from '../helpers/utils/injectCIOPodfileCode';
 import type { CustomerIOPluginOptionsIOS, RichPushConfig } from '../types/cio-types';
@@ -382,11 +384,8 @@ export function applyRichPushConfigToEnv(
   const cdpApiKey = richPushConfig?.cdpApiKey;
   const region = richPushConfig?.region;
 
-  let next = replaceCodeByRegex(
-    content,
-    /\{\{CDP_API_KEY\}\}/,
-    cdpApiKey || 'MISSING_API_KEY',
-  );
+  const escapedKey = escapeForStringLiteral(cdpApiKey || 'MISSING_API_KEY', PLATFORM.IOS);
+  let next = content.replace(/\{\{CDP_API_KEY\}\}/, () => escapedKey);
 
   const regionKey = region?.toLowerCase() ?? '';
   const regionMap = { us: 'Region.US', eu: 'Region.EU' } as const;
@@ -482,7 +481,8 @@ export function applyConfigToPushFile(
     : '';
 
   let next = replaceCodeByRegex(content, /\{\{REGISTER_SNIPPET\}\}/, registerSnippet);
-  next = replaceCodeByRegex(next, /\{\{CDP_API_KEY\}\}/, cdpApiKey);
+  const escapedKey = escapeForStringLiteral(cdpApiKey, PLATFORM.IOS);
+  next = next.replace(/\{\{CDP_API_KEY\}\}/, () => escapedKey);
 
   if (region) {
     next = replaceCodeByRegex(next, /\{\{REGION\}\}/, region.toUpperCase());

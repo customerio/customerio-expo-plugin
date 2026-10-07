@@ -15,8 +15,10 @@ import io.customer.sdk.core.util.CioLogLevel
 import io.customer.sdk.data.model.Region
 
 object CustomerIOSDKInitializer {
+    private const val CDP_API_KEY = "{{CDP_API_KEY}}"
+
     fun initialize(application: Application) = with(
-        CustomerIOBuilder(application, "{{CDP_API_KEY}}")
+        CustomerIOBuilder(application, CDP_API_KEY)
     ) {
         val siteId: String? = {{SITE_ID}}
         val migrationSiteId: String? = {{MIGRATION_SITE_ID}}
@@ -29,11 +31,11 @@ object CustomerIOSDKInitializer {
         setIfDefined({{SCREEN_VIEW_USE}}, CustomerIOBuilder::screenViewUse) { ScreenView.getScreenView(it) }
         setIfDefined(migrationSiteId, CustomerIOBuilder::migrationSiteId)
 
-        // Add messaging modules if siteId is provided
-        if (!(siteId.isNullOrBlank())) {
+        // Add in-app if siteId is provided. A public wk_ key is enough without one.
+        if (!siteId.isNullOrBlank() || CDP_API_KEY.startsWith("wk_")) {
             addCustomerIOModule(
                 ModuleMessagingInApp(
-                    MessagingInAppModuleConfig.Builder(siteId, region)
+                    MessagingInAppModuleConfig.Builder(siteId.orEmpty(), region)
                         .setEventListener(ReactInAppEventListener.instance)
                         .build()
                 )

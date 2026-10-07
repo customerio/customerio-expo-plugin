@@ -141,7 +141,7 @@ export type NativeSDKConfig = {
   trackApplicationLifecycleEvents?: boolean; // Default: true
   screenViewUse?: 'all' | 'inapp'; // Default: 'all'. 'all': sent to server + in-app messages, 'inapp': in-app messages only
   logLevel?: 'none' | 'error' | 'info' | 'debug'; // Default: 'debug'. Controls SDK logging verbosity
-  siteId?: string; // Optional, if only siteId defined, migrationSiteId = siteId
+  siteId?: string; // Optional, not needed for in-app with a wk_ key. If only siteId defined, migrationSiteId = siteId
   migrationSiteId?: string; // Optional, if only migrationSiteId defined, siteId should be null
   /**
    * Location module config. Location is off by default. Applied whenever the location module is

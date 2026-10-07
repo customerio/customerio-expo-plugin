@@ -5,6 +5,7 @@ import type {
 import { getPluginVersion } from '../../utils/plugin';
 import { validateNativeSDKConfig } from '../../utils/validation';
 import { PLATFORM, type Platform } from '../constants/common';
+import { escapeForStringLiteral, regionFromCdpApiKey } from './cdpApiKey';
 import {
   type GeofenceInitOptions,
   patchGeofencePlaceholders,
@@ -61,13 +62,16 @@ export function patchNativeSDKInitializer(
   const pluginVersion = getPluginVersion();
   content = content.replace(/\{\{EXPO_PLUGIN_VERSION\}\}/g, pluginVersion);
 
-  // Replace CDP API Key (required field)
-  content = content.replace(/\{\{CDP_API_KEY\}\}/g, sdkConfig.cdpApiKey);
+  // Replace CDP API Key (required field). A function replacer keeps `$&` and similar in the key
+  // from being read as replacement patterns.
+  const cdpApiKey = escapeForStringLiteral(sdkConfig.cdpApiKey, platform);
+  content = content.replace(/\{\{CDP_API_KEY\}\}/g, () => cdpApiKey);
 
-  // Handle region - use empty string as fallback (nil not supported for region)
+  // Handle region - use empty string as fallback (nil not supported for region).
+  // A wk_ key carries its region, so use it when none is set, like the native SDKs do.
   replaceValue(
     /\{\{REGION\}\}/g,
-    sdkConfig.region,
+    sdkConfig.region ?? regionFromCdpApiKey(sdkConfig.cdpApiKey),
     (configValue) => `"${configValue}"`,
     '""'
   );
