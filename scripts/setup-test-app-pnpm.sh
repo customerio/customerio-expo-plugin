@@ -19,8 +19,17 @@ cd test-app-pnpm
 print_blue "\nInstalling dependencies with pnpm..."
 pnpm install
 
+# On macOS `expo prebuild` also runs `pod install`; on Linux (CI) CocoaPods
+# is unavailable, so skip the post-prebuild install there with --no-install.
+# The Podfile is still generated and verify-pnpm-dev-apps.sh only makes text
+# assertions, which don't need pods.
+PREBUILD_ARGS=(--clean)
+if [ "$(uname -s)" != "Darwin" ]; then
+  PREBUILD_ARGS+=(--no-install)
+fi
+
 print_blue "\nRunning expo prebuild..."
-pnpm exec expo prebuild --clean
+pnpm exec expo prebuild "${PREBUILD_ARGS[@]}"
 
 cd ..
 
