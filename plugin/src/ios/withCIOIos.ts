@@ -1,6 +1,7 @@
 import type { ExpoConfig } from '@expo/config-types';
 import { withEntitlementsPlist } from '@expo/config-plugins';
 import type {
+  CustomerIOPluginFirebaseInstallationIdOptions,
   CustomerIOPluginOptionsIOS,
   CustomerIOPluginPushNotificationOptions,
   CustomerIOPluginLiveNotificationsOptions,
@@ -20,6 +21,7 @@ import {
   withCioLiveActivityDisableGuard,
   withCioLiveActivityWidgetXcodeProject,
 } from './withCioLiveActivityWidgetXcodeProject';
+import { withFirebaseInstallationIdInfoPlist } from './withFirebaseInstallationIdInfoPlist';
 import { withGeofenceAppDelegate } from './withGeofenceAppDelegate';
 import { withGoogleServicesJsonFile } from './withGoogleServicesJsonFile';
 import { withLiveActivityInfoPlist } from './withLiveActivityInfoPlist';
@@ -35,7 +37,8 @@ export function withCIOIos(
   props?: CustomerIOPluginOptionsIOS,
   location?: CustomerIOPluginLocationOptions,
   geofence?: CustomerIOPluginGeofenceOptions,
-  liveNotifications?: CustomerIOPluginLiveNotificationsOptions
+  liveNotifications?: CustomerIOPluginLiveNotificationsOptions,
+  firebaseInstallationId?: CustomerIOPluginFirebaseInstallationIdOptions
 ) {
   const isSwiftProject = isExpoVersion53OrHigher(config);
   const usesSceneLifecycle = isExpoVersion58OrHigher(config);
@@ -197,6 +200,11 @@ export function withCIOIos(
   if (usesSceneLifecycle && liveNotificationsEnabled) {
     config = withLiveActivityUrlRoutingWarning(config);
   }
+
+  config = withFirebaseInstallationIdInfoPlist(config, {
+    firebaseInstallationId,
+    iosOptions: platformConfig,
+  });
 
   return config;
 }
