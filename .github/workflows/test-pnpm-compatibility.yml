@@ -27,7 +27,10 @@ concurrency:
 jobs:
   pnpm-dev-apps:
     name: Build pnpm dev apps (isolated + hoisted) and verify artifacts
-    runs-on: macos-26
+    runs-on: ubuntu-latest
+    env:
+      # Linux has no Xcode; RN's use_react_native! only reads `xcodebuild -version`.
+      FAKE_XCODE_VERSION: '26.0'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -37,20 +40,56 @@ jobs:
         with:
           version: 10
 
+      - uses: ruby/setup-ruby@762794c140bbeda0f1224786aa33b4b46783a6c1 # v1.326.0
+        with:
+          ruby-version: '3.3'
+
+      - name: Install CocoaPods
+        run: gem install cocoapods -v 1.16.2 --no-document
+
+      - name: Linux CocoaPods shims
+        run: |
+          stubs="$RUNNER_TEMP/stubs"
+          mkdir -p "$stubs"
+          printf '#!/bin/sh\necho "Xcode %s"\necho "Build version 17A324"\n' "$FAKE_XCODE_VERSION" > "$stubs/xcodebuild"
+          printf '#!/bin/sh\ncommand "$@"\n' > "$stubs/command"
+          chmod +x "$stubs/xcodebuild" "$stubs/command"
+          echo "$stubs" >> "$GITHUB_PATH"
+
       - name: Install root dependencies
         run: npm ci
 
       # Phase A — default pnpm (isolated) mode.
-      # Each setup script runs `expo prebuild --clean`, which on macOS
-      # automatically runs `pod install` against the generated Podfile.
-      # That's the step that fails with the customer's "multiple
-      # dependencies with different sources" error if the resolver
-      # regresses to emitting the .pnpm/ realpath.
-      - name: 'Phase A — set up test-app-pnpm (flat) — includes pod install'
+      # On Linux the setup scripts run `expo prebuild --no-install`, and
+      # prebuild swallows pod install failures anyway, so each app gets a
+      # separate strict `pod install` step.
+      - name: 'Phase A — set up test-app-pnpm (flat)'
         run: npm run setup-test-app-pnpm
 
-      - name: 'Phase A — set up test-app-pnpm-monorepo (workspace) — includes pod install'
+      - name: 'Phase A — pod install (flat)'
+        working-directory: test-app-pnpm/ios
+        run: |
+          set -o pipefail
+          if ! pod install 2>&1 | tee "$RUNNER_TEMP/pod-install.log"; then
+            if grep -q "multiple dependencies with different sources" "$RUNNER_TEMP/pod-install.log"; then
+              echo "::error::pod install failed in test-app-pnpm/ios: pnpm Podfile :path divergence (the same pod resolved from different :path sources)"
+            fi
+            exit 1
+          fi
+
+      - name: 'Phase A — set up test-app-pnpm-monorepo (workspace)'
         run: npm run setup-test-app-pnpm-monorepo
+
+      - name: 'Phase A — pod install (monorepo)'
+        working-directory: test-app-pnpm-monorepo/apps/mobile/ios
+        run: |
+          set -o pipefail
+          if ! pod install 2>&1 | tee "$RUNNER_TEMP/pod-install.log"; then
+            if grep -q "multiple dependencies with different sources" "$RUNNER_TEMP/pod-install.log"; then
+              echo "::error::pod install failed in test-app-pnpm-monorepo/apps/mobile/ios: pnpm Podfile :path divergence (the same pod resolved from different :path sources)"
+            fi
+            exit 1
+          fi
 
       - name: 'Phase A — verify Podfile :path values and expoVersion attribution'
         run: npm run verify-pnpm-dev-apps
@@ -79,6 +118,17 @@ jobs:
 
       - name: 'Phase B — set up test-app-pnpm-monorepo under hoisted mode'
         run: npm run setup-test-app-pnpm-monorepo
+
+      - name: 'Phase B — pod install (monorepo, hoisted)'
+        working-directory: test-app-pnpm-monorepo/apps/mobile/ios
+        run: |
+          set -o pipefail
+          if ! pod install 2>&1 | tee "$RUNNER_TEMP/pod-install.log"; then
+            if grep -q "multiple dependencies with different sources" "$RUNNER_TEMP/pod-install.log"; then
+              echo "::error::pod install failed in test-app-pnpm-monorepo/apps/mobile/ios: pnpm Podfile :path divergence (the same pod resolved from different :path sources)"
+            fi
+            exit 1
+          fi
 
       - name: 'Phase B — verify Podfile :path values and expoVersion attribution under hoisted mode'
         run: npm run verify-pnpm-dev-apps
