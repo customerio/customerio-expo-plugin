@@ -352,10 +352,10 @@ describe('Native SDK Configuration Patching', () => {
       }
     });
 
-    describe('wk_ keys', () => {
-      test('takes the region from a wk_ key when none is set', () => {
+    describe('pk_ keys', () => {
+      test('takes the region from a pk_ key when none is set', () => {
         const result = patchNativeSDKInitializer(mockContent, PLATFORM.IOS, {
-          cdpApiKey: 'wk_eu_abc',
+          cdpApiKey: 'pk_eu_abc',
         });
 
         expect(result).toContain('region: "EU"');
@@ -363,7 +363,7 @@ describe('Native SDK Configuration Patching', () => {
 
       test('keeps the region the app sets over the key', () => {
         const result = patchNativeSDKInitializer(mockContent, PLATFORM.IOS, {
-          cdpApiKey: 'wk_eu_abc',
+          cdpApiKey: 'pk_eu_abc',
           region: 'US',
         });
 
@@ -379,11 +379,11 @@ describe('Native SDK Configuration Patching', () => {
       });
 
       test.each([
-        [PLATFORM.IOS, 'if siteId != nil || cdpApiKey.hasPrefix("wk_")'],
-        [PLATFORM.ANDROID, 'if (!siteId.isNullOrBlank() || CDP_API_KEY.startsWith("wk_"))'],
+        [PLATFORM.IOS, 'if siteId != nil || cdpApiKey.hasPrefix("pk_")'],
+        [PLATFORM.ANDROID, 'if (!siteId.isNullOrBlank() || CDP_API_KEY.startsWith("pk_"))'],
       ])('starts in-app on %s without a siteId', (platform, inAppCheck) => {
         const template = platform === PLATFORM.IOS ? swiftTemplateContent : kotlinTemplateContent;
-        const result = patchNativeSDKInitializer(template, platform, { cdpApiKey: 'wk_us_abc' });
+        const result = patchNativeSDKInitializer(template, platform, { cdpApiKey: 'pk_us_abc' });
 
         expect(result).toContain(inAppCheck);
         expect(result).not.toMatch(/\{\{\w+\}\}/);

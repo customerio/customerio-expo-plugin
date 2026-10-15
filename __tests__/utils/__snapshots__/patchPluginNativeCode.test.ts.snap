@@ -31,8 +31,8 @@ object CustomerIOSDKInitializer {
         setIfDefined("all", CustomerIOBuilder::screenViewUse) { ScreenView.getScreenView(it) }
         setIfDefined(migrationSiteId, CustomerIOBuilder::migrationSiteId)
 
-        // Add in-app if siteId is provided. A public wk_ key is enough without one.
-        if (!siteId.isNullOrBlank() || CDP_API_KEY.startsWith("wk_")) {
+        // Add in-app if siteId is provided. A public pk_ key is enough without one.
+        if (!siteId.isNullOrBlank() || CDP_API_KEY.startsWith("pk_")) {
             addCustomerIOModule(
                 ModuleMessagingInApp(
                     MessagingInAppModuleConfig.Builder(siteId.orEmpty(), region)
@@ -101,8 +101,8 @@ object CustomerIOSDKInitializer {
         setIfDefined(null, CustomerIOBuilder::screenViewUse) { ScreenView.getScreenView(it) }
         setIfDefined(migrationSiteId, CustomerIOBuilder::migrationSiteId)
 
-        // Add in-app if siteId is provided. A public wk_ key is enough without one.
-        if (!siteId.isNullOrBlank() || CDP_API_KEY.startsWith("wk_")) {
+        // Add in-app if siteId is provided. A public pk_ key is enough without one.
+        if (!siteId.isNullOrBlank() || CDP_API_KEY.startsWith("pk_")) {
             addCustomerIOModule(
                 ModuleMessagingInApp(
                     MessagingInAppModuleConfig.Builder(siteId.orEmpty(), region)
@@ -168,8 +168,8 @@ class CustomerIOSDKInitializer {
 
         CustomerIO.initialize(withConfig: builder.build())
 
-        // A public wk_ key is enough for in-app, so site ID is only needed for other keys.
-        if siteId != nil || cdpApiKey.hasPrefix("wk_") {
+        // A public pk_ key is enough for in-app, so site ID is only needed for other keys.
+        if siteId != nil || cdpApiKey.hasPrefix("pk_") {
             let inAppConfig = MessagingInAppConfigBuilder(siteId: siteId ?? "", region: region).build()
             MessagingInApp.initialize(withConfig: inAppConfig)
             let logger = DIGraphShared.shared.logger
@@ -233,8 +233,8 @@ class CustomerIOSDKInitializer {
 
         CustomerIO.initialize(withConfig: builder.build())
 
-        // A public wk_ key is enough for in-app, so site ID is only needed for other keys.
-        if siteId != nil || cdpApiKey.hasPrefix("wk_") {
+        // A public pk_ key is enough for in-app, so site ID is only needed for other keys.
+        if siteId != nil || cdpApiKey.hasPrefix("pk_") {
             let inAppConfig = MessagingInAppConfigBuilder(siteId: siteId ?? "", region: region).build()
             MessagingInApp.initialize(withConfig: inAppConfig)
             let logger = DIGraphShared.shared.logger

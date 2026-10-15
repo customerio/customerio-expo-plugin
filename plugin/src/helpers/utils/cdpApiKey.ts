@@ -1,15 +1,15 @@
 import { PLATFORM, type Platform } from '../constants/common';
 
 /**
- * Public `wk_` keys carry their region in the prefix, e.g. `wk_eu_...`.
+ * Keys carry their region after the type prefix, e.g. `pk_eu_...`.
  */
-const PUBLIC_KEY_PREFIX = /^wk_(us|eu)_/;
+const KEY_REGION_PREFIX = /^[a-z]{2}_(us|eu)_/;
 
 /**
- * Region in a public `wk_` key prefix, or undefined for any other key.
+ * Region in a key prefix, or undefined for a key without one.
  */
 export function regionFromCdpApiKey(cdpApiKey: string): 'US' | 'EU' | undefined {
-  const match = PUBLIC_KEY_PREFIX.exec(cdpApiKey);
+  const match = KEY_REGION_PREFIX.exec(cdpApiKey);
   return match ? (match[1].toUpperCase() as 'US' | 'EU') : undefined;
 }
 

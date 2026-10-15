@@ -68,7 +68,7 @@ export function patchNativeSDKInitializer(
   content = content.replace(/\{\{CDP_API_KEY\}\}/g, () => cdpApiKey);
 
   // Handle region - use empty string as fallback (nil not supported for region).
-  // A wk_ key carries its region, so use it when none is set, like the native SDKs do.
+  // A key like pk_eu_ carries its region, so use it when none is set, like the native SDKs do.
   replaceValue(
     /\{\{REGION\}\}/g,
     sdkConfig.region ?? regionFromCdpApiKey(sdkConfig.cdpApiKey),

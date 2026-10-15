@@ -31,8 +31,8 @@ object CustomerIOSDKInitializer {
         setIfDefined({{SCREEN_VIEW_USE}}, CustomerIOBuilder::screenViewUse) { ScreenView.getScreenView(it) }
         setIfDefined(migrationSiteId, CustomerIOBuilder::migrationSiteId)
 
-        // Add in-app if siteId is provided. A public wk_ key is enough without one.
-        if (!siteId.isNullOrBlank() || CDP_API_KEY.startsWith("wk_")) {
+        // Add in-app if siteId is provided. A public pk_ key is enough without one.
+        if (!siteId.isNullOrBlank() || CDP_API_KEY.startsWith("pk_")) {
             addCustomerIOModule(
                 ModuleMessagingInApp(
                     MessagingInAppModuleConfig.Builder(siteId.orEmpty(), region)
