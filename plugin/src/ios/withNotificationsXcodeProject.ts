@@ -371,8 +371,8 @@ const updateNseNotificationService = (
 };
 
 /**
- * Pure string transform: substitutes the `{{CDP_API_KEY}}` and `{{REGION}}`
- * placeholders in the NSE Env.swift template. Missing or invalid region
+ * Pure string transform: substitutes the `{{CDP_API_KEY}}`, `{{LOG_LEVEL}}` and
+ * `{{REGION}}` placeholders in the NSE Env.swift template. Missing or invalid region
  * falls back to `Region.US` and logs a warning.
  */
 export function applyRichPushConfigToEnv(
@@ -386,6 +386,15 @@ export function applyRichPushConfigToEnv(
     content,
     /\{\{CDP_API_KEY\}\}/,
     cdpApiKey || 'MISSING_API_KEY',
+  );
+
+  // A level the SDK doesn't name is left unset, so the SDK keeps its default.
+  const logLevels = ['none', 'error', 'info', 'debug'];
+  const logLevel = richPushConfig?.logLevel?.toLowerCase();
+  next = replaceCodeByRegex(
+    next,
+    /\{\{LOG_LEVEL\}\}/,
+    logLevel && logLevels.includes(logLevel) ? `CioLogLevel.${logLevel}` : 'nil',
   );
 
   const regionKey = region?.toLowerCase() ?? '';

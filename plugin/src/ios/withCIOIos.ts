@@ -76,9 +76,16 @@ export function withCIOIos(
       config = withAppDelegateModifications(config, platformConfig);
     }
 
-    platformConfig.pushNotification.env =
-      platformConfig.pushNotification.env ||
-      mergeConfigWithEnvValues(platformConfig, sdkConfig);
+    // Always merged: the merge is what catches an extension key or region that differs from the
+    // app's. Run only when `env` was absent, it never saw one, and `env` won without a word.
+    const envLogLevel = platformConfig.pushNotification.env?.logLevel;
+    const richPushConfig = mergeConfigWithEnvValues(platformConfig, sdkConfig);
+    // The extension logs at the app's level unless told otherwise: without it, the extension's
+    // SDK stays at its default and says nothing about the deliveries it tracks.
+    platformConfig.pushNotification.env = richPushConfig && {
+      ...richPushConfig,
+      logLevel: envLogLevel ?? sdkConfig?.logLevel,
+    };
     config = withCioNotificationsXcodeProject(config, platformConfig);
     config = withCioXcodeProject(config, {
       ...platformConfig,

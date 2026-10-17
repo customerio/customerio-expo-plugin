@@ -17,9 +17,12 @@ function mergeConfigWithEnvValues(
   const envCdpApiKey = envConfig?.cdpApiKey;
   const envRegion = envConfig?.region;
 
-  // Check for conflicts between env and nativeConfig
+  // Check for conflicts between env and nativeConfig. A missing region is US on both sides, so
+  // `config` without one and `env` with "us" agree.
+  const sameRegion =
+    (nativeRegion ?? 'us').toLowerCase() === (envRegion ?? 'us').toLowerCase();
   if (nativeCdpApiKey && envCdpApiKey) {
-    if (nativeCdpApiKey !== envCdpApiKey || nativeRegion?.toLowerCase() !== envRegion?.toLowerCase()) {
+    if (nativeCdpApiKey !== envCdpApiKey || !sameRegion) {
       const errorMessage = `Configuration conflict: 'config' and 'ios.pushNotification.env' values must match when both are provided.\n` +
         `  config.cdpApiKey: "${nativeCdpApiKey}"\n` +
         `  env.cdpApiKey: "${envCdpApiKey}"\n` +

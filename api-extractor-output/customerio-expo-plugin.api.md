@@ -154,6 +154,7 @@ export type NativeSDKConfig = {
 export type RichPushConfig = {
     cdpApiKey: string;
     region?: string;
+    logLevel?: string;
 };
 
 // (No @packageDocumentation comment for this package)
