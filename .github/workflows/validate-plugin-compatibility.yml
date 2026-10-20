@@ -16,7 +16,7 @@ concurrency:
 env:
   NODE_VERSION: "24"
   JAVA_VERSION: "17"
-  XCODE_VERSION: "26.5"
+  XCODE_VERSION: "26.6"
   APP_DIR: ci-test-apps
   APP_NAME_PREFIX: ExpoPluginTestApp
 
