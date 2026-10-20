@@ -55,8 +55,10 @@ describe('Xcode 27 preview workflow', () => {
       'customerio/mobile-ci-tools/github-actions/ios/launch-simulator-app/v1@main'
     );
     expect(step('Install and launch generated app').id).toBe('launch');
+    // Only the legacy host may fail its launch; a UIScene host failing to
+    // launch fails the job.
     expect(step('Install and launch generated app')['continue-on-error']).toBe(
-      true
+      "${{ matrix.expectation == 'uiscene-failure' }}"
     );
     expect(step('Upload compatibility logs').if).toBe('always()');
     expect(step('Upload compatibility logs').with['if-no-files-found']).toBe(
@@ -68,10 +70,40 @@ describe('Xcode 27 preview workflow', () => {
     expect(workflow).not.toContain('Record unclassified failure');
   });
 
+  it('expects UIScene hosts to launch and keeps one legacy-host leg', () => {
+    const legs = definition.jobs.preview.strategy.matrix.include;
+    const launching = legs.filter((leg) => leg.expectation === 'launch');
+    const legacy = legs.filter((leg) => leg.expectation === 'uiscene-failure');
+
+    // `latest` is the SDK 58+ scene host, built with both push providers.
+    expect(launching).toEqual([
+      { 'expo-version': 'latest', 'ios-push-provider': 'apn', expectation: 'launch' },
+      { 'expo-version': 'latest', 'ios-push-provider': 'fcm', expectation: 'launch' },
+    ]);
+    // SDK 57 is the newest supported host without UIScene.
+    expect(legacy).toEqual([
+      { 'expo-version': 57, 'ios-push-provider': 'apn', expectation: 'uiscene-failure' },
+    ]);
+    expect(legs).toHaveLength(launching.length + legacy.length);
+
+    // Every leg generates, validates and uploads its own Expo version.
+    expect(step('Create Test App').run).toContain(
+      '--expo-version=${{ matrix.expo-version }}'
+    );
+    expect(step('Validate Plugin').run).toContain(
+      '--expo-version=${{ matrix.expo-version }}'
+    );
+    expect(step('Upload compatibility logs').with.name).toBe(
+      'xcode-27-preview-expo-${{ matrix.expo-version }}-${{ matrix.ios-push-provider }}-logs'
+    );
+  });
+
   it('inverts the known Expo failure into a green assertion', () => {
     const assertion = step('Assert the known Expo UIScene launch failure');
     expect(assertion).toBeDefined();
     expect(assertion.id).toBe('known-failure');
+    // Only the legacy host is expected to fail.
+    expect(assertion.if).toBe("matrix.expectation == 'uiscene-failure'");
 
     // Gate on the step outcome, never on the composite action's
     // `failure-reason` output, which a failing composite step does not
@@ -96,17 +128,23 @@ describe('Xcode 27 preview workflow', () => {
   });
 
   it('notifies only the nightly, on the same pinned Slack action as deploy-sdk', () => {
-    const notify = step('Notify team when the known Expo failure flips');
+    const notify = step('Notify team when the Xcode 27 nightly changes state');
     expect(notify).toBeDefined();
-    // Gating on the assertion's own outcome rather than failure(): a passing
-    // gate followed by a failed upload must not alert, and a cancelled run
-    // (concurrency cancels in-progress nightlies) must not either -- both leave
-    // a misleading empty flip-reason.
+    // Each leg gates on the outcome of the step that decides it -- the launch
+    // for UIScene hosts, the assertion for the legacy host -- rather than
+    // failure(): a passing launch or gate followed by a failed upload must not
+    // alert, and a cancelled run (concurrency cancels in-progress nightlies)
+    // must not either -- both would report a change that did not happen.
     expect(notify.if).toBe(
       "always() && github.event_name == 'schedule' && " +
+        "((matrix.expectation == 'launch' && " +
+        "(steps.launch.outcome == 'failure' || " +
+        "(!cancelled() && steps.launch.outcome == 'skipped'))) || " +
+        "(matrix.expectation == 'uiscene-failure' && " +
         "(steps.known-failure.outcome == 'failure' || " +
-        "(!cancelled() && steps.known-failure.outcome == 'skipped'))"
+        "(!cancelled() && steps.known-failure.outcome == 'skipped'))))"
     );
+    expect(notify.if).not.toContain('failure()');
     // A real flip must still alert if the run is cancelled afterwards, so
     // !cancelled() guards only the ambiguous `skipped` branch.
     expect(notify.if).not.toMatch(/^!cancelled\(\)/);
@@ -129,6 +167,7 @@ describe('Xcode 27 preview workflow', () => {
     // The message has to name which flip happened; "it broke" is what made the
     // permanently-red job useless.
     const payload = notify.with.payload;
+    expect(payload).toContain('launch-leg-failed');
     expect(payload).toContain('launch-now-succeeds');
     expect(payload).toContain('signature-changed');
     expect(payload).toContain('expo-version-unresolved');

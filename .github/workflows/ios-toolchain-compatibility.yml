@@ -27,15 +27,28 @@ env:
 
 jobs:
   preview:
-    name: Xcode 27 preview (${{ matrix.ios-push-provider }})
+    name: Xcode 27 preview (Expo ${{ matrix.expo-version }}, ${{ matrix.ios-push-provider }})
     runs-on: xcode-27
     timeout-minutes: 90
     strategy:
       fail-fast: false
       matrix:
-        ios-push-provider:
-          - apn
-          - fcm
+        include:
+          # Expo SDK 58+ generates a UIScene host, which the iOS 27 SDK requires.
+          # These apps must launch and survive like any other compatibility check.
+          - expo-version: latest
+            ios-push-provider: apn
+            expectation: launch
+          - expo-version: latest
+            ios-push-provider: fcm
+            expectation: launch
+          # SDK 57 is the newest supported host without a UIScene manifest. Its
+          # generated app cannot launch on the iOS 27 SDK; assert that known
+          # failure while SDK 53-57 hosts are supported. The failure does not
+          # depend on the push provider, so one provider is enough.
+          - expo-version: 57
+            ios-push-provider: apn
+            expectation: uiscene-failure
 
     steps:
       - name: Checkout Repository
@@ -59,8 +72,8 @@ jobs:
 
       - name: Set APP_NAME and APP_PATH
         run: |
-          echo "APP_NAME=${{ env.APP_NAME_PREFIX }}_latest" >> "$GITHUB_ENV"
-          echo "APP_PATH=${{ env.APP_DIR }}/${{ env.APP_NAME_PREFIX }}_latest" >> "$GITHUB_ENV"
+          echo "APP_NAME=${{ env.APP_NAME_PREFIX }}_${{ matrix.expo-version }}" >> "$GITHUB_ENV"
+          echo "APP_PATH=${{ env.APP_DIR }}/${{ env.APP_NAME_PREFIX }}_${{ matrix.expo-version }}" >> "$GITHUB_ENV"
 
       - name: Cache CocoaPods
         uses: actions/cache@v4
@@ -68,14 +81,14 @@ jobs:
           path: |
             ~/Library/Caches/CocoaPods
             ~/.cocoapods
-          key: ${{ runner.os }}-pods-xcode-27-preview-${{ matrix.ios-push-provider }}-${{ steps.toolchain.outputs.xcode-build }}-${{ hashFiles('package-lock.json') }}
+          key: ${{ runner.os }}-pods-xcode-27-preview-${{ matrix.expo-version }}-${{ matrix.ios-push-provider }}-${{ steps.toolchain.outputs.xcode-build }}-${{ hashFiles('package-lock.json') }}
           restore-keys: |
-            ${{ runner.os }}-pods-xcode-27-preview-${{ matrix.ios-push-provider }}-
+            ${{ runner.os }}-pods-xcode-27-preview-${{ matrix.expo-version }}-${{ matrix.ios-push-provider }}-
 
       - name: Create Test App
         run: |
           npm run compatibility:create-test-app -- \
-            --expo-version=latest \
+            --expo-version=${{ matrix.expo-version }} \
             --app-name=${{ env.APP_NAME }} \
             --dir-name=${{ env.APP_DIR }} \
             --clean
@@ -96,7 +109,7 @@ jobs:
           date +%s > "$RUNNER_TEMP/${{ matrix.ios-push-provider }}-build-start-epoch"
           npm run compatibility:validate-plugin -- \
             --app-path=${{ env.APP_PATH }} \
-            --expo-version=latest \
+            --expo-version=${{ matrix.expo-version }} \
             --platforms=ios \
             --ios-use-frameworks="static" \
             --ios-push-providers=${{ matrix.ios-push-provider }}
@@ -149,11 +162,12 @@ jobs:
           fi
           echo "APP_PRODUCT_PATH=$app_product_path" >> "$GITHUB_ENV"
 
-      # Expected to FAIL. The generated app is asserted against below rather
+      # UIScene hosts must launch, so a failure here fails their job. The legacy
+      # host is expected to FAIL; its result is asserted against below rather
       # than left to redden the job: see `.github/IOS-TOOLCHAIN-COMPATIBILITY.md`.
       - name: Install and launch generated app
         id: launch
-        continue-on-error: true
+        continue-on-error: ${{ matrix.expectation == 'uiscene-failure' }}
         uses: customerio/mobile-ci-tools/github-actions/ios/launch-simulator-app/v1@main
         with:
           app-path: ${{ env.APP_PRODUCT_PATH }}
@@ -169,6 +183,7 @@ jobs:
       # reliably propagate.
       - name: Assert the known Expo UIScene launch failure
         id: known-failure
+        if: matrix.expectation == 'uiscene-failure'
         shell: bash
         env:
           LAUNCH_OUTCOME: ${{ steps.launch.outcome }}
@@ -184,7 +199,7 @@ jobs:
           # 1. The launch must still fail.
           if [[ "$LAUNCH_OUTCOME" != "failure" ]]; then
             flip_reason="launch-now-succeeds"
-            detail="The generated app launched and survived (step outcome: $LAUNCH_OUTCOME). Expo's UIScene host lifecycle appears to have landed — enable scene support and retire this expected-failure gate."
+            detail="The SDK $EXPECTED_EXPO_MAJOR app launched and survived (step outcome: $LAUNCH_OUTCOME). Hosts without a UIScene manifest now launch on the iOS 27 SDK — retire this legacy-host gate and expect a launch instead."
           fi
 
           # 2. It must fail with the KNOWN signature, not some other way.
@@ -211,7 +226,7 @@ jobs:
               detail="Could not read an Expo version from \$APP_PATH/package.json (resolved: '${resolved_expo:-empty}'). The gate could not confirm its own premise of SDK $EXPECTED_EXPO_MAJOR. This is a probe failure to fix here, not a change in Expo."
             elif [[ "$resolved_major" != "$EXPECTED_EXPO_MAJOR" ]]; then
               flip_reason="expo-sdk-moved"
-              detail="The generated app resolved Expo ${resolved_expo:-unknown}, not SDK $EXPECTED_EXPO_MAJOR. This gate's premise is stale — on SDK 58+ the plugin's own scene support (isExpoVersion58OrHigher) takes over and the expected failure no longer applies."
+              detail="The legacy-host leg resolved Expo ${resolved_expo:-unknown}, not SDK $EXPECTED_EXPO_MAJOR. This gate's premise is stale — SDK 58+ hosts adopt UIScene and belong on the launch legs, so fix the matrix entry."
             fi
           fi
 
@@ -240,14 +255,14 @@ jobs:
             echo '## Known Expo failure unchanged'
             echo
             echo "The generated ${{ matrix.ios-push-provider }} app still fails to launch with the tracked UIScene defect on Expo ${resolved_expo:-unknown}."
-            echo 'Green here means the known defect is unchanged — NOT that Expo works on iOS 27.'
+            echo 'Green here means the known defect is unchanged — NOT that this host works on iOS 27.'
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload compatibility logs
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: xcode-27-preview-expo-${{ matrix.ios-push-provider }}-logs
+          name: xcode-27-preview-expo-${{ matrix.expo-version }}-${{ matrix.ios-push-provider }}-logs
           path: |
             ${{ runner.temp }}/${{ matrix.ios-push-provider }}-launch.log
             ${{ runner.temp }}/${{ matrix.ios-push-provider }}-build-settings.json
@@ -258,27 +273,32 @@ jobs:
       # Only the nightly notifies. Pull-request runs of this workflow (it is
       # triggered by changes to itself) stay quiet. A webhook post needs no
       # GITHUB_TOKEN scope, so `permissions: contents: read` above is left as is.
-      - name: Notify team when the known Expo failure flips
-        # Gate on the assertion itself, not on failure(): a passing gate followed
-        # by a failed artifact upload would otherwise alert with an empty
-        # flip-reason, reporting a flip that did not happen.
+      - name: Notify team when the Xcode 27 nightly changes state
+        # Gate on the step that decides each leg, not on failure(): a launch leg
+        # gates on its launch, the legacy-host leg on its assertion. A passing
+        # launch or gate followed by a failed artifact upload would otherwise
+        # alert, reporting a compatibility change that did not happen.
         #
-        # The two branches need different cancellation handling:
-        #   failure  -- a real flip, already established. Alert even if the run is
-        #               later cancelled, or a genuine flip is lost.
-        #   skipped  -- ambiguous. Either the job broke before the assertion ran
+        # Both legs need the same two branches with different cancellation handling:
+        #   failure  -- a real result, already established. Alert even if the run
+        #               is later cancelled, or a genuine change is lost.
+        #   skipped  -- ambiguous. Either the job broke before that step ran
         #               (worth alerting) or concurrency cancelled the run, which
         #               also leaves it skipped (not worth alerting). Only the
         #               `!cancelled()` guard separates those.
         if: >-
           always() && github.event_name == 'schedule'
+          && ((matrix.expectation == 'launch'
+          && (steps.launch.outcome == 'failure'
+          || (!cancelled() && steps.launch.outcome == 'skipped')))
+          || (matrix.expectation == 'uiscene-failure'
           && (steps.known-failure.outcome == 'failure'
-          || (!cancelled() && steps.known-failure.outcome == 'skipped'))
+          || (!cancelled() && steps.known-failure.outcome == 'skipped'))))
         uses: slackapi/slack-github-action@70cd7be8e40a46e8b0eced40b0de447bdb42f68e # v1.26.0
         with:
           payload: |
             {
-              "text": "Xcode 27 preview: known Expo failure flipped (${{ matrix.ios-push-provider }})",
+              "text": "Xcode 27 preview: Expo ${{ matrix.expo-version }} (${{ matrix.ios-push-provider }}) changed state",
               "username": "Expo compatibility bot",
               "icon_url": "https://logos-download.com/wp-content/uploads/2021/01/Expo_Logo.png",
               "channel": "#mobile-deployments",
@@ -287,7 +307,7 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "*Expo* Xcode 27 preview nightly changed state — :mag: *${{ matrix.ios-push-provider }}* leg"
+                    "text": "*Expo* Xcode 27 preview nightly changed state — :mag: *Expo ${{ matrix.expo-version }}, ${{ matrix.ios-push-provider }}* leg"
                   }
                 },
                 {
@@ -297,7 +317,7 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "*Flip reason:* `${{ steps.known-failure.outputs.flip-reason || 'job-failed-before-assertion' }}`\n*Launch outcome:* `${{ steps.known-failure.outputs.launch-outcome || 'unknown' }}`\n*Resolved Expo:* `${{ steps.known-failure.outputs.resolved-expo || 'unknown' }}`\n\n• `launch-now-succeeds` — Expo's UIScene host lifecycle landed. Enable scene support and retire this gate.\n• `signature-changed` — the app still fails, but not with the tracked UIScene signature. Treat as a new problem.\n• `expo-sdk-moved` — the generated app is no longer on SDK 57, so this gate's premise is stale.\n• `expo-version-unresolved` — the gate could not read the app's Expo version. A probe bug in this workflow, not an Expo change.\n• `job-failed-before-assertion` — the nightly broke earlier than the launch step.\n\n<https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}|View the run>"
+                    "text": "*Flip reason:* `${{ steps.known-failure.outputs.flip-reason || (matrix.expectation == 'launch' && 'launch-leg-failed') || 'job-failed-before-assertion' }}`\n*Launch outcome:* `${{ steps.known-failure.outputs.launch-outcome || steps.launch.outcome || 'unknown' }}`\n*Resolved Expo:* `${{ steps.known-failure.outputs.resolved-expo || matrix.expo-version }}`\n\n• `launch-leg-failed` — a UIScene host (SDK 58+) failed to build, install, launch or survive. Treat as a regression.\n• `launch-now-succeeds` — the SDK 57 host without UIScene now launches on iOS 27. Retire the legacy-host gate.\n• `signature-changed` — the SDK 57 host still fails, but not with the tracked UIScene signature. Treat as a new problem.\n• `expo-sdk-moved` — the legacy-host leg is no longer on SDK 57, so its premise is stale.\n• `expo-version-unresolved` — the gate could not read the app's Expo version. A probe bug in this workflow, not an Expo change.\n• `job-failed-before-assertion` — the legacy-host leg broke earlier than the launch step.\n\n<https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}|View the run>"
                   }
                 }
               ]
