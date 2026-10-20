@@ -11,7 +11,7 @@ on:
         description: 'JSON matrix. Defaults to the complete supported-version and latest-version matrix.'
         type: string
         required: false
-        default: '[{"expo-version":54,"platform":"android","runs-on":"ubuntu-latest"},{"expo-version":54,"platform":"ios","runs-on":"macos-26","ios-push-provider":"apn"},{"expo-version":54,"platform":"ios","runs-on":"macos-26","ios-push-provider":"fcm"},{"expo-version":"latest","platform":"android","runs-on":"ubuntu-latest"},{"expo-version":"latest","platform":"ios","runs-on":"macos-26","ios-push-provider":"apn"},{"expo-version":"latest","platform":"ios","runs-on":"macos-26","ios-push-provider":"fcm"}]'
+        default: '[{"expo-version":54,"platform":"android","runs-on":"ubuntu-latest"},{"expo-version":54,"platform":"ios","runs-on":"macos-26","ios-push-provider":"apn"},{"expo-version":54,"platform":"ios","runs-on":"macos-26","ios-push-provider":"fcm"},{"expo-version":58,"platform":"android","runs-on":"ubuntu-latest"},{"expo-version":58,"platform":"ios","runs-on":"macos-26","ios-push-provider":"apn"},{"expo-version":58,"platform":"ios","runs-on":"macos-26","ios-push-provider":"fcm"},{"expo-version":"latest","platform":"android","runs-on":"ubuntu-latest"},{"expo-version":"latest","platform":"ios","runs-on":"macos-26","ios-push-provider":"apn"},{"expo-version":"latest","platform":"ios","runs-on":"macos-26","ios-push-provider":"fcm"}]'
 
 concurrency:
   group: ${{ github.workflow }}-${{ inputs.ref || github.ref }}
@@ -26,7 +26,7 @@ env:
 
 jobs:
   validate:
-    name: Expo ${{ matrix.expo-version }} - ${{ matrix.platform }}${{ matrix.ios-push-provider && format(' ({0})', matrix.ios-push-provider) }}
+    name: Expo ${{ matrix.expo-version }} - ${{ matrix.platform }}${{ matrix.ios-push-provider && format(' ({0})', matrix.ios-push-provider) }}${{ matrix.android-agp9-defaults && ' (AGP 9 defaults)' || '' }}
     runs-on: ${{ matrix.runs-on }}
 
     strategy:
@@ -119,4 +119,5 @@ jobs:
             --expo-version=${{ matrix.expo-version }} \
             --platforms=${{ matrix.platform }}\
             --ios-use-frameworks="static" \
-            ${{ matrix.ios-push-provider && format(' --ios-push-providers={0}', matrix.ios-push-provider) }}
+            ${{ matrix.ios-push-provider && format(' --ios-push-providers={0}', matrix.ios-push-provider) }} \
+            ${{ matrix.android-agp9-defaults && '--android-agp9-defaults' || '' }}

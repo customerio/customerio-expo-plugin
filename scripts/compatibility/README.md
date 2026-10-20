@@ -82,6 +82,7 @@ npm run compatibility:validate-plugin -- --app-path=<path-to-app>
 | `--platforms` | Platforms to test (`android`, `ios`) | `android,ios` | ❌ |
 | `--ios-push-providers` | iOS push providers to test (`apn`, `fcm`) | `apn,fcm` | ❌ |
 | `--ios-use-frameworks` | Framework usage forwarded to each iOS provider configuration | `static` for FCM and unset for APN, applied per provider | ❌ |
+| `--android-agp9-defaults` | Right after prebuild, migrates the generated Android app to AGP 9's defaults the way a host dropping Expo SDK 58's opt-out would: sets `android.builtInKotlin=true` and `android.newDsl=true` in `android/gradle.properties` and removes the app module's `org.jetbrains.kotlin.android` plugin, which built-in Kotlin replaces. Run it in CI with the manual `Validate Plugin Compatibility AGP 9 Defaults` workflow | `false` | ❌ |
 
 ### 5. `compatibility:run-compatibility-tests`
 

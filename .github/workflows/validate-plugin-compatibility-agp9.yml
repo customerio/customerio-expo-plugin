@@ -1,0 +1,31 @@
+name: Validate Plugin Compatibility AGP 9 Defaults
+
+# Manual canary for Expo SDK 58 Android with AGP 9's built-in Kotlin and new DSL
+# turned on (`--android-agp9-defaults`), which the SDK 58 template opts out of.
+# It is not in the release matrix because it cannot pass yet. Its blockers, in
+# the order the build reaches them:
+#   - this plugin's `com.google.gms:google-services:4.3.13` classpath, which
+#     uses the variant API that the new DSL removes;
+#   - customerio-reactnative applying the Kotlin Android plugin
+#     (customerio/customerio-reactnative#652);
+#   - Expo's own modules (`expo-constants` uses `libraryVariants`).
+# Move the row into the release matrix once a run passes.
+#
+# A separate caller rather than a second job in the manual workflow: jobs that
+# call the matrix workflow from the same caller share its concurrency group and
+# would cancel each other.
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch (or any git ref) to validate'
+        required: false
+        default: 'main'
+        type: string
+
+jobs:
+  run:
+    uses: ./.github/workflows/validate-plugin-compatibility-matrix.yml
+    with:
+      ref: ${{ inputs.branch }}
+      matrix: '[{"expo-version":58,"platform":"android","runs-on":"ubuntu-latest","android-agp9-defaults":true}]'

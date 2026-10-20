@@ -9,6 +9,11 @@ const {
   runCommand,
   runScript,
 } = require("../utils/cli");
+const {
+  readGradleProperty,
+  removeKotlinAndroidPlugin,
+  setGradleProperties,
+} = require("../utils/android-gradle");
 
 const APP_PATH = getArgValue("--app-path", { required: true });
 const EXPO_VERSION = getArgValue("--expo-version", { default: 53 })
@@ -18,6 +23,16 @@ const TESTS_DIRECTORY_PATH = getArgValue("--tests-dir-path", {
   default: path.join(__dirname, "../../__tests__"),
 });
 const CLEAN_FLAG = isFlagEnabled("--clean", { default: true });
+const ANDROID_AGP9_DEFAULTS = isFlagEnabled("--android-agp9-defaults");
+
+// Expo SDK 58's template opts out of AGP 9's built-in Kotlin and new DSL in
+// gradle.properties. `--android-agp9-defaults` migrates the generated app to
+// AGP 9's defaults right after prebuild, the way a host dropping that opt-out
+// would, to check the app still builds.
+const AGP9_DEFAULT_GRADLE_PROPERTIES = {
+  "android.builtInKotlin": "true",
+  "android.newDsl": "true",
+};
 
 let PREBUILD_CMD = `cd ${APP_PATH} && CI=1 npx expo prebuild`;
 if (CLEAN_FLAG) PREBUILD_CMD += " --clean";
@@ -64,6 +79,46 @@ function getIosWorkspaceName(fallback = "App") {
   return fallback;
 }
 
+function androidGradlePropertiesPath() {
+  return path.join(APP_PATH, "android", "gradle.properties");
+}
+
+// Turns on AGP 9's built-in Kotlin and new DSL in the generated app: sets both
+// properties to true and drops the app module's explicit Kotlin Android plugin,
+// which built-in Kotlin replaces. Reads both files back to confirm Gradle will
+// see the change.
+function enableAndroidAgp9Defaults() {
+  const gradlePropertiesPath = androidGradlePropertiesPath();
+  const appBuildGradlePath = path.join(APP_PATH, "android", "app", "build.gradle");
+  fs.writeFileSync(
+    gradlePropertiesPath,
+    setGradleProperties(fs.readFileSync(gradlePropertiesPath, "utf8"), AGP9_DEFAULT_GRADLE_PROPERTIES),
+  );
+  fs.writeFileSync(
+    appBuildGradlePath,
+    removeKotlinAndroidPlugin(fs.readFileSync(appBuildGradlePath, "utf8")),
+  );
+
+  const properties = fs.readFileSync(gradlePropertiesPath, "utf8");
+  for (const [key, value] of Object.entries(AGP9_DEFAULT_GRADLE_PROPERTIES)) {
+    if (readGradleProperty(properties, key) !== value) {
+      throw new Error(`gradle.properties: expected ${key}=${value} after the override`);
+    }
+  }
+  const appBuildGradle = fs.readFileSync(appBuildGradlePath, "utf8");
+  if (removeKotlinAndroidPlugin(appBuildGradle) !== appBuildGradle) {
+    throw new Error("app/build.gradle: the Kotlin Android plugin is still applied");
+  }
+}
+
+// Logs the AGP 9 opt-out properties the build will use, so each run records which mode it built.
+function logAndroidGradleProperties(keys) {
+  const contents = fs.readFileSync(androidGradlePropertiesPath(), "utf8");
+  for (const key of keys) {
+    logMessage(`🔧 gradle.properties: ${key}=${readGradleProperty(contents, key) ?? "(unset)"}`);
+  }
+}
+
 /**
  * Main entry point for the script to handle the execution logic.
  */
@@ -73,6 +128,12 @@ function execute() {
   if (PLATFORMS.includes("android")) {
     logMessage("⚙️ Running expo prebuild before Android...");
     runCommand(`${PREBUILD_CMD} --platform=android`);
+
+    if (ANDROID_AGP9_DEFAULTS) {
+      logMessage("⚙️ Enabling AGP 9 built-in Kotlin and new DSL...");
+      enableAndroidAgp9Defaults();
+    }
+    logAndroidGradleProperties(Object.keys(AGP9_DEFAULT_GRADLE_PROPERTIES));
 
     logMessage("🧪 Running Android tests...");
     const androidEnvVars = [
