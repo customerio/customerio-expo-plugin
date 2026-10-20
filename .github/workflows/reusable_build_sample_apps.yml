@@ -23,16 +23,16 @@ jobs:
       FIREBASE_APP_DISTRIBUTION_SERVICE_ACCOUNT_CREDS_B64: ${{ secrets.FIREBASE_APP_DISTRIBUTION_SERVICE_ACCOUNT_CREDS_B64 }}
     steps:
       - name: Check out code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0 # Workaround for bug https://github.com/actions/checkout/issues/1471
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: "24"
           cache: 'npm'
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v6
         with:
           distribution: "temurin"
           java-version: "17"
@@ -81,7 +81,7 @@ jobs:
       # covers everything that can change the graph. Runs after
       # `Capture Git Context` because it consumes `SDK_BUILD_VERSION`.
       - name: Cache Gradle
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: |
             ~/.gradle/caches
@@ -126,15 +126,16 @@ jobs:
           ruby-version: '3.4'
           bundler-cache: true
 
+      # Ubuntu ships sd in universe; the iOS job installs it with brew.
       - name: Install sd CLI to use later in the workflow
-        uses: kenji-miyake/setup-sd@08c14e27d65a1c215342ef00c81583ae67f4c5ef # v2.0.0
+        run: sudo apt-get update && sudo apt-get install -y sd
 
       - name: Bundle install
         working-directory: test-app
         run: bundle install
 
       - name: Update test app version # This has to happen before we generate the native app
-        uses: maierj/fastlane-action@5a3b971aaa26776459bb26894d6c1a1a84a311a7 # v3.1.0
+        uses: maierj/fastlane-action@182983d8f94bad9884001c03c1c2786f4c7165ed # v3.2.0
         with:
           lane: update_expo_test_app_version
           subdirectory: test-app
@@ -176,7 +177,7 @@ jobs:
 
       - name: Build Android app with fastlane
         id: android_build
-        uses: maierj/fastlane-action@5a3b971aaa26776459bb26894d6c1a1a84a311a7 # v3.1.0
+        uses: maierj/fastlane-action@182983d8f94bad9884001c03c1c2786f4c7165ed # v3.2.0
         with:
           lane: android build
           subdirectory: test-app
@@ -213,11 +214,11 @@ jobs:
       FIREBASE_APP_DISTRIBUTION_SERVICE_ACCOUNT_CREDS_B64: ${{ secrets.FIREBASE_APP_DISTRIBUTION_SERVICE_ACCOUNT_CREDS_B64 }}
     steps:
       - name: Check out code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0 # Workaround for bug https://github.com/actions/checkout/issues/1471
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: "24"
           cache: 'npm'
@@ -303,7 +304,7 @@ jobs:
       # `expo prebuild` later in this job. Key on `package-lock.json` so the
       # cache invalidates when plugin/test-app deps change.
       - name: Cache CocoaPods
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: |
             ~/Library/Caches/CocoaPods
@@ -326,7 +327,7 @@ jobs:
         run: bundle install
 
       - name: Update test app version # This has to happen before we generate the native app
-        uses: maierj/fastlane-action@5a3b971aaa26776459bb26894d6c1a1a84a311a7 # v3.1.0
+        uses: maierj/fastlane-action@182983d8f94bad9884001c03c1c2786f4c7165ed # v3.2.0
         with:
           lane: update_expo_test_app_version
           subdirectory: test-app
@@ -369,7 +370,7 @@ jobs:
 
       - name: Build iOS app with fastlane
         id: ios_build
-        uses: maierj/fastlane-action@5a3b971aaa26776459bb26894d6c1a1a84a311a7 # v3.1.0
+        uses: maierj/fastlane-action@182983d8f94bad9884001c03c1c2786f4c7165ed # v3.2.0
         with:
           lane: ios build_ios
           subdirectory: test-app
