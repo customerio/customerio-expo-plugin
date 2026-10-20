@@ -379,9 +379,9 @@ describe('Native SDK Configuration Patching', () => {
       });
 
       test.each([
-        [PLATFORM.IOS, 'if siteId != nil || cdpApiKey.hasPrefix("pk_")'],
-        [PLATFORM.ANDROID, 'if (!siteId.isNullOrBlank() || CDP_API_KEY.startsWith("pk_"))'],
-      ])('starts in-app on %s without a siteId', (platform, inAppCheck) => {
+        [PLATFORM.IOS, 'if let siteId = siteId {'],
+        [PLATFORM.ANDROID, 'if (!(siteId.isNullOrBlank())) {'],
+      ])('still needs a siteId to start in-app on %s', (platform, inAppCheck) => {
         const template = platform === PLATFORM.IOS ? swiftTemplateContent : kotlinTemplateContent;
         const result = patchNativeSDKInitializer(template, platform, { cdpApiKey: 'pk_us_abc' });
 

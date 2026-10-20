@@ -5,7 +5,7 @@ import type {
 import { getPluginVersion } from '../../utils/plugin';
 import { validateNativeSDKConfig } from '../../utils/validation';
 import { PLATFORM, type Platform } from '../constants/common';
-import { escapeForStringLiteral, regionFromCdpApiKey } from './cdpApiKey';
+import { escapeForStringLiteral, resolveRegion } from './cdpApiKey';
 import {
   type GeofenceInitOptions,
   patchGeofencePlaceholders,
@@ -71,7 +71,7 @@ export function patchNativeSDKInitializer(
   // A key like pk_eu_ carries its region, so use it when none is set, like the native SDKs do.
   replaceValue(
     /\{\{REGION\}\}/g,
-    sdkConfig.region ?? regionFromCdpApiKey(sdkConfig.cdpApiKey),
+    resolveRegion(sdkConfig.region, sdkConfig.cdpApiKey),
     (configValue) => `"${configValue}"`,
     '""'
   );

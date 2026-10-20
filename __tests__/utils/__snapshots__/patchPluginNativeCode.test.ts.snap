@@ -15,10 +15,8 @@ import io.customer.sdk.core.util.CioLogLevel
 import io.customer.sdk.data.model.Region
 
 object CustomerIOSDKInitializer {
-    private const val CDP_API_KEY = "test-api-key"
-
     fun initialize(application: Application) = with(
-        CustomerIOBuilder(application, CDP_API_KEY)
+        CustomerIOBuilder(application, "test-api-key")
     ) {
         val siteId: String? = "android-site-456"
         val migrationSiteId: String? = "android-site-456"
@@ -31,11 +29,11 @@ object CustomerIOSDKInitializer {
         setIfDefined("all", CustomerIOBuilder::screenViewUse) { ScreenView.getScreenView(it) }
         setIfDefined(migrationSiteId, CustomerIOBuilder::migrationSiteId)
 
-        // Add in-app if siteId is provided. A public pk_ key is enough without one.
-        if (!siteId.isNullOrBlank() || CDP_API_KEY.startsWith("pk_")) {
+        // Add messaging modules if siteId is provided
+        if (!(siteId.isNullOrBlank())) {
             addCustomerIOModule(
                 ModuleMessagingInApp(
-                    MessagingInAppModuleConfig.Builder(siteId.orEmpty(), region)
+                    MessagingInAppModuleConfig.Builder(siteId, region)
                         .setEventListener(ReactInAppEventListener.instance)
                         .build()
                 )
@@ -85,10 +83,8 @@ import io.customer.sdk.core.util.CioLogLevel
 import io.customer.sdk.data.model.Region
 
 object CustomerIOSDKInitializer {
-    private const val CDP_API_KEY = "test-api-key"
-
     fun initialize(application: Application) = with(
-        CustomerIOBuilder(application, CDP_API_KEY)
+        CustomerIOBuilder(application, "test-api-key")
     ) {
         val siteId: String? = null
         val migrationSiteId: String? = null
@@ -101,11 +97,11 @@ object CustomerIOSDKInitializer {
         setIfDefined(null, CustomerIOBuilder::screenViewUse) { ScreenView.getScreenView(it) }
         setIfDefined(migrationSiteId, CustomerIOBuilder::migrationSiteId)
 
-        // Add in-app if siteId is provided. A public pk_ key is enough without one.
-        if (!siteId.isNullOrBlank() || CDP_API_KEY.startsWith("pk_")) {
+        // Add messaging modules if siteId is provided
+        if (!(siteId.isNullOrBlank())) {
             addCustomerIOModule(
                 ModuleMessagingInApp(
-                    MessagingInAppModuleConfig.Builder(siteId.orEmpty(), region)
+                    MessagingInAppModuleConfig.Builder(siteId, region)
                         .setEventListener(ReactInAppEventListener.instance)
                         .build()
                 )
@@ -168,9 +164,8 @@ class CustomerIOSDKInitializer {
 
         CustomerIO.initialize(withConfig: builder.build())
 
-        // A public pk_ key is enough for in-app, so site ID is only needed for other keys.
-        if siteId != nil || cdpApiKey.hasPrefix("pk_") {
-            let inAppConfig = MessagingInAppConfigBuilder(siteId: siteId ?? "", region: region).build()
+        if let siteId = siteId {
+            let inAppConfig = MessagingInAppConfigBuilder(siteId: siteId, region: region).build()
             MessagingInApp.initialize(withConfig: inAppConfig)
             let logger = DIGraphShared.shared.logger
             // Retrieves ReactInAppEventListener from DI graph, populated when it is accessed in React Native SDK.
@@ -233,9 +228,8 @@ class CustomerIOSDKInitializer {
 
         CustomerIO.initialize(withConfig: builder.build())
 
-        // A public pk_ key is enough for in-app, so site ID is only needed for other keys.
-        if siteId != nil || cdpApiKey.hasPrefix("pk_") {
-            let inAppConfig = MessagingInAppConfigBuilder(siteId: siteId ?? "", region: region).build()
+        if let siteId = siteId {
+            let inAppConfig = MessagingInAppConfigBuilder(siteId: siteId, region: region).build()
             MessagingInApp.initialize(withConfig: inAppConfig)
             let logger = DIGraphShared.shared.logger
             // Retrieves ReactInAppEventListener from DI graph, populated when it is accessed in React Native SDK.

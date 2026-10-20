@@ -14,6 +14,17 @@ export function regionFromCdpApiKey(cdpApiKey: string): 'US' | 'EU' | undefined 
 }
 
 /**
+ * Region the app set, or the one in the key prefix when it set none, like the native SDKs do.
+ * Shared by the app initializer and the notification service extension so both use one region.
+ */
+export function resolveRegion(
+  region: string | undefined,
+  cdpApiKey: string | undefined
+): string | undefined {
+  return region || (cdpApiKey ? regionFromCdpApiKey(cdpApiKey) : undefined);
+}
+
+/**
  * Escapes a value for use inside a double-quoted Swift or Kotlin string literal, so a key with a
  * quote, backslash or `$` can't break the generated file.
  */
