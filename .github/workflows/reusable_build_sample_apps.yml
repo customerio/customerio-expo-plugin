@@ -126,9 +126,21 @@ jobs:
           ruby-version: '3.4'
           bundler-cache: true
 
-      # Ubuntu ships sd in universe; the iOS job installs it with brew.
+      # sd replaces strings in files. This downloads the pre-built binary (`cargo install` is slow), pinned with a
+      # checksum so a new sd release cannot change deployments. 1.1.0 is what kenji-miyake/setup-sd installed ("latest").
+      # If using sd on macos, "brew install" works great.
       - name: Install sd CLI to use later in the workflow
-        run: sudo apt-get update && sudo apt-get install -y sd
+        env:
+          SD_VERSION: 1.1.0
+          SD_SHA256: 3613eca74cd686739bb5a6d68319aa56c747e7315274d02323a2ca2b1c5d82d2
+        run: |
+          archive="sd-v${SD_VERSION}-x86_64-unknown-linux-gnu"
+          curl --fail --silent --show-error --location --retry 3 --output "$RUNNER_TEMP/$archive.tar.gz" \
+            "https://github.com/chmln/sd/releases/download/v${SD_VERSION}/$archive.tar.gz"
+          echo "$SD_SHA256  $RUNNER_TEMP/$archive.tar.gz" | sha256sum --check --strict
+          tar -xzf "$RUNNER_TEMP/$archive.tar.gz" -C "$RUNNER_TEMP"
+          "$RUNNER_TEMP/$archive/sd" --version
+          echo "$RUNNER_TEMP/$archive" >> "$GITHUB_PATH"
 
       - name: Bundle install
         working-directory: test-app
