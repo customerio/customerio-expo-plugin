@@ -111,10 +111,8 @@ describe('Xcode 27 preview workflow', () => {
     // !cancelled() guards only the ambiguous `skipped` branch.
     expect(notify.if).not.toMatch(/^!cancelled\(\)/);
     expect(notify.if).toContain("(!cancelled() && steps.known-failure.outcome == 'skipped')");
-    expect(notify.env.SLACK_WEBHOOK_TYPE).toBe('INCOMING_WEBHOOK');
-    expect(notify.env.SLACK_WEBHOOK_URL).toBe(
-      '${{ secrets.SLACK_WEBHOOK_URL }}'
-    );
+    expect(notify.with['webhook-type']).toBe('incoming-webhook');
+    expect(notify.with.webhook).toBe('${{ secrets.SLACK_WEBHOOK_URL }}');
 
     // Same pinned SHA the deploy workflow already uses — no second pin to keep
     // in step with dependabot.
