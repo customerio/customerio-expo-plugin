@@ -1,66 +1,85 @@
 ## [3.11.1](https://github.com/customerio/customerio-expo-plugin/compare/3.11.0...3.11.1) (2026-10-07)
 
+### Upgrade notes
+
+* **Android:** The Android SDK no longer supplies the `okhttp-sse` and `logging-interceptor` libraries transitively. If your app imports APIs from either library, add them as direct dependencies of your Android app.
+
 ### Bug Fixes
 
-* update customerio-reactnative to 6.13.1 ([#412](https://github.com/customerio/customerio-expo-plugin/issues/412)) ([5f4f090](https://github.com/customerio/customerio-expo-plugin/commit/5f4f0900134a74aae3b3853a5c37acc56a0301d7))
+* **Android:** Updates the React Native SDK to 6.13.1, which brings Android SDK 4.23.2 (iOS stays on 4.9.0). Rich push images are now decoded within memory bounds, and images over 5 MiB are skipped so the notification still displays without the image. In-app messages also now work in apps that use OkHttp 5. What to do: update `customerio-reactnative` in your app to 6.13.1. ([#412](https://github.com/customerio/customerio-expo-plugin/issues/412)) ([5f4f090](https://github.com/customerio/customerio-expo-plugin/commit/5f4f0900134a74aae3b3853a5c37acc56a0301d7))
 
 ## [3.11.0](https://github.com/customerio/customerio-expo-plugin/compare/3.10.0...3.11.0) (2026-09-25)
 
 ### Features
 
-* support polygon geofences ([#411](https://github.com/customerio/customerio-expo-plugin/issues/411)) ([03f7042](https://github.com/customerio/customerio-expo-plugin/commit/03f70422ba21d1dd18b9ad0f1cae6b9e088f4563))
+* **Geofencing:** Adds support for polygon geofences by updating the React Native SDK to 6.13.0 (iOS SDK 4.9.0, Android SDK 4.22.0). Polygon geofences are detected by their drawn shape rather than a surrounding circle, and circle geofences work as before. No plugin configuration changes are needed. What to do: update `customerio-reactnative` in your app to 6.13.0. ([#411](https://github.com/customerio/customerio-expo-plugin/issues/411)) ([03f7042](https://github.com/customerio/customerio-expo-plugin/commit/03f70422ba21d1dd18b9ad0f1cae6b9e088f4563))
 
 ## [3.10.0](https://github.com/customerio/customerio-expo-plugin/compare/3.9.1...3.10.0) (2026-09-18)
 
 ### Features
 
-* **in-app:** document the color scheme override and inbox accessibility labels ([#406](https://github.com/customerio/customerio-expo-plugin/issues/406)) ([64a16af](https://github.com/customerio/customerio-expo-plugin/commit/64a16af4fbfdc6a88c5c7980a1a066bc39fba19a))
+* **In-app:** Updates the React Native SDK to 6.12.0 (iOS SDK 4.8.1, Android SDK 4.21.1), which adds the `inApp.colorScheme` option and the `CustomerIO.inAppMessaging.setColorScheme()` method to override the in-app message color scheme, and the `inApp.notificationInboxAccessibilityLabels` option for the visual notification inbox. These are set in JavaScript, not in the plugin config. If you use native auto-initialization, the `CustomerIO.initialize()` options are ignored: call `setColorScheme()` after startup to set the color scheme, and note that inbox accessibility labels can't be set. What to do: update `customerio-reactnative` in your app to 6.12.0. ([#406](https://github.com/customerio/customerio-expo-plugin/issues/406)) ([64a16af](https://github.com/customerio/customerio-expo-plugin/commit/64a16af4fbfdc6a88c5c7980a1a066bc39fba19a))
 
 ## [3.9.1](https://github.com/customerio/customerio-expo-plugin/compare/3.9.0...3.9.1) (2026-09-08)
 
 ### Bug Fixes
 
-* **deps:** update Faraday security pin to 1.10.6 ([#404](https://github.com/customerio/customerio-expo-plugin/issues/404)) ([fc5a588](https://github.com/customerio/customerio-expo-plugin/commit/fc5a588e090b039f3e735379b35c98601d08eb3f))
+* Security dependency update to the build tooling of the plugin's sample app (Faraday 1.10.6). The plugin and apps that use it are unaffected. ([#404](https://github.com/customerio/customerio-expo-plugin/issues/404)) ([fc5a588](https://github.com/customerio/customerio-expo-plugin/commit/fc5a588e090b039f3e735379b35c98601d08eb3f))
 
 ## [3.9.0](https://github.com/customerio/customerio-expo-plugin/compare/3.8.0...3.9.0) (2026-08-27)
 
+### Upgrade notes
+
+* **iOS deep links:** Apps that use Expo's scene lifecycle with native auto-initialization must register their React Native `Linking` URL listener and then call `CustomerIO.setDeepLinkRoutingReady()`. Customer.io deep links buffered during a cold launch are delivered to that listener as `url` events, not through `Linking.getInitialURL()`. If readiness isn't signaled within ten seconds, the SDK opens the destination through the system instead.
+* **Live Notifications:** Expo Router apps that use the scene lifecycle must pass Live Activity URLs through `CustomerIO.liveActivities.handleWidgetUrl()` once, in a top-level `app/+native-intent.tsx` file. Apps without Expo Router should call it once in their central URL-handling code. Don't also call it from a `Linking` listener, or opens are reported twice.
+* **Live Notifications:** After you disable Live Notifications in an iOS project you generated before, run `npx expo prebuild --clean --platform ios`. An incremental prebuild stops with this instruction.
+
 ### Features
 
-* support Expo scene lifecycle routing (MBL-2304) ([#398](https://github.com/customerio/customerio-expo-plugin/issues/398)) ([38419b5](https://github.com/customerio/customerio-expo-plugin/commit/38419b5dc7f11c83cebdb285121d1e5efb5c7040))
+* **iOS:** Supports Expo SDK 58's scene lifecycle. The plugin keeps Expo's scene ownership while installing Customer.io push and deep-link routing before native auto-initialization, and no longer injects `handleDeeplinkInKilledState` on Expo SDK 58 and later. This release updates the React Native SDK to 6.9.0 (iOS SDK 4.7.6), which adds deep-link routing for UIScene apps, `CustomerIO.setDeepLinkRoutingReady()`, and `CustomerIO.liveActivities.handleWidgetUrl()`. What to do: update `customerio-reactnative` in your app to 6.9.0, and see the upgrade notes above if your app uses the scene lifecycle. ([#398](https://github.com/customerio/customerio-expo-plugin/issues/398)) ([38419b5](https://github.com/customerio/customerio-expo-plugin/commit/38419b5dc7f11c83cebdb285121d1e5efb5c7040))
 
 ## [3.8.0](https://github.com/customerio/customerio-expo-plugin/compare/3.7.2...3.8.0) (2026-08-25)
 
 ### Features
 
-* add Android push notification icon and color options (MBL-2297) ([#397](https://github.com/customerio/customerio-expo-plugin/issues/397)) ([000ed9a](https://github.com/customerio/customerio-expo-plugin/commit/000ed9abddb87ad1b210c8d3f07527a4d0c8856a))
+* **Push (Android):** Adds plugin options to set the default Android push notification icon and accent color at prebuild, so you no longer need to edit `AndroidManifest.xml` by hand. `icon` accepts a path to a local image (use white on transparent) or an existing `@drawable/` reference; `color` accepts a `#RRGGBB` value or an existing `@color/` reference. Existing manifest entries, such as those from `expo-notifications`, are not overwritten. What to do: set `android.pushNotification.icon` and `android.pushNotification.color` in the plugin options in your app.json or app.config, then run prebuild. ([#397](https://github.com/customerio/customerio-expo-plugin/issues/397)) ([000ed9a](https://github.com/customerio/customerio-expo-plugin/commit/000ed9abddb87ad1b210c8d3f07527a4d0c8856a))
 
 ## [3.7.2](https://github.com/customerio/customerio-expo-plugin/compare/3.7.1...3.7.2) (2026-08-21)
 
 ### Bug Fixes
 
-* update customerio-reactnative to 6.6.3 ([#392](https://github.com/customerio/customerio-expo-plugin/issues/392)) ([02f566b](https://github.com/customerio/customerio-expo-plugin/commit/02f566b1168d4d21116afe01f714ddba8e875e3a))
+* Updates the React Native SDK to 6.6.3 (iOS SDK 4.7.5, Android SDK 4.20.2), which adds in-app multi-app support by sending an app identifier with in-app requests. On iOS it also lets the SDK work alongside other notification center delegates and prioritizes SDK background work. What to do: update `customerio-reactnative` in your app to 6.6.3. ([#392](https://github.com/customerio/customerio-expo-plugin/issues/392)) ([02f566b](https://github.com/customerio/customerio-expo-plugin/commit/02f566b1168d4d21116afe01f714ddba8e875e3a))
 
 ## [3.7.1](https://github.com/customerio/customerio-expo-plugin/compare/3.7.0...3.7.1) (2026-08-07)
 
+### Bug Fixes
+
+* Updates the React Native SDK to 6.6.2 (iOS SDK 4.7.2, Android SDK 4.20.1). On iOS this fixes escaped regular expressions in in-app page route rules and corrects geofence region registration. What to do: update `customerio-reactnative` in your app to 6.6.2. ([#384](https://github.com/customerio/customerio-expo-plugin/issues/384)) ([c690ac3](https://github.com/customerio/customerio-expo-plugin/commit/c690ac3e6f18c92c7b87fe7461431fc6aec3a815))
+
 ## [3.7.0](https://github.com/customerio/customerio-expo-plugin/compare/3.6.2...3.7.0) (2026-07-30)
+
+### Features
+
+* **Live Notifications:** Adds prebuild setup for Live Notifications. On iOS the plugin adds the Live Activities pod, the `NSSupportsLiveActivities` Info.plist key, and a generated widget extension that renders the built-in templates or your own SwiftUI; on Android it registers the renderer and copies any custom Kotlin renderer and logo. Requires Expo SDK 53 or later. What to do: set `config.liveNotifications` if you use native auto-initialization, or set `liveNotifications.enabled` to `true` if you initialize from JavaScript; use `liveNotifications.customWidget` and `liveNotifications.branding` for custom templates and branding. ([#382](https://github.com/customerio/customerio-expo-plugin/issues/382)) ([b80ac4e](https://github.com/customerio/customerio-expo-plugin/commit/b80ac4e0685517dd8f6995d8e3628916e055a620))
+* **Geofencing:** Adds opt-in geofencing. The plugin adds the geofence module on iOS and Android, enables location (geofencing requires it), and adds an iOS AppDelegate hook so geofence transitions are delivered when the app is woken in the background. Requires Expo SDK 53 or later. You still add your own location permissions and privacy usage strings. This release also updates the React Native SDK to 6.6.1 (iOS SDK 4.7.0, Android SDK 4.20.0), which adds geofencing, Live Notifications, and the visual notification inbox, and fixes Xcode project setup on Expo SDK 55. What to do: set `geofence.enabled` to `true` in the plugin options, optionally set `config.geofence.locationMode` and `config.ios.allowBackgroundDelivery`, update `customerio-reactnative` in your app to 6.6.1, and run prebuild. ([#379](https://github.com/customerio/customerio-expo-plugin/issues/379)) ([0dc528e](https://github.com/customerio/customerio-expo-plugin/commit/0dc528e45454820b56d3f8ecd497abccae0d4549))
 
 ## [3.6.2](https://github.com/customerio/customerio-expo-plugin/compare/3.6.1...3.6.2) (2026-06-23)
 
 ### Bug Fixes
 
-* update customerio-reactnative to 6.5.2 ([#367](https://github.com/customerio/customerio-expo-plugin/issues/367)) ([80572f9](https://github.com/customerio/customerio-expo-plugin/commit/80572f956ffc11b03040484e4abe5ffc4b904dd5))
+* Updates the React Native SDK to 6.5.2 (iOS SDK 4.5.3, Android SDK 4.18.2). On iOS this fixes duplicate event delivery; on Android, in-app message polling now follows the app's process lifecycle instead of each activity. What to do: update `customerio-reactnative` in your app to 6.5.2. ([#367](https://github.com/customerio/customerio-expo-plugin/issues/367)) ([80572f9](https://github.com/customerio/customerio-expo-plugin/commit/80572f956ffc11b03040484e4abe5ffc4b904dd5))
 
 ## [3.6.1](https://github.com/customerio/customerio-expo-plugin/compare/3.6.0...3.6.1) (2026-06-16)
 
 ### Bug Fixes
 
-* update customerio-reactnative to 6.5.1 ([#366](https://github.com/customerio/customerio-expo-plugin/issues/366)) ([1b78fa7](https://github.com/customerio/customerio-expo-plugin/commit/1b78fa70d5ae9ef71298e883280dc4c113c96de9))
+* Updates the React Native SDK to 6.5.1 (iOS SDK 4.5.1, Android SDK 4.18.1). On Android this hardens the push notification activity and the in-app message WebView. What to do: update `customerio-reactnative` in your app to 6.5.1. ([#366](https://github.com/customerio/customerio-expo-plugin/issues/366)) ([1b78fa7](https://github.com/customerio/customerio-expo-plugin/commit/1b78fa70d5ae9ef71298e883280dc4c113c96de9))
 
 ## [3.6.0](https://github.com/customerio/customerio-expo-plugin/compare/3.5.3...3.6.0) (2026-06-08)
 
 ### Features
 
-* bump customerio-reactnative to 6.5.0 ([#365](https://github.com/customerio/customerio-expo-plugin/issues/365)) ([1e61e76](https://github.com/customerio/customerio-expo-plugin/commit/1e61e766812c8a7857867a84af00404ef3484e57))
+* Updates the React Native SDK to 6.5.0 (iOS SDK 4.5.0, Android SDK 4.18.0), which reduces event volume. On iOS, repeated `identify` calls without traits in the same session are no longer sent again. What to do: update `customerio-reactnative` in your app to 6.5.0. ([#365](https://github.com/customerio/customerio-expo-plugin/issues/365)) ([1e61e76](https://github.com/customerio/customerio-expo-plugin/commit/1e61e766812c8a7857867a84af00404ef3484e57))
 
 ## [3.5.3](https://github.com/customerio/customerio-expo-plugin/compare/3.5.2...3.5.3) (2026-05-22)
 
