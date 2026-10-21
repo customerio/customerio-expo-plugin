@@ -53,6 +53,33 @@ describe('android scenarios — modifyProjectBuildGradleForGoogleServices', () =
 
     expect(updated).toEqual(modifyProjectBuildGradleForGoogleServices(baseline));
     expect(updated.match(/com\.google\.gms:google-services:/g)).toHaveLength(1);
+    expect(modifyProjectBuildGradleForGoogleServices(updated)).toEqual(updated);
+  });
+
+  it('keeps the indentation and CRLF line endings of the line it updates', () => {
+    const crlf = [
+      'buildscript {',
+      '  dependencies {',
+      '    classpath "com.google.gms:google-services:4.3.13"  // Google Services plugin',
+      "    classpath('com.android.tools.build:gradle')",
+      '  }',
+      '}',
+      '',
+    ].join('\r\n');
+
+    expect(modifyProjectBuildGradleForGoogleServices(crlf)).toEqual(
+      crlf.replace('google-services:4.3.13', 'google-services:4.4.0')
+    );
+  });
+
+  // Someone who raised the version on the line this plugin injected keeps it.
+  it('does not lower a version already above the floor', () => {
+    const raised = modifyProjectBuildGradleForGoogleServices(baseline).replace(
+      'google-services:4.4.0',
+      'google-services:4.5.0'
+    );
+
+    expect(modifyProjectBuildGradleForGoogleServices(raised)).toEqual(raised);
   });
 
   // A customer's own declaration is not ours to rewrite. Gradle resolves the highest declared
