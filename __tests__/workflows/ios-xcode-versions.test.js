@@ -25,7 +25,7 @@ const iosRows = (rows) => rows.filter((row) => row.platform === 'ios');
 // Xcode 26, the newest toolchain they can launch with.
 function expectXcodeSplit(rows) {
   for (const row of iosRows(rows)) {
-    if (row['expo-version'] === 'latest') {
+    if (row['expo-version'] === 'latest' || row['expo-version'] >= 58) {
       expect(row).toEqual(expect.objectContaining(XCODE_27_LAUNCH));
     } else {
       expect(row['runs-on']).toBe('macos-26');

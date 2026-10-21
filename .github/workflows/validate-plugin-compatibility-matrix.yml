@@ -131,7 +131,7 @@ jobs:
       # `inputs.ref`, so a manual run against a ref that predates it still runs it.
       - name: Check out the launch check
         if: matrix.launch-ios-major
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           ref: ${{ github.sha }}
           path: .ci-launch-check
@@ -151,7 +151,7 @@ jobs:
 
       - name: Upload launch logs
         if: failure() && matrix.launch-ios-major
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: launch-logs-expo-${{ matrix.expo-version }}-${{ matrix.ios-push-provider }}
           path: |

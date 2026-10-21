@@ -140,7 +140,7 @@ jobs:
 
       - name: Upload launch logs
         if: failure() && matrix.launch-ios-major
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: launch-logs-expo-latest-${{ matrix.ios-push-provider }}
           path: |

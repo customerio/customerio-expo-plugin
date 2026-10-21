@@ -16,7 +16,7 @@ CI runs:
 | ------------------------------------------ | -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `test.yml`                                 | every PR + push to `main`/`beta`/`feature/*` | All four Jest projects (parallel jobs)                                                                                                                                                 |
 | `validate-plugin-compatibility.yml`        | every PR                                     | Latest-Expo smoke: Android, plus an APN build on Xcode 27 that is installed, launched and kept alive on the iOS 27 simulator                                                           |
-| `validate-plugin-compatibility-matrix.yml` | merge to `main` (release) + manual           | Full multi-SDK matrix — real `expo prebuild` + native build; latest iOS on Xcode 27 with the launch check, SDK 54–57 iOS on Xcode 26 ([policy](.github/IOS-TOOLCHAIN-COMPATIBILITY.md)) |
+| `validate-plugin-compatibility-matrix.yml` | merge to `main` (release) + manual           | Full multi-SDK matrix — real `expo prebuild` + native build; latest iOS on Xcode 27 with the launch check, SDK 54 iOS on Xcode 26 ([policy](.github/IOS-TOOLCHAIN-COMPATIBILITY.md)) |
 | `reusable_build_sample_apps.yml`           | release / sample-app distribution            | Full Android + iOS app builds shipped to Firebase                                                                                                                                      |
 
 ## The four Jest projects
