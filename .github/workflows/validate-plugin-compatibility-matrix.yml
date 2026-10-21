@@ -11,7 +11,7 @@ on:
         description: 'JSON matrix. Defaults to the complete supported-version and latest-version matrix.'
         type: string
         required: false
-        default: '[{"expo-version":54,"platform":"android","runs-on":"ubuntu-latest"},{"expo-version":54,"platform":"ios","runs-on":"macos-26","ios-push-provider":"apn"},{"expo-version":54,"platform":"ios","runs-on":"macos-26","ios-push-provider":"fcm"},{"expo-version":"latest","platform":"android","runs-on":"ubuntu-latest"},{"expo-version":"latest","platform":"ios","runs-on":"macos-26","ios-push-provider":"apn"},{"expo-version":"latest","platform":"ios","runs-on":"macos-26","ios-push-provider":"fcm"}]'
+        default: '[{"expo-version":53,"platform":"android","runs-on":"ubuntu-latest","app-dir":"../ci-test-apps","extra-dependencies":"query-string@^7.1.3,expo-asset@~11.1.7"},{"expo-version":54,"platform":"android","runs-on":"ubuntu-latest"},{"expo-version":54,"platform":"ios","runs-on":"macos-26","ios-push-provider":"apn"},{"expo-version":54,"platform":"ios","runs-on":"macos-26","ios-push-provider":"fcm"},{"expo-version":"latest","platform":"android","runs-on":"ubuntu-latest"},{"expo-version":"latest","platform":"ios","runs-on":"macos-26","ios-push-provider":"apn"},{"expo-version":"latest","platform":"ios","runs-on":"macos-26","ios-push-provider":"fcm"}]'
 
 concurrency:
   group: ${{ github.workflow }}-${{ inputs.ref || github.ref }}
@@ -62,10 +62,14 @@ jobs:
       - name: Install Dependencies
         run: npm ci
 
+      # `app-dir` and `extra-dependencies` are for the Expo 53 row. Its template
+      # imports modules it does not declare (`query-string` via expo-router 5.1,
+      # `expo-asset` via expo-font 13.3), so the row installs them, and it builds
+      # outside the repo so this repo's own node_modules cannot satisfy them instead.
       - name: Set APP_NAME and APP_PATH
         run: |
           echo "APP_NAME=${{ env.APP_NAME_PREFIX }}_${{ matrix.expo-version }}" >> "$GITHUB_ENV"
-          echo "APP_PATH=${{ env.APP_DIR }}/${{ env.APP_NAME_PREFIX }}_${{ matrix.expo-version }}" >> "$GITHUB_ENV"
+          echo "APP_PATH=${{ matrix.app-dir || env.APP_DIR }}/${{ env.APP_NAME_PREFIX }}_${{ matrix.expo-version }}" >> "$GITHUB_ENV"
 
       # The test app is generated fresh by `compatibility:create-test-app`, so
       # `Podfile.lock` / Gradle files don't exist at checkout. The cache keys
@@ -99,12 +103,13 @@ jobs:
           npm run compatibility:create-test-app -- \
             --expo-version=${{ matrix.expo-version }} \
             --app-name=${{ env.APP_NAME }} \
-            --dir-name=${{ env.APP_DIR }}
+            --dir-name=${{ matrix.app-dir || env.APP_DIR }}
 
       - name: Setup Test App
         run: |
           npm run compatibility:setup-test-app -- \
-            --app-path=${{ env.APP_PATH }}
+            --app-path=${{ env.APP_PATH }} \
+            ${{ matrix.extra-dependencies && format('--dependencies={0}', matrix.extra-dependencies) || '' }}
 
       - name: Configure Plugin with Default Config
         run: |

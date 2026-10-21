@@ -16,8 +16,8 @@ permissions:
 jobs:
   # Correctness follows changed paths, not semantic-release naming. The latest
   # Android and iOS/APN cells run in the smoke workflow, so this adds only the
-  # SDK-floor and FCM cells needed to complete the six-cell matrix.
+  # SDK-floor and FCM cells needed to complete the full matrix.
   full-compatibility:
     uses: ./.github/workflows/validate-plugin-compatibility-matrix.yml
     with:
-      matrix: '[{"expo-version":54,"platform":"android","runs-on":"ubuntu-latest"},{"expo-version":54,"platform":"ios","runs-on":"macos-26","ios-push-provider":"apn"},{"expo-version":54,"platform":"ios","runs-on":"macos-26","ios-push-provider":"fcm"},{"expo-version":"latest","platform":"ios","runs-on":"macos-26","ios-push-provider":"fcm"}]'
+      matrix: '[{"expo-version":53,"platform":"android","runs-on":"ubuntu-latest","app-dir":"../ci-test-apps","extra-dependencies":"query-string@^7.1.3,expo-asset@~11.1.7"},{"expo-version":54,"platform":"android","runs-on":"ubuntu-latest"},{"expo-version":54,"platform":"ios","runs-on":"macos-26","ios-push-provider":"apn"},{"expo-version":54,"platform":"ios","runs-on":"macos-26","ios-push-provider":"fcm"},{"expo-version":"latest","platform":"ios","runs-on":"macos-26","ios-push-provider":"fcm"}]'
