@@ -303,7 +303,11 @@ const addRichPushXcodeProj = async (
     infoPlistTargetFile: getTargetFile(PLIST_FILENAME),
   });
   updateNseEnv(getTargetFile(ENV_FILENAME), options.pushNotification?.env);
-  updateNseNotificationService(getTargetFile('NotificationService.swift'), appGroupId);
+  updateNseNotificationService(
+    getTargetFile('NotificationService.swift'),
+    appGroupId,
+    options.pushNotification?.env?.apiHost,
+  );
 
   // Register the NSE target in the parsed Xcode project
   addNotificationServiceExtensionToXcodeProject(xcodeProject, {
@@ -361,14 +365,31 @@ export function applyAppGroupIdToNotificationService(
   return replaceCodeByRegex(content, /\{\{APP_GROUP_ID_BUILDER_LINE\}\}/, builderLine);
 }
 
+/**
+ * Pure string transform: substitutes the `{{API_HOST_BUILDER_LINE}}`
+ * placeholder in NotificationService.swift with either the configured
+ * apiHost builder line or an empty string.
+ */
+export function applyApiHostToNotificationService(
+  content: string,
+  apiHost?: string
+): string {
+  const builderLine = apiHost
+    ? `        .apiHost(${JSON.stringify(apiHost)})\n`
+    : '';
+  return replaceCodeByRegex(content, /\{\{API_HOST_BUILDER_LINE\}\}/, builderLine);
+}
+
 const updateNseNotificationService = (
   notificationServiceFile: string,
   appGroupId?: string,
+  apiHost?: string,
 ) => {
-  const next = applyAppGroupIdToNotificationService(
+  const withApiHost = applyApiHostToNotificationService(
     FileManagement.readFile(notificationServiceFile),
-    appGroupId,
+    apiHost,
   );
+  const next = applyAppGroupIdToNotificationService(withApiHost, appGroupId);
   FileManagement.writeFile(notificationServiceFile, next);
 };
 
