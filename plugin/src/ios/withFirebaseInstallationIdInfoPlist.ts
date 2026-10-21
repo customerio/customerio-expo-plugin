@@ -37,7 +37,7 @@ export const withFirebaseInstallationIdInfoPlist: ConfigPlugin<{
 
   if (enabled && iosOptions?.pushNotification?.provider !== 'fcm') {
     logger.warn(
-      'firebaseInstallationId.enabled is ignored on iOS because the push provider is not FCM.'
+      "firebaseInstallationId.enabled is ignored on iOS: it requires ios.pushNotification.provider 'fcm'."
     );
     return config;
   }
