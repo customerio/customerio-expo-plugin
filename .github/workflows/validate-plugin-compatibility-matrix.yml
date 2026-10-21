@@ -11,7 +11,7 @@ on:
         description: 'JSON matrix. Defaults to the complete supported-version and latest-version matrix.'
         type: string
         required: false
-        default: '[{"expo-version":54,"platform":"android","runs-on":"ubuntu-latest"},{"expo-version":54,"platform":"ios","runs-on":"macos-26","ios-push-provider":"apn"},{"expo-version":54,"platform":"ios","runs-on":"macos-26","ios-push-provider":"fcm"},{"expo-version":"latest","platform":"android","runs-on":"ubuntu-latest"},{"expo-version":"latest","platform":"ios","runs-on":"macos-26","ios-push-provider":"apn"},{"expo-version":"latest","platform":"ios","runs-on":"macos-26","ios-push-provider":"fcm"}]'
+        default: '[{"expo-version":54,"platform":"android","runs-on":"ubuntu-latest"},{"expo-version":54,"platform":"ios","runs-on":"macos-26","ios-push-provider":"apn"},{"expo-version":54,"platform":"ios","runs-on":"macos-26","ios-push-provider":"fcm"},{"expo-version":"latest","platform":"android","runs-on":"ubuntu-latest"},{"expo-version":"latest","platform":"ios","runs-on":"xcode-27","xcode-version":"27.0","launch-ios-major":27,"ios-push-provider":"apn"},{"expo-version":"latest","platform":"ios","runs-on":"xcode-27","xcode-version":"27.0","launch-ios-major":27,"ios-push-provider":"fcm"}]'
 
 concurrency:
   group: ${{ github.workflow }}-${{ inputs.ref || github.ref }}
@@ -20,7 +20,8 @@ concurrency:
 env:
   NODE_VERSION: "24"
   JAVA_VERSION: "17"
-  XCODE_VERSION: "26.5"
+  # Xcode for iOS rows that do not set `xcode-version` (SDK 54-57 hosts).
+  XCODE_VERSION: "26.6"
   APP_DIR: ci-test-apps
   APP_NAME_PREFIX: ExpoPluginTestApp
 
@@ -57,7 +58,7 @@ jobs:
         if: matrix.platform == 'ios'
         uses: customerio/mobile-ci-tools/github-actions/ios/setup-ios/v1@main
         with:
-          xcode-version: ${{ env.XCODE_VERSION }}
+          xcode-version: ${{ matrix.xcode-version || env.XCODE_VERSION }}
 
       - name: Install Dependencies
         run: npm ci
@@ -78,9 +79,9 @@ jobs:
           path: |
             ~/Library/Caches/CocoaPods
             ~/.cocoapods
-          key: ${{ runner.os }}-pods-${{ matrix.expo-version }}-${{ matrix.ios-push-provider }}-${{ env.XCODE_VERSION }}-${{ hashFiles('package-lock.json') }}
+          key: ${{ runner.os }}-pods-${{ matrix.expo-version }}-${{ matrix.ios-push-provider }}-${{ matrix.xcode-version || env.XCODE_VERSION }}-${{ hashFiles('package-lock.json') }}
           restore-keys: |
-            ${{ runner.os }}-pods-${{ matrix.expo-version }}-${{ matrix.ios-push-provider }}-${{ env.XCODE_VERSION }}-
+            ${{ runner.os }}-pods-${{ matrix.expo-version }}-${{ matrix.ios-push-provider }}-${{ matrix.xcode-version || env.XCODE_VERSION }}-
             ${{ runner.os }}-pods-${{ matrix.expo-version }}-${{ matrix.ios-push-provider }}-
 
       - name: Cache Gradle
@@ -114,9 +115,47 @@ jobs:
 
       - name: Validate Plugin
         run: |
+          date +%s > "$RUNNER_TEMP/build-start-epoch"
           npm run compatibility:validate-plugin -- \
             --app-path=${{ env.APP_PATH }} \
             --expo-version=${{ matrix.expo-version }} \
             --platforms=${{ matrix.platform }}\
             --ios-use-frameworks="static" \
             ${{ matrix.ios-push-provider && format(' --ios-push-providers={0}', matrix.ios-push-provider) }}
+
+      # Expo SDK 58+ generates a UIScene host, built here with the iOS 27 SDK. A
+      # build can pass while the app still terminates at launch, so these rows
+      # also install and launch it. SDK 54-57 hosts have no UIScene and cannot
+      # launch on the iOS 27 SDK; they stay on Xcode 26 (`XCODE_VERSION`).
+      # The launch check comes from this workflow's revision, not from
+      # `inputs.ref`, so a manual run against a ref that predates it still runs it.
+      - name: Check out the launch check
+        if: matrix.launch-ios-major
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          path: .ci-launch-check
+          sparse-checkout: |
+            .github/actions
+            scripts/compatibility
+
+      - name: Launch generated iOS app
+        if: matrix.launch-ios-major
+        uses: ./.ci-launch-check/.github/actions/launch-generated-ios-app
+        with:
+          app-path: ${{ env.APP_PATH }}
+          build-start-epoch-file: ${{ runner.temp }}/build-start-epoch
+          expected-ios-major: ${{ matrix.launch-ios-major }}
+          log-path: ${{ runner.temp }}/launch.log
+          settings-json-path: ${{ runner.temp }}/build-settings.json
+
+      - name: Upload launch logs
+        if: failure() && matrix.launch-ios-major
+        uses: actions/upload-artifact@v4
+        with:
+          name: launch-logs-expo-${{ matrix.expo-version }}-${{ matrix.ios-push-provider }}
+          path: |
+            ${{ runner.temp }}/launch.log
+            ${{ runner.temp }}/build-settings.json
+          if-no-files-found: ignore
+          retention-days: 7
