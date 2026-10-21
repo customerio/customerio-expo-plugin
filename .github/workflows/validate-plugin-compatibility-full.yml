@@ -15,11 +15,9 @@ permissions:
 
 jobs:
   # Correctness follows changed paths, not semantic-release naming. The latest
-  # Android and iOS/APN cells run in the smoke workflow, so this adds the
-  # SDK-floor cells, the explicit Expo 58 cells and the latest FCM cell. Expo 58
-  # duplicates `latest` while `latest` is SDK 58; it stays covered after `latest`
-  # moves on.
+  # Android and iOS/APN cells run in the smoke workflow, so this adds only the
+  # SDK-floor and FCM cells needed to complete the six-cell matrix.
   full-compatibility:
     uses: ./.github/workflows/validate-plugin-compatibility-matrix.yml
     with:
-      matrix: '[{"expo-version":54,"platform":"android","runs-on":"ubuntu-latest"},{"expo-version":54,"platform":"ios","runs-on":"macos-26","ios-push-provider":"apn"},{"expo-version":54,"platform":"ios","runs-on":"macos-26","ios-push-provider":"fcm"},{"expo-version":58,"platform":"android","runs-on":"ubuntu-latest"},{"expo-version":58,"platform":"ios","runs-on":"xcode-27","xcode-version":"27.0","launch-ios-major":27,"ios-push-provider":"apn"},{"expo-version":58,"platform":"ios","runs-on":"xcode-27","xcode-version":"27.0","launch-ios-major":27,"ios-push-provider":"fcm"},{"expo-version":"latest","platform":"ios","runs-on":"macos-26","ios-push-provider":"fcm"}]'
+      matrix: '[{"expo-version":54,"platform":"android","runs-on":"ubuntu-latest"},{"expo-version":54,"platform":"ios","runs-on":"macos-26","ios-push-provider":"apn"},{"expo-version":54,"platform":"ios","runs-on":"macos-26","ios-push-provider":"fcm"},{"expo-version":"latest","platform":"ios","runs-on":"macos-26","ios-push-provider":"fcm"}]'

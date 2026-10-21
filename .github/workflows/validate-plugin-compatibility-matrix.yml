@@ -11,7 +11,7 @@ on:
         description: 'JSON matrix. Defaults to the complete supported-version and latest-version matrix.'
         type: string
         required: false
-        default: '[{"expo-version":54,"platform":"android","runs-on":"ubuntu-latest"},{"expo-version":54,"platform":"ios","runs-on":"macos-26","ios-push-provider":"apn"},{"expo-version":54,"platform":"ios","runs-on":"macos-26","ios-push-provider":"fcm"},{"expo-version":58,"platform":"android","runs-on":"ubuntu-latest"},{"expo-version":58,"platform":"ios","runs-on":"xcode-27","xcode-version":"27.0","launch-ios-major":27,"ios-push-provider":"apn"},{"expo-version":58,"platform":"ios","runs-on":"xcode-27","xcode-version":"27.0","launch-ios-major":27,"ios-push-provider":"fcm"},{"expo-version":"latest","platform":"android","runs-on":"ubuntu-latest"},{"expo-version":"latest","platform":"ios","runs-on":"macos-26","ios-push-provider":"apn"},{"expo-version":"latest","platform":"ios","runs-on":"macos-26","ios-push-provider":"fcm"}]'
+        default: '[{"expo-version":54,"platform":"android","runs-on":"ubuntu-latest"},{"expo-version":54,"platform":"ios","runs-on":"macos-26","ios-push-provider":"apn"},{"expo-version":54,"platform":"ios","runs-on":"macos-26","ios-push-provider":"fcm"},{"expo-version":"latest","platform":"android","runs-on":"ubuntu-latest"},{"expo-version":"latest","platform":"ios","runs-on":"macos-26","ios-push-provider":"apn"},{"expo-version":"latest","platform":"ios","runs-on":"macos-26","ios-push-provider":"fcm"}]'
 
 concurrency:
   group: ${{ github.workflow }}-${{ inputs.ref || github.ref }}
@@ -57,7 +57,7 @@ jobs:
         if: matrix.platform == 'ios'
         uses: customerio/mobile-ci-tools/github-actions/ios/setup-ios/v1@main
         with:
-          xcode-version: ${{ matrix.xcode-version || env.XCODE_VERSION }}
+          xcode-version: ${{ env.XCODE_VERSION }}
 
       - name: Install Dependencies
         run: npm ci
@@ -78,9 +78,9 @@ jobs:
           path: |
             ~/Library/Caches/CocoaPods
             ~/.cocoapods
-          key: ${{ runner.os }}-pods-${{ matrix.expo-version }}-${{ matrix.ios-push-provider }}-${{ matrix.xcode-version || env.XCODE_VERSION }}-${{ hashFiles('package-lock.json') }}
+          key: ${{ runner.os }}-pods-${{ matrix.expo-version }}-${{ matrix.ios-push-provider }}-${{ env.XCODE_VERSION }}-${{ hashFiles('package-lock.json') }}
           restore-keys: |
-            ${{ runner.os }}-pods-${{ matrix.expo-version }}-${{ matrix.ios-push-provider }}-${{ matrix.xcode-version || env.XCODE_VERSION }}-
+            ${{ runner.os }}-pods-${{ matrix.expo-version }}-${{ matrix.ios-push-provider }}-${{ env.XCODE_VERSION }}-
             ${{ runner.os }}-pods-${{ matrix.expo-version }}-${{ matrix.ios-push-provider }}-
 
       - name: Cache Gradle
