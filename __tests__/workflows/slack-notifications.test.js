@@ -4,6 +4,11 @@ const { parse } = require('yaml');
 
 const workflowsDir = path.join(__dirname, '../../.github/workflows');
 
+const SUCCESS_NOTIFICATIONS = [
+  'Notify team of git tag being created',
+  'Notify team of successful deployment',
+];
+
 // Every step that posts to Slack through slackapi/slack-github-action, keyed by
 // "<workflow file> > <step name>" so a failure names the step.
 function slackSteps() {
@@ -64,9 +69,14 @@ describe('Slack notification steps', () => {
     expect(step.env?.SLACK_WEBHOOK_TYPE).toBeUndefined();
     expect(step.with.webhook).toBe('${{ secrets.SLACK_WEBHOOK_URL }}');
     expect(step.with['webhook-type']).toBe('incoming-webhook');
-    // v1 failed the step when Slack rejected a post; v2+ only does so with
-    // `errors: true`.
-    expect(step.with.errors).toBe(true);
+    // Success posts are non-fatal so a Slack outage or a missing secret cannot
+    // fail a release that worked; failure posts fail loudly (`errors: true`).
+    if (SUCCESS_NOTIFICATIONS.includes(step.name)) {
+      expect(step['continue-on-error']).toBe(true);
+      expect(step.with.errors).toBeUndefined();
+    } else {
+      expect(step.with.errors).toBe(true);
+    }
   });
 
   it.each(steps)('%s sends a JSON payload', (_, step) => {
