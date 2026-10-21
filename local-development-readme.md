@@ -67,7 +67,9 @@ echo "pushProvider=fcm" >> test-app/local.env
 APP_VARIANT=fid npm run setup-test-app
 ```
 
-Both variants use the same app IDs, so only one can be installed at a time. iOS needs
+Both variants use the same app IDs, so only one can be installed at a time. When switching from
+`fid` back to the default variant, uninstall the app first: on Android the default variant uses an
+older firebase-messaging, which returns the cached FID instead of an FCM token. iOS needs
 FirebaseMessaging 12.19.0+; with an existing `Podfile.lock`, run `pod update FirebaseMessaging` in
 `test-app/ios`.
 
