@@ -203,8 +203,9 @@ export type CustomerIOPluginGeofenceOptions = {
  * `FirebaseMessagingInstallationIdEnabled` Info.plist key on iOS (FCM provider only) and the
  * `firebase_messaging_installation_id_enabled` manifest meta-data on Android.
  *
- * Requires FirebaseMessaging 12.18.0+ on iOS and firebase-messaging 25.1.2+ on Android. With older versions the
- * SDK keeps registering the FCM token. Setting `enabled: false` removes the flag on the next prebuild.
+ * Requires FirebaseMessaging 12.16.0+ on iOS (12.19.0+ recommended) and firebase-messaging 25.1.0+ on Android
+ * (25.1.2+ recommended). Below the minimum, the SDK keeps registering the FCM token. Setting `enabled: false` removes
+ * the flag on the next prebuild.
  * @public
  */
 export type CustomerIOPluginFirebaseInstallationIdOptions = {
