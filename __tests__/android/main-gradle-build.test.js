@@ -16,7 +16,7 @@ test('Plugin injects expted dependencies in the main Gradle build file', async (
       dependency.group === 'com.google.gms' &&
       dependency.name === 'google-services' &&
       dependency.type === 'classpath' &&
-      dependency.version === '4.3.13'
+      dependency.version === '4.4.0'
   );
   expect(hasBuildScriptDependency).toBe(true);
 });
