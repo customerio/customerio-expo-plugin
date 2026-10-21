@@ -4,8 +4,8 @@ name: Validate Plugin Compatibility AGP 9 Defaults
 # turned on (`--android-agp9-defaults`), which the SDK 58 template opts out of.
 # It is not in the release matrix because it cannot pass yet. Its blockers, in
 # the order the build reaches them:
-#   - this plugin's `com.google.gms:google-services:4.3.13` classpath, which
-#     uses the variant API that the new DSL removes;
+#   - this plugin's google-services classpath until #420 moves it from 4.3.13,
+#     which uses the variant API that the new DSL removes, to 4.4.0;
 #   - customerio-reactnative applying the Kotlin Android plugin
 #     (customerio/customerio-reactnative#652);
 #   - Expo's own modules (`expo-constants` uses `libraryVariants`).
