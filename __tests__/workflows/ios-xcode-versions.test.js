@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const { execFileSync } = require('child_process');
 const { parse } = require('yaml');
 
 const root = path.join(__dirname, '../..');
@@ -133,4 +134,26 @@ describe('iOS Xcode versions in compatibility CI', () => {
       '${{ steps.resolve.outputs.app-product-path }}'
     );
   });
+
+  // The launch action trusts the resolver to pick the freshly built product,
+  // so its Python behavior suite runs with the workflow tests.
+  it('executes the generated-app resolver behavior suite', () => {
+    try {
+      execFileSync(
+        'python3',
+        [
+          '-m',
+          'unittest',
+          'scripts/compatibility/test_resolve_simulator_app.py',
+        ],
+        { cwd: root, stdio: 'pipe' }
+      );
+    } catch (error) {
+      throw new Error(
+        `resolver behavior suite failed: ${error.message}\nstdout:\n${
+          error.stdout ?? ''
+        }\nstderr:\n${error.stderr ?? ''}`
+      );
+    }
+  }, 60_000);
 });
