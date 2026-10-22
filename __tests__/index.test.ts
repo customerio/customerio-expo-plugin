@@ -52,6 +52,7 @@ describe('withCustomerIOPlugin geofence gating', () => {
       baseProps.ios,
       undefined,
       geofence,
+      undefined,
       undefined
     );
     expect(mockWithCIOAndroid).toHaveBeenCalledWith(
@@ -60,6 +61,7 @@ describe('withCustomerIOPlugin geofence gating', () => {
       baseProps.android,
       undefined,
       geofence,
+      undefined,
       undefined
     );
   });
@@ -118,7 +120,8 @@ describe('withCustomerIOPlugin Live Notifications gating', () => {
       baseProps.ios,
       undefined,
       undefined,
-      liveNotifications
+      liveNotifications,
+      undefined
     );
     expect(mockWithCIOAndroid).toHaveBeenCalledWith(
       expect.anything(),
@@ -126,7 +129,8 @@ describe('withCustomerIOPlugin Live Notifications gating', () => {
       baseProps.android,
       undefined,
       undefined,
-      liveNotifications
+      liveNotifications,
+      undefined
     );
   });
 
@@ -204,5 +208,39 @@ describe('withCustomerIOPlugin Live Notifications gating', () => {
 
     expect(mockWithCIOIos.mock.calls[0][1]?.liveNotifications).toEqual(liveNotificationsConfig);
     expect(mockWithCIOAndroid.mock.calls[0][1]?.liveNotifications).toEqual(liveNotificationsConfig);
+  });
+});
+
+describe('withCustomerIOPlugin firebaseInstallationId', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockIsExpo53.mockReturnValue(true);
+    mockWithExpoVersion.mockImplementation((c) => c);
+    mockWithCIOIos.mockImplementation((c) => c);
+    mockWithCIOAndroid.mockImplementation((c) => c as ExpoConfig);
+  });
+
+  it('forwards firebaseInstallationId to both platform mods', () => {
+    const firebaseInstallationId = { enabled: true };
+    withCustomerIOPlugin(baseConfig, { ...baseProps, firebaseInstallationId });
+
+    expect(mockWithCIOIos).toHaveBeenCalledWith(
+      expect.anything(),
+      undefined,
+      baseProps.ios,
+      undefined,
+      undefined,
+      undefined,
+      firebaseInstallationId
+    );
+    expect(mockWithCIOAndroid).toHaveBeenCalledWith(
+      expect.anything(),
+      undefined,
+      baseProps.android,
+      undefined,
+      undefined,
+      undefined,
+      firebaseInstallationId
+    );
   });
 });

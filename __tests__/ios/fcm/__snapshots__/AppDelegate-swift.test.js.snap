@@ -4,9 +4,10 @@ exports[`Expo latest FCM AppDelegate tests Plugin injects CIO handler into AppDe
 "internal import Expo
 import React
 import ReactAppDependencyProvider
+import customerio_reactnative
 
 @main
-class AppDelegate: ExpoAppDelegate {
+class AppDelegate: ExpoAppDelegate, ExpoReactNativeFactoryProvider {
   let cioSdkHandler = CioSdkAppDelegateHandler()
 
   var window: UIWindow?
@@ -25,54 +26,12 @@ class AppDelegate: ExpoAppDelegate {
     reactNativeDelegate = delegate
     reactNativeFactory = factory
 
-    // Deep link workaround for app killed state start
-    var modifiedLaunchOptions = launchOptions
-    if let launchOptions = launchOptions,
-       let pushContent = launchOptions[UIApplication.LaunchOptionsKey.remoteNotification] as? [AnyHashable: Any],
-       let cio = pushContent["CIO"] as? [String: Any],
-       let push = cio["push"] as? [String: Any],
-       let link = push["link"] as? String,
-       !launchOptions.keys.contains(UIApplication.LaunchOptionsKey.url) {
-        
-        var mutableLaunchOptions = launchOptions
-        mutableLaunchOptions[UIApplication.LaunchOptionsKey.url] = URL(string: link)
-        modifiedLaunchOptions = mutableLaunchOptions
-    }
-    // Deep link workaround for app killed state ends
-
-#if os(iOS) || os(tvOS)
-    window = UIWindow(frame: UIScreen.main.bounds)
-    factory.startReactNative(
-      withModuleName: "main",
-      in: window,
-      launchOptions: modifiedLaunchOptions)
-#endif
-
+    // The window is created and React Native is started by \`SceneDelegate\` under the
+    // scene-based life cycle (required by the iOS 27 SDK).
+      NativeCustomerIO.configureExpoSceneDeepLinkRouting()
       cioSdkHandler.application(application, didFinishLaunchingWithOptions: launchOptions)
 
-    return super.application(application, didFinishLaunchingWithOptions: modifiedLaunchOptions)
-  }
-
-  // Linking API
-  public override func application(
-    _ app: UIApplication,
-    open url: URL,
-    options: [UIApplication.OpenURLOptionsKey: Any] = [:]
-  ) -> Bool {
-    // Call CustomerIO SDK handler
-    guard let url = cioSdkHandler.application(app, open: url, options: options) else { return true }
-
-    return super.application(app, open: url, options: options) || RCTLinkingManager.application(app, open: url, options: options)
-  }
-
-  // Universal Links
-  public override func application(
-    _ application: UIApplication,
-    continue userActivity: NSUserActivity,
-    restorationHandler: @escaping ([UIUserActivityRestoring]?) -> Void
-  ) -> Bool {
-    let result = RCTLinkingManager.application(application, continue: userActivity, restorationHandler: restorationHandler)
-    return super.application(application, continue: userActivity, restorationHandler: restorationHandler) || result
+    return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
 
   // Handle device token registration
