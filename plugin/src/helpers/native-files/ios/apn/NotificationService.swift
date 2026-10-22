@@ -9,11 +9,12 @@ public class NotificationServiceCioManager : NSObject {
   
   @objc(didReceive:withContentHandler:)
   public func didReceive(_ request: UNNotificationRequest, withContentHandler contentHandler: @escaping (UNNotificationContent) -> Void) {
-    MessagingPushAPN.initializeForExtension(
-      withConfig: MessagingPushConfigBuilder(cdpApiKey: Env.customerIOCdpApiKey)
+    let builder = MessagingPushConfigBuilder(cdpApiKey: Env.customerIOCdpApiKey)
         .region(Env.customerIORegion)
-{{APP_GROUP_ID_BUILDER_LINE}}        .build()
-    )
+{{APP_GROUP_ID_BUILDER_LINE}}    if let logLevel = Env.customerIOLogLevel {
+      builder.logLevel(logLevel)
+    }
+    MessagingPushAPN.initializeForExtension(withConfig: builder.build())
     
     MessagingPush.shared.didReceive(request, withContentHandler: contentHandler)
   }

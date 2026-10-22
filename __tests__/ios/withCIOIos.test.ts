@@ -2,6 +2,7 @@ import type { ExpoConfig } from '@expo/config-types';
 import { withCIOIos } from '../../plugin/src/ios/withCIOIos';
 import { isExpoVersion58OrHigher } from '../../plugin/src/ios/utils';
 import type { CustomerIOPluginGeofenceOptions, CustomerIOPluginLocationOptions, CustomerIOPluginOptionsIOS } from '../../plugin/src/types/cio-types';
+import { mergeConfigWithEnvValues } from '../../plugin/src/utils/config';
 
 const mockWithCioXcodeProject = jest.fn((config: ExpoConfig, _props?: object) => config);
 const mockWithCioPushDisableGuard = jest.fn((config: ExpoConfig) => config);
@@ -165,6 +166,34 @@ describe('withCIOIos', () => {
     });
 
     expect(mockWithCioPushDisableGuard).not.toHaveBeenCalled();
+  });
+
+  describe('rich push config for the Notification Service Extension', () => {
+    it('merges with config even when env is set, so a mismatch between them is caught', () => {
+      (mergeConfigWithEnvValues as jest.Mock).mockReturnValueOnce({ cdpApiKey: 'app-key', region: 'us' });
+      const props: CustomerIOPluginOptionsIOS = {
+        iosPath: '/test/ios',
+        pushNotification: { provider: 'apn', env: { cdpApiKey: 'nse-key', region: 'us' } },
+      };
+
+      withCIOIos(mockConfig, { cdpApiKey: 'app-key', region: 'US', logLevel: 'debug' }, props);
+
+      expect(mergeConfigWithEnvValues).toHaveBeenCalledTimes(1);
+      // The extension logs at the app's level.
+      expect(props.pushNotification?.env).toEqual({ cdpApiKey: 'app-key', region: 'us', logLevel: 'debug' });
+    });
+
+    it("keeps env's own log level over the app's", () => {
+      (mergeConfigWithEnvValues as jest.Mock).mockReturnValueOnce({ cdpApiKey: 'key', region: 'us' });
+      const props: CustomerIOPluginOptionsIOS = {
+        iosPath: '/test/ios',
+        pushNotification: { provider: 'apn', env: { cdpApiKey: 'key', logLevel: 'error' } },
+      };
+
+      withCIOIos(mockConfig, { cdpApiKey: 'key', logLevel: 'debug' }, props);
+
+      expect(props.pushNotification?.env?.logLevel).toBe('error');
+    });
   });
 
   describe('host app entitlements when push is enabled', () => {

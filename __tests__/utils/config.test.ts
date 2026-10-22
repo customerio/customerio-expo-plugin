@@ -69,6 +69,17 @@ describe('mergeConfigWithEnvValues - Resolves conflicts between legacy env confi
       consoleSpy.mockRestore();
     });
 
+    test('should treat a missing region as US when comparing', () => {
+      const consoleSpy = jest.spyOn(console, 'warn').mockImplementation();
+      const props: CustomerIOPluginOptionsIOS = {
+        ...mockIosProps,
+        pushNotification: { env: { cdpApiKey: 'same-key', region: 'us' } },
+      };
+
+      expect(() => mergeConfigWithEnvValues(props, { cdpApiKey: 'same-key' })).not.toThrow();
+      consoleSpy.mockRestore();
+    });
+
     test('should allow case-insensitive region matching', () => {
       const consoleSpy = jest.spyOn(console, 'warn').mockImplementation();
 

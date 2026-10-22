@@ -485,6 +485,8 @@ export type LiveNotificationsSDKConfig = {
 export type RichPushConfig = {
   cdpApiKey: string;
   region?: string;
+  /** The extension's SDK log level. Taken from `config.logLevel` when not set here. */
+  logLevel?: string;
 };
 
 /**

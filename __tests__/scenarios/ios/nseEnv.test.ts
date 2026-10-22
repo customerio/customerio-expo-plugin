@@ -75,6 +75,23 @@ describe('ios scenarios — applyRichPushConfigToEnv', () => {
     `);
   });
 
+  it('sets the extension log level, and leaves an unknown or missing one unset', () => {
+    const template = 'static var customerIOLogLevel: CioLogLevel? = {{LOG_LEVEL}}\n';
+    expect(
+      applyRichPushConfigToEnv(template, { cdpApiKey: 'key-123', logLevel: 'debug' })
+    ).toBe('static var customerIOLogLevel: CioLogLevel? = CioLogLevel.debug\n');
+    // `.none` would read as Optional.none, so the level is always written in full.
+    expect(
+      applyRichPushConfigToEnv(template, { cdpApiKey: 'key-123', logLevel: 'none' })
+    ).toBe('static var customerIOLogLevel: CioLogLevel? = CioLogLevel.none\n');
+    expect(
+      applyRichPushConfigToEnv(template, { cdpApiKey: 'key-123', logLevel: 'verbose' })
+    ).toBe('static var customerIOLogLevel: CioLogLevel? = nil\n');
+    expect(applyRichPushConfigToEnv(template, { cdpApiKey: 'key-123' })).toBe(
+      'static var customerIOLogLevel: CioLogLevel? = nil\n'
+    );
+  });
+
   it('is idempotent', () => {
     const cfg = { cdpApiKey: 'key-123', region: 'us' as const };
     const once = applyRichPushConfigToEnv(baseline, cfg);
