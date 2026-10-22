@@ -6,6 +6,24 @@ import { PLATFORM, type Platform } from '../constants/common';
 const KEY_REGION_PREFIX = /^[a-z]{2}_(us|eu)_/;
 
 /**
+ * Secret keys start with `sk_`. They are for servers only and must never ship inside an app.
+ */
+const SECRET_KEY_PREFIX = 'sk_';
+
+/**
+ * Fails the build when an app is set up with a secret `sk_` key, so it never ends up in the
+ * app binary or the notification service extension. Apps must use the public `pk_` key.
+ */
+export function assertNotSecretCdpApiKey(cdpApiKey: unknown, fieldName: string): void {
+  if (typeof cdpApiKey === 'string' && cdpApiKey.trim().startsWith(SECRET_KEY_PREFIX)) {
+    throw new Error(
+      `Customer.io: ${fieldName} is a secret key (sk_). Secret keys must never be put in an app. ` +
+      'Use your public key (pk_) instead.'
+    );
+  }
+}
+
+/**
  * Region in a key prefix, or undefined for a key without one.
  */
 export function regionFromCdpApiKey(cdpApiKey: string): 'US' | 'EU' | undefined {

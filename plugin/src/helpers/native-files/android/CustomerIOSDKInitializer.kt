@@ -33,7 +33,7 @@ object CustomerIOSDKInitializer {
         if (!(siteId.isNullOrBlank())) {
             addCustomerIOModule(
                 ModuleMessagingInApp(
-                    MessagingInAppModuleConfig.Builder(siteId, region)
+                    MessagingInAppModuleConfig.Builder(siteId)
                         .setEventListener(ReactInAppEventListener.instance)
                         .build()
                 )
