@@ -198,6 +198,21 @@ export type CustomerIOPluginGeofenceOptions = {
 };
 
 /**
+ * Firebase Installation ID (FID) mode is off by default. When enabled, the SDK registers the app's Firebase
+ * Installation ID instead of the FCM token. The plugin sets the Firebase opt-in flag: the
+ * `FirebaseMessagingInstallationIdEnabled` Info.plist key on iOS (FCM provider only) and the
+ * `firebase_messaging_installation_id_enabled` manifest meta-data on Android.
+ *
+ * Requires FirebaseMessaging 12.16.0+ on iOS (12.19.0+ recommended) and firebase-messaging 25.1.0+ on Android
+ * (25.1.2+ recommended). Below the minimum, the SDK keeps registering the FCM token. Setting `enabled: false` removes
+ * the flag on the next prebuild.
+ * @public
+ */
+export type CustomerIOPluginFirebaseInstallationIdOptions = {
+  enabled?: boolean;
+};
+
+/**
  * Combined plugin options for both iOS and Android platforms
  * @public
  */
@@ -225,6 +240,11 @@ export type CustomerIOPluginOptions = {
    * because it describes artifacts the plugin builds rather than anything the SDK registers.
    */
   liveNotifications?: CustomerIOPluginLiveNotificationsOptions;
+  /**
+   * Firebase Installation ID mode is off by default. When firebaseInstallationId.enabled is true, the SDK registers
+   * the Firebase Installation ID instead of the FCM token.
+   */
+  firebaseInstallationId?: CustomerIOPluginFirebaseInstallationIdOptions;
 };
 
 /**
