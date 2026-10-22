@@ -1,3 +1,9 @@
+## [3.12.0](https://github.com/customerio/customerio-expo-plugin/compare/3.11.1...3.12.0) (2026-10-22)
+
+### Features
+
+* add firebaseInstallationId option for FID mode ([#424](https://github.com/customerio/customerio-expo-plugin/issues/424)) ([08c1f93](https://github.com/customerio/customerio-expo-plugin/commit/08c1f9396d8c1f983fa24018dab2ef1ec5a2eb50))
+
 ## [3.11.1](https://github.com/customerio/customerio-expo-plugin/compare/3.11.0...3.11.1) (2026-10-07)
 
 ### Bug Fixes

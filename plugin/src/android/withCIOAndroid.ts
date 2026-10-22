@@ -1,6 +1,7 @@
 import type { ExpoConfig } from '@expo/config-types';
 
 import type {
+  CustomerIOPluginFirebaseInstallationIdOptions,
   CustomerIOPluginOptionsAndroid,
   CustomerIOPluginLiveNotificationsOptions,
   CustomerIOPluginLocationOptions,
@@ -9,6 +10,7 @@ import type {
 } from '../types/cio-types';
 import { withAndroidManifestUpdates } from './withAndroidManifestUpdates';
 import { withAppGoogleServices } from './withAppGoogleServices';
+import { withFirebaseInstallationIdMetadata } from './withFirebaseInstallationIdMetadata';
 import { withGeofenceGradleProperties } from './withGeofenceGradleProperties';
 import { withGoogleServicesJSON } from './withGoogleServicesJSON';
 import { withLiveNotificationCallbackRegistration } from './withLiveNotificationCallbackRegistration';
@@ -29,6 +31,7 @@ export function withCIOAndroid(
   location?: CustomerIOPluginLocationOptions,
   geofence?: CustomerIOPluginGeofenceOptions,
   liveNotifications?: CustomerIOPluginLiveNotificationsOptions,
+  firebaseInstallationId?: CustomerIOPluginFirebaseInstallationIdOptions,
 ): ExpoConfig {
   // Only run notification setup if props are provided
   if (props) {
@@ -96,6 +99,8 @@ export function withCIOAndroid(
   if (geofence?.enabled === true) {
     config = withGeofenceGradleProperties(config, { geofence });
   }
+
+  config = withFirebaseInstallationIdMetadata(config, firebaseInstallationId);
 
   return config;
 }
