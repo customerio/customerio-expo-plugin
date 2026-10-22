@@ -244,3 +244,65 @@ describe('withCustomerIOPlugin firebaseInstallationId', () => {
     );
   });
 });
+
+describe('withCustomerIOPlugin secret key guard', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockIsExpo53.mockReturnValue(true);
+    mockWithExpoVersion.mockImplementation((c) => c);
+    mockWithCIOIos.mockImplementation((c) => c);
+    mockWithCIOAndroid.mockImplementation((c) => c as ExpoConfig);
+  });
+
+  it('fails the build when config.cdpApiKey is an sk_ key', () => {
+    expect(() =>
+      withCustomerIOPlugin(baseConfig, {
+        ...baseProps,
+        config: { cdpApiKey: 'sk_us_secret' },
+      })
+    ).toThrow(/config\.cdpApiKey is a secret key \(sk_\).*public key \(pk_\)/);
+    expect(mockWithCIOIos).not.toHaveBeenCalled();
+    expect(mockWithCIOAndroid).not.toHaveBeenCalled();
+  });
+
+  it('fails the build when the notification service extension env key is an sk_ key', () => {
+    expect(() =>
+      withCustomerIOPlugin(baseConfig, {
+        ...baseProps,
+        ios: { iosPath: 'ios', pushNotification: { env: { cdpApiKey: 'sk_eu_secret' } } },
+      })
+    ).toThrow(/ios\.pushNotification\.env\.cdpApiKey is a secret key \(sk_\)/);
+    expect(mockWithCIOIos).not.toHaveBeenCalled();
+  });
+
+  it('catches an sk_ key with leading spaces', () => {
+    expect(() =>
+      withCustomerIOPlugin(baseConfig, {
+        ...baseProps,
+        config: { cdpApiKey: '  sk_us_secret' },
+      })
+    ).toThrow(/secret key/);
+  });
+
+  it('does not put the key in the error message', () => {
+    expect(() =>
+      withCustomerIOPlugin(baseConfig, {
+        ...baseProps,
+        config: { cdpApiKey: 'sk_us_do_not_print' },
+      })
+    ).toThrow(expect.objectContaining({ message: expect.not.stringContaining('do_not_print') }));
+  });
+
+  it.each(['pk_us_public', 'pk_eu_public', 'legacy-write-key'])(
+    'accepts %s',
+    (cdpApiKey) => {
+      expect(() =>
+        withCustomerIOPlugin(baseConfig, {
+          ...baseProps,
+          config: { cdpApiKey },
+          ios: { iosPath: 'ios', pushNotification: { env: { cdpApiKey } } },
+        })
+      ).not.toThrow();
+    }
+  );
+});

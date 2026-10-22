@@ -131,6 +131,45 @@ describe('mergeConfigWithEnvValues - Resolves conflicts between legacy env confi
     });
   });
 
+  describe('when the key carries its region', () => {
+    test('takes the region from a pk_ key in config when none is set', () => {
+      const result = mergeConfigWithEnvValues(mockIosProps, { cdpApiKey: 'pk_eu_abc' });
+
+      expect(result).toEqual({ cdpApiKey: 'pk_eu_abc', region: 'EU' });
+    });
+
+    test('takes the region from a pk_ key in env when none is set', () => {
+      const props: CustomerIOPluginOptionsIOS = {
+        ...mockIosProps,
+        pushNotification: { env: { cdpApiKey: 'pk_eu_abc' } },
+      };
+
+      expect(mergeConfigWithEnvValues(props)).toEqual({ cdpApiKey: 'pk_eu_abc', region: 'EU' });
+    });
+
+    test('keeps the region the app sets over the key', () => {
+      const result = mergeConfigWithEnvValues(mockIosProps, {
+        cdpApiKey: 'pk_eu_abc',
+        region: 'US',
+      });
+
+      expect(result).toEqual({ cdpApiKey: 'pk_eu_abc', region: 'US' });
+    });
+
+    test('treats a matching key region as the same region as an explicit one', () => {
+      const consoleSpy = jest.spyOn(console, 'warn').mockImplementation();
+      const props: CustomerIOPluginOptionsIOS = {
+        ...mockIosProps,
+        pushNotification: { env: { cdpApiKey: 'pk_eu_abc', region: 'eu' } },
+      };
+
+      const result = mergeConfigWithEnvValues(props, { cdpApiKey: 'pk_eu_abc' });
+
+      expect(result).toEqual({ cdpApiKey: 'pk_eu_abc', region: 'EU' });
+      consoleSpy.mockRestore();
+    });
+  });
+
   describe('when only environment config is provided', () => {
 
     test('should return env config with undefined region when only cdpApiKey is provided', () => {
