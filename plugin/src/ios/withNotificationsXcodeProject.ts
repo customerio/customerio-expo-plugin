@@ -7,7 +7,7 @@ import {
   CIO_REGISTER_PUSHNOTIFICATION_SNIPPET,
   DEFAULT_BUNDLE_VERSION,
 } from '../helpers/constants/ios';
-import { escapeForStringLiteral } from '../helpers/utils/cdpApiKey';
+import { escapeForStringLiteral, resolveRegion } from '../helpers/utils/cdpApiKey';
 import { replaceCodeByRegex } from '../helpers/utils/codeInjection';
 import { injectCIONotificationPodfileCode } from '../helpers/utils/injectCIOPodfileCode';
 import type { CustomerIOPluginOptionsIOS, RichPushConfig } from '../types/cio-types';
@@ -374,15 +374,17 @@ const updateNseNotificationService = (
 
 /**
  * Pure string transform: substitutes the `{{CDP_API_KEY}}` and `{{REGION}}`
- * placeholders in the NSE Env.swift template. Missing or invalid region
- * falls back to `Region.US` and logs a warning.
+ * placeholders in the NSE Env.swift template. A missing region comes from the
+ * key prefix (pk_eu_) when it has one, otherwise an invalid region falls back to
+ * `Region.US` and logs a warning.
  */
 export function applyRichPushConfigToEnv(
   content: string,
   richPushConfig?: RichPushConfig,
 ): string {
   const cdpApiKey = richPushConfig?.cdpApiKey;
-  const region = richPushConfig?.region;
+  // Covers an env set directly in app config too, which never goes through mergeConfigWithEnvValues
+  const region = resolveRegion(richPushConfig?.region, cdpApiKey);
 
   const escapedKey = escapeForStringLiteral(cdpApiKey || 'MISSING_API_KEY', PLATFORM.IOS);
   let next = content.replace(/\{\{CDP_API_KEY\}\}/, () => escapedKey);

@@ -54,6 +54,18 @@ describe('ios scenarios — applyRichPushConfigToEnv', () => {
     `);
   });
 
+  it('takes Region.EU from a pk_eu_ key when region is undefined', () => {
+    expect(
+      applyRichPushConfigToEnv(baseline, { cdpApiKey: 'pk_eu_key-123' })
+    ).toContain('static var customerIORegion: Region = Region.EU');
+  });
+
+  it('keeps an explicit region over the key prefix', () => {
+    expect(
+      applyRichPushConfigToEnv(baseline, { cdpApiKey: 'pk_eu_key-123', region: 'us' })
+    ).toContain('static var customerIORegion: Region = Region.US');
+  });
+
   it('falls back to Region.US when region is undefined', () => {
     expect(applyRichPushConfigToEnv(baseline, { cdpApiKey: 'key-123' }))
       .toMatchInlineSnapshot(`
