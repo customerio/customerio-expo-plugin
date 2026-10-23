@@ -26,7 +26,7 @@ env:
 
 jobs:
   validate:
-    name: Expo ${{ matrix.expo-version }} - ${{ matrix.platform }}${{ matrix.ios-push-provider && format(' ({0})', matrix.ios-push-provider) }}
+    name: Expo ${{ matrix.expo-version }} - ${{ matrix.platform }}${{ matrix.ios-push-provider && format(' ({0})', matrix.ios-push-provider) }}${{ matrix.android-agp9-defaults && ' (AGP 9 defaults)' || '' }}
     runs-on: ${{ matrix.runs-on }}
 
     strategy:
@@ -119,4 +119,5 @@ jobs:
             --expo-version=${{ matrix.expo-version }} \
             --platforms=${{ matrix.platform }}\
             --ios-use-frameworks="static" \
-            ${{ matrix.ios-push-provider && format(' --ios-push-providers={0}', matrix.ios-push-provider) }}
+            ${{ matrix.ios-push-provider && format(' --ios-push-providers={0}', matrix.ios-push-provider) }} \
+            ${{ matrix.android-agp9-defaults && '--android-agp9-defaults' || '' }}
