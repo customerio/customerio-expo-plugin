@@ -32,8 +32,8 @@ function slackSteps() {
 describe('Slack notification steps', () => {
   const steps = slackSteps();
 
-  it('finds the deploy and nightly notifications', () => {
-    expect(steps.length).toBeGreaterThanOrEqual(5);
+  it('finds the deploy notifications', () => {
+    expect(steps.length).toBeGreaterThanOrEqual(4);
   });
 
   it('share one pinned action version', () => {

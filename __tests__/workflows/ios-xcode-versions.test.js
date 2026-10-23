@@ -110,7 +110,8 @@ describe('iOS Xcode versions in compatibility CI', () => {
       (step) => step.uses && step.uses.includes('/ios/setup-ios/')
     );
     expect(sampleApps.jobs['build-ios-app']['runs-on']).toBe('macos-26');
-    expect(setupIos.with['xcode-version']).toBe('26.6');
+    expect(setupIos.with['xcode-version']).toBe('${{ env.XCODE_VERSION }}');
+    expect(sampleApps.jobs['build-ios-app'].env.XCODE_VERSION).toBe('26.6');
     const testApp = JSON.parse(
       fs.readFileSync(path.join(root, 'test-app/package.json'), 'utf8')
     );
