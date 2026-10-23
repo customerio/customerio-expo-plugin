@@ -82,3 +82,30 @@ describe('ios scenarios — applyApiHostToNotificationService', () => {
     expect(twice).toEqual(once);
   });
 });
+
+
+describe('NSE apiHost literal generation', () => {
+  it.each(['$&', "$'", '$`', '$$', '\\(secret)', '"quoted"'])('preserves %s literally', (suffix) => {
+    const host = `proxy.example.com/${suffix}`;
+    const swift = applyApiHostToNotificationService(baseline, host);
+    const escaped = host.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+    expect(swift).toContain(`.apiHost("${escaped}")`);
+    expect(swift).not.toContain('{{API_HOST_BUILDER_LINE}}');
+  });
+
+  it('trims surrounding whitespace before generating the host', () => {
+    expect(applyApiHostToNotificationService(baseline, '  proxy.example.com/v1  '))
+      .toContain('.apiHost("proxy.example.com/v1")');
+  });
+
+  it.each(['   ', 123, null])('rejects invalid host %p in strict mode', (host) => {
+    const previous = process.env.CUSTOMERIO_STRICT_MODE;
+    process.env.CUSTOMERIO_STRICT_MODE = 'true';
+    try {
+      expect(() => applyApiHostToNotificationService(baseline, host as string)).toThrow('apiHost must be a non-empty string');
+    } finally {
+      if (previous === undefined) delete process.env.CUSTOMERIO_STRICT_MODE;
+      else process.env.CUSTOMERIO_STRICT_MODE = previous;
+    }
+  });
+});

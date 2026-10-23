@@ -483,7 +483,8 @@ export type LiveNotificationsSDKConfig = {
  * @public
  */
 export type RichPushConfig = {
-  cdpApiKey: string;
+  /** Defaults to `config.cdpApiKey` with automatic initialization; required for manual initialization. */
+  cdpApiKey?: string;
   region?: string;
   /**
    * Host the Notification Service Extension sends delivery metrics to, for routing them through your

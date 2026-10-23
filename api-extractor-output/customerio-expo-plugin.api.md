@@ -158,7 +158,7 @@ export type NativeSDKConfig = {
 
 // @public
 export type RichPushConfig = {
-    cdpApiKey: string;
+    cdpApiKey?: string;
     region?: string;
     apiHost?: string;
 };

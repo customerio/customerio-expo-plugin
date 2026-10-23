@@ -13,7 +13,7 @@ import { injectCIONotificationPodfileCode } from '../helpers/utils/injectCIOPodf
 import type { CustomerIOPluginOptionsIOS, RichPushConfig } from '../types/cio-types';
 import { logger } from '../utils/logger';
 import { getIosNativeFilesPath } from '../utils/plugin';
-import { validateRichPushConfig } from '../utils/validation';
+import { validateRichPushConfig, validateString } from '../utils/validation';
 import { FileManagement } from './../helpers/utils/fileManagement';
 import { isExpoVersion53OrHigher, isFcmPushProvider } from './utils';
 
@@ -374,10 +374,12 @@ export function applyApiHostToNotificationService(
   content: string,
   apiHost?: string
 ): string {
-  const builderLine = apiHost
-    ? `        .apiHost(${JSON.stringify(apiHost)})\n`
+  const valid = validateString(apiHost, 'apiHost', 'NotificationServiceExtension');
+  const host = valid ? apiHost?.trim() : undefined;
+  const builderLine = host
+    ? `        .apiHost("${escapeForStringLiteral(host, PLATFORM.IOS)}")\n`
     : '';
-  return replaceCodeByRegex(content, /\{\{API_HOST_BUILDER_LINE\}\}/, builderLine);
+  return content.replace(/\{\{API_HOST_BUILDER_LINE\}\}/, () => builderLine);
 }
 
 const updateNseNotificationService = (
@@ -504,7 +506,7 @@ export function applyConfigToPushFile(
     : '';
 
   let next = replaceCodeByRegex(content, /\{\{REGISTER_SNIPPET\}\}/, registerSnippet);
-  const escapedKey = escapeForStringLiteral(cdpApiKey, PLATFORM.IOS);
+  const escapedKey = escapeForStringLiteral(cdpApiKey || 'MISSING_API_KEY', PLATFORM.IOS);
   next = next.replace(/\{\{CDP_API_KEY\}\}/, () => escapedKey);
 
   if (region) {

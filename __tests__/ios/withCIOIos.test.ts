@@ -7,7 +7,7 @@ const mockWithCioXcodeProject = jest.fn((config: ExpoConfig, _props?: object) =>
 const mockWithCioPushDisableGuard = jest.fn((config: ExpoConfig) => config);
 const mockWithCIOIosSwift = jest.fn((config: ExpoConfig, ..._args: unknown[]) => config);
 const mockWithAppDelegateModifications = jest.fn((config: ExpoConfig) => config);
-const mockWithCioNotificationsXcodeProject = jest.fn((config: ExpoConfig) => config);
+const mockWithCioNotificationsXcodeProject = jest.fn((config: ExpoConfig, _props?: CustomerIOPluginOptionsIOS) => config);
 const mockWithGoogleServicesJsonFile = jest.fn((config: ExpoConfig) => config);
 const mockWithGeofenceAppDelegate = jest.fn((config: ExpoConfig) => config);
 const mockWithLiveActivityInfoPlist = jest.fn((config: ExpoConfig) => config);
@@ -39,8 +39,8 @@ jest.mock('../../plugin/src/ios/withAppDelegateModifications', () => ({
     mockWithAppDelegateModifications(config),
 }));
 jest.mock('../../plugin/src/ios/withNotificationsXcodeProject', () => ({
-  withCioNotificationsXcodeProject: (config: ExpoConfig) =>
-    mockWithCioNotificationsXcodeProject(config),
+  withCioNotificationsXcodeProject: (config: ExpoConfig, props?: CustomerIOPluginOptionsIOS) =>
+    mockWithCioNotificationsXcodeProject(config, props),
 }));
 jest.mock('../../plugin/src/ios/withGoogleServicesJsonFile', () => ({
   withGoogleServicesJsonFile: (config: ExpoConfig) =>
@@ -67,9 +67,6 @@ jest.mock('../../plugin/src/ios/withLiveActivityUrlRoutingWarning', () => ({
 jest.mock('../../plugin/src/ios/utils', () => ({
   isExpoVersion53OrHigher: jest.fn(() => true),
   isExpoVersion58OrHigher: jest.fn(() => false),
-}));
-jest.mock('../../plugin/src/utils/config', () => ({
-  mergeConfigWithEnvValues: jest.fn(),
 }));
 jest.mock('../../plugin/src/utils/logger', () => ({ logger: { warn: jest.fn() } }));
 
@@ -457,4 +454,38 @@ describe('withCIOIos', () => {
         }),
       );
     });
+});
+
+
+describe('NSE apiHost with automatic initialization', () => {
+  it('passes the derived key and region along with an env-only apiHost to NSE generation', () => {
+    withCIOIos(
+      { name: 'Test App', slug: 'test-app', sdkVersion: '54.0.0' },
+      { cdpApiKey: 'pk_eu_test' },
+      { iosPath: 'ios', pushNotification: { env: { apiHost: 'proxy.example.com/$&' } } }
+    );
+    expect(mockWithCioNotificationsXcodeProject).toHaveBeenLastCalledWith(
+      expect.anything(),
+      expect.objectContaining({ pushNotification: expect.objectContaining({
+        env: { cdpApiKey: 'pk_eu_test', region: 'EU', apiHost: 'proxy.example.com/$&' },
+      }) })
+    );
+  });
+});
+
+
+describe('NSE explicit env overrides', () => {
+  it('keeps the env key and its inferred region over automatic initialization', () => {
+    withCIOIos(
+      { name: 'Test App', slug: 'test-app', sdkVersion: '54.0.0' },
+      { cdpApiKey: 'pk_us_app' },
+      { iosPath: 'ios', pushNotification: { env: { cdpApiKey: 'pk_eu_extension', apiHost: 'proxy.example.com' } } }
+    );
+    expect(mockWithCioNotificationsXcodeProject).toHaveBeenLastCalledWith(
+      expect.anything(),
+      expect.objectContaining({ pushNotification: expect.objectContaining({
+        env: { cdpApiKey: 'pk_eu_extension', region: 'EU', apiHost: 'proxy.example.com' },
+      }) })
+    );
+  });
 });
