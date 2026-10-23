@@ -93,6 +93,7 @@ export type CustomerIOPluginPushNotificationOptions = {
     handleDeeplinkInKilledState?: boolean;
     env?: RichPushConfig;
     appGroupId?: string;
+    apiHost?: string;
 };
 
 // @public
