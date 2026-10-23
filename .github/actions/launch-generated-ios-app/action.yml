@@ -1,0 +1,93 @@
+name: Launch generated iOS app
+description: >-
+  Resolve the simulator .app that `compatibility:validate-plugin` built for a generated
+  Expo test app, then install and launch it and require the process to survive. A build
+  alone can pass while the app still terminates at launch, for example when its host
+  lifecycle is incompatible with the iOS SDK it was built with.
+
+inputs:
+  app-path:
+    description: Path to the generated Expo app (the directory that contains `ios/`).
+    required: true
+  build-start-epoch-file:
+    description: >-
+      File holding the Unix time recorded right before the build. The resolver rejects
+      products older than this, so a stale .app from a cache cannot pass.
+    required: true
+  expected-ios-major:
+    description: iOS SDK and simulator runtime major version the app must be built for and launched on.
+    required: true
+  survival-seconds:
+    description: Seconds the launched process must stay alive.
+    required: false
+    default: '10'
+  log-path:
+    description: Path for the launch metadata and failure log.
+    required: true
+  settings-json-path:
+    description: Path for the sanitized build settings the resolver keeps for diagnosis.
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Resolve generated simulator app
+      id: resolve
+      shell: bash
+      env:
+        APP_PATH: ${{ inputs.app-path }}
+        BUILD_START_EPOCH_FILE: ${{ inputs.build-start-epoch-file }}
+        SETTINGS_JSON: ${{ inputs.settings-json-path }}
+        # From the same checkout as this action, which may differ from the app's source revision.
+        RESOLVER: ${{ github.action_path }}/../../../scripts/compatibility/resolve_simulator_app.py
+      run: |
+        set -euo pipefail
+        private_settings_json="$(mktemp)"
+        trap 'rm -f "$private_settings_json"' EXIT
+        shopt -s nullglob
+        workspaces=("$APP_PATH"/ios/*.xcworkspace)
+        if [[ "${#workspaces[@]}" -ne 1 ]]; then
+          echo "::error::expected one generated workspace, found ${#workspaces[@]}: ${workspaces[*]-}"
+          exit 1
+        fi
+        workspace="${workspaces[0]}"
+        scheme="$(basename "$workspace" .xcworkspace)"
+        set +e
+        xcodebuild \
+          -workspace "$workspace" \
+          -scheme "$scheme" \
+          -configuration Release \
+          -sdk iphonesimulator \
+          -showBuildSettings \
+          -json > "$private_settings_json"
+        xcodebuild_status="$?"
+        set -e
+        if [[ "$xcodebuild_status" -ne 0 ]]; then
+          # Preserve only the resolver's bounded parse metadata. The private
+          # build settings are still removed by the EXIT trap.
+          python3 "$RESOLVER" \
+            --private-settings-json "$private_settings_json" \
+            --build-start-epoch "$BUILD_START_EPOCH_FILE" \
+            --scheme "$scheme" \
+            --sanitized-settings-json "$SETTINGS_JSON" >/dev/null || true
+          echo "::error::xcodebuild -showBuildSettings failed with exit code $xcodebuild_status"
+          exit "$xcodebuild_status"
+        fi
+        app_product_path="$(python3 "$RESOLVER" \
+          --private-settings-json "$private_settings_json" \
+          --build-start-epoch "$BUILD_START_EPOCH_FILE" \
+          --scheme "$scheme" \
+          --sanitized-settings-json "$SETTINGS_JSON")"
+        if [[ -z "$app_product_path" || "$app_product_path" == *$'\n'* ]]; then
+          echo '::error::resolved app product path must be one non-empty line'
+          exit 1
+        fi
+        echo "app-product-path=$app_product_path" >> "$GITHUB_OUTPUT"
+
+    - name: Install and launch generated app
+      uses: customerio/mobile-ci-tools/github-actions/ios/launch-simulator-app/v1@main
+      with:
+        app-path: ${{ steps.resolve.outputs.app-product-path }}
+        expected-ios-major: ${{ inputs.expected-ios-major }}
+        survival-seconds: ${{ inputs.survival-seconds }}
+        log-path: ${{ inputs.log-path }}
