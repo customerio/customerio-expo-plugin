@@ -1,3 +1,9 @@
+## [3.13.0](https://github.com/customerio/customerio-expo-plugin/compare/3.12.0...3.13.0) (2026-10-22)
+
+### Features
+
+* **MBL-2546:** accept a public key and read the region from it ([#413](https://github.com/customerio/customerio-expo-plugin/issues/413)) ([29c93ce](https://github.com/customerio/customerio-expo-plugin/commit/29c93ce16437e63e59459aac3189d820b2701385))
+
 ## [3.12.0](https://github.com/customerio/customerio-expo-plugin/compare/3.11.1...3.12.0) (2026-10-22)
 
 ### Features

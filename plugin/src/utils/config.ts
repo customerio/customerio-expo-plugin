@@ -1,4 +1,5 @@
 import type { CustomerIOPluginOptionsIOS, NativeSDKConfig, RichPushConfig } from '../types/cio-types';
+import { resolveRegion } from '../helpers/utils/cdpApiKey';
 import { logger } from './logger';
 
 /**
@@ -11,11 +12,13 @@ function mergeConfigWithEnvValues(
   nativeConfig?: NativeSDKConfig
 ): RichPushConfig | undefined {
   const nativeCdpApiKey = nativeConfig?.cdpApiKey;
-  const nativeRegion = nativeConfig?.region;
+  // A key like pk_eu_ carries its region, so use it when none is set. The app initializer does
+  // the same, which keeps the app and the notification extension on one region.
+  const nativeRegion = resolveRegion(nativeConfig?.region, nativeCdpApiKey);
 
   const envConfig = props.pushNotification?.env;
   const envCdpApiKey = envConfig?.cdpApiKey;
-  const envRegion = envConfig?.region;
+  const envRegion = resolveRegion(envConfig?.region, envCdpApiKey);
 
   // Check for conflicts between env and nativeConfig
   if (nativeCdpApiKey && envCdpApiKey) {

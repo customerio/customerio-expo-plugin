@@ -27,6 +27,12 @@ describe('ios scenarios — applyRichPushConfigToEnv', () => {
     `);
   });
 
+  it('escapes quotes, backslashes and $& in the key', () => {
+    expect(
+      applyRichPushConfigToEnv(baseline, { cdpApiKey: 'a"b\\c$&', region: 'us' })
+    ).toContain('static var customerIOCdpApiKey: String = "a\\"b\\\\c$&"');
+  });
+
   it('accepts case-insensitive region keys (US, Us, etc.)', () => {
     expect(
       applyRichPushConfigToEnv(baseline, { cdpApiKey: 'key-123', region: 'US' })
@@ -46,6 +52,18 @@ describe('ios scenarios — applyRichPushConfigToEnv', () => {
       static var customerIORegion: Region = Region.US
       "
     `);
+  });
+
+  it('takes Region.EU from a pk_eu_ key when region is undefined', () => {
+    expect(
+      applyRichPushConfigToEnv(baseline, { cdpApiKey: 'pk_eu_key-123' })
+    ).toContain('static var customerIORegion: Region = Region.EU');
+  });
+
+  it('keeps an explicit region over the key prefix', () => {
+    expect(
+      applyRichPushConfigToEnv(baseline, { cdpApiKey: 'pk_eu_key-123', region: 'us' })
+    ).toContain('static var customerIORegion: Region = Region.US');
   });
 
   it('falls back to Region.US when region is undefined', () => {
