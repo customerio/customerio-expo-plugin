@@ -79,12 +79,9 @@ export function withCIOIos(
       config = withAppDelegateModifications(config, platformConfig);
     }
 
-    // Fill missing NSE values from automatic initialization while keeping explicit env overrides.
-    const env = platformConfig.pushNotification.env;
-    platformConfig.pushNotification.env = {
-      ...mergeConfigWithEnvValues(platformConfig, env?.cdpApiKey ? undefined : sdkConfig),
-      ...env,
-    };
+    platformConfig.pushNotification.env =
+      platformConfig.pushNotification.env ||
+      mergeConfigWithEnvValues(platformConfig, sdkConfig);
     config = withCioNotificationsXcodeProject(config, platformConfig);
     config = withCioXcodeProject(config, {
       ...platformConfig,

@@ -112,7 +112,7 @@ jobs:
           npm run compatibility:configure-plugin -- \
             --app-path=${{ env.APP_PATH }} \
             --add-default-config \
-            --cio-plugin.ios.pushNotification.env.apiHost="proxy.example.com/\$&"
+            --cio-plugin.ios.pushNotification.apiHost="proxy.example.com/\$&"
 
       - name: Validate Plugin
         run: |

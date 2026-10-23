@@ -306,7 +306,7 @@ const addRichPushXcodeProj = async (
   updateNseNotificationService(
     getTargetFile('NotificationService.swift'),
     appGroupId,
-    options.pushNotification?.env?.apiHost,
+    options.pushNotification?.apiHost,
   );
 
   // Register the NSE target in the parsed Xcode project
@@ -506,7 +506,7 @@ export function applyConfigToPushFile(
     : '';
 
   let next = replaceCodeByRegex(content, /\{\{REGISTER_SNIPPET\}\}/, registerSnippet);
-  const escapedKey = escapeForStringLiteral(cdpApiKey || 'MISSING_API_KEY', PLATFORM.IOS);
+  const escapedKey = escapeForStringLiteral(cdpApiKey, PLATFORM.IOS);
   next = next.replace(/\{\{CDP_API_KEY\}\}/, () => escapedKey);
 
   if (region) {

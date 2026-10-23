@@ -458,16 +458,17 @@ describe('withCIOIos', () => {
 
 
 describe('NSE apiHost with automatic initialization', () => {
-  it('passes the derived key and region along with an env-only apiHost to NSE generation', () => {
+  it('passes the derived key and region along with a pushNotification.apiHost to NSE generation', () => {
     withCIOIos(
       { name: 'Test App', slug: 'test-app', sdkVersion: '54.0.0' },
       { cdpApiKey: 'pk_eu_test' },
-      { iosPath: 'ios', pushNotification: { env: { apiHost: 'proxy.example.com/$&' } } }
+      { iosPath: 'ios', pushNotification: { apiHost: 'proxy.example.com/$&' } }
     );
     expect(mockWithCioNotificationsXcodeProject).toHaveBeenLastCalledWith(
       expect.anything(),
       expect.objectContaining({ pushNotification: expect.objectContaining({
-        env: { cdpApiKey: 'pk_eu_test', region: 'EU', apiHost: 'proxy.example.com/$&' },
+        apiHost: 'proxy.example.com/$&',
+        env: { cdpApiKey: 'pk_eu_test', region: 'EU' },
       }) })
     );
   });
@@ -475,16 +476,38 @@ describe('NSE apiHost with automatic initialization', () => {
 
 
 describe('NSE explicit env overrides', () => {
-  it('keeps the env key and its inferred region over automatic initialization', () => {
+  it('keeps an explicit env key over automatic initialization', () => {
     withCIOIos(
       { name: 'Test App', slug: 'test-app', sdkVersion: '54.0.0' },
       { cdpApiKey: 'pk_us_app' },
-      { iosPath: 'ios', pushNotification: { env: { cdpApiKey: 'pk_eu_extension', apiHost: 'proxy.example.com' } } }
+      { iosPath: 'ios', pushNotification: { apiHost: 'proxy.example.com', env: { cdpApiKey: 'pk_eu_extension' } } }
     );
     expect(mockWithCioNotificationsXcodeProject).toHaveBeenLastCalledWith(
       expect.anything(),
       expect.objectContaining({ pushNotification: expect.objectContaining({
-        env: { cdpApiKey: 'pk_eu_extension', region: 'EU', apiHost: 'proxy.example.com' },
+        apiHost: 'proxy.example.com',
+        env: { cdpApiKey: 'pk_eu_extension' },
+      }) })
+    );
+  });
+});
+
+
+describe('NSE apiHost with JavaScript initialization', () => {
+  it('keeps the required NSE key separate from the custom host', () => {
+    withCIOIos(
+      { name: 'Test App', slug: 'test-app', sdkVersion: '54.0.0' },
+      undefined,
+      { iosPath: 'ios', pushNotification: {
+        apiHost: 'proxy.example.com/$&',
+        env: { cdpApiKey: 'pk_eu_extension', region: 'EU' },
+      } }
+    );
+    expect(mockWithCioNotificationsXcodeProject).toHaveBeenLastCalledWith(
+      expect.anything(),
+      expect.objectContaining({ pushNotification: expect.objectContaining({
+        apiHost: 'proxy.example.com/$&',
+        env: { cdpApiKey: 'pk_eu_extension', region: 'EU' },
       }) })
     );
   });

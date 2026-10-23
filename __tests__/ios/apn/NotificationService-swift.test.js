@@ -13,7 +13,7 @@ test("Plugin creates expected NotificationService.swift", async () => {
   const options = appJson.expo.plugins.find(
     (entry) => Array.isArray(entry) && entry[0] === "customerio-expo-plugin"
   )?.[1];
-  const apiHost = options?.ios?.pushNotification?.env?.apiHost?.trim();
+  const apiHost = options?.ios?.pushNotification?.apiHost?.trim();
   if (apiHost) {
     expect(content).toContain(`.apiHost(${JSON.stringify(apiHost)})`);
   } else {

@@ -93,6 +93,7 @@ export type CustomerIOPluginPushNotificationOptions = {
     handleDeeplinkInKilledState?: boolean;
     env?: RichPushConfig;
     appGroupId?: string;
+    apiHost?: string;
 };
 
 // @public
@@ -158,9 +159,8 @@ export type NativeSDKConfig = {
 
 // @public
 export type RichPushConfig = {
-    cdpApiKey?: string;
+    cdpApiKey: string;
     region?: string;
-    apiHost?: string;
 };
 
 // (No @packageDocumentation comment for this package)
