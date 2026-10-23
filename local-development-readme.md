@@ -57,6 +57,22 @@ echo "sdkVersion=3.9.0" >> test-app/local.env
 npm run setup-test-app
 ```
 
+### Firebase Installation ID (FID) variant
+
+By default the test app registers the FCM token. To build it in FID mode, set `APP_VARIANT=fid`
+(see `test-app/app.config.js`). On iOS this needs the FCM provider:
+
+```bash
+echo "pushProvider=fcm" >> test-app/local.env
+APP_VARIANT=fid npm run setup-test-app
+```
+
+Both variants use the same app IDs, so only one can be installed at a time. When switching from
+`fid` back to the default variant, uninstall the app first: on Android the default variant uses an
+older firebase-messaging, which returns the cached FID instead of an FCM token. iOS needs
+FirebaseMessaging 12.19.0+; with an existing `Podfile.lock`, run `pod update FirebaseMessaging` in
+`test-app/ios`.
+
 ## Testing pnpm and monorepo layouts locally
 
 Two additional dev apps live at the repo root for verifying the plugin under

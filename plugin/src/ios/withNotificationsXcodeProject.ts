@@ -1,11 +1,13 @@
 import type { ConfigPlugin, XcodeProject } from '@expo/config-plugins';
 import { withXcodeProject } from '@expo/config-plugins';
 
+import { PLATFORM } from '../helpers/constants/common';
 import {
   CIO_NOTIFICATION_TARGET_NAME,
   CIO_REGISTER_PUSHNOTIFICATION_SNIPPET,
   DEFAULT_BUNDLE_VERSION,
 } from '../helpers/constants/ios';
+import { escapeForStringLiteral, resolveRegion } from '../helpers/utils/cdpApiKey';
 import { replaceCodeByRegex } from '../helpers/utils/codeInjection';
 import { injectCIONotificationPodfileCode } from '../helpers/utils/injectCIOPodfileCode';
 import type { CustomerIOPluginOptionsIOS, RichPushConfig } from '../types/cio-types';
@@ -372,21 +374,20 @@ const updateNseNotificationService = (
 
 /**
  * Pure string transform: substitutes the `{{CDP_API_KEY}}` and `{{REGION}}`
- * placeholders in the NSE Env.swift template. Missing or invalid region
- * falls back to `Region.US` and logs a warning.
+ * placeholders in the NSE Env.swift template. A missing region comes from the
+ * key prefix (pk_eu_) when it has one, otherwise an invalid region falls back to
+ * `Region.US` and logs a warning.
  */
 export function applyRichPushConfigToEnv(
   content: string,
   richPushConfig?: RichPushConfig,
 ): string {
   const cdpApiKey = richPushConfig?.cdpApiKey;
-  const region = richPushConfig?.region;
+  // Covers an env set directly in app config too, which never goes through mergeConfigWithEnvValues
+  const region = resolveRegion(richPushConfig?.region, cdpApiKey);
 
-  let next = replaceCodeByRegex(
-    content,
-    /\{\{CDP_API_KEY\}\}/,
-    cdpApiKey || 'MISSING_API_KEY',
-  );
+  const escapedKey = escapeForStringLiteral(cdpApiKey || 'MISSING_API_KEY', PLATFORM.IOS);
+  let next = content.replace(/\{\{CDP_API_KEY\}\}/, () => escapedKey);
 
   const regionKey = region?.toLowerCase() ?? '';
   const regionMap = { us: 'Region.US', eu: 'Region.EU' } as const;
@@ -482,7 +483,8 @@ export function applyConfigToPushFile(
     : '';
 
   let next = replaceCodeByRegex(content, /\{\{REGISTER_SNIPPET\}\}/, registerSnippet);
-  next = replaceCodeByRegex(next, /\{\{CDP_API_KEY\}\}/, cdpApiKey);
+  const escapedKey = escapeForStringLiteral(cdpApiKey, PLATFORM.IOS);
+  next = next.replace(/\{\{CDP_API_KEY\}\}/, () => escapedKey);
 
   if (region) {
     next = replaceCodeByRegex(next, /\{\{REGION\}\}/, region.toUpperCase());

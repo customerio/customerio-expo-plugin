@@ -32,7 +32,7 @@ class CustomerIOSDKInitializer {
         CustomerIO.initialize(withConfig: builder.build())
 
         if let siteId = siteId {
-            let inAppConfig = MessagingInAppConfigBuilder(siteId: siteId, region: region).build()
+            let inAppConfig = MessagingInAppConfigBuilder(siteId: siteId).build()
             MessagingInApp.initialize(withConfig: inAppConfig)
             let logger = DIGraphShared.shared.logger
             // Retrieves ReactInAppEventListener from DI graph, populated when it is accessed in React Native SDK.

@@ -1,6 +1,7 @@
 import type { ExpoConfig } from '@expo/config-types';
 
 import { withCIOAndroid } from './android/withCIOAndroid';
+import { assertNotSecretCdpApiKey } from './helpers/utils/cdpApiKey';
 import { resolveSdkConfigForLiveNotifications } from './helpers/utils/liveNotificationsEnabled';
 import { isExpoVersion53OrHigher } from './ios/utils';
 import { withCIOIos } from './ios/withCIOIos';
@@ -19,6 +20,10 @@ function withCustomerIOPlugin(
   config: ExpoConfig,
   props: CustomerIOPluginOptions
 ) {
+  // A secret key must never be built into the app or the notification service extension.
+  assertNotSecretCdpApiKey(props.config?.cdpApiKey, 'config.cdpApiKey');
+  assertNotSecretCdpApiKey(props.ios?.pushNotification?.env?.cdpApiKey, 'ios.pushNotification.env.cdpApiKey');
+
   // Check if config is being used with unsupported Expo version
   if (props.config && !isExpoVersion53OrHigher(config)) {
     throw new Error(
