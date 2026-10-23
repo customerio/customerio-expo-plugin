@@ -27,7 +27,7 @@ env:
 
 jobs:
   validate:
-    name: Expo ${{ matrix.expo-version }} - ${{ matrix.platform }}${{ matrix.ios-push-provider && format(' ({0})', matrix.ios-push-provider) }}
+    name: Expo ${{ matrix.expo-version }} - ${{ matrix.platform }}${{ matrix.ios-push-provider && format(' ({0})', matrix.ios-push-provider) }}${{ matrix.android-agp9-defaults && ' (AGP 9 defaults)' || '' }}
     runs-on: ${{ matrix.runs-on }}
 
     strategy:
@@ -37,19 +37,19 @@ jobs:
 
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           ref: ${{ inputs.ref || github.ref }}
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
       - name: Setup Java
         if: matrix.platform == 'android'
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: ${{ env.JAVA_VERSION }}
@@ -74,7 +74,7 @@ jobs:
       # Xcode, push provider, and the plugin's own lockfile.
       - name: Cache CocoaPods
         if: matrix.platform == 'ios'
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: |
             ~/Library/Caches/CocoaPods
@@ -86,7 +86,7 @@ jobs:
 
       - name: Cache Gradle
         if: matrix.platform == 'android'
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: |
             ~/.gradle/caches
@@ -121,7 +121,8 @@ jobs:
             --expo-version=${{ matrix.expo-version }} \
             --platforms=${{ matrix.platform }}\
             --ios-use-frameworks="static" \
-            ${{ matrix.ios-push-provider && format(' --ios-push-providers={0}', matrix.ios-push-provider) }}
+            ${{ matrix.ios-push-provider && format(' --ios-push-providers={0}', matrix.ios-push-provider) }} \
+            ${{ matrix.android-agp9-defaults && '--android-agp9-defaults' || '' }}
 
       # Expo SDK 58+ generates a UIScene host, built here with the iOS 27 SDK. A
       # build can pass while the app still terminates at launch, so these rows
