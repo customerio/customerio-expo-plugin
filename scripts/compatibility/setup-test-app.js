@@ -122,6 +122,8 @@ function execute() {
   }`,
     );
 
+    // FirebaseInstallations throws at launch when PROJECT_ID is missing, which
+    // would stop a generated FCM app from surviving a launch check.
     fs.writeFileSync(
       path.join(APP_ARTIFACTS_DIR_PATH, "GoogleService-Info.plist"),
       `<?xml version="1.0" encoding="UTF-8"?>
@@ -134,6 +136,8 @@ function execute() {
       <string>1:1234567890:ios:abcdef123456</string>
       <key>GCM_SENDER_ID</key>
       <string>1234567890</string>
+      <key>PROJECT_ID</key>
+      <string>test-project</string>
       <key>API_KEY</key>
       <string>AIzaSy000000000000000000000000000000000</string>
       <key>CLIENT_ID</key>
