@@ -1,3 +1,9 @@
+## [3.14.2](https://github.com/customerio/customerio-expo-plugin/compare/3.14.1...3.14.2) (2026-10-24)
+
+### Bug Fixes
+
+* inject google-services 4.4.0 for AGP 9 and update customerio-reactnative to 6.16.1 ([#420](https://github.com/customerio/customerio-expo-plugin/issues/420)) ([f9d2d30](https://github.com/customerio/customerio-expo-plugin/commit/f9d2d30b4e597459373fec6db8b83f815c9d2096))
+
 ## [3.14.1](https://github.com/customerio/customerio-expo-plugin/compare/3.14.0...3.14.1) (2026-10-23)
 
 ### Bug Fixes
