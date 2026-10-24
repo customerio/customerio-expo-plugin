@@ -1,3 +1,15 @@
+## [3.14.1](https://github.com/customerio/customerio-expo-plugin/compare/3.14.0...3.14.1) (2026-10-23)
+
+### Bug Fixes
+
+* support apiHost in the iOS Notification Service Extension ([#427](https://github.com/customerio/customerio-expo-plugin/issues/427)) ([c6df466](https://github.com/customerio/customerio-expo-plugin/commit/c6df4669622b21f8fb2c472d5ae658f56aadaef1))
+
+## [3.14.0](https://github.com/customerio/customerio-expo-plugin/compare/3.13.0...3.14.0) (2026-10-23)
+
+### Features
+
+* update customerio-reactnative to 6.16.0 (geofence dwell and visit duration) ([#429](https://github.com/customerio/customerio-expo-plugin/issues/429)) ([2f770cb](https://github.com/customerio/customerio-expo-plugin/commit/2f770cbfe1fde60bd37cc2b363cd9ed0962e93d1))
+
 ## [3.13.0](https://github.com/customerio/customerio-expo-plugin/compare/3.12.0...3.13.0) (2026-10-22)
 
 ### Features

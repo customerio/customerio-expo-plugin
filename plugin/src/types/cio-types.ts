@@ -518,4 +518,11 @@ export type CustomerIOPluginPushNotificationOptions = {
    * When omitted, the native SDK handles group discovery on its own and no entitlements are added.
    */
   appGroupId?: string;
+
+  /**
+   * Host the Notification Service Extension sends delivery metrics to, for routing them through your
+   * own proxy. Use the same value as `apiHost` in the app's SDK config. When set, `.apiHost(...)` is
+   * injected into the MessagingPushConfigBuilder; when omitted, metrics go to the host for `region`.
+   */
+  apiHost?: string;
 };
