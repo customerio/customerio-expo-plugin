@@ -36,9 +36,10 @@ const NSE_COMMON_FILES = [
 ];
 
 const TARGETED_DEVICE_FAMILY = `"1,2"`;
-// Must match the host app's Swift version. CocoaPods derives the version of a Swift pod without
-// `swift_versions` from the targets that integrate it, and fails `pod install` when the app and the
-// NSE disagree. Kept a string so it is written as `5.0`, not `5`.
+// Matches the Swift version of the host app target, which comes from Expo's iOS template (5.0).
+// CocoaPods derives the version of a Swift pod without `swift_versions` from the targets that
+// integrate it, and fails `pod install` when the app and the NSE disagree. Update this if the
+// template changes. Kept a string so it is written as `5.0`, not `5`.
 const NSE_SWIFT_VERSION = '5.0';
 // What earlier plugin versions wrote to the NSE target. Only this exact value is migrated, so a
 // Swift version the user set themselves is never changed.

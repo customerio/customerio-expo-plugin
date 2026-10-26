@@ -47,10 +47,12 @@ const withSharedSwiftPod = (config) =>
         .filter((line) => !line.includes('CioSharedSwiftPod'))
         .join('\n');
       for (const target of [cfg.modRequest.projectName, 'NotificationService']) {
-        contents = contents.replace(
-          new RegExp(`^target '${target}' do$`, 'm'),
-          (match) => `${match}\n${SHARED_SWIFT_POD}`
-        );
+        const targetLine = new RegExp(`^target '${target}' do$`, 'm');
+        // Fail loudly: a missing target would silently turn this regression guard off.
+        if (!targetLine.test(contents)) {
+          throw new Error(`withSharedSwiftPod: target '${target}' not found in the Podfile`);
+        }
+        contents = contents.replace(targetLine, (match) => `${match}\n${SHARED_SWIFT_POD}`);
       }
       fs.writeFileSync(podfile, contents);
       return cfg;
