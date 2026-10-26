@@ -58,7 +58,7 @@ const widgetGroupFiles = (
 ];
 
 const TARGETED_DEVICE_FAMILY = `"1,2"`;
-// WidgetKit + SwiftUI + ActivityKit need Swift 5; the NSE target uses 4.2 for its ObjC-heavy code.
+// WidgetKit + SwiftUI + ActivityKit need Swift 5. The NSE target uses the same version so pods shared with the app resolve.
 const WIDGET_SWIFT_VERSION = '5.0';
 
 export type AddLiveActivityWidgetTargetOptions = {

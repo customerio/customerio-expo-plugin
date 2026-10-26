@@ -26,7 +26,9 @@ test("Plugin injects expected customerio-reactnative/apn and customerio-reactnat
     const endIndex = podFileAsLines.indexOf("# --- CustomerIO Notification END ---", startIndex);
     expect(startIndex).toBeGreaterThan(-1);
     expect(endIndex).toBeGreaterThan(startIndex);
-    const targetBlock = podFileAsLines.slice(startIndex, endIndex + 1).filter(line => line.length > 0);
+    const targetBlock = podFileAsLines.slice(startIndex, endIndex + 1).filter(line => line.length > 0)
+        // test-app/app.config.js adds a shared Swift pod here as a regression guard (MBL-2650).
+        .filter(line => !line.includes("CioSharedSwiftPod"));
     expect(targetBlock[0]).toBe("# --- CustomerIO Notification START ---");
     expect(targetBlock[1]).toBe("target 'NotificationService' do");
     expect(targetBlock[2]).toBe("use_frameworks! :linkage => :static");
