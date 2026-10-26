@@ -153,7 +153,7 @@ describe('ios scenarios — addNotificationServiceExtensionToXcodeProject (vanil
         IPHONEOS_DEPLOYMENT_TARGET: '14.0',
         TARGETED_DEVICE_FAMILY: '"1,2"',
         CODE_SIGN_STYLE: 'Automatic',
-        SWIFT_VERSION: 4.2,
+        SWIFT_VERSION: '5.0',
       });
       expect(buildSettings.CODE_SIGN_ENTITLEMENTS).toBeUndefined();
     }

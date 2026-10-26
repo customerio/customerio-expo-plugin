@@ -36,6 +36,10 @@ const NSE_COMMON_FILES = [
 ];
 
 const TARGETED_DEVICE_FAMILY = `"1,2"`;
+// Must match the host app's Swift version. CocoaPods derives the version of a Swift pod without
+// `swift_versions` from the targets that integrate it, and fails `pod install` when the app and the
+// NSE disagree. Kept a string so it is written as `5.0`, not `5`.
+const NSE_SWIFT_VERSION = '5.0';
 
 const addNotificationServiceExtension = async (
   options: CustomerIOPluginOptionsIOS,
@@ -216,7 +220,7 @@ export function addNotificationServiceExtensionToXcodeProject(
       buildSettingsObj.IPHONEOS_DEPLOYMENT_TARGET = iosDeploymentTarget || '15.1';
       buildSettingsObj.TARGETED_DEVICE_FAMILY = TARGETED_DEVICE_FAMILY;
       buildSettingsObj.CODE_SIGN_STYLE = 'Automatic';
-      buildSettingsObj.SWIFT_VERSION = 4.2;
+      buildSettingsObj.SWIFT_VERSION = NSE_SWIFT_VERSION;
       if (appGroupId) {
         buildSettingsObj.CODE_SIGN_ENTITLEMENTS = `${CIO_NOTIFICATION_TARGET_NAME}/${NSE_ENTITLEMENTS_FILENAME}`;
       }
