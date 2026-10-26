@@ -1,3 +1,9 @@
+## [3.14.3](https://github.com/customerio/customerio-expo-plugin/compare/3.14.2...3.14.3) (2026-10-26)
+
+### Bug Fixes
+
+* use Swift 5.0 for the NotificationService target ([#432](https://github.com/customerio/customerio-expo-plugin/issues/432)) ([b6c2cf6](https://github.com/customerio/customerio-expo-plugin/commit/b6c2cf6a4ac0bb1abe151e69a89b1c496f52e8a2))
+
 ## [3.14.2](https://github.com/customerio/customerio-expo-plugin/compare/3.14.1...3.14.2) (2026-10-24)
 
 ### Bug Fixes
