@@ -40,6 +40,9 @@ const TARGETED_DEVICE_FAMILY = `"1,2"`;
 // `swift_versions` from the targets that integrate it, and fails `pod install` when the app and the
 // NSE disagree. Kept a string so it is written as `5.0`, not `5`.
 const NSE_SWIFT_VERSION = '5.0';
+// What earlier plugin versions wrote to the NSE target. Only this exact value is migrated, so a
+// Swift version the user set themselves is never changed.
+const LEGACY_NSE_SWIFT_VERSION = '4.2';
 
 const addNotificationServiceExtension = async (
   options: CustomerIOPluginOptionsIOS,
@@ -131,6 +134,27 @@ export type AddNseTargetToXcodeProjectOptions = {
   appGroupId?: string;
 };
 
+const unquote = (value: unknown): string => String(value).replace(/^"|"$/g, '');
+
+/**
+ * Existing NotificationService targets keep the Swift version older plugin versions gave them,
+ * because the target is only created once. Moves the legacy value to `NSE_SWIFT_VERSION` so
+ * incremental `expo prebuild` runs fix projects that already have the target.
+ */
+export function migrateLegacyNseSwiftVersion(xcodeProject: XcodeProject): void {
+  const configurations = xcodeProject.pbxXCBuildConfigurationSection();
+  for (const key in configurations) {
+    const buildSettings = configurations[key]?.buildSettings;
+    if (
+      buildSettings !== undefined &&
+      unquote(buildSettings.PRODUCT_NAME) === CIO_NOTIFICATION_TARGET_NAME &&
+      unquote(buildSettings.SWIFT_VERSION) === LEGACY_NSE_SWIFT_VERSION
+    ) {
+      buildSettings.SWIFT_VERSION = NSE_SWIFT_VERSION;
+    }
+  }
+}
+
 /**
  * Mutates the parsed XcodeProject to register the rich-push NotificationService
  * extension target: creates a PBXGroup for its files, registers the group under
@@ -141,8 +165,8 @@ export type AddNseTargetToXcodeProjectOptions = {
  * stamps the development team attribute on both the new target and the
  * project's main target attributes.
  *
- * Idempotent — returns the project unchanged if a target named
- * `CIO_NOTIFICATION_TARGET_NAME` is already present.
+ * Idempotent — if a target named `CIO_NOTIFICATION_TARGET_NAME` is already present, only the
+ * legacy Swift version is migrated (see `migrateLegacyNseSwiftVersion`).
  */
 export function addNotificationServiceExtensionToXcodeProject(
   xcodeProject: XcodeProject,
@@ -152,6 +176,7 @@ export function addNotificationServiceExtensionToXcodeProject(
     logger.warn(
       `${CIO_NOTIFICATION_TARGET_NAME} already exists in project. Skipping...`,
     );
+    migrateLegacyNseSwiftVersion(xcodeProject);
     return xcodeProject;
   }
 
@@ -260,6 +285,7 @@ const addRichPushXcodeProj = async (
     logger.warn(
       `${CIO_NOTIFICATION_TARGET_NAME} already exists in project. Skipping...`,
     );
+    migrateLegacyNseSwiftVersion(xcodeProject);
     return;
   }
 

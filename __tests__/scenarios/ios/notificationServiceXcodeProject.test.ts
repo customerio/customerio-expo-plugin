@@ -2,6 +2,7 @@
 const xcode = require('xcode');
 import {
   addNotificationServiceExtensionToXcodeProject,
+  migrateLegacyNseSwiftVersion,
   type AddNseTargetToXcodeProjectOptions,
 } from '../../../plugin/src/ios/withNotificationsXcodeProject';
 import { getFixturePath } from '../../utils';
@@ -290,5 +291,45 @@ describe('ios scenarios — addNotificationServiceExtensionToXcodeProject (multi
       expect(buildSettings.DEVELOPMENT_TEAM).toBeUndefined();
       expect(buildSettings.CODE_SIGN_ENTITLEMENTS).toBeUndefined();
     }
+  });
+});
+
+describe('ios scenarios — NSE Swift version migration (MBL-2650)', () => {
+  const nseSwiftVersions = (project: ReturnType<typeof xcode.project>) =>
+    Object.values(buildSettingsForTarget(project, NSE_TARGET_NAME)).map((settings) =>
+      String(settings.SWIFT_VERSION).replace(/"/g, ''),
+    );
+
+  it('moves the legacy 4.2 on an existing NSE target to 5.0', () => {
+    const { project } = loadFixture('with_existing_nse.pbxproj');
+    expect(nseSwiftVersions(project)).toEqual(['4.2', '4.2']);
+
+    migrateLegacyNseSwiftVersion(project);
+
+    expect(nseSwiftVersions(project)).toEqual(['5.0', '5.0']);
+  });
+
+  it('keeps a Swift version the user set themselves', () => {
+    const { project } = loadFixture('with_existing_nse.pbxproj');
+    for (const settings of Object.values(buildSettingsForTarget(project, NSE_TARGET_NAME))) {
+      settings.SWIFT_VERSION = '6.0';
+    }
+
+    migrateLegacyNseSwiftVersion(project);
+
+    expect(nseSwiftVersions(project)).toEqual(['6.0', '6.0']);
+  });
+
+  it('migrates the legacy value when the target already exists and no second target is added', () => {
+    const { project } = loadFixture('with_existing_nse.pbxproj');
+    const before = targetNames(project).length;
+    // The fixture's quoted target comment misses the helper's lookup (see the idempotency test
+    // above), while projects written by prebuild match it. Force the match to reach that path.
+    jest.spyOn(project, 'pbxTargetByName').mockReturnValue({});
+
+    addNotificationServiceExtensionToXcodeProject(project, baseOptions);
+
+    expect(targetNames(project)).toHaveLength(before);
+    expect(nseSwiftVersions(project)).toEqual(['5.0', '5.0']);
   });
 });
