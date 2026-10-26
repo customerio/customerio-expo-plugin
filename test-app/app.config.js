@@ -39,16 +39,20 @@ const withSharedSwiftPod = (config) =>
     'ios',
     async (cfg) => {
       const podfile = path.join(cfg.modRequest.platformProjectRoot, 'Podfile');
-      let contents = fs.readFileSync(podfile, 'utf8');
-      if (!contents.includes('CioSharedSwiftPod')) {
-        for (const target of [cfg.modRequest.projectName, 'NotificationService']) {
-          contents = contents.replace(
-            new RegExp(`^target '${target}' do$`, 'm'),
-            (match) => `${match}\n${SHARED_SWIFT_POD}`
-          );
-        }
-        fs.writeFileSync(podfile, contents);
+      // Drop previous copies first: an incremental prebuild rewrites the plugin's NotificationService
+      // block, which removes this line from that target but leaves it in the app target.
+      let contents = fs
+        .readFileSync(podfile, 'utf8')
+        .split('\n')
+        .filter((line) => !line.includes('CioSharedSwiftPod'))
+        .join('\n');
+      for (const target of [cfg.modRequest.projectName, 'NotificationService']) {
+        contents = contents.replace(
+          new RegExp(`^target '${target}' do$`, 'm'),
+          (match) => `${match}\n${SHARED_SWIFT_POD}`
+        );
       }
+      fs.writeFileSync(podfile, contents);
       return cfg;
     },
   ]);
