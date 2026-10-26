@@ -88,7 +88,6 @@ function shouldUseLexicalPath(rnVersion: string | null): boolean {
   return semver.lt(coerced, RN_REALPATH_AUTOLINKING_MIN_VERSION);
 }
 
-export const IOS_DEPLOYMENT_TARGET = '13.0';
 export const GROUP_IDENTIFIER_TEMPLATE_REGEX = /{{GROUP_IDENTIFIER}}/gm;
 export const BUNDLE_SHORT_VERSION_TEMPLATE_REGEX = /{{BUNDLE_SHORT_VERSION}}/gm;
 export const BUNDLE_VERSION_TEMPLATE_REGEX = /{{BUNDLE_VERSION}}/gm;
