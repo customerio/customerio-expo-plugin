@@ -144,6 +144,13 @@ export type NativeSDKConfig = {
   siteId?: string; // Optional, if only siteId defined, migrationSiteId = siteId
   migrationSiteId?: string; // Optional, if only migrationSiteId defined, siteId should be null
   /**
+   * In-app messaging config. A `siteId` turns in-app on as before. Without one, set
+   * `inApp.enabled` to true to turn it on with a `pk_` key, which needs no site ID.
+   */
+  inApp?: {
+    enabled?: boolean;
+  };
+  /**
    * Location module config. Location is off by default. Applied whenever the location module is
    * registered — when location.enabled is true, or when geofence.enabled is true (geofence implies
    * location). trackingMode: 'MANUAL' (host app controls when location is captured, default),

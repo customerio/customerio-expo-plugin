@@ -128,7 +128,8 @@ export function patchNativeSDKInitializer(
   );
 
   // In-app needs a site ID, or a public (pk_) key that identifies the workspace without one
-  const inAppEnabled = Boolean(siteId?.trim()) || isPublicCdpApiKey(sdkConfig.cdpApiKey);
+  const inAppEnabled =
+    Boolean(siteId?.trim()) || (sdkConfig.inApp?.enabled === true && isPublicCdpApiKey(sdkConfig.cdpApiKey));
   content = content.replace(/\{\{IN_APP_ENABLED\}\}/g, String(inAppEnabled));
 
   content = patchLocationPlaceholders(content, platform, locationOptions);
