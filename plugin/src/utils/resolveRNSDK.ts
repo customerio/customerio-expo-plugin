@@ -105,6 +105,13 @@ export function tryResolveRNSDK(fromDir: string): ResolvedRNSDK | null {
   return null;
 }
 
+// Reads the installed customerio-reactnative version starting from `fromDir`.
+// Returns null if the package or its version cannot be read.
+export function tryReadRNSDKVersion(fromDir: string): string | null {
+  const resolved = tryResolveRNSDK(fromDir);
+  return resolved ? readVersion(resolved.packageJsonPath) : null;
+}
+
 // Same as tryResolveRNSDK but throws a clear error when the package is missing.
 export function resolveRNSDK(fromDir: string): ResolvedRNSDK {
   const resolved = tryResolveRNSDK(fromDir);

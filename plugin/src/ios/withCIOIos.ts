@@ -13,7 +13,11 @@ import { isLiveNotificationsEnabled } from '../helpers/utils/liveNotificationsEn
 import { mergeConfigWithEnvValues } from '../utils/config';
 import { logger } from '../utils/logger';
 import { validatePushNotificationOptions } from '../utils/validation';
-import { isExpoVersion53OrHigher, isExpoVersion58OrHigher } from './utils';
+import {
+  isExpoVersion53OrHigher,
+  isExpoVersion58OrHigher,
+  isFcmPushProvider,
+} from './utils';
 import { withAppDelegateModifications } from './withAppDelegateModifications';
 import { withCIOIosSwift } from './withCIOIosSwift';
 import { withLiveActivityUrlRoutingWarning } from './withLiveActivityUrlRoutingWarning';
@@ -63,6 +67,13 @@ export function withCIOIos(
 
   if (platformConfig?.pushNotification) {
     validatePushNotificationOptions(platformConfig.pushNotification);
+    const useFirebaseFromApp =
+      platformConfig.pushNotification.useFirebaseFromApp === true;
+    if (useFirebaseFromApp && !isFcmPushProvider(platformConfig)) {
+      logger.warn(
+        'ios.pushNotification.useFirebaseFromApp only applies to the fcm provider, so it has no effect here.'
+      );
+    }
     if (isSwiftProject) {
       config = withCIOIosSwift(
         config,
@@ -90,6 +101,8 @@ export function withCIOIos(
         geofenceEnabled,
         hasPush: true,
         liveNotificationsEnabled,
+        useFirebaseFromApp:
+          useFirebaseFromApp && isFcmPushProvider(platformConfig),
       },
     });
     config = withGoogleServicesJsonFile(config, platformConfig);

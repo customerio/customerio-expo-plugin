@@ -495,6 +495,16 @@ export type CustomerIOPluginPushNotificationOptions = {
   provider?: 'apn' | 'fcm';
   googleServicesFile?: string;
   useRichPush?: boolean;
+  /**
+   * iOS, `fcm` provider only. Set to `true` when your app already gets Firebase from somewhere
+   * else, such as React Native Firebase 26.1 and later, which adds Firebase through Swift Package
+   * Manager. The plugin then installs the `fcm-core` subspec, which uses your app's
+   * FirebaseMessaging instead of adding its own copy from CocoaPods. Two copies of Firebase fail
+   * the iOS build.
+   *
+   * Requires customerio-reactnative 7.1.0 or later. Leave it unset to keep the `fcm` subspec.
+   */
+  useFirebaseFromApp?: boolean;
   autoFetchDeviceToken?: boolean;
   autoTrackPushEvents?: boolean;
   showPushAppInForeground?: boolean;
