@@ -1,6 +1,7 @@
 import type { ExpoConfig } from '@expo/config-types';
 import { withCIOIos } from '../../plugin/src/ios/withCIOIos';
 import { isExpoVersion58OrHigher } from '../../plugin/src/ios/utils';
+import { logger } from '../../plugin/src/utils/logger';
 import type { CustomerIOPluginGeofenceOptions, CustomerIOPluginLocationOptions, CustomerIOPluginOptionsIOS } from '../../plugin/src/types/cio-types';
 
 const mockWithCioXcodeProject = jest.fn((config: ExpoConfig, _props?: object) => config);
@@ -67,6 +68,7 @@ jest.mock('../../plugin/src/ios/withLiveActivityUrlRoutingWarning', () => ({
 jest.mock('../../plugin/src/ios/utils', () => ({
   isExpoVersion53OrHigher: jest.fn(() => true),
   isExpoVersion58OrHigher: jest.fn(() => false),
+  isFcmPushProvider: jest.requireActual('../../plugin/src/ios/utils').isFcmPushProvider,
 }));
 jest.mock('../../plugin/src/utils/logger', () => ({ logger: { warn: jest.fn() } }));
 
@@ -354,6 +356,7 @@ describe('withCIOIos', () => {
             geofenceEnabled: false,
             hasPush: true,
             liveNotificationsEnabled: true,
+            useFirebaseFromApp: false,
           },
         }),
       );
@@ -450,12 +453,53 @@ describe('withCIOIos', () => {
             geofenceEnabled: true,
             hasPush: true,
             liveNotificationsEnabled: true,
+            useFirebaseFromApp: false,
           },
         }),
       );
     });
 });
 
+
+describe('useFirebaseFromApp', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('asks the Podfile for fcm-core when an FCM app sets it', () => {
+    withCIOIos(
+      { name: 'Test App', slug: 'test-app', sdkVersion: '55.0.0' },
+      undefined,
+      { iosPath: '/test/ios', pushNotification: { provider: 'fcm', useFirebaseFromApp: true } }
+    );
+
+    expect(mockWithCioXcodeProject).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        podfileOptions: expect.objectContaining({ hasPush: true, useFirebaseFromApp: true }),
+      })
+    );
+    expect(logger.warn).not.toHaveBeenCalled();
+  });
+
+  it('keeps the APN subspec and warns when an APN app sets it', () => {
+    withCIOIos(
+      { name: 'Test App', slug: 'test-app', sdkVersion: '55.0.0' },
+      undefined,
+      { iosPath: '/test/ios', pushNotification: { provider: 'apn', useFirebaseFromApp: true } }
+    );
+
+    expect(mockWithCioXcodeProject).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        podfileOptions: expect.objectContaining({ useFirebaseFromApp: false }),
+      })
+    );
+    expect(logger.warn).toHaveBeenCalledWith(
+      'ios.pushNotification.useFirebaseFromApp only applies to the fcm provider, so it has no effect here.'
+    );
+  });
+});
 
 describe('NSE apiHost with automatic initialization', () => {
   it('passes the derived key and region along with a pushNotification.apiHost to NSE generation', () => {

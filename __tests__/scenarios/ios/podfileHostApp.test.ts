@@ -2,7 +2,10 @@ jest.mock('../../../plugin/src/helpers/constants/ios', () => ({
   getRelativePathToRNSDK: () => '../node_modules/customerio-reactnative',
 }));
 
-import { injectHostAppPodfileCode } from '../../../plugin/src/helpers/utils/injectCIOPodfileCode';
+import {
+  buildHostAppPodSnippet,
+  injectHostAppPodfileCode,
+} from '../../../plugin/src/helpers/utils/injectCIOPodfileCode';
 
 const IOS_PATH = '/fake/project/ios';
 
@@ -65,6 +68,66 @@ describe('ios scenarios — injectHostAppPodfileCode', () => {
       end
       "
     `);
+  });
+
+  it('injects the fcm-core host-app block when the app supplies Firebase', () => {
+    expect(
+      injectHostAppPodfileCode(baseline, IOS_PATH, true, {
+        useFirebaseFromApp: true,
+      })
+    ).toMatchInlineSnapshot(`
+      "platform :ios, '13.0'
+      target 'TestApp' do
+        use_expo_modules!
+        config = use_native_modules!
+        use_react_native!(
+          :path => config[:reactNativePath],
+        )
+      end
+
+      # --- CustomerIO Host App START ---
+        pod 'customerio-reactnative/fcm-core', :path => '../node_modules/customerio-reactnative'
+      # --- CustomerIO Host App END ---
+      post_install do |installer|
+        react_native_post_install(installer)
+      end
+      "
+    `);
+  });
+
+  it('names fcm-core in the subspecs array alongside optional modules', () => {
+    expect(
+      buildHostAppPodSnippet(IOS_PATH, true, {
+        useFirebaseFromApp: true,
+        locationEnabled: true,
+        hasPush: true,
+      })
+    ).toBe(
+      "pod 'customerio-reactnative', :subspecs => ['fcm-core', 'location'], :path => '../node_modules/customerio-reactnative'"
+    );
+  });
+
+  it('keeps the apn subspec when an APN app sets useFirebaseFromApp', () => {
+    expect(
+      buildHostAppPodSnippet(IOS_PATH, false, { useFirebaseFromApp: true })
+    ).toBe(
+      "pod 'customerio-reactnative/apn', :path => '../node_modules/customerio-reactnative'"
+    );
+  });
+
+  it('switches between fcm and fcm-core in an existing managed block', () => {
+    const fcm = injectHostAppPodfileCode(baseline, IOS_PATH, true);
+    const fcmCore = injectHostAppPodfileCode(fcm, IOS_PATH, true, {
+      useFirebaseFromApp: true,
+    });
+    const fcmAgain = injectHostAppPodfileCode(fcmCore, IOS_PATH, true, {
+      useFirebaseFromApp: false,
+    });
+
+    expect(fcmCore).toContain("customerio-reactnative/fcm-core'");
+    expect(fcmCore).not.toContain("customerio-reactnative/fcm'");
+    expect((fcmCore.match(/CustomerIO Host App START/g) ?? []).length).toBe(1);
+    expect(fcmAgain).toEqual(fcm);
   });
 
   it('injects subspecs (push + location) when locationEnabled and hasPush', () => {

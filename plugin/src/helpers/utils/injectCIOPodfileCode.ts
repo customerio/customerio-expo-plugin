@@ -1,5 +1,8 @@
+import path from 'path';
+import * as semver from 'semver';
 import type { CustomerIOPluginOptionsIOS } from '../../types/cio-types';
 import { logger } from '../../utils/logger';
+import { tryReadRNSDKVersion } from '../../utils/resolveRNSDK';
 import { CIO_LIVE_ACTIVITY_WIDGET_TARGET_NAME, getRelativePathToRNSDK } from '../constants/ios';
 import { injectCodeByRegex } from './codeInjection';
 import { FileManagement } from './fileManagement';
@@ -13,6 +16,12 @@ export type InjectCIOPodfileOptions = {
   hasPush?: boolean;
   /** When true, add the `liveactivities` subspec (enables -DCIO_LIVEACTIVITIES_ENABLED). */
   liveNotificationsEnabled?: boolean;
+  /**
+   * FCM only. When true, use the `fcm-core` subspec, which adds no Firebase of its own and uses the
+   * FirebaseMessaging the app already has (e.g. from React Native Firebase over Swift Package
+   * Manager). Ignored for APN.
+   */
+  useFirebaseFromApp?: boolean;
 };
 
 /** Builds the host-app pod snippet for the Podfile.
@@ -36,7 +45,11 @@ export function buildHostAppPodSnippet(
   const geofenceEnabled = options?.geofenceEnabled === true;
   const liveNotificationsEnabled = options?.liveNotificationsEnabled === true;
   const hasPush = options?.hasPush !== false;
-  const pushSubspec = isFcmPushProvider ? 'fcm' : 'apn';
+  const pushSubspec = isFcmPushProvider
+    ? options?.useFirebaseFromApp === true
+      ? 'fcm-core'
+      : 'fcm'
+    : 'apn';
 
   // No optional modules: keep the single push-provider subspec form. hasPush is intentionally
   // not checked here — callers only pass hasPush:false alongside an enabled optional module.
@@ -120,11 +133,33 @@ ${HOST_APP_BLOCK_END}
   ).join('\n');
 }
 
+const FCM_CORE_MIN_RN_SDK_VERSION = '7.1.0';
+
+/**
+ * Older customerio-reactnative versions have no `fcm-core` subspec. Stop prebuild with the reason
+ * rather than leave `pod install` to fail on the missing subspec. An unreadable version is let
+ * through: CocoaPods still reports the subspec it can't find.
+ */
+function assertRNSDKSupportsFcmCore(iosPath: string) {
+  const installed = tryReadRNSDKVersion(path.dirname(iosPath));
+  const coerced = installed ? semver.coerce(installed) : null;
+  if (installed && coerced && semver.lt(coerced, FCM_CORE_MIN_RN_SDK_VERSION)) {
+    throw new Error(
+      `ios.pushNotification.useFirebaseFromApp needs customerio-reactnative ${FCM_CORE_MIN_RN_SDK_VERSION} or later, but ${installed} is installed. ` +
+        'Update customerio-reactnative, or remove useFirebaseFromApp to keep the fcm subspec.'
+    );
+  }
+}
+
 export async function injectCIOPodfileCode(
   iosPath: string,
   isFcmPushProvider: boolean,
   options?: InjectCIOPodfileOptions
 ) {
+  if (isFcmPushProvider && options?.useFirebaseFromApp === true) {
+    assertRNSDKSupportsFcmCore(iosPath);
+  }
+
   const filename = `${iosPath}/Podfile`;
   const podfile = await FileManagement.read(filename);
   const next = injectHostAppPodfileCode(podfile, iosPath, isFcmPushProvider, options);

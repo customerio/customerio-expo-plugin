@@ -86,6 +86,7 @@ export type CustomerIOPluginPushNotificationOptions = {
     provider?: 'apn' | 'fcm';
     googleServicesFile?: string;
     useRichPush?: boolean;
+    useFirebaseFromApp?: boolean;
     autoFetchDeviceToken?: boolean;
     autoTrackPushEvents?: boolean;
     showPushAppInForeground?: boolean;
