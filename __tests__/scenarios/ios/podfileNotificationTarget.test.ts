@@ -61,10 +61,28 @@ describe('ios scenarios — appendNotificationTargetToPodfile', () => {
     `);
   });
 
-  it('preserves the existing extension behavior for dynamic host frameworks', () => {
+  // Expo sets `use_frameworks!` on the host target only. CocoaPods won't integrate an extension
+  // whose linkage differs from its host's, and React Native Firebase 26.1+ also stops `pod install`
+  // when any target builds its pods statically.
+  it('appends the notification target block with use_frameworks: dynamic', () => {
     expect(
       appendNotificationTargetToPodfile(baseline, IOS_PATH, true, 'dynamic')
-    ).not.toContain('use_frameworks!');
+    ).toMatchInlineSnapshot(`
+      "platform :ios, '13.0'
+      target 'TestApp' do
+        use_expo_modules!
+      end
+
+      post_install do |installer|
+        react_native_post_install(installer)
+      end
+      # --- CustomerIO Notification START ---
+      target 'NotificationService' do
+        use_frameworks! :linkage => :dynamic
+        pod 'customerio-reactnative-richpush/fcm', :path => '../node_modules/customerio-reactnative'
+      end
+      # --- CustomerIO Notification END ---"
+    `);
   });
 
   it('omits the use_frameworks line when useFrameworks is undefined', () => {
@@ -136,7 +154,8 @@ describe('ios scenarios — appendNotificationTargetToPodfile', () => {
       undefined
     );
 
-    expect(fcmDynamic).not.toContain('use_frameworks!');
+    expect(fcmDynamic).toContain('use_frameworks! :linkage => :dynamic');
+    expect(fcmDynamic).not.toContain(':linkage => :static');
     expect(fcmDynamic).toContain('customerio-reactnative-richpush/fcm');
     expect(fcmDynamic).not.toContain('customerio-reactnative-richpush/apn');
     expect(fcmWithoutFrameworks).not.toContain('use_frameworks!');

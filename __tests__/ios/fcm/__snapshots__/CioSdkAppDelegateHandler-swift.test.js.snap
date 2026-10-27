@@ -80,12 +80,14 @@ public class CioSdkAppDelegateHandler: NSObject {
     UIApplication.shared.registerForRemoteNotifications()
   }
 
+  // \`appDelegateIntegratedExplicitly\` turns off the SDK's own token swizzling, so forward the APNs
+  // token here. Without it, an app that turns off Firebase's swizzling never gives FCM the token.
   public func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
-    
+    cioAppDelegate.application(application, didRegisterForRemoteNotificationsWithDeviceToken: deviceToken)
   }
     
   public func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
-    
+    cioAppDelegate.application(application, didFailToRegisterForRemoteNotificationsWithError: error)
   }
 
   /// Reports an \`opened\` metric when the app is launched from a tapped Live Activity, and returns

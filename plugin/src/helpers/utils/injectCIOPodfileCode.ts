@@ -57,6 +57,21 @@ export function buildHostAppPodSnippet(
   return `pod 'customerio-reactnative', :subspecs => [${subspecList}], :path => '${resolvedPath}'`;
 }
 
+/**
+ * Expo's Podfile calls `use_frameworks!` inside the host app's target only, so the extension
+ * targets appended after it need their own line to match. CocoaPods won't integrate an extension
+ * whose linkage differs from its host's, and React Native Firebase 26.1+ also stops `pod install`
+ * when any target builds its pods statically while Firebase comes from Swift Package Manager.
+ */
+function extensionUseFrameworksLine(
+  useFrameworks: CustomerIOPluginOptionsIOS['useFrameworks']
+): string {
+  if (useFrameworks === 'static' || useFrameworks === 'dynamic') {
+    return `use_frameworks! :linkage => :${useFrameworks}`;
+  }
+  return '';
+}
+
 const HOST_APP_BLOCK_START = '# --- CustomerIO Host App START ---';
 const HOST_APP_BLOCK_END = '# --- CustomerIO Host App END ---';
 const NOTIFICATION_BLOCK_START = '# --- CustomerIO Notification START ---';
@@ -139,7 +154,7 @@ export function appendNotificationTargetToPodfile(
   const snippetToAppend = `
 ${NOTIFICATION_BLOCK_START}
 target 'NotificationService' do
-  ${useFrameworks === 'static' ? 'use_frameworks! :linkage => :static' : ''}
+  ${extensionUseFrameworksLine(useFrameworks)}
   pod 'customerio-reactnative-richpush/${isFcmPushProvider ? 'fcm' : 'apn'}', :path => '${getRelativePathToRNSDK(iosPath)}'
 end
 ${NOTIFICATION_BLOCK_END}
@@ -204,7 +219,7 @@ export function appendLiveActivityWidgetTargetToPodfile(
   const snippetToAppend = `
 ${LIVE_ACTIVITY_BLOCK_START}
 target '${CIO_LIVE_ACTIVITY_WIDGET_TARGET_NAME}' do
-  ${useFrameworks === 'static' ? 'use_frameworks! :linkage => :static' : ''}
+  ${extensionUseFrameworksLine(useFrameworks)}
 ${WIDGET_PODS.map((pod) => `  pod '${pod}'`).join('\n')}
 end
 ${LIVE_ACTIVITY_BLOCK_END}
