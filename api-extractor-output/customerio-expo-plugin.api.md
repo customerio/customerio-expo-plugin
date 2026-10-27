@@ -146,6 +146,9 @@ export type NativeSDKConfig = {
     logLevel?: 'none' | 'error' | 'info' | 'debug';
     siteId?: string;
     migrationSiteId?: string;
+    inApp?: {
+        enabled?: boolean;
+    };
     location?: {
         trackingMode?: LocationTrackingMode;
     };
