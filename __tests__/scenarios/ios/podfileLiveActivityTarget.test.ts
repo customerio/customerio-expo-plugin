@@ -35,10 +35,29 @@ describe('ios scenarios — appendLiveActivityWidgetTargetToPodfile', () => {
     `);
   });
 
-  it('preserves the existing extension behavior for dynamic host frameworks', () => {
-    expect(
-      appendLiveActivityWidgetTargetToPodfile(baseline, 'dynamic')
-    ).not.toContain('use_frameworks!');
+  // Expo sets `use_frameworks!` on the host target only. CocoaPods won't integrate an extension
+  // whose linkage differs from its host's, and React Native Firebase 26.1+ also stops `pod install`
+  // when any target builds its pods statically.
+  it('appends the widget target block with use_frameworks: dynamic', () => {
+    expect(appendLiveActivityWidgetTargetToPodfile(baseline, 'dynamic'))
+      .toMatchInlineSnapshot(`
+      "platform :ios, '13.0'
+      target 'TestApp' do
+        use_expo_modules!
+      end
+
+      post_install do |installer|
+        react_native_post_install(installer)
+      end
+      # --- CustomerIO Live Activity START ---
+      target 'CIOLiveActivityWidget' do
+        use_frameworks! :linkage => :dynamic
+        pod 'CustomerIOLiveActivitiesTemplates'
+        pod 'CustomerIOLiveActivitiesAttributes'
+      end
+      # --- CustomerIO Live Activity END ---
+      "
+    `);
   });
 
   it('omits the use_frameworks line when useFrameworks is undefined', () => {
@@ -90,7 +109,8 @@ describe('ios scenarios — appendLiveActivityWidgetTargetToPodfile', () => {
       undefined
     );
 
-    expect(widgetDynamic).not.toContain('use_frameworks!');
+    expect(widgetDynamic).toContain('use_frameworks! :linkage => :dynamic');
+    expect(widgetDynamic).not.toContain(':linkage => :static');
     expect(widgetWithoutFrameworks).not.toContain('use_frameworks!');
     expect(
       (widgetWithoutFrameworks.match(/CustomerIO Live Activity START/g) ?? [])
