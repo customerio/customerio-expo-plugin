@@ -16,6 +16,7 @@ class CustomerIOSDKInitializer {
 
         let cdpApiKey = "{{CDP_API_KEY}}"
         let siteId: String? = {{SITE_ID}}
+        let inAppEnabled = {{IN_APP_ENABLED}}
         let region = CioInternalCommon.Region.getRegion(from: {{REGION}})
 
         let builder = SDKConfigBuilder(cdpApiKey: cdpApiKey)
@@ -31,8 +32,9 @@ class CustomerIOSDKInitializer {
         {{LIVE_NOTIFICATION_MODULE_INIT}}
         CustomerIO.initialize(withConfig: builder.build())
 
-        if let siteId = siteId {
-            let inAppConfig = MessagingInAppConfigBuilder(siteId: siteId).build()
+        if inAppEnabled {
+            // A public (pk_) key identifies the workspace, so the site ID is optional
+            let inAppConfig = (siteId.map { MessagingInAppConfigBuilder(siteId: $0) } ?? MessagingInAppConfigBuilder()).build()
             MessagingInApp.initialize(withConfig: inAppConfig)
             let logger = DIGraphShared.shared.logger
             // Retrieves ReactInAppEventListener from DI graph, populated when it is accessed in React Native SDK.

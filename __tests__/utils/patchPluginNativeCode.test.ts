@@ -32,6 +32,7 @@ describe('Native SDK Configuration Patching', () => {
       screenView: {{SCREEN_VIEW_USE}}
       siteId: {{SITE_ID}}
       migrationSiteId: {{MIGRATION_SITE_ID}}
+      inAppEnabled: {{IN_APP_ENABLED}}
     `;
 
     // Read the actual template files
@@ -210,6 +211,29 @@ describe('Native SDK Configuration Patching', () => {
       });
     });
 
+    describe('in-app enablement', () => {
+      const cases = [
+        { name: 'site ID with a legacy key', config: { cdpApiKey: 'legacy-key', siteId: 'site123' }, expected: true },
+        { name: 'pk_ key without a site ID or opt-in', config: { cdpApiKey: 'pk_us_abc' }, expected: false },
+        { name: 'pk_ key with in-app turned off', config: { cdpApiKey: 'pk_us_abc', inApp: { enabled: false } }, expected: false },
+        { name: 'pk_ key with in-app opt-in', config: { cdpApiKey: 'pk_us_abc', inApp: { enabled: true } }, expected: true },
+        { name: 'pk_ key with a site ID', config: { cdpApiKey: 'pk_us_abc', siteId: 'site123' }, expected: true },
+        { name: 'legacy key with in-app opt-in and no site ID', config: { cdpApiKey: 'legacy-key', inApp: { enabled: true } }, expected: false },
+        { name: 'legacy key without a site ID', config: { cdpApiKey: 'legacy-key' }, expected: false },
+        { name: 'legacy key with only migrationSiteId', config: { cdpApiKey: 'legacy-key', migrationSiteId: 'm1' }, expected: false },
+      ];
+
+      cases.forEach(({ name, config, expected }) => {
+        test(`${name} sets inAppEnabled to ${expected}`, () => {
+          const iosResult = patchNativeSDKInitializer(mockContent, PLATFORM.IOS, config);
+          const androidResult = patchNativeSDKInitializer(mockContent, PLATFORM.ANDROID, config);
+
+          expect(iosResult).toContain(`inAppEnabled: ${expected}`);
+          expect(androidResult).toContain(`inAppEnabled: ${expected}`);
+        });
+      });
+    });
+
     describe('iOS location module', () => {
       test('when location not enabled, omits CioLocation import and LocationModule', () => {
         const result = patchNativeSDKInitializer(
@@ -379,13 +403,14 @@ describe('Native SDK Configuration Patching', () => {
       });
 
       test.each([
-        [PLATFORM.IOS, 'if let siteId = siteId {'],
-        [PLATFORM.ANDROID, 'if (!(siteId.isNullOrBlank())) {'],
-      ])('still needs a siteId to start in-app on %s', (platform, inAppCheck) => {
+        [PLATFORM.IOS, 'let inAppEnabled = true', '?? MessagingInAppConfigBuilder()'],
+        [PLATFORM.ANDROID, 'val inAppEnabled = true', 'MessagingInAppModuleConfig.Builder()'],
+      ])('starts in-app without a siteId on %s', (platform, inAppEnabled, noSiteIdBuilder) => {
         const template = platform === PLATFORM.IOS ? swiftTemplateContent : kotlinTemplateContent;
-        const result = patchNativeSDKInitializer(template, platform, { cdpApiKey: 'pk_us_abc' });
+        const result = patchNativeSDKInitializer(template, platform, { cdpApiKey: 'pk_us_abc', inApp: { enabled: true } });
 
-        expect(result).toContain(inAppCheck);
+        expect(result).toContain(inAppEnabled);
+        expect(result).toContain(noSiteIdBuilder);
         expect(result).not.toMatch(/\{\{\w+\}\}/);
       });
     });

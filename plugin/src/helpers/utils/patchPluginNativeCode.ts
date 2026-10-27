@@ -5,7 +5,7 @@ import type {
 import { getPluginVersion } from '../../utils/plugin';
 import { validateNativeSDKConfig } from '../../utils/validation';
 import { PLATFORM, type Platform } from '../constants/common';
-import { escapeForStringLiteral, resolveRegion } from './cdpApiKey';
+import { escapeForStringLiteral, isPublicCdpApiKey, resolveRegion } from './cdpApiKey';
 import {
   type GeofenceInitOptions,
   patchGeofencePlaceholders,
@@ -126,6 +126,11 @@ export function patchNativeSDKInitializer(
     migrationSiteId?.trim() || undefined,
     (configValue) => `"${configValue}"`
   );
+
+  // In-app needs a site ID, or a public (pk_) key that identifies the workspace without one
+  const inAppEnabled =
+    Boolean(siteId?.trim()) || (sdkConfig.inApp?.enabled === true && isPublicCdpApiKey(sdkConfig.cdpApiKey));
+  content = content.replace(/\{\{IN_APP_ENABLED\}\}/g, String(inAppEnabled));
 
   content = patchLocationPlaceholders(content, platform, locationOptions);
   content = patchGeofencePlaceholders(content, platform, geofenceOptions);

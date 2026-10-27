@@ -24,6 +24,15 @@ export function assertNotSecretCdpApiKey(cdpApiKey: unknown, fieldName: string):
 }
 
 /**
+ * Public keys start with `pk_`. They identify the workspace, so in-app needs no site ID with one.
+ */
+const PUBLIC_KEY_PREFIX = 'pk_';
+
+export function isPublicCdpApiKey(cdpApiKey: string | undefined): boolean {
+  return typeof cdpApiKey === 'string' && cdpApiKey.trim().startsWith(PUBLIC_KEY_PREFIX);
+}
+
+/**
  * Region in a key prefix, or undefined for a key without one.
  */
 export function regionFromCdpApiKey(cdpApiKey: string): 'US' | 'EU' | undefined {

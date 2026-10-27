@@ -20,6 +20,7 @@ object CustomerIOSDKInitializer {
     ) {
         val siteId: String? = {{SITE_ID}}
         val migrationSiteId: String? = {{MIGRATION_SITE_ID}}
+        val inAppEnabled = {{IN_APP_ENABLED}}
         val region = Region.getRegion({{REGION}})
 
         setIfDefined({{LOG_LEVEL}}, CustomerIOBuilder::logLevel) { CioLogLevel.getLogLevel(it) }
@@ -29,11 +30,16 @@ object CustomerIOSDKInitializer {
         setIfDefined({{SCREEN_VIEW_USE}}, CustomerIOBuilder::screenViewUse) { ScreenView.getScreenView(it) }
         setIfDefined(migrationSiteId, CustomerIOBuilder::migrationSiteId)
 
-        // Add messaging modules if siteId is provided
-        if (!(siteId.isNullOrBlank())) {
+        // In-app needs a site ID, or a public (pk_) key that identifies the workspace without one
+        if (inAppEnabled) {
+            val inAppConfigBuilder = if (siteId.isNullOrBlank()) {
+                MessagingInAppModuleConfig.Builder()
+            } else {
+                MessagingInAppModuleConfig.Builder(siteId)
+            }
             addCustomerIOModule(
                 ModuleMessagingInApp(
-                    MessagingInAppModuleConfig.Builder(siteId)
+                    inAppConfigBuilder
                         .setEventListener(ReactInAppEventListener.instance)
                         .build()
                 )

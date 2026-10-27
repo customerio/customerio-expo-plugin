@@ -20,6 +20,7 @@ object CustomerIOSDKInitializer {
     ) {
         val siteId: String? = "android-site-456"
         val migrationSiteId: String? = "android-site-456"
+        val inAppEnabled = true
         val region = Region.getRegion("EU")
 
         setIfDefined("info", CustomerIOBuilder::logLevel) { CioLogLevel.getLogLevel(it) }
@@ -29,11 +30,16 @@ object CustomerIOSDKInitializer {
         setIfDefined("all", CustomerIOBuilder::screenViewUse) { ScreenView.getScreenView(it) }
         setIfDefined(migrationSiteId, CustomerIOBuilder::migrationSiteId)
 
-        // Add messaging modules if siteId is provided
-        if (!(siteId.isNullOrBlank())) {
+        // In-app needs a site ID, or a public (pk_) key that identifies the workspace without one
+        if (inAppEnabled) {
+            val inAppConfigBuilder = if (siteId.isNullOrBlank()) {
+                MessagingInAppModuleConfig.Builder()
+            } else {
+                MessagingInAppModuleConfig.Builder(siteId)
+            }
             addCustomerIOModule(
                 ModuleMessagingInApp(
-                    MessagingInAppModuleConfig.Builder(siteId)
+                    inAppConfigBuilder
                         .setEventListener(ReactInAppEventListener.instance)
                         .build()
                 )
@@ -88,6 +94,7 @@ object CustomerIOSDKInitializer {
     ) {
         val siteId: String? = null
         val migrationSiteId: String? = null
+        val inAppEnabled = false
         val region = Region.getRegion("")
 
         setIfDefined(null, CustomerIOBuilder::logLevel) { CioLogLevel.getLogLevel(it) }
@@ -97,11 +104,16 @@ object CustomerIOSDKInitializer {
         setIfDefined(null, CustomerIOBuilder::screenViewUse) { ScreenView.getScreenView(it) }
         setIfDefined(migrationSiteId, CustomerIOBuilder::migrationSiteId)
 
-        // Add messaging modules if siteId is provided
-        if (!(siteId.isNullOrBlank())) {
+        // In-app needs a site ID, or a public (pk_) key that identifies the workspace without one
+        if (inAppEnabled) {
+            val inAppConfigBuilder = if (siteId.isNullOrBlank()) {
+                MessagingInAppModuleConfig.Builder()
+            } else {
+                MessagingInAppModuleConfig.Builder(siteId)
+            }
             addCustomerIOModule(
                 ModuleMessagingInApp(
-                    MessagingInAppModuleConfig.Builder(siteId)
+                    inAppConfigBuilder
                         .setEventListener(ReactInAppEventListener.instance)
                         .build()
                 )
@@ -152,6 +164,7 @@ class CustomerIOSDKInitializer {
 
         let cdpApiKey = "test-api-key"
         let siteId: String? = "test-site-123"
+        let inAppEnabled = true
         let region = CioInternalCommon.Region.getRegion(from: "US")
 
         let builder = SDKConfigBuilder(cdpApiKey: cdpApiKey)
@@ -164,8 +177,9 @@ class CustomerIOSDKInitializer {
 
         CustomerIO.initialize(withConfig: builder.build())
 
-        if let siteId = siteId {
-            let inAppConfig = MessagingInAppConfigBuilder(siteId: siteId).build()
+        if inAppEnabled {
+            // A public (pk_) key identifies the workspace, so the site ID is optional
+            let inAppConfig = (siteId.map { MessagingInAppConfigBuilder(siteId: $0) } ?? MessagingInAppConfigBuilder()).build()
             MessagingInApp.initialize(withConfig: inAppConfig)
             let logger = DIGraphShared.shared.logger
             // Retrieves ReactInAppEventListener from DI graph, populated when it is accessed in React Native SDK.
@@ -216,6 +230,7 @@ class CustomerIOSDKInitializer {
 
         let cdpApiKey = "test-api-key"
         let siteId: String? = nil
+        let inAppEnabled = false
         let region = CioInternalCommon.Region.getRegion(from: "")
 
         let builder = SDKConfigBuilder(cdpApiKey: cdpApiKey)
@@ -228,8 +243,9 @@ class CustomerIOSDKInitializer {
 
         CustomerIO.initialize(withConfig: builder.build())
 
-        if let siteId = siteId {
-            let inAppConfig = MessagingInAppConfigBuilder(siteId: siteId).build()
+        if inAppEnabled {
+            // A public (pk_) key identifies the workspace, so the site ID is optional
+            let inAppConfig = (siteId.map { MessagingInAppConfigBuilder(siteId: $0) } ?? MessagingInAppConfigBuilder()).build()
             MessagingInApp.initialize(withConfig: inAppConfig)
             let logger = DIGraphShared.shared.logger
             // Retrieves ReactInAppEventListener from DI graph, populated when it is accessed in React Native SDK.
