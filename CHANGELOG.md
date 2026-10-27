@@ -1,3 +1,13 @@
+## [4.1.0](https://github.com/customerio/customerio-expo-plugin/compare/4.0.0...4.1.0) (2026-10-27)
+
+### Features
+
+* **ios:** add useFirebaseFromApp for apps that get Firebase from React Native Firebase ([#437](https://github.com/customerio/customerio-expo-plugin/issues/437)) ([e377777](https://github.com/customerio/customerio-expo-plugin/commit/e3777776e91b28344109302014290a4a0d2d12d2))
+
+### Bug Fixes
+
+* **ios:** build extension targets with dynamic frameworks and forward the FCM APNs token ([#436](https://github.com/customerio/customerio-expo-plugin/issues/436)) ([7709632](https://github.com/customerio/customerio-expo-plugin/commit/770963259d92e4bb07a75191a4a4c6f3ae26514d))
+
 ## [4.0.0](https://github.com/customerio/customerio-expo-plugin/compare/3.14.3...4.0.0) (2026-10-27)
 
 ### ⚠ BREAKING CHANGES
