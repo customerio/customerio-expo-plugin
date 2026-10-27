@@ -1,3 +1,9 @@
+## [4.2.0](https://github.com/customerio/customerio-expo-plugin/compare/4.1.0...4.2.0) (2026-10-27)
+
+### Features
+
+* **MBL-2652:** turn on in-app with a pk_ key and no siteId ([#433](https://github.com/customerio/customerio-expo-plugin/issues/433)) ([bbc8f44](https://github.com/customerio/customerio-expo-plugin/commit/bbc8f4441f74d923db1a26da1f412c8966be11a2))
+
 ## [4.1.0](https://github.com/customerio/customerio-expo-plugin/compare/4.0.0...4.1.0) (2026-10-27)
 
 ### Features
