@@ -1,3 +1,13 @@
+## [4.0.0](https://github.com/customerio/customerio-expo-plugin/compare/3.14.3...4.0.0) (2026-10-27)
+
+### ⚠ BREAKING CHANGES
+
+* require customerio-reactnative 7.0.0 (native iOS and Android 5.0) (#435)
+
+### Features
+
+* require customerio-reactnative 7.0.0 (native iOS and Android 5.0) ([#435](https://github.com/customerio/customerio-expo-plugin/issues/435)) ([0fbc047](https://github.com/customerio/customerio-expo-plugin/commit/0fbc04740887b0e1dd9762749e3d55be6560e306))
+
 ## [3.14.3](https://github.com/customerio/customerio-expo-plugin/compare/3.14.2...3.14.3) (2026-10-26)
 
 ### Bug Fixes
