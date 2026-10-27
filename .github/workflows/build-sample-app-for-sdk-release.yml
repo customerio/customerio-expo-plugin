@@ -16,9 +16,48 @@ on:
         default: ""
 
 jobs:
+  wait-for-npm:
+    name: Wait until the plugin is downloadable from npm
+    runs-on: ubuntu-latest
+    # The wait fails on its own after 60 minutes; the extra time lets it report what is missing.
+    timeout-minutes: 70
+    outputs:
+      sdk_version: ${{ steps.sdk-version.outputs.sdk_version }}
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0 # tags for the manual-run fallback below
+
+      - name: Resolve the published plugin version
+        id: sdk-version
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          SDK_VERSION_INPUT: ${{ inputs.sdk_version }}
+        run: |
+          # Same rule as `Capture Git Context` in reusable_build_sample_apps.yml.
+          if [[ -n "$SDK_VERSION_INPUT" ]]; then
+            sdk_version="$SDK_VERSION_INPUT"
+          elif [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            sdk_version="$(git describe --tags --abbrev=0)"
+          else
+            echo "::error::Release sample-app build received no sdk_version input. The last reachable tag names the previous release on a release commit."
+            exit 1
+          fi
+          echo "Test apps will be built against customerio-expo-plugin $sdk_version"
+          echo "sdk_version=$sdk_version" >> "$GITHUB_OUTPUT"
+
+      - name: Wait until customerio-expo-plugin is downloadable
+        uses: customerio/mobile-ci-tools/github-actions/wait-until-downloadable/v1@main
+        with:
+          ecosystem: npm
+          version: ${{ steps.sdk-version.outputs.sdk_version }}
+          packages: customerio-expo-plugin
+
   build-sample-apps:
+    needs: wait-for-npm
     uses: ./.github/workflows/reusable_build_sample_apps.yml
     with:
       use_latest_sdk_version: true
-      sdk_version: ${{ inputs.sdk_version }}
+      sdk_version: ${{ needs.wait-for-npm.outputs.sdk_version }}
     secrets: inherit
