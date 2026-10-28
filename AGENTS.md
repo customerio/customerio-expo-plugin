@@ -13,7 +13,7 @@ Expo config plugin that wires the Customer.io React Native SDK into an Expo proj
 Run from the repo root.
 - Lint: `npm run lint`
 - Type-check: `npm run typescript`
-- Test: `npm test`; scenario tests only: `npm run test:scenarios`
+- Test: `npm run setup-test-app && npm test`. The suites under `__tests__/ios/` and `__tests__/android/` snapshot against generated test-app files and need `npm run setup-test-app` first (`TESTING.md`). Scenario tests only: `npm run test:scenarios`, which needs no setup.
 - Build: `npm run build`
 - Regenerate the API report: `npm run generate-api-docs` (runs `npm install` first)
 
