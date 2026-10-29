@@ -25,6 +25,8 @@ jobs:
   smoke:
     name: Expo latest - ${{ matrix.platform }}${{ matrix.ios-push-provider && format(' ({0})', matrix.ios-push-provider) }}
     runs-on: ${{ matrix.runs-on }}
+    # Bounded so a hung job stops early.
+    timeout-minutes: 60
 
     strategy:
       fail-fast: false

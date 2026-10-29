@@ -29,6 +29,8 @@ jobs:
   validate:
     name: Expo ${{ matrix.expo-version }} - ${{ matrix.platform }}${{ matrix.ios-push-provider && format(' ({0})', matrix.ios-push-provider) }}${{ matrix.android-agp9-defaults && ' (AGP 9 defaults)' || '' }}
     runs-on: ${{ matrix.runs-on }}
+    # Bounded so a hung job stops early.
+    timeout-minutes: 70
 
     strategy:
       fail-fast: false
