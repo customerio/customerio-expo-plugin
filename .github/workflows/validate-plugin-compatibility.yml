@@ -40,10 +40,6 @@ jobs:
             runs-on: ubuntu-latest
             variant: abi-arm64
             android-abis: arm64-v8a
-          - platform: android
-            runs-on: ubuntu-latest
-            variant: cache-main
-            cache-source: main
           - platform: ios
             runs-on: xcode-27
             xcode-version: '27.0'
@@ -56,20 +52,6 @@ jobs:
             ios-push-provider: apn
             variant: arch-arm64
             ios-archs: arm64
-          - platform: ios
-            runs-on: xcode-27
-            xcode-version: '27.0'
-            launch-ios-major: 27
-            ios-push-provider: apn
-            variant: preboot
-            preboot: true
-          - platform: ios
-            runs-on: xcode-27
-            xcode-version: '27.0'
-            launch-ios-major: 27
-            ios-push-provider: apn
-            variant: cache-main
-            cache-source: main
 
     steps:
       - name: Checkout Repository
