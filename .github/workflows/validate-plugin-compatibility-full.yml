@@ -17,8 +17,10 @@ permissions:
 jobs:
   # Correctness follows changed paths, not semantic-release naming. The latest
   # Android and iOS/APN cells run in the smoke workflow, so this adds only the
-  # SDK-floor and FCM cells needed to complete the six-cell matrix.
+  # SDK-floor and FCM cells needed to complete the six-cell matrix. PR rows build the
+  # Android row for one ABI and the Xcode 27 row for arm64 only; the two Xcode 26.6 rows
+  # keep every architecture, and the release matrix leaves both unset.
   full-compatibility:
     uses: ./.github/workflows/validate-plugin-compatibility-matrix.yml
     with:
-      matrix: '[{"expo-version":54,"platform":"android","runs-on":"ubuntu-latest"},{"expo-version":54,"platform":"ios","runs-on":"macos-26","ios-push-provider":"apn"},{"expo-version":54,"platform":"ios","runs-on":"macos-26","ios-push-provider":"fcm"},{"expo-version":"latest","platform":"ios","runs-on":"xcode-27","xcode-version":"27.0","launch-ios-major":27,"ios-push-provider":"fcm"}]'
+      matrix: '[{"expo-version":54,"platform":"android","runs-on":"ubuntu-latest","android-abis":"arm64-v8a"},{"expo-version":54,"platform":"ios","runs-on":"macos-26","ios-push-provider":"apn"},{"expo-version":54,"platform":"ios","runs-on":"macos-26","ios-push-provider":"fcm"},{"expo-version":"latest","platform":"ios","runs-on":"xcode-27","xcode-version":"27.0","launch-ios-major":27,"ios-push-provider":"fcm","ios-archs":"arm64"}]'
