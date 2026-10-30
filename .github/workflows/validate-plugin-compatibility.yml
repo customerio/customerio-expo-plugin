@@ -23,7 +23,7 @@ env:
 
 jobs:
   smoke:
-    name: Expo latest - ${{ matrix.platform }}${{ matrix.ios-push-provider && format(' ({0})', matrix.ios-push-provider) }}
+    name: Expo latest - ${{ matrix.platform }}${{ matrix.ios-push-provider && format(' ({0})', matrix.ios-push-provider) }}${{ matrix.variant && format(' [{0}]', matrix.variant) }}
     runs-on: ${{ matrix.runs-on }}
     # Bounded so a hung job stops early.
     timeout-minutes: 60
@@ -31,14 +31,45 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        # SPIKE (do not merge): each baseline row has variant rows beside it so
+        # one workflow run measures them on equal footing.
         include:
           - platform: android
             runs-on: ubuntu-latest
+          - platform: android
+            runs-on: ubuntu-latest
+            variant: abi-arm64
+            android-abis: arm64-v8a
+          - platform: android
+            runs-on: ubuntu-latest
+            variant: cache-main
+            cache-source: main
           - platform: ios
             runs-on: xcode-27
             xcode-version: '27.0'
             launch-ios-major: 27
             ios-push-provider: apn
+          - platform: ios
+            runs-on: xcode-27
+            xcode-version: '27.0'
+            launch-ios-major: 27
+            ios-push-provider: apn
+            variant: arch-arm64
+            ios-archs: arm64
+          - platform: ios
+            runs-on: xcode-27
+            xcode-version: '27.0'
+            launch-ios-major: 27
+            ios-push-provider: apn
+            variant: preboot
+            preboot: true
+          - platform: ios
+            runs-on: xcode-27
+            xcode-version: '27.0'
+            launch-ios-major: 27
+            ios-push-provider: apn
+            variant: cache-main
+            cache-source: main
 
     steps:
       - name: Checkout Repository
@@ -63,6 +94,15 @@ jobs:
         with:
           xcode-version: ${{ matrix.xcode-version || env.XCODE_VERSION }}
 
+      # Boots the simulator the launch step will pick (it prefers a booted iPhone on the
+      # requested iOS major) so the boot overlaps the build instead of following it.
+      - name: Pre-boot iOS simulator
+        if: matrix.platform == 'ios' && matrix.preboot
+        run: |
+          udid="$(xcrun simctl list devices available --json | jq -r --arg major "${{ matrix.launch-ios-major }}" '[.devices | to_entries[] | select(.key | test("SimRuntime\\.iOS-" + $major + "(-|$)")) | .value[] | select(.name | contains("iPhone")) | .udid][0] // empty')"
+          echo "Pre-booting simulator: ${udid:-none found}"
+          if [ -n "$udid" ]; then xcrun simctl boot "$udid"; fi
+
       - name: Install Dependencies
         run: npm ci
 
@@ -82,10 +122,11 @@ jobs:
           path: |
             ~/Library/Caches/CocoaPods
             ~/.cocoapods
-          key: ${{ runner.os }}-pods-smoke-${{ matrix.ios-push-provider }}-${{ matrix.xcode-version || env.XCODE_VERSION }}-${{ hashFiles('package-lock.json') }}
+          key: ${{ runner.os }}-pods-smoke-${{ matrix.variant || 'base' }}-${{ matrix.ios-push-provider }}-${{ matrix.xcode-version || env.XCODE_VERSION }}-${{ hashFiles('package-lock.json') }}
           restore-keys: |
-            ${{ runner.os }}-pods-smoke-${{ matrix.ios-push-provider }}-${{ matrix.xcode-version || env.XCODE_VERSION }}-
-            ${{ runner.os }}-pods-smoke-${{ matrix.ios-push-provider }}-
+            ${{ runner.os }}-pods-smoke-${{ matrix.variant || 'base' }}-${{ matrix.ios-push-provider }}-${{ matrix.xcode-version || env.XCODE_VERSION }}-
+            ${{ runner.os }}-pods-smoke-${{ matrix.variant || 'base' }}-${{ matrix.ios-push-provider }}-
+            ${{ matrix.cache-source == 'main' && format('{0}-pods-latest-{1}-{2}-', runner.os, matrix.ios-push-provider, matrix.xcode-version || env.XCODE_VERSION) || '' }}
 
       - name: Cache Gradle
         if: matrix.platform == 'android'
@@ -94,9 +135,10 @@ jobs:
           path: |
             ~/.gradle/caches
             ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-smoke-${{ hashFiles('package-lock.json') }}
+          key: ${{ runner.os }}-gradle-smoke-${{ matrix.variant || 'base' }}-${{ hashFiles('package-lock.json') }}
           restore-keys: |
-            ${{ runner.os }}-gradle-smoke-
+            ${{ runner.os }}-gradle-smoke-${{ matrix.variant || 'base' }}-
+            ${{ matrix.cache-source == 'main' && format('{0}-gradle-latest-', runner.os) || '' }}
 
       - name: Create Test App
         run: |
@@ -125,6 +167,8 @@ jobs:
             --expo-version=latest \
             --platforms=${{ matrix.platform }}\
             --ios-use-frameworks="static" \
+            ${{ matrix.ios-archs && format(' --ios-archs={0}', matrix.ios-archs) }} \
+            ${{ matrix.android-abis && format(' --android-abis={0}', matrix.android-abis) }} \
             ${{ matrix.ios-push-provider && format(' --ios-push-providers={0}', matrix.ios-push-provider) }}
 
       # Expo SDK 58+ generates a UIScene host, built here with the iOS 27 SDK. A
@@ -145,7 +189,7 @@ jobs:
         if: failure() && matrix.launch-ios-major
         uses: actions/upload-artifact@v7
         with:
-          name: launch-logs-expo-latest-${{ matrix.ios-push-provider }}
+          name: launch-logs-expo-latest-${{ matrix.ios-push-provider }}${{ matrix.variant && format('-{0}', matrix.variant) }}
           path: |
             ${{ runner.temp }}/launch.log
             ${{ runner.temp }}/build-settings.json

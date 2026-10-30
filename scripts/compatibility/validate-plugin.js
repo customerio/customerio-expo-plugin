@@ -25,6 +25,20 @@ const TESTS_DIRECTORY_PATH = getArgValue("--tests-dir-path", {
 const CLEAN_FLAG = isFlagEnabled("--clean", { default: true });
 const ANDROID_AGP9_DEFAULTS = isFlagEnabled("--android-agp9-defaults");
 
+// Optional build narrowing for faster PR validation. Both default to the full
+// set, so release and compatibility runs keep building every architecture.
+const BUILD_LIST_PATTERN = /^[A-Za-z0-9_,-]+$/;
+function getBuildListArg(flag) {
+  const value = getArgValue(flag, { default: "" });
+  if (value && !BUILD_LIST_PATTERN.test(value)) {
+    console.error(`❌ Invalid value for ${flag}: ${value}`);
+    process.exit(1);
+  }
+  return value;
+}
+const IOS_ARCHS = getBuildListArg("--ios-archs"); // e.g. arm64
+const ANDROID_ABIS = getBuildListArg("--android-abis"); // e.g. arm64-v8a
+
 // Expo SDK 58's template opts out of AGP 9's built-in Kotlin and new DSL in
 // gradle.properties. `--android-agp9-defaults` migrates the generated app to
 // AGP 9's defaults right after prebuild, the way a host dropping that opt-out
@@ -149,7 +163,8 @@ function execute() {
 
     logMessage("🤖 Building Android project...");
     try {
-      runCommand(`cd ${APP_PATH}/android && ./gradlew assembleRelease`);
+      const abiArg = ANDROID_ABIS ? ` -PreactNativeArchitectures=${ANDROID_ABIS}` : "";
+      runCommand(`cd ${APP_PATH}/android && ./gradlew assembleRelease${abiArg}`);
       logMessage("✅ Android build succeeded!", "success");
     } catch (error) {
       logMessage("❌ Android build failed: " + error.message, "error");
@@ -178,11 +193,12 @@ function execute() {
       try {
         // Get correct workspace name for iOS build
         const workspaceName = getIosWorkspaceName();
+        const archsArg = IOS_ARCHS ? `ARCHS=${IOS_ARCHS}` : "";
         runCommand(`cd ${APP_PATH}/ios && xcodebuild \
           -workspace ${workspaceName}.xcworkspace \
           -scheme ${workspaceName} \
           -sdk iphonesimulator \
-          -configuration Release build`);
+          -configuration Release ${archsArg} build`);
         logMessage(`✅ iOS build succeeded for provider: ${provider}`, "success");
       } catch (error) {
         logMessage(`❌ iOS build failed for provider: ${provider}: ${error.message}`, "error");
