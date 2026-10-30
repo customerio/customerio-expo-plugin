@@ -76,15 +76,6 @@ jobs:
         with:
           xcode-version: ${{ matrix.xcode-version || env.XCODE_VERSION }}
 
-      # Boots the simulator the launch step will pick (it prefers a booted iPhone on the
-      # requested iOS major) so the boot overlaps the build instead of following it.
-      - name: Pre-boot iOS simulator
-        if: matrix.platform == 'ios' && matrix.preboot
-        run: |
-          udid="$(xcrun simctl list devices available --json | jq -r --arg major "${{ matrix.launch-ios-major }}" '[.devices | to_entries[] | select(.key | test("SimRuntime\\.iOS-" + $major + "(-|$)")) | .value[] | select(.name | contains("iPhone")) | .udid][0] // empty')"
-          echo "Pre-booting simulator: ${udid:-none found}"
-          if [ -n "$udid" ]; then xcrun simctl boot "$udid"; fi
-
       - name: Install Dependencies
         run: npm ci
 
@@ -108,7 +99,6 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pods-smoke-${{ matrix.variant || 'base' }}-${{ matrix.ios-push-provider }}-${{ matrix.xcode-version || env.XCODE_VERSION }}-
             ${{ runner.os }}-pods-smoke-${{ matrix.variant || 'base' }}-${{ matrix.ios-push-provider }}-
-            ${{ matrix.cache-source == 'main' && format('{0}-pods-latest-{1}-{2}-', runner.os, matrix.ios-push-provider, matrix.xcode-version || env.XCODE_VERSION) || '' }}
 
       - name: Cache Gradle
         if: matrix.platform == 'android'
@@ -120,7 +110,6 @@ jobs:
           key: ${{ runner.os }}-gradle-smoke-${{ matrix.variant || 'base' }}-${{ hashFiles('package-lock.json') }}
           restore-keys: |
             ${{ runner.os }}-gradle-smoke-${{ matrix.variant || 'base' }}-
-            ${{ matrix.cache-source == 'main' && format('{0}-gradle-latest-', runner.os) || '' }}
 
       - name: Create Test App
         run: |
