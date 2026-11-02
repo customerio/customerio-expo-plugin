@@ -31,6 +31,15 @@ export type CustomerIOPluginOptionsIOS = {
   pushNotification?: CustomerIOPluginPushNotificationOptions;
 
   /**
+   * Routes Customer.io deep links to the handler registered with `CustomerIO.setDeepLinkHandler`
+   * instead of React Native `Linking`. Register the handler before calling `CustomerIO.initialize`,
+   * or when the app starts if the SDK uses native auto-initialization.
+   *
+   * Only applies to Expo SDK 58+ scene projects and requires React Native 0.88+. Defaults to false.
+   */
+  acknowledgedDeepLinkRouting?: boolean;
+
+  /**
    * @deprecated No longer has any effect. Use autoTrackPushEvents to control if push metrics should be automatically tracked by SDK.
    */
   handleNotificationClick?: boolean;

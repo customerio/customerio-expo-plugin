@@ -1,5 +1,5 @@
-import type { NativeSDKConfig } from '../../plugin/src/types/cio-types';
-import { validateNativeSDKConfig } from '../../plugin/src/utils/validation';
+import type { CustomerIOPluginOptionsIOS, NativeSDKConfig } from '../../plugin/src/types/cio-types';
+import { validateIosOptions, validateNativeSDKConfig } from '../../plugin/src/utils/validation';
 
 describe('validateNativeSDKConfig - Ensures SDK configuration meets requirements before initialization', () => {
   const validConfig: NativeSDKConfig = {
@@ -326,5 +326,36 @@ describe('validateNativeSDKConfig - Ensures SDK configuration meets requirements
         expect(() => validateNativeSDKConfig(config)).not.toThrow();
       });
     });
+  });
+});
+
+describe('validateIosOptions', () => {
+  let originalStrictMode: string | undefined;
+
+  beforeAll(() => {
+    originalStrictMode = process.env.CUSTOMERIO_STRICT_MODE;
+    process.env.CUSTOMERIO_STRICT_MODE = 'true';
+  });
+
+  afterAll(() => {
+    if (originalStrictMode === undefined) {
+      delete process.env.CUSTOMERIO_STRICT_MODE;
+    } else {
+      process.env.CUSTOMERIO_STRICT_MODE = originalStrictMode;
+    }
+  });
+
+  it('accepts a boolean or missing acknowledgedDeepLinkRouting', () => {
+    expect(validateIosOptions({ iosPath: 'ios' })).toBe(true);
+    expect(validateIosOptions({ iosPath: 'ios', acknowledgedDeepLinkRouting: true })).toBe(true);
+    expect(validateIosOptions({ iosPath: 'ios', acknowledgedDeepLinkRouting: false })).toBe(true);
+  });
+
+  it('rejects a non-boolean acknowledgedDeepLinkRouting', () => {
+    const options = { iosPath: 'ios', acknowledgedDeepLinkRouting: 'true' } as unknown as CustomerIOPluginOptionsIOS;
+
+    expect(() => validateIosOptions(options)).toThrow(
+      'iOS: acknowledgedDeepLinkRouting must be a boolean, received: true'
+    );
   });
 });

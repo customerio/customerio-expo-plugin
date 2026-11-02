@@ -1,4 +1,9 @@
-import type { CustomerIOPluginPushNotificationOptions, NativeSDKConfig, RichPushConfig } from '../types/cio-types';
+import type {
+  CustomerIOPluginOptionsIOS,
+  CustomerIOPluginPushNotificationOptions,
+  NativeSDKConfig,
+  RichPushConfig
+} from '../types/cio-types';
 import { logger } from './logger';
 
 /**
@@ -125,7 +130,12 @@ function validatePushNotificationOptions(options: CustomerIOPluginPushNotificati
   return isValid;
 }
 
+function validateIosOptions(options: CustomerIOPluginOptionsIOS): boolean {
+  return validateBoolean(options.acknowledgedDeepLinkRouting, 'acknowledgedDeepLinkRouting', 'iOS');
+}
+
 export {
+  validateIosOptions,
   validateNativeSDKConfig,
   validatePushNotificationOptions,
   validateRequired,

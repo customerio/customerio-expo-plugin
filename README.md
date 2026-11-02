@@ -102,6 +102,38 @@ Customer.io notification deep links are delivered to that listener as `url` even
 
 Expo SDK 58 and later deliver cold-start URLs through `SceneDelegate`, so `handleDeeplinkInKilledState` is not injected for those versions. The scene router replaces that legacy AppDelegate launch-options workaround.
 
+## Acknowledged deep-link handler in Expo scene apps
+
+By default, Expo scene apps receive Customer.io deep links through React Native `Linking`. To use
+`CustomerIO.setDeepLinkHandler` instead, enable acknowledged routing:
+
+```json
+{
+  "ios": {
+    "acknowledgedDeepLinkRouting": true
+  }
+}
+```
+
+Then register the handler before calling `CustomerIO.initialize`. With native auto-initialization,
+register it when the app starts instead:
+
+```ts
+CustomerIO.setDeepLinkHandler(async (url) => {
+  await navigateTo(url);
+  return true;
+});
+
+CustomerIO.initialize(config);
+```
+
+Cold-start links wait for the handler instead of going to `Linking`, so links aren't lost when your
+navigator mounts after initialization. See the
+[React Native SDK README](https://github.com/customerio/customerio-reactnative#-push-notifications)
+for handler return values and fallback behavior.
+
+This option requires Expo SDK 58+ and React Native 0.88+. It has no effect on older Expo versions.
+
 ## Live Activity links in Expo scene apps
 
 Expo Router apps using the scene lifecycle must process Live Activity URLs once in a top-level

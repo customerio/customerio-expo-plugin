@@ -67,6 +67,7 @@ export type CustomerIOPluginOptionsIOS = {
     appName?: string;
     useFrameworks?: 'static' | 'dynamic';
     pushNotification?: CustomerIOPluginPushNotificationOptions;
+    acknowledgedDeepLinkRouting?: boolean;
     handleNotificationClick?: boolean;
     autoFetchDeviceToken?: boolean;
     showPushAppInForeground?: boolean;
