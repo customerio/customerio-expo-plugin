@@ -12,6 +12,11 @@ on:
         type: string
         required: false
         default: '[{"expo-version":54,"platform":"android","runs-on":"ubuntu-latest"},{"expo-version":54,"platform":"ios","runs-on":"macos-26","ios-push-provider":"apn"},{"expo-version":54,"platform":"ios","runs-on":"macos-26","ios-push-provider":"fcm"},{"expo-version":"latest","platform":"android","runs-on":"ubuntu-latest"},{"expo-version":"latest","platform":"ios","runs-on":"xcode-27","xcode-version":"27.0","launch-ios-major":27,"ios-push-provider":"apn"},{"expo-version":"latest","platform":"ios","runs-on":"xcode-27","xcode-version":"27.0","launch-ios-major":27,"ios-push-provider":"fcm"}]'
+      overflow-label:
+        description: 'Runner label for every iOS row, set only when the caller''s runner selector picked the second pool. Empty keeps each row''s own label.'
+        type: string
+        required: false
+        default: ''
 
 concurrency:
   group: ${{ github.workflow }}-${{ inputs.ref || github.ref }}
@@ -28,7 +33,7 @@ env:
 jobs:
   validate:
     name: Expo ${{ matrix.expo-version }} - ${{ matrix.platform }}${{ matrix.ios-push-provider && format(' ({0})', matrix.ios-push-provider) }}${{ matrix.android-agp9-defaults && ' (AGP 9 defaults)' || '' }}
-    runs-on: ${{ matrix.runs-on }}
+    runs-on: ${{ matrix.platform == 'ios' && inputs.overflow-label || matrix.runs-on }}
     # Bounded so a hung job stops early.
     timeout-minutes: 70
 
