@@ -125,6 +125,8 @@ jobs:
             --platforms=${{ matrix.platform }}\
             --ios-use-frameworks="static" \
             ${{ matrix.ios-push-provider && format(' --ios-push-providers={0}', matrix.ios-push-provider) }} \
+            ${{ matrix.ios-archs && format(' --ios-archs={0}', matrix.ios-archs) }} \
+            ${{ matrix.android-abis && format(' --android-abis={0}', matrix.android-abis) }} \
             ${{ matrix.android-agp9-defaults && '--android-agp9-defaults' || '' }}
 
       # Expo SDK 58+ generates a UIScene host, built here with the iOS 27 SDK. A

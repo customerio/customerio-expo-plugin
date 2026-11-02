@@ -3,6 +3,8 @@ name: Validate Plugin Compatibility
 # Every code PR gets representative latest Android and iOS/APN real builds.
 # Compatibility-sensitive paths add the non-duplicated SDK-floor and FCM cells
 # in validate-plugin-compatibility-full.yml. Release validation remains separate.
+# PR rows build iOS for arm64 only and Android for one ABI to keep PRs fast; the
+# release matrix leaves both arguments unset and builds every architecture.
 on:
   pull_request:
     types: [opened, synchronize, reopened]
@@ -34,11 +36,13 @@ jobs:
         include:
           - platform: android
             runs-on: ubuntu-latest
+            android-abis: arm64-v8a
           - platform: ios
             runs-on: xcode-27
             xcode-version: '27.0'
             launch-ios-major: 27
             ios-push-provider: apn
+            ios-archs: arm64
 
     steps:
       - name: Checkout Repository
@@ -125,6 +129,8 @@ jobs:
             --expo-version=latest \
             --platforms=${{ matrix.platform }}\
             --ios-use-frameworks="static" \
+            ${{ matrix.ios-archs && format(' --ios-archs={0}', matrix.ios-archs) }} \
+            ${{ matrix.android-abis && format(' --android-abis={0}', matrix.android-abis) }} \
             ${{ matrix.ios-push-provider && format(' --ios-push-providers={0}', matrix.ios-push-provider) }}
 
       # Expo SDK 58+ generates a UIScene host, built here with the iOS 27 SDK. A
