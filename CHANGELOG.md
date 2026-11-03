@@ -1,3 +1,9 @@
+## [4.3.0](https://github.com/customerio/customerio-expo-plugin/compare/4.2.1...4.3.0) (2026-11-03)
+
+### Features
+
+* **ios:** add acknowledgedDeepLinkRouting for Expo scene apps ([#446](https://github.com/customerio/customerio-expo-plugin/issues/446)) ([c81a611](https://github.com/customerio/customerio-expo-plugin/commit/c81a611dd7485fa32ea9469417e7fdef6d8066cf))
+
 ## [4.2.1](https://github.com/customerio/customerio-expo-plugin/compare/4.2.0...4.2.1) (2026-10-30)
 
 ### Bug Fixes
