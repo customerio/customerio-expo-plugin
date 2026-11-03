@@ -39,8 +39,12 @@ const CIO_SDK_APP_DELEGATE_HANDLER_FILENAME = `${CIO_SDK_APP_DELEGATE_HANDLER_CL
 const REACT_NATIVE_IMPORT = 'import customerio_reactnative';
 const CONFIGURE_SCENE_ROUTING_CALL =
   'NativeCustomerIO.configureExpoSceneDeepLinkRouting()';
+const CONFIGURE_ACKNOWLEDGED_SCENE_ROUTING_CALL =
+  'NativeCustomerIO.configureAcknowledgedSceneDeepLinkRouting()';
 const CONFIGURE_SCENE_ROUTING_LINE_REGEX =
   /^[ \t]*NativeCustomerIO\.configureExpoSceneDeepLinkRouting\(\)[ \t]*$/m;
+const CONFIGURE_ACKNOWLEDGED_SCENE_ROUTING_LINE_REGEX =
+  /^[ \t]*NativeCustomerIO\.configureAcknowledgedSceneDeepLinkRouting\(\)[ \t]*$/m;
 const PUSH_INITIALIZATION_LINE_REGEX =
   /^[ \t]*(?:_[ \t]*=[ \t]*)?cioSdkHandler\.application\([ \t]*[A-Za-z_][A-Za-z0-9_]*[ \t]*,[ \t]*didFinishLaunchingWithOptions:[ \t]*[A-Za-z_][A-Za-z0-9_]*[ \t]*\)[ \t]*;?[ \t]*$/m;
 const NATIVE_INITIALIZATION_LINE_REGEX =
@@ -273,6 +277,8 @@ export const withCIOIosSwift = (
   liveNotificationsEnabled = false,
   usesSceneLifecycle = false
 ) => {
+  const acknowledgedRouting = props?.acknowledgedDeepLinkRouting === true;
+
   // First, copy required swift files to iOS folder and add it to Xcode project
   configOuter = withXcodeProject(configOuter, async (config) => {
     return copyAndConfigureAppDelegateHandler(
@@ -299,9 +305,10 @@ export const withCIOIosSwift = (
           'Expo SDK 58+ was detected, but the generated iOS project does not have an Expo SceneDelegate and scene manifest; keeping AppDelegate URL routing'
         );
       }
-      logNativeAutoInitializationSceneReadiness(
+      logSceneDeepLinkRoutingReadiness(
         sdkConfig,
-        projectUsesSceneLifecycle
+        projectUsesSceneLifecycle,
+        acknowledgedRouting
       );
       config.modResults.contents = modifyAppDelegateForPushHandler(
         config.modResults.contents,
@@ -327,15 +334,20 @@ export const withCIOIosSwift = (
           'Expo SDK 58+ was detected, but the generated iOS project does not have an Expo SceneDelegate and scene manifest; keeping AppDelegate URL routing'
         );
       }
-      logNativeAutoInitializationSceneReadiness(
-        sdkConfig,
-        projectUsesSceneLifecycle
-      );
+      // Without sdkConfig this path writes no scene routing.
+      if (sdkConfig) {
+        logSceneDeepLinkRoutingReadiness(
+          sdkConfig,
+          projectUsesSceneLifecycle,
+          acknowledgedRouting
+        );
+      }
       let next = config.modResults.contents;
       if (sdkConfig) {
         next = modifyAppDelegateForNativeSDKInitializer(
           next,
-          projectUsesSceneLifecycle
+          projectUsesSceneLifecycle,
+          acknowledgedRouting
         );
       }
       if (liveNotificationsEnabled) {
@@ -354,11 +366,22 @@ export const withCIOIosSwift = (
   }
 };
 
-function logNativeAutoInitializationSceneReadiness(
+function logSceneDeepLinkRoutingReadiness(
   sdkConfig: NativeSDKConfig | undefined,
-  usesSceneLifecycle: boolean
+  usesSceneLifecycle: boolean,
+  acknowledgedRouting: boolean
 ): void {
-  if (!sdkConfig || !usesSceneLifecycle) return;
+  if (!usesSceneLifecycle) return;
+
+  if (acknowledgedRouting) {
+    logger.info(
+      sdkConfig
+        ? 'Expo scene projects using acknowledged deep-link routing with native auto-initialization must register CustomerIO.setDeepLinkHandler when the app starts'
+        : 'Expo scene projects using acknowledged deep-link routing must register CustomerIO.setDeepLinkHandler before calling CustomerIO.initialize'
+    );
+    return;
+  }
+  if (!sdkConfig) return;
 
   logger.info(
     'Expo scene projects using native auto-initialization must call CustomerIO.setDeepLinkRoutingReady() after registering the React Native Linking listener'
@@ -376,6 +399,7 @@ export function modifyAppDelegateForPushHandler(
   usesSceneLifecycle = false
 ): string {
   let next = contents;
+  const acknowledgedRouting = props.acknowledgedDeepLinkRouting === true;
 
   if (APP_DELEGATE_HANDLER_DECLARATION_REGEX.test(maskSwiftNonCode(next))) {
     logger.info(
@@ -389,7 +413,7 @@ export function modifyAppDelegateForPushHandler(
     }
 
     return removeLegacyAppDelegateDeepLinkHandling(
-      addSceneRoutingBeforeNativeInitialization(next)
+      addSceneRoutingBeforeNativeInitialization(next, acknowledgedRouting)
     );
   }
 
@@ -401,7 +425,10 @@ export function modifyAppDelegateForPushHandler(
   next = addDidRegisterForRemoteNotificationsWithDeviceToken(next);
   next = addDidFailToRegisterForRemoteNotificationsWithError(next);
   if (usesSceneLifecycle) {
-    next = addSceneRoutingBeforeNativeInitialization(next);
+    next = addSceneRoutingBeforeNativeInitialization(
+      next,
+      acknowledgedRouting
+    );
     next = removeLegacyAppDelegateDeepLinkHandling(next);
     if (props.pushNotification?.handleDeeplinkInKilledState === true) {
       logger.warn(
@@ -486,14 +513,18 @@ export function modifyAppDelegateForLiveActivityUrl(
  */
 export function modifyAppDelegateForNativeSDKInitializer(
   contents: string,
-  usesSceneLifecycle = false
+  usesSceneLifecycle = false,
+  acknowledgedRouting = false
 ): string {
   if (NATIVE_INITIALIZATION_LINE_REGEX.test(maskSwiftNonCode(contents))) {
     logger.info(
       'CustomerIO Swift AppDelegate changes already exist. Skipping...'
     );
     return usesSceneLifecycle
-      ? addSceneRoutingBeforeNativeInitialization(contents)
+      ? addSceneRoutingBeforeNativeInitialization(
+          contents,
+          acknowledgedRouting
+        )
       : contents;
   }
 
@@ -502,15 +533,52 @@ export function modifyAppDelegateForNativeSDKInitializer(
     CIO_NATIVE_SDK_INITIALIZE_SNIPPET
   );
   if (usesSceneLifecycle) {
-    next = addSceneRoutingBeforeNativeInitialization(next);
+    next = addSceneRoutingBeforeNativeInitialization(
+      next,
+      acknowledgedRouting
+    );
   }
   return next;
 }
 
 /** Install React Native routing before native Customer.io initialization in a scene host. */
-function addSceneRoutingBeforeNativeInitialization(contents: string): string {
-  if (hasExecutableSceneRouting(contents)) {
+function addSceneRoutingBeforeNativeInitialization(
+  contents: string,
+  acknowledgedRouting = false
+): string {
+  const [
+    routingCall,
+    routingLineRegex,
+    otherRoutingCall,
+    otherRoutingLineRegex,
+  ] =
+    acknowledgedRouting
+      ? [
+          CONFIGURE_ACKNOWLEDGED_SCENE_ROUTING_CALL,
+          CONFIGURE_ACKNOWLEDGED_SCENE_ROUTING_LINE_REGEX,
+          CONFIGURE_SCENE_ROUTING_CALL,
+          CONFIGURE_SCENE_ROUTING_LINE_REGEX,
+        ]
+      : [
+          CONFIGURE_SCENE_ROUTING_CALL,
+          CONFIGURE_SCENE_ROUTING_LINE_REGEX,
+          CONFIGURE_ACKNOWLEDGED_SCENE_ROUTING_CALL,
+          CONFIGURE_ACKNOWLEDGED_SCENE_ROUTING_LINE_REGEX,
+        ];
+  if (hasExecutableLine(contents, routingLineRegex)) {
     return contents;
+  }
+
+  // Switching modes on a non-clean prebuild: swap the generated call in place.
+  const otherRoutingMatch = maskSwiftNonCode(contents).match(
+    otherRoutingLineRegex
+  );
+  if (otherRoutingMatch && otherRoutingMatch.index !== undefined) {
+    const callStart =
+      otherRoutingMatch.index + otherRoutingMatch[0].indexOf(otherRoutingCall);
+    return `${contents.slice(0, callStart)}${routingCall}${contents.slice(
+      callStart + otherRoutingCall.length
+    )}`;
   }
 
   const executableContents = maskSwiftNonCode(contents);
@@ -533,14 +601,14 @@ function addSceneRoutingBeforeNativeInitialization(contents: string): string {
   const withSceneRouting = `${contents.slice(
     0,
     lineStart
-  )}${indentation}${CONFIGURE_SCENE_ROUTING_CALL}\n${contents.slice(
+  )}${indentation}${routingCall}\n${contents.slice(
     lineStart
   )}`;
   return addSwiftImports(withSceneRouting, [REACT_NATIVE_IMPORT]);
 }
 
-function hasExecutableSceneRouting(contents: string): boolean {
-  return CONFIGURE_SCENE_ROUTING_LINE_REGEX.test(maskSwiftNonCode(contents));
+function hasExecutableLine(contents: string, lineRegex: RegExp): boolean {
+  return lineRegex.test(maskSwiftNonCode(contents));
 }
 
 /**

@@ -12,7 +12,10 @@ import type {
 import { isLiveNotificationsEnabled } from '../helpers/utils/liveNotificationsEnabled';
 import { mergeConfigWithEnvValues } from '../utils/config';
 import { logger } from '../utils/logger';
-import { validatePushNotificationOptions } from '../utils/validation';
+import {
+  validateIosOptions,
+  validatePushNotificationOptions,
+} from '../utils/validation';
 import {
   isExpoVersion53OrHigher,
   isExpoVersion58OrHigher,
@@ -57,6 +60,18 @@ export function withCIOIos(
   // the single push subspec to the explicit :subspecs array as soon as any of them is on.
   const optionalModulesEnabled =
     locationEnabled || geofenceEnabled || liveNotificationsEnabled;
+
+  if (platformConfig) {
+    validateIosOptions(platformConfig);
+  }
+  if (
+    platformConfig?.acknowledgedDeepLinkRouting === true &&
+    !usesSceneLifecycle
+  ) {
+    logger.warn(
+      'ios.acknowledgedDeepLinkRouting only applies to Expo SDK 58+ scene projects, so it has no effect here.'
+    );
+  }
 
   // An incremental prebuild cannot safely remove the generated Swift handler and all of its Xcode
   // references. Require Expo's clean regeneration path whenever a previously configured project

@@ -100,6 +100,28 @@ describe('withCIOIos', () => {
       );
     });
 
+    it('warns that acknowledged deep-link routing has no effect before Expo SDK 58', () => {
+      withCIOIos(mockConfig, { cdpApiKey: 'key' }, {
+        iosPath: 'ios',
+        acknowledgedDeepLinkRouting: true,
+      });
+
+      expect(logger.warn).toHaveBeenCalledWith(
+        expect.stringContaining('ios.acknowledgedDeepLinkRouting only applies to Expo SDK 58+')
+      );
+    });
+
+    it('does not warn about acknowledged deep-link routing on Expo SDK 58 and later', () => {
+      (isExpoVersion58OrHigher as jest.Mock).mockReturnValue(true);
+
+      withCIOIos(mockConfig, { cdpApiKey: 'key' }, {
+        iosPath: 'ios',
+        acknowledgedDeepLinkRouting: true,
+      });
+
+      expect(logger.warn).not.toHaveBeenCalled();
+    });
+
     it('requires JavaScript Live Activity routing for Expo SDK 58 and later', () => {
       (isExpoVersion58OrHigher as jest.Mock).mockReturnValue(true);
 

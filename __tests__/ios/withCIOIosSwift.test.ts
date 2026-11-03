@@ -446,6 +446,60 @@ public class AppDelegate: ExpoAppDelegate {
       }
     });
 
+    it('logs the handler registration requirement for acknowledged scene routing', async () => {
+      const { withAppDelegate } = require('@expo/config-plugins');
+      const projectRoot = fs.mkdtempSync(
+        path.join(os.tmpdir(), 'cio-expo-acknowledged-scenes-')
+      );
+      const projectName = 'TestApp';
+      const projectDirectory = path.join(projectRoot, projectName);
+      fs.mkdirSync(projectDirectory);
+      fs.writeFileSync(
+        path.join(projectDirectory, 'SceneDelegate.swift'),
+        'class SceneDelegate: ExpoAppSceneDelegate {}'
+      );
+      fs.writeFileSync(
+        path.join(projectDirectory, 'Info.plist'),
+        '<plist><dict><key>UIApplicationSceneManifest</key><dict><key>UISceneDelegateClassName</key><string>$(PRODUCT_MODULE_NAME).SceneDelegate</string></dict></dict></plist>'
+      );
+      const info = jest.spyOn(logger, 'info').mockImplementation();
+
+      try {
+        withCIOIosSwift(
+          mockConfig,
+          mockSdkConfig,
+          { ...mockPropsAutoInitOnly, acknowledgedDeepLinkRouting: true },
+          undefined,
+          undefined,
+          false,
+          true
+        );
+        const appDelegateCallback = withAppDelegate.mock.calls[0][1];
+        const result = await appDelegateCallback({
+          modRequest: { platformProjectRoot: projectRoot, projectName },
+          modResults: {
+            contents: fs.readFileSync(
+              getFixturePath('ios', 'AppDelegate.sdk58.swift'),
+              'utf8'
+            ),
+          },
+        });
+
+        expect(result.modResults.contents).toContain(
+          'NativeCustomerIO.configureAcknowledgedSceneDeepLinkRouting()'
+        );
+        expect(info).toHaveBeenCalledWith(
+          expect.stringContaining('CustomerIO.setDeepLinkHandler when the app starts')
+        );
+        expect(info).not.toHaveBeenCalledWith(
+          expect.stringContaining('CustomerIO.setDeepLinkRoutingReady()')
+        );
+      } finally {
+        info.mockRestore();
+        fs.rmSync(projectRoot, { recursive: true, force: true });
+      }
+    });
+
   });
 
   describe('without sdkConfig', () => {
@@ -1203,6 +1257,128 @@ import CioLiveActivities
     expect(twice).toBe(once);
     expect(
       (twice.match(/NativeCustomerIO\.configureExpoSceneDeepLinkRouting/g) ?? [])
+        .length
+    ).toBe(1);
+  });
+});
+
+describe('Expo scene AppDelegate with acknowledged deep-link routing', () => {
+  const sceneAppDelegate = fs.readFileSync(
+    getFixturePath('ios', 'AppDelegate.sdk58.swift'),
+    'utf8'
+  );
+  const pushProps: CustomerIOPluginOptionsIOS = {
+    iosPath: '/test/ios',
+    pushNotification: { provider: 'apn' },
+  };
+  const acknowledgedPushProps: CustomerIOPluginOptionsIOS = {
+    ...pushProps,
+    acknowledgedDeepLinkRouting: true,
+  };
+  const expoCall = 'NativeCustomerIO.configureExpoSceneDeepLinkRouting()';
+  const acknowledgedCall =
+    'NativeCustomerIO.configureAcknowledgedSceneDeepLinkRouting()';
+
+  it('installs acknowledged routing before push handling', () => {
+    const output = modifyAppDelegateForPushHandler(
+      sceneAppDelegate,
+      acknowledgedPushProps,
+      true
+    );
+
+    expect(output).toContain('import customerio_reactnative');
+    expect(output).not.toContain(expoCall);
+    expect(output.indexOf(acknowledgedCall)).toBeGreaterThan(-1);
+    expect(output.indexOf(acknowledgedCall)).toBeLessThan(
+      output.indexOf(
+        'cioSdkHandler.application(application, didFinishLaunchingWithOptions: launchOptions)'
+      )
+    );
+  });
+
+  it('installs acknowledged routing before no-push native auto-initialization', () => {
+    const output = modifyAppDelegateForNativeSDKInitializer(
+      sceneAppDelegate,
+      true,
+      true
+    );
+
+    expect(output).not.toContain(expoCall);
+    expect(output.indexOf(acknowledgedCall)).toBeGreaterThan(-1);
+    expect(output.indexOf(acknowledgedCall)).toBeLessThan(
+      output.indexOf('CustomerIOSDKInitializer.initialize()')
+    );
+  });
+
+  it('switches push routing modes on an incremental prebuild', () => {
+    const linking = modifyAppDelegateForPushHandler(
+      sceneAppDelegate,
+      pushProps,
+      true
+    );
+    const acknowledged = modifyAppDelegateForPushHandler(
+      linking,
+      acknowledgedPushProps,
+      true
+    );
+    const linkingAgain = modifyAppDelegateForPushHandler(
+      acknowledged,
+      pushProps,
+      true
+    );
+
+    expect(acknowledged).toBe(linking.replace(expoCall, acknowledgedCall));
+    expect(linkingAgain).toBe(linking);
+  });
+
+  it('keeps a trailing comment when switching routing modes', () => {
+    const linking = modifyAppDelegateForPushHandler(
+      sceneAppDelegate,
+      pushProps,
+      true
+    ).replace(expoCall, `${expoCall} // host note`);
+    const acknowledged = modifyAppDelegateForPushHandler(
+      linking,
+      acknowledgedPushProps,
+      true
+    );
+
+    expect(acknowledged).toContain(`${acknowledgedCall} // host note`);
+    expect(acknowledged).not.toContain(expoCall);
+  });
+
+  it('switches native auto-initialization routing modes on an incremental prebuild', () => {
+    const linking = modifyAppDelegateForNativeSDKInitializer(
+      sceneAppDelegate,
+      true
+    );
+    const acknowledged = modifyAppDelegateForNativeSDKInitializer(
+      linking,
+      true,
+      true
+    );
+
+    expect(acknowledged).toBe(linking.replace(expoCall, acknowledgedCall));
+    expect(modifyAppDelegateForNativeSDKInitializer(acknowledged, true)).toBe(
+      linking
+    );
+  });
+
+  it('is idempotent', () => {
+    const once = modifyAppDelegateForPushHandler(
+      sceneAppDelegate,
+      acknowledgedPushProps,
+      true
+    );
+    const twice = modifyAppDelegateForPushHandler(
+      once,
+      acknowledgedPushProps,
+      true
+    );
+
+    expect(twice).toBe(once);
+    expect(
+      (twice.match(/NativeCustomerIO\.configure\w*SceneDeepLinkRouting/g) ?? [])
         .length
     ).toBe(1);
   });
