@@ -272,6 +272,17 @@ describe('withCustomerIOPlugin backgroundPush', () => {
     ).not.toThrow();
   });
 
+  it('rejects an unknown handler', () => {
+    mockIsExpo53.mockReturnValue(true);
+
+    expect(() =>
+      withCustomerIOPlugin(baseConfig, {
+        ...baseProps,
+        backgroundPush: { enabled: true, handler: 'firebase' as never },
+      })
+    ).toThrow(/backgroundPush.handler must be 'customerio' or 'app', got "firebase"/);
+  });
+
   it('forwards backgroundPush to the iOS mods only', () => {
     mockIsExpo53.mockReturnValue(true);
     const backgroundPush = { enabled: true };

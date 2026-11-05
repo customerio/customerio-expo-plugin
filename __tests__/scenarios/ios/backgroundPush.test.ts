@@ -57,7 +57,7 @@ describe.each(['apn', 'fcm'] as const)(
         pushOptions(provider),
         {
           autoInitialize,
-          backgroundPush: true,
+          backgroundPush: 'customerio',
         }
       );
 
@@ -88,6 +88,57 @@ describe.each(['apn', 'fcm'] as const)(
             ''
           )
           .replace(/^import customerio_reactnative\n/m, '');
+      for (const autoInitialize of [false, true]) {
+        expect(withoutMethod(generated(autoInitialize))).toBe(
+          patchPushAppDelegateHandler(
+            handlerTemplate(provider),
+            pushOptions(provider),
+            {
+              autoInitialize,
+            }
+          )
+        );
+      }
+    });
+  }
+);
+
+describe.each(['apn', 'fcm'] as const)(
+  'ios scenarios — %s CioSdkAppDelegateHandler with background push handled by the app',
+  (provider) => {
+    const generated = (autoInitialize: boolean) =>
+      patchPushAppDelegateHandler(
+        handlerTemplate(provider),
+        pushOptions(provider),
+        {
+          autoInitialize,
+          backgroundPush: 'app',
+        }
+      );
+
+    it('records Delivered and passes every push on', () => {
+      expect(generated(false)).toContain(`-> Void) -> Bool {
+    MessagingPush.shared.handleBackgroundPush(userInfo: userInfo)
+    return false
+  }`);
+    });
+
+    it('needs neither the React Native SDK nor a second CioMessagingPush import', () => {
+      const content = generated(true);
+      expect(content).not.toContain('customerio_reactnative');
+      expect(
+        content.match(/^(?:@\S+ )?import CioMessagingPush$/gm)
+      ).toHaveLength(1);
+    });
+
+    it('changes nothing else in the handler', () => {
+      const withoutMethod = (content: string) =>
+        content
+          .replace(
+            /\n {2}\/\/\/ Records Delivered for a Customer\.io silent push[\s\S]*?\n {2}\}\n/,
+            ''
+          )
+          .replace(/^import CioMessagingPush\n/m, '');
       for (const autoInitialize of [false, true]) {
         expect(withoutMethod(generated(autoInitialize))).toBe(
           patchPushAppDelegateHandler(
@@ -149,7 +200,7 @@ describe('ios scenarios — AppDelegate background push routing', () => {
     ).toMatchInlineSnapshot(`
       "
 
-        // Hand Customer.io silent pushes to the Customer.io SDK and every other push to Expo
+        // Show remote notifications to the Customer.io SDK first; it passes on every push it doesn't take
         public override func application(_ application: UIApplication, didReceiveRemoteNotification userInfo: [AnyHashable: Any], fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void) {
           // Call CustomerIO SDK handler
           if cioSdkHandler.application(application, didReceiveRemoteNotification: userInfo, fetchCompletionHandler: completionHandler) { return }
@@ -200,7 +251,9 @@ class ReactNativeDelegate`
     if cioSdkHandler.application(app, didReceiveRemoteNotification: payload, fetchCompletionHandler: done) { return }
     super.application(app, didReceiveRemoteNotification: payload, fetchCompletionHandler: done)
   }`);
-    expect(next).not.toContain('Hand Customer.io silent pushes');
+    expect(next).not.toContain(
+      'Show remote notifications to the Customer.io SDK first'
+    );
     expect(modifyAppDelegateForPushHandler(next, apn, false, false)).toBe(
       modifyAppDelegateForPushHandler(existing, apn)
     );
@@ -240,6 +293,29 @@ class ReactNativeDelegate`
     );
   });
 
+  it('puts the guard in an implementation that lives in an AppDelegate extension', () => {
+    const existing = `${sdk55}
+extension AppDelegate {
+  override func application(_ application: UIApplication, didReceiveRemoteNotification userInfo: [AnyHashable: Any], fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void) {
+    super.application(application, didReceiveRemoteNotification: userInfo, fetchCompletionHandler: completionHandler)
+  }
+}
+`;
+    const next = modifyAppDelegateForPushHandler(existing, apn, false, true);
+    expect(next.match(/didReceiveRemoteNotification userInfo/g)).toHaveLength(
+      1
+    );
+    expect(next)
+      .toContain(`fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void) {
+    // Call CustomerIO SDK handler
+    if cioSdkHandler.application(application, didReceiveRemoteNotification: userInfo, fetchCompletionHandler: completionHandler) { return }
+    super.application(`);
+    expect(modifyAppDelegateForPushHandler(next, apn, false, true)).toBe(next);
+    expect(modifyAppDelegateForPushHandler(next, apn, false, false)).toBe(
+      modifyAppDelegateForPushHandler(existing, apn)
+    );
+  });
+
   it('keeps the guard on its own line when the existing body is on the signature line', () => {
     const existing = sdk55.replace(
       /\n}\n\nclass ReactNativeDelegate/,
@@ -268,8 +344,12 @@ class ReactNativeDelegate`
 `;
     const withHelper = integrated.replace('@main\n', `${helper}@main\n`);
     const next = addBackgroundPushHandling(withHelper);
-    expect(next.startsWith(withHelper.slice(0, withHelper.indexOf('@main')))).toBe(true);
-    expect(next).toContain('Hand Customer.io silent pushes');
+    expect(
+      next.startsWith(withHelper.slice(0, withHelper.indexOf('@main')))
+    ).toBe(true);
+    expect(next).toContain(
+      'Show remote notifications to the Customer.io SDK first'
+    );
     expect(removeBackgroundPushHandling(next)).toBe(withHelper);
   });
 
@@ -282,7 +362,9 @@ class ReactNativeDelegate`
     expect(next.slice(0, next.indexOf('@main'))).toBe(
       commented.slice(0, commented.indexOf('@main'))
     );
-    expect(next).toMatch(/fetchCompletionHandler: completionHandler\)\n {2}\}\n\}\n\nclass ReactNativeDelegate/);
+    expect(next).toMatch(
+      /fetchCompletionHandler: completionHandler\)\n {2}\}\n\}\n\nclass ReactNativeDelegate/
+    );
   });
 
   it('ignores a mention in a comment', () => {
@@ -291,7 +373,7 @@ class ReactNativeDelegate`
       'let cioSdkHandler = CioSdkAppDelegateHandler()\n  // cioSdkHandler.application(application, didReceiveRemoteNotification: userInfo, ...)'
     );
     expect(addBackgroundPushHandling(commented)).toContain(
-      'Hand Customer.io silent pushes'
+      'Show remote notifications to the Customer.io SDK first'
     );
     expect(removeBackgroundPushHandling(commented)).toBe(commented);
   });

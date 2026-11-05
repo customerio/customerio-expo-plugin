@@ -604,15 +604,25 @@ describe('backgroundPush', () => {
     });
 
     expect(mockWithBackgroundPushInfoPlist).toHaveBeenCalledTimes(1);
-    expect(swiftBackgroundPushArg()).toBe(true);
+    expect(swiftBackgroundPushArg()).toBe('customerio');
     expect(logger.warn).not.toHaveBeenCalled();
+  });
+
+  it("passes handler 'app' through for apps that handle the data themselves", () => {
+    withCIOIos(config, undefined, withPush, undefined, undefined, undefined, undefined, {
+      enabled: true,
+      handler: 'app',
+    });
+
+    expect(mockWithBackgroundPushInfoPlist).toHaveBeenCalledTimes(1);
+    expect(swiftBackgroundPushArg()).toBe('app');
   });
 
   it.each([undefined, { enabled: false }])('changes nothing when the option is %p', (option) => {
     withCIOIos(config, undefined, withPush, undefined, undefined, undefined, undefined, option);
 
     expect(mockWithBackgroundPushInfoPlist).not.toHaveBeenCalled();
-    expect(swiftBackgroundPushArg()).toBe(false);
+    expect(swiftBackgroundPushArg()).toBeUndefined();
   });
 
   it('warns and does nothing without ios.pushNotification', () => {

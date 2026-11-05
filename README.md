@@ -175,6 +175,9 @@ Silent push needs Expo SDK 53 or later and a `customerio-reactnative` release wi
 ```
 
 The option needs `ios.pushNotification`; without it the option does nothing and prebuild warns.
+`handler` defaults to `'customerio'`, which runs the handler you set with
+`setBackgroundPushHandler`. Apps that handle silent pushes with another library set it to `'app'`;
+see [Silent push with React Native Firebase](#silent-push-with-react-native-firebase).
 Android needs nothing from the plugin, because the React Native SDK registers its silent push
 callback when the app's process starts.
 
@@ -208,10 +211,12 @@ What the plugin generates on iOS:
 
 - `remote-notification` in `UIBackgroundModes`.
 - An `application(_:didReceiveRemoteNotification:fetchCompletionHandler:)` override in
-  `AppDelegate` that hands the push to the Customer.io SDK first. For a Customer.io silent push the
-  SDK runs your handler and calls the completion handler once. Every other push goes to `super`, so
-  expo-notifications and other libraries receive it as before. If your `AppDelegate` already
-  implements the method, the plugin adds the Customer.io check as its first statement.
+  `AppDelegate` that shows the push to the Customer.io SDK first. With the default handler, the SDK
+  tracks Delivered for a Customer.io silent push, runs your handler and calls the completion
+  handler once. With `handler: 'app'` it only tracks Delivered. Every push the SDK doesn't take goes
+  to `super`, so expo-notifications and other libraries receive it as before. If your
+  `AppDelegate` (or an extension of it) already implements the method, the plugin adds the
+  Customer.io check as its first statement.
 
 Turning the option off removes the generated code on the next prebuild. `remote-notification`
 stays in `UIBackgroundModes`, because expo-notifications and React Native Firebase use it too; run
@@ -246,9 +251,19 @@ push, tracks Delivered and runs your handler. React Native Firebase's handlers s
 same message with its `CIO-Background-*` keys (on Android always, on iOS with the `fcm` provider),
 so skip messages that have `CIO-Background-Version` there.
 
-**React Native Firebase handler.** Leave `backgroundPush` off and list `remote-notification` in
-`ios.infoPlist.UIBackgroundModes` yourself. Leave `setHighPriorityPushHandler` unset or `false`, keep
-forwarding messages to Customer.io, and read your keys from `remoteMessage.data`:
+**React Native Firebase handler.** Set `backgroundPush.handler` to `'app'` and leave
+`setHighPriorityPushHandler` unset or `false`:
+
+```json
+{
+  "backgroundPush": { "enabled": true, "handler": "app" }
+}
+```
+
+On iOS the plugin then adds `remote-notification` to `UIBackgroundModes` and has the Customer.io
+SDK track Delivered for each silent push, then pass it on, so React Native Firebase handles it.
+Don't set a handler with `setBackgroundPushHandler` in this setup. Keep forwarding messages to
+Customer.io, which tracks Delivered on Android, and read your keys from `remoteMessage.data`:
 
 ```js
 messaging().setBackgroundMessageHandler(async (remoteMessage) => {

@@ -42,6 +42,17 @@ function withCustomerIOPlugin(
     );
   }
 
+  const backgroundPushHandler = props.backgroundPush?.handler;
+  if (
+    backgroundPushHandler !== undefined &&
+    backgroundPushHandler !== 'customerio' &&
+    backgroundPushHandler !== 'app'
+  ) {
+    throw new Error(
+      `CustomerIO backgroundPush.handler must be 'customerio' or 'app', got ${JSON.stringify(backgroundPushHandler)}.`
+    );
+  }
+
   // Silent push is handed to the SDK from the Swift AppDelegate the plugin generates, which it only
   // injects on Swift projects (Expo SDK 53+).
   if (props.backgroundPush?.enabled && !isExpoVersion53OrHigher(config)) {

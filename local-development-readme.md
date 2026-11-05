@@ -85,6 +85,10 @@ handler is skipped and the generated native code doesn't compile, so leave the v
 BACKGROUND_PUSH=true npm run setup-test-app
 ```
 
+`BACKGROUND_PUSH=app` builds the setup for apps that handle silent pushes themselves, such as with
+React Native Firebase: the plugin uses `backgroundPush.handler: 'app'`, so iOS only tracks
+Delivered, and the test app sets no Customer.io handler.
+
 ## Testing pnpm and monorepo layouts locally
 
 Two additional dev apps live at the repo root for verifying the plugin under

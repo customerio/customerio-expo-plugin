@@ -66,6 +66,9 @@ export function withCIOIos(
   // Silent pushes reach the app through the push handler the plugin generates, so they need push.
   const backgroundPushEnabled =
     backgroundPush?.enabled === true && Boolean(platformConfig?.pushNotification);
+  const backgroundPushHandler = backgroundPushEnabled
+    ? backgroundPush?.handler ?? 'customerio'
+    : undefined;
   if (backgroundPush?.enabled === true && !backgroundPushEnabled) {
     logger.warn(
       'backgroundPush.enabled has no effect on iOS without ios.pushNotification, because the app has no Customer.io push handler to receive silent pushes.'
@@ -109,7 +112,7 @@ export function withCIOIos(
         geofence,
         liveNotificationsEnabled,
         usesSceneLifecycle,
-        backgroundPushEnabled
+        backgroundPushHandler
       );
     } else {
       // Auto initialization is only supported in Swift projects (Expo SDK 53+)

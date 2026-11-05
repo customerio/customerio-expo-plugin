@@ -7,6 +7,7 @@
 // @public
 export type CustomerIOPluginBackgroundPushOptions = {
     enabled?: boolean;
+    handler?: 'customerio' | 'app';
 };
 
 // @public

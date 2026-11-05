@@ -230,14 +230,14 @@ export type CustomerIOPluginFirebaseInstallationIdOptions = {
 
 /**
  * Customer.io silent (background) push is off by default. A silent push shows nothing: it wakes the
- * app and hands the message's key/value data to the handler set with
- * `CustomerIO.pushMessaging.setBackgroundPushHandler`.
+ * app and hands the message's key/value data to a handler.
  *
  * When `enabled` is true, the plugin adds `remote-notification` to `UIBackgroundModes` and passes
  * `application(_:didReceiveRemoteNotification:fetchCompletionHandler:)` from the generated
- * AppDelegate to the Customer.io SDK. Other pushes go on to Expo and other libraries unchanged.
- * Needs `ios.pushNotification` and Expo SDK 53 or later. Android needs nothing from the plugin:
- * the React Native SDK registers its silent push callback when the app's process starts.
+ * AppDelegate to the Customer.io SDK, which tracks Delivered. Other pushes go on to Expo and other
+ * libraries unchanged. Needs `ios.pushNotification` and Expo SDK 53 or later. Android needs nothing
+ * from the plugin: the React Native SDK registers its silent push callback when the app's process
+ * starts.
  *
  * Turning it off again removes the generated code on the next prebuild but leaves
  * `remote-notification` in `UIBackgroundModes`, since other libraries also use it.
@@ -245,6 +245,15 @@ export type CustomerIOPluginFirebaseInstallationIdOptions = {
  */
 export type CustomerIOPluginBackgroundPushOptions = {
   enabled?: boolean;
+  /**
+   * Which code handles the silent push's data. Defaults to `'customerio'`.
+   *
+   * - `'customerio'`: the handler set with `CustomerIO.pushMessaging.setBackgroundPushHandler`.
+   * - `'app'`: the app's own handler, such as React Native Firebase's
+   *   `setBackgroundMessageHandler` or an expo-notifications background task. On iOS the
+   *   Customer.io SDK only tracks Delivered and passes every push on.
+   */
+  handler?: 'customerio' | 'app';
 };
 
 /**
