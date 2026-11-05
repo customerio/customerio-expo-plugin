@@ -146,7 +146,38 @@ const copyAndConfigurePushAppDelegateHandler = ({
     group
   );
 
-  let handlerFileContent = FileManagement.readFile(handlerDestPath);
+  // Add auto initialization if sdkConfig is provided
+  if (sdkConfig) {
+    // Also copy CustomerIOSDKInitializer.swift for auto-initialization
+    copyAndConfigureNativeSDKInitializer({
+      xcodeProject,
+      group,
+      iosProjectRoot,
+      projectName,
+      sdkConfig,
+      location,
+      geofence,
+    });
+  }
+
+  FileManagement.writeFile(
+    handlerDestPath,
+    patchPushAppDelegateHandler(FileManagement.readFile(handlerDestPath), props, {
+      autoInitialize: sdkConfig !== undefined,
+    })
+  );
+};
+
+/**
+ * Pure string transform: fills in the `CioSdkAppDelegateHandler.swift` template (APN or FCM) from
+ * the push options.
+ */
+export function patchPushAppDelegateHandler(
+  template: string,
+  props: CustomerIOPluginOptionsIOS,
+  { autoInitialize }: { autoInitialize: boolean }
+): string {
+  let handlerFileContent = template;
 
   const disableNotificationRegistration =
     props.pushNotification?.disableNotificationRegistration;
@@ -196,19 +227,7 @@ const copyAndConfigurePushAppDelegateHandler = ({
     appGroupIdBuilderLine
   );
 
-  // Add auto initialization if sdkConfig is provided
-  if (sdkConfig) {
-    // Also copy CustomerIOSDKInitializer.swift for auto-initialization
-    copyAndConfigureNativeSDKInitializer({
-      xcodeProject,
-      group,
-      iosProjectRoot,
-      projectName,
-      sdkConfig,
-      location,
-      geofence,
-    });
-
+  if (autoInitialize) {
     // Inject auto initialization call before MessagingPush initialization
     handlerFileContent = handlerFileContent.replace(
       CIO_MESSAGING_PUSH_APP_DELEGATE_INIT_REGEX,
@@ -216,8 +235,8 @@ const copyAndConfigurePushAppDelegateHandler = ({
     );
   }
 
-  FileManagement.writeFile(handlerDestPath, handlerFileContent);
-};
+  return handlerFileContent;
+}
 
 const copyAndConfigureNativeSDKInitializer = ({
   xcodeProject,
