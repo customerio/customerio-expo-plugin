@@ -6,6 +6,7 @@ import { getPluginVersion } from '../../utils/plugin';
 import { validateNativeSDKConfig } from '../../utils/validation';
 import { PLATFORM, type Platform } from '../constants/common';
 import { escapeForStringLiteral, isPublicCdpApiKey, resolveRegion } from './cdpApiKey';
+import { patchBackgroundPushPlaceholders } from './patchBackgroundPushCode';
 import {
   type GeofenceInitOptions,
   patchGeofencePlaceholders,
@@ -36,7 +37,8 @@ export function patchNativeSDKInitializer(
   locationOptions?: LocationInitOptions,
   geofenceOptions?: GeofenceInitOptions,
   liveNotificationBranding?: LiveNotificationBranding,
-  customRenderer?: CustomRendererRegistration
+  customRenderer?: CustomRendererRegistration,
+  backgroundPushEnabled = false
 ): string {
   // Validate SDK configuration to ensure all fields are present and 
   // correct at the time of patching in prebuild
@@ -134,6 +136,8 @@ export function patchNativeSDKInitializer(
 
   content = patchLocationPlaceholders(content, platform, locationOptions);
   content = patchGeofencePlaceholders(content, platform, geofenceOptions);
+  // Before Live Notifications: see patchBackgroundPushPlaceholders.
+  content = patchBackgroundPushPlaceholders(content, platform, backgroundPushEnabled);
 
   // The types and `customType` live on the SDK config itself — their presence is what enables the
   // feature on the auto-initialization path. Branding is passed alongside because it is build-time

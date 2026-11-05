@@ -53,6 +53,7 @@ describe('withCustomerIOPlugin geofence gating', () => {
       undefined,
       geofence,
       undefined,
+      undefined,
       undefined
     );
     expect(mockWithCIOAndroid).toHaveBeenCalledWith(
@@ -61,6 +62,7 @@ describe('withCustomerIOPlugin geofence gating', () => {
       baseProps.android,
       undefined,
       geofence,
+      undefined,
       undefined,
       undefined
     );
@@ -121,6 +123,7 @@ describe('withCustomerIOPlugin Live Notifications gating', () => {
       undefined,
       undefined,
       liveNotifications,
+      undefined,
       undefined
     );
     expect(mockWithCIOAndroid).toHaveBeenCalledWith(
@@ -130,6 +133,7 @@ describe('withCustomerIOPlugin Live Notifications gating', () => {
       undefined,
       undefined,
       liveNotifications,
+      undefined,
       undefined
     );
   });
@@ -231,7 +235,8 @@ describe('withCustomerIOPlugin firebaseInstallationId', () => {
       undefined,
       undefined,
       undefined,
-      firebaseInstallationId
+      firebaseInstallationId,
+      undefined
     );
     expect(mockWithCIOAndroid).toHaveBeenCalledWith(
       expect.anything(),
@@ -240,8 +245,43 @@ describe('withCustomerIOPlugin firebaseInstallationId', () => {
       undefined,
       undefined,
       undefined,
-      firebaseInstallationId
+      firebaseInstallationId,
+      undefined
     );
+  });
+});
+
+describe('withCustomerIOPlugin backgroundPush', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockWithExpoVersion.mockImplementation((c) => c);
+    mockWithCIOIos.mockImplementation((c) => c);
+    mockWithCIOAndroid.mockImplementation((c) => c as ExpoConfig);
+  });
+
+  it('throws when backgroundPush.enabled on Expo < 53', () => {
+    mockIsExpo53.mockReturnValue(false);
+
+    expect(() =>
+      withCustomerIOPlugin(baseConfig, { ...baseProps, backgroundPush: { enabled: true } })
+    ).toThrow(/backgroundPush requires Expo SDK 53/);
+  });
+
+  it('does not throw when backgroundPush is disabled on Expo < 53', () => {
+    mockIsExpo53.mockReturnValue(false);
+
+    expect(() =>
+      withCustomerIOPlugin(baseConfig, { ...baseProps, backgroundPush: { enabled: false } })
+    ).not.toThrow();
+  });
+
+  it('forwards backgroundPush to both platform mods', () => {
+    mockIsExpo53.mockReturnValue(true);
+    const backgroundPush = { enabled: true };
+    withCustomerIOPlugin(baseConfig, { ...baseProps, backgroundPush });
+
+    expect(mockWithCIOIos.mock.calls[0][7]).toBe(backgroundPush);
+    expect(mockWithCIOAndroid.mock.calls[0][7]).toBe(backgroundPush);
   });
 });
 

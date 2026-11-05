@@ -229,6 +229,28 @@ export type CustomerIOPluginFirebaseInstallationIdOptions = {
 };
 
 /**
+ * Customer.io silent (background) push is off by default. A silent push shows nothing: it wakes the
+ * app and hands the message's key/value data to the handler registered with
+ * `CustomerIO.pushMessaging.onBackgroundPush`.
+ *
+ * When `enabled` is true, the plugin:
+ * - iOS: adds `remote-notification` to `UIBackgroundModes` and passes
+ *   `application(_:didReceiveRemoteNotification:fetchCompletionHandler:)` from the generated
+ *   AppDelegate to the Customer.io SDK. Other pushes go on to Expo and other libraries unchanged.
+ *   Needs `ios.pushNotification` and Expo SDK 53 or later.
+ * - Android: registers the SDK's silent push callback in the generated initializer when the SDK
+ *   initializes automatically (`config`), so a push that starts the app in the background still
+ *   reaches the handler.
+ *
+ * Turning it off again removes the generated code on the next prebuild but leaves
+ * `remote-notification` in `UIBackgroundModes`, since other libraries also use it.
+ * @public
+ */
+export type CustomerIOPluginBackgroundPushOptions = {
+  enabled?: boolean;
+};
+
+/**
  * Combined plugin options for both iOS and Android platforms
  * @public
  */
@@ -261,6 +283,11 @@ export type CustomerIOPluginOptions = {
    * the Firebase Installation ID instead of the FCM token.
    */
   firebaseInstallationId?: CustomerIOPluginFirebaseInstallationIdOptions;
+  /**
+   * Customer.io silent (background) push is off by default. When backgroundPush.enabled is true, the plugin
+   * wires the native entry points that hand silent pushes to `CustomerIO.pushMessaging.onBackgroundPush`.
+   */
+  backgroundPush?: CustomerIOPluginBackgroundPushOptions;
 };
 
 /**

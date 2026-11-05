@@ -60,7 +60,8 @@ const copyAndConfigureAppDelegateHandler = (
   sdkConfig?: NativeSDKConfig,
   props?: CustomerIOPluginOptionsIOS,
   location?: CustomerIOPluginLocationOptions,
-  geofence?: CustomerIOPluginGeofenceOptions
+  geofence?: CustomerIOPluginGeofenceOptions,
+  backgroundPushEnabled = false
 ): ExportedConfigWithProps<XcodeProject> => {
   // Destination path in the iOS project
   const projectName = config.modRequest.projectName || '';
@@ -86,6 +87,7 @@ const copyAndConfigureAppDelegateHandler = (
       props,
       location,
       geofence,
+      backgroundPushEnabled,
     });
   } else if (sdkConfig) {
     // Copy only CustomerIOSDKInitializer.swift for auto-init without push notifications
@@ -112,6 +114,7 @@ const copyAndConfigurePushAppDelegateHandler = ({
   props,
   location,
   geofence,
+  backgroundPushEnabled,
 }: {
   xcodeProject: XcodeProject;
   group: string;
@@ -121,6 +124,7 @@ const copyAndConfigurePushAppDelegateHandler = ({
   props: CustomerIOPluginOptionsIOS;
   location?: CustomerIOPluginLocationOptions;
   geofence?: CustomerIOPluginGeofenceOptions;
+  backgroundPushEnabled: boolean;
 }) => {
   const useFcm = isFcmPushProvider(props);
 
@@ -164,6 +168,7 @@ const copyAndConfigurePushAppDelegateHandler = ({
     handlerDestPath,
     patchPushAppDelegateHandler(FileManagement.readFile(handlerDestPath), props, {
       autoInitialize: sdkConfig !== undefined,
+      backgroundPush: backgroundPushEnabled,
     })
   );
 };
@@ -175,7 +180,10 @@ const copyAndConfigurePushAppDelegateHandler = ({
 export function patchPushAppDelegateHandler(
   template: string,
   props: CustomerIOPluginOptionsIOS,
-  { autoInitialize }: { autoInitialize: boolean }
+  {
+    autoInitialize,
+    backgroundPush = false,
+  }: { autoInitialize: boolean; backgroundPush?: boolean }
 ): string {
   let handlerFileContent = template;
 
@@ -235,8 +243,39 @@ export function patchPushAppDelegateHandler(
     );
   }
 
+  if (backgroundPush) {
+    handlerFileContent = addSwiftImports(
+      handlerFileContent.replace(
+        BACKGROUND_PUSH_HANDLER_PLACEHOLDER,
+        () => BACKGROUND_PUSH_HANDLER_METHOD
+      ),
+      [REACT_NATIVE_IMPORT]
+    );
+  } else {
+    // Drop the placeholder's line so apps that don't opt in get the same file as before.
+    handlerFileContent = handlerFileContent.replace(
+      new RegExp(`\\n${BACKGROUND_PUSH_HANDLER_PLACEHOLDER.source}\\n`),
+      '\n'
+    );
+  }
+
   return handlerFileContent;
 }
+
+const BACKGROUND_PUSH_HANDLER_PLACEHOLDER = /\{\{BACKGROUND_PUSH_HANDLER\}\}/;
+
+/**
+ * The generated AppDelegate calls this first for every remote notification (see
+ * {@link addBackgroundPushHandling}). The React Native SDK reads the push with the native SDK, which
+ * records Delivered, hands the data to the JavaScript handler and calls `completionHandler` once. For
+ * any other push it returns false without calling it, so the AppDelegate passes the push on.
+ */
+const BACKGROUND_PUSH_HANDLER_METHOD = `
+  /// Hands a Customer.io silent push to the React Native SDK, which calls \`completionHandler\` once.
+  /// Returns false, without calling \`completionHandler\`, for every other push.
+  public func application(_ application: UIApplication, didReceiveRemoteNotification userInfo: [AnyHashable: Any], fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void) -> Bool {
+    return ${'RN_BACKGROUND_PUSH_ENTRY'}(userInfo: userInfo, completionHandler: completionHandler)
+  }`;
 
 const copyAndConfigureNativeSDKInitializer = ({
   xcodeProject,
@@ -294,7 +333,8 @@ export const withCIOIosSwift = (
   location?: CustomerIOPluginLocationOptions,
   geofence?: CustomerIOPluginGeofenceOptions,
   liveNotificationsEnabled = false,
-  usesSceneLifecycle = false
+  usesSceneLifecycle = false,
+  backgroundPushEnabled = false
 ) => {
   const acknowledgedRouting = props?.acknowledgedDeepLinkRouting === true;
 
@@ -305,7 +345,8 @@ export const withCIOIosSwift = (
       sdkConfig,
       props,
       location,
-      geofence
+      geofence,
+      backgroundPushEnabled
     );
   });
 
@@ -332,7 +373,8 @@ export const withCIOIosSwift = (
       config.modResults.contents = modifyAppDelegateForPushHandler(
         config.modResults.contents,
         props,
-        projectUsesSceneLifecycle
+        projectUsesSceneLifecycle,
+        backgroundPushEnabled
       );
       return config;
     });
@@ -415,7 +457,25 @@ function logSceneDeepLinkRoutingReadiness(
 export function modifyAppDelegateForPushHandler(
   contents: string,
   props: CustomerIOPluginOptionsIOS,
-  usesSceneLifecycle = false
+  usesSceneLifecycle = false,
+  backgroundPushEnabled = false
+): string {
+  const next = modifyAppDelegateForPushHandlerWithoutBackgroundPush(
+    contents,
+    props,
+    usesSceneLifecycle
+  );
+  // Applied on every run, including over an AppDelegate an earlier prebuild already integrated, so
+  // turning the option on or off takes effect without `--clean`.
+  return backgroundPushEnabled
+    ? addBackgroundPushHandling(next)
+    : removeBackgroundPushHandling(next);
+}
+
+function modifyAppDelegateForPushHandlerWithoutBackgroundPush(
+  contents: string,
+  props: CustomerIOPluginOptionsIOS,
+  usesSceneLifecycle: boolean
 ): string {
   let next = contents;
   const acknowledgedRouting = props.acknowledgedDeepLinkRouting === true;
@@ -963,6 +1023,117 @@ const addOpenURLHandling = (content: string): string => {
     content.substring(position)
   );
 };
+
+/**
+ * `application(_:didReceiveRemoteNotification:fetchCompletionHandler:)` in executable code, with any
+ * parameter names and line breaks. Group 1 is the application parameter, 2 the user info and 3 the
+ * completion handler.
+ */
+const DID_RECEIVE_REMOTE_NOTIFICATION_METHOD_REGEX =
+  /func\s+application\s*\(\s*_\s+([A-Za-z_][A-Za-z0-9_]*)\s*:\s*UIApplication\s*,\s*didReceiveRemoteNotification\s+([A-Za-z_][A-Za-z0-9_]*)\s*:\s*\[\s*AnyHashable\s*:\s*Any\s*\]\s*,\s*fetchCompletionHandler\s+([A-Za-z_][A-Za-z0-9_]*)\s*:[^{]*\{/;
+
+const BACKGROUND_PUSH_CALL_REGEX =
+  /cioSdkHandler\.application\([A-Za-z_][A-Za-z0-9_]*,\s*didReceiveRemoteNotification:/;
+
+const backgroundPushGuard = (
+  application: string,
+  userInfo: string,
+  completionHandler: string
+) =>
+  `if cioSdkHandler.application(${application}, didReceiveRemoteNotification: ${userInfo}, fetchCompletionHandler: ${completionHandler}) { return }`;
+
+/**
+ * The whole method {@link addBackgroundPushHandling} appends when the AppDelegate has none of its
+ * own. Kept in sync with the emitted text by the round-trip test.
+ */
+const BACKGROUND_PUSH_METHOD_REGEX =
+  /\n[ \t]*\/\/ Hand Customer\.io silent pushes to the Customer\.io SDK and every other push to Expo\n[ \t]*public override func application\(_ application: UIApplication, didReceiveRemoteNotification userInfo: \[AnyHashable: Any\], fetchCompletionHandler completionHandler: @escaping \(UIBackgroundFetchResult\) -> Void\) \{\n[ \t]*\/\/ Call CustomerIO SDK handler\n[ \t]*if cioSdkHandler\.application\(application, didReceiveRemoteNotification: userInfo, fetchCompletionHandler: completionHandler\) \{ return \}\n[ \t]*super\.application\(application, didReceiveRemoteNotification: userInfo, fetchCompletionHandler: completionHandler\)\n[ \t]*\}\n/g;
+
+/** The comment + guard pair {@link addBackgroundPushHandling} injects into a method that already existed. */
+const BACKGROUND_PUSH_GUARD_REGEX =
+  /\n[ \t]*\/\/ Call CustomerIO SDK handler\n[ \t]*if cioSdkHandler\.application\([A-Za-z_][A-Za-z0-9_]*, didReceiveRemoteNotification: [A-Za-z_][A-Za-z0-9_]*, fetchCompletionHandler: [A-Za-z_][A-Za-z0-9_]*\) \{ return \}/g;
+
+/**
+ * Pure string transform: routes `application(_:didReceiveRemoteNotification:fetchCompletionHandler:)`
+ * through `CioSdkAppDelegateHandler` first.
+ *
+ * Expo's `ExpoAppDelegate` is the app delegate, not the SDK's `CioAppDelegateWrapper`, so nothing
+ * else hands silent pushes to the SDK. The handler returns true when it took a Customer.io silent
+ * push, and it then owns the completion handler. Any other push goes to `super`, which runs Expo's
+ * app delegate subscribers (expo-notifications and others) and calls the completion handler once.
+ *
+ * Idempotent. An existing implementation gets the guard as its first statement and otherwise runs
+ * unchanged.
+ */
+export function addBackgroundPushHandling(content: string): string {
+  const executableContents = maskSwiftNonCode(content);
+  if (BACKGROUND_PUSH_CALL_REGEX.test(executableContents)) {
+    return content;
+  }
+
+  const match = executableContents.match(DID_RECEIVE_REMOTE_NOTIFICATION_METHOD_REGEX);
+  if (match && match.index !== undefined) {
+    // Read the names from the masked text: it has the same offsets, and they are identifiers.
+    const [, application, userInfo, completionHandler] = match;
+    const insertAt = match.index + match[0].length;
+    return (
+      content.substring(0, insertAt) +
+      '\n    // Call CustomerIO SDK handler\n' +
+      `    ${backgroundPushGuard(application, userInfo, completionHandler)}` +
+      content.substring(insertAt)
+    );
+  }
+
+  const classEndRegex = /^}(\s*$|\s*\/\/)/m;
+  const classEndMatch = content.match(classEndRegex);
+  if (!classEndMatch) {
+    logger.warn('Could not find end of AppDelegate class');
+    return content;
+  }
+
+  const position = classEndMatch.index ?? 0;
+  return (
+    content.substring(0, position) +
+    '\n  // Hand Customer.io silent pushes to the Customer.io SDK and every other push to Expo\n' +
+    '  public override func application(_ application: UIApplication, didReceiveRemoteNotification userInfo: [AnyHashable: Any], fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void) {\n' +
+    '    // Call CustomerIO SDK handler\n' +
+    `    ${backgroundPushGuard('application', 'userInfo', 'completionHandler')}\n` +
+    '    super.application(application, didReceiveRemoteNotification: userInfo, fetchCompletionHandler: completionHandler)\n' +
+    '  }\n' +
+    content.substring(position)
+  );
+}
+
+/**
+ * Pure string transform: undoes {@link addBackgroundPushHandling} when the option is turned off,
+ * because the regenerated handler no longer has the method the AppDelegate would call. Removes only
+ * the exact generated text; returns `content` unchanged when there is none.
+ */
+export function removeBackgroundPushHandling(content: string): string {
+  const executableContents = maskSwiftNonCode(content);
+  if (!BACKGROUND_PUSH_CALL_REGEX.test(executableContents)) {
+    return content;
+  }
+  const removeExecutable = (source: string, pattern: RegExp) => {
+    const executable = maskSwiftNonCode(source);
+    return source.replace(pattern, (match: string, offset: number) =>
+      BACKGROUND_PUSH_CALL_REGEX.test(executable.slice(offset, offset + match.length))
+        ? ''
+        : match
+    );
+  };
+  // Whole-method shape first: it contains the guard's text.
+  const next = removeExecutable(
+    removeExecutable(content, BACKGROUND_PUSH_METHOD_REGEX),
+    BACKGROUND_PUSH_GUARD_REGEX
+  );
+  if (BACKGROUND_PUSH_CALL_REGEX.test(maskSwiftNonCode(next))) {
+    logger.warn(
+      'backgroundPush is off, but AppDelegate still calls cioSdkHandler for didReceiveRemoteNotification in code the plugin did not generate. Remove that call, or run `npx expo prebuild --clean --platform ios`.'
+    );
+  }
+  return next;
+}
 
 const addDidRegisterForRemoteNotificationsWithDeviceToken = (
   content: string

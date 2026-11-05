@@ -60,6 +60,7 @@ public class CioSdkAppDelegateHandler: NSObject {
   public func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
     cioAppDelegate.application(application, didFailToRegisterForRemoteNotificationsWithError: error)
   }
+{{BACKGROUND_PUSH_HANDLER}}
 
   /// Reports an `opened` metric when the app is launched from a tapped Live Activity, and returns
   /// the URL that should actually be routed.

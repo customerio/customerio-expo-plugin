@@ -42,6 +42,15 @@ function withCustomerIOPlugin(
     );
   }
 
+  // Silent push is handed to the SDK from the Swift AppDelegate the plugin generates, which it only
+  // injects on Swift projects (Expo SDK 53+).
+  if (props.backgroundPush?.enabled && !isExpoVersion53OrHigher(config)) {
+    throw new Error(
+      'CustomerIO backgroundPush requires Expo SDK 53 or higher. ' +
+      'Please upgrade to Expo SDK 53+ to enable silent push.'
+    );
+  }
+
   // Live Notifications needs the Swift AppDelegate to route a tapped activity's URL through the SDK
   // (see `withCIOIosSwift`), which the plugin only injects on Swift projects. Without that guard a
   // pre-53 project would still get the widget target, the Info.plist key and the Podfile subspec,
@@ -85,8 +94,8 @@ function withCustomerIOPlugin(
   );
 
   // Apply platform specific modifications
-  config = withCIOIos(config, sdkConfig, props.ios, props.location, props.geofence, props.liveNotifications, props.firebaseInstallationId);
-  config = withCIOAndroid(config, sdkConfig, props.android, props.location, props.geofence, props.liveNotifications, props.firebaseInstallationId);
+  config = withCIOIos(config, sdkConfig, props.ios, props.location, props.geofence, props.liveNotifications, props.firebaseInstallationId, props.backgroundPush);
+  config = withCIOAndroid(config, sdkConfig, props.android, props.location, props.geofence, props.liveNotifications, props.firebaseInstallationId, props.backgroundPush);
 
   return config;
 }

@@ -1,6 +1,7 @@
 import type { ExpoConfig } from '@expo/config-types';
 
 import type {
+  CustomerIOPluginBackgroundPushOptions,
   CustomerIOPluginFirebaseInstallationIdOptions,
   CustomerIOPluginOptionsAndroid,
   CustomerIOPluginLiveNotificationsOptions,
@@ -32,7 +33,10 @@ export function withCIOAndroid(
   geofence?: CustomerIOPluginGeofenceOptions,
   liveNotifications?: CustomerIOPluginLiveNotificationsOptions,
   firebaseInstallationId?: CustomerIOPluginFirebaseInstallationIdOptions,
+  backgroundPush?: CustomerIOPluginBackgroundPushOptions,
 ): ExpoConfig {
+  const backgroundPushEnabled = backgroundPush?.enabled === true;
+
   // Only run notification setup if props are provided
   if (props) {
     config = withProjectGoogleServices(config, props);
@@ -56,6 +60,7 @@ export function withCIOAndroid(
       location,
       geofence,
       liveNotifications,
+      backgroundPushEnabled,
     });
   } else {
     // Only for JavaScript-initialized apps. With automatic initialization the generated initializer

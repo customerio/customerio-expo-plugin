@@ -337,11 +337,14 @@ function clearPlaceholders(content: string, platform: Platform): string {
 
   if (platform === PLATFORM.ANDROID) {
     // The Android placeholder sits mid-chain on the push config builder. Collapse the whole chain
-    // back onto one line so apps that don't use Live Notifications get byte-identical output.
-    return withoutImport.replace(
-      /\n[ \t]*\{\{LIVE_NOTIFICATION_MODULE_INIT\}\}\n([ \t]*)\.build\(\)/g,
-      '.build()'
-    );
+    // back onto one line so apps that don't use Live Notifications get byte-identical output. When
+    // another call follows it in the chain (background push), drop only the placeholder's line.
+    return withoutImport
+      .replace(
+        /\n[ \t]*\{\{LIVE_NOTIFICATION_MODULE_INIT\}\}\n([ \t]*)\.build\(\)/g,
+        '.build()'
+      )
+      .replace(/\n[ \t]*\{\{LIVE_NOTIFICATION_MODULE_INIT\}\}(?=\n)/g, '');
   }
 
   // `[ \t]*` rather than `\s*`: a greedy match would swallow the blank line the location
