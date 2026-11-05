@@ -63,7 +63,6 @@ describe('withCustomerIOPlugin geofence gating', () => {
       undefined,
       geofence,
       undefined,
-      undefined,
       undefined
     );
   });
@@ -133,7 +132,6 @@ describe('withCustomerIOPlugin Live Notifications gating', () => {
       undefined,
       undefined,
       liveNotifications,
-      undefined,
       undefined
     );
   });
@@ -245,8 +243,7 @@ describe('withCustomerIOPlugin firebaseInstallationId', () => {
       undefined,
       undefined,
       undefined,
-      firebaseInstallationId,
-      undefined
+      firebaseInstallationId
     );
   });
 });
@@ -275,13 +272,14 @@ describe('withCustomerIOPlugin backgroundPush', () => {
     ).not.toThrow();
   });
 
-  it('forwards backgroundPush to both platform mods', () => {
+  it('forwards backgroundPush to the iOS mods only', () => {
     mockIsExpo53.mockReturnValue(true);
     const backgroundPush = { enabled: true };
     withCustomerIOPlugin(baseConfig, { ...baseProps, backgroundPush });
 
     expect(mockWithCIOIos.mock.calls[0][7]).toBe(backgroundPush);
-    expect(mockWithCIOAndroid.mock.calls[0][7]).toBe(backgroundPush);
+    // The React Native SDK registers its own Android callback at process start.
+    expect(mockWithCIOAndroid.mock.calls[0]).toHaveLength(7);
   });
 });
 

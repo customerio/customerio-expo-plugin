@@ -23,13 +23,11 @@ type MainApplicationModParams = {
    * generated iOS widget, and `customRenderer` names Kotlin that only exists at build time.
    */
   liveNotifications?: CustomerIOPluginLiveNotificationsOptions;
-  /** Registers the React Native SDK's silent push callback on the push module config. */
-  backgroundPushEnabled?: boolean;
 };
 
-export const withMainApplicationModifications: ConfigPlugin<MainApplicationModParams> = (configOuter, { sdkConfig, location, geofence, liveNotifications, backgroundPushEnabled }) => {
+export const withMainApplicationModifications: ConfigPlugin<MainApplicationModParams> = (configOuter, { sdkConfig, location, geofence, liveNotifications }) => {
   return withMainApplication(configOuter, async (config) => {
-    const content = setupCustomerIOSDKInitializer(config, sdkConfig, location, geofence, liveNotifications, backgroundPushEnabled);
+    const content = setupCustomerIOSDKInitializer(config, sdkConfig, location, geofence, liveNotifications);
     config.modResults.contents = content;
     return config;
   });
@@ -94,7 +92,6 @@ const setupCustomerIOSDKInitializer = (
   location?: CustomerIOPluginLocationOptions,
   geofence?: CustomerIOPluginGeofenceOptions,
   liveNotifications?: CustomerIOPluginLiveNotificationsOptions,
-  backgroundPushEnabled = false,
 ): string => {
   const locationOptions = getLocationInitOptions(location, geofence, sdkConfig);
   const geofenceOptions = getGeofenceInitOptions(geofence, sdkConfig);
@@ -117,8 +114,7 @@ const setupCustomerIOSDKInitializer = (
         locationOptions,
         geofenceOptions,
         liveNotifications?.branding,
-        customRenderer,
-        backgroundPushEnabled
+        customRenderer
       )
     );
     return injectCustomerIOInitializerIntoMainApplication(config.modResults.contents);

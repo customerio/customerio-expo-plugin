@@ -10,7 +10,6 @@ import io.customer.reactnative.sdk.messaginginapp.ReactInAppEventListener
 {{LOCATION_MODULE_IMPORT}}
 {{GEOFENCE_MODULE_IMPORT}}
 {{LIVE_NOTIFICATION_MODULE_IMPORT}}
-{{BACKGROUND_PUSH_MODULE_IMPORT}}
 import io.customer.sdk.CustomerIOBuilder
 import io.customer.sdk.core.util.CioLogLevel
 import io.customer.sdk.data.model.Region
@@ -50,7 +49,6 @@ object CustomerIOSDKInitializer {
             ModuleMessagingPushFCM(
                 MessagingPushModuleConfig.Builder()
                     {{LIVE_NOTIFICATION_MODULE_INIT}}
-                    {{BACKGROUND_PUSH_MODULE_INIT}}
                     .build()
             )
         )

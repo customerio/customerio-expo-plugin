@@ -240,6 +240,51 @@ class ReactNativeDelegate`
     );
   });
 
+  it('keeps the guard on its own line when the existing body is on the signature line', () => {
+    const existing = sdk55.replace(
+      /\n}\n\nclass ReactNativeDelegate/,
+      `
+  override func application(_ app: UIApplication, didReceiveRemoteNotification payload: [AnyHashable: Any], fetchCompletionHandler done: @escaping (UIBackgroundFetchResult) -> Void) { done(.noData) }
+}
+
+class ReactNativeDelegate`
+    );
+    const next = modifyAppDelegateForPushHandler(existing, apn, false, true);
+    expect(next).toContain(
+      '-> Void) {\n    // Call CustomerIO SDK handler\n    if cioSdkHandler.application(app, didReceiveRemoteNotification: payload, fetchCompletionHandler: done) { return }\n done(.noData) }'
+    );
+    expect(modifyAppDelegateForPushHandler(next, apn, false, false)).toContain(
+      '-> Void) {\n done(.noData) }'
+    );
+  });
+
+  it('ignores the same callback in another class of the file', () => {
+    const helper = `class PushRelay: NSObject, UIApplicationDelegate {
+  func application(_ application: UIApplication, didReceiveRemoteNotification userInfo: [AnyHashable: Any], fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void) {
+    completionHandler(.noData)
+  }
+}
+
+`;
+    const withHelper = integrated.replace('@main\n', `${helper}@main\n`);
+    const next = addBackgroundPushHandling(withHelper);
+    expect(next.startsWith(withHelper.slice(0, withHelper.indexOf('@main')))).toBe(true);
+    expect(next).toContain('Hand Customer.io silent pushes');
+    expect(removeBackgroundPushHandling(next)).toBe(withHelper);
+  });
+
+  it('adds the override inside the AppDelegate when a comment above it has a closing brace', () => {
+    const commented = integrated.replace(
+      '@main\n',
+      '/*\n Example:\n func f() {\n}\n*/\n@main\n'
+    );
+    const next = addBackgroundPushHandling(commented);
+    expect(next.slice(0, next.indexOf('@main'))).toBe(
+      commented.slice(0, commented.indexOf('@main'))
+    );
+    expect(next).toMatch(/fetchCompletionHandler: completionHandler\)\n {2}\}\n\}\n\nclass ReactNativeDelegate/);
+  });
+
   it('ignores a mention in a comment', () => {
     const commented = integrated.replace(
       'let cioSdkHandler = CioSdkAppDelegateHandler()',

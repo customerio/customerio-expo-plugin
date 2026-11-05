@@ -95,7 +95,7 @@ function withCustomerIOPlugin(
 
   // Apply platform specific modifications
   config = withCIOIos(config, sdkConfig, props.ios, props.location, props.geofence, props.liveNotifications, props.firebaseInstallationId, props.backgroundPush);
-  config = withCIOAndroid(config, sdkConfig, props.android, props.location, props.geofence, props.liveNotifications, props.firebaseInstallationId, props.backgroundPush);
+  config = withCIOAndroid(config, sdkConfig, props.android, props.location, props.geofence, props.liveNotifications, props.firebaseInstallationId);
 
   return config;
 }

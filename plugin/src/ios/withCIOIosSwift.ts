@@ -1056,6 +1056,28 @@ const BACKGROUND_PUSH_GUARD_REGEX =
   /\n[ \t]*\/\/ Call CustomerIO SDK handler\n[ \t]*if cioSdkHandler\.application\([A-Za-z_][A-Za-z0-9_]*, didReceiveRemoteNotification: [A-Za-z_][A-Za-z0-9_]*, fetchCompletionHandler: [A-Za-z_][A-Za-z0-9_]*\) \{ return \}/g;
 
 /**
+ * Offsets of the `{` and matching `}` of `class AppDelegate` in masked source, where comments and
+ * strings are blanked so their braces don't count.
+ */
+function appDelegateClassBody(
+  executableContents: string
+): { open: number; close: number } | undefined {
+  const declaration = executableContents.match(/\bclass\s+AppDelegate\b[^{]*\{/);
+  if (!declaration || declaration.index === undefined) return undefined;
+  const open = declaration.index + declaration[0].length - 1;
+  let depth = 0;
+  for (let index = open; index < executableContents.length; index += 1) {
+    if (executableContents[index] === '{') {
+      depth += 1;
+    } else if (executableContents[index] === '}') {
+      depth -= 1;
+      if (depth === 0) return { open, close: index };
+    }
+  }
+  return undefined;
+}
+
+/**
  * Pure string transform: routes `application(_:didReceiveRemoteNotification:fetchCompletionHandler:)`
  * through `CioSdkAppDelegateHandler` first.
  *
@@ -1073,27 +1095,33 @@ export function addBackgroundPushHandling(content: string): string {
     return content;
   }
 
-  const match = executableContents.match(DID_RECEIVE_REMOTE_NOTIFICATION_METHOD_REGEX);
+  const body = appDelegateClassBody(executableContents);
+  if (!body) {
+    logger.warn('Could not find the AppDelegate class, so Customer.io silent pushes are not routed');
+    return content;
+  }
+
+  // Only the AppDelegate's own method: another class in the file may implement the same callback,
+  // and it has no `cioSdkHandler`.
+  const match = executableContents
+    .slice(body.open + 1, body.close)
+    .match(DID_RECEIVE_REMOTE_NOTIFICATION_METHOD_REGEX);
   if (match && match.index !== undefined) {
     // Read the names from the masked text: it has the same offsets, and they are identifiers.
     const [, application, userInfo, completionHandler] = match;
-    const insertAt = match.index + match[0].length;
+    const insertAt = body.open + 1 + match.index + match[0].length;
+    // A body on the signature's line (`{ done(.noData) }`) needs a line break after the guard.
+    const lineBreak = /^[ \t]*(\r?\n|$)/.test(content.substring(insertAt)) ? '' : '\n';
     return (
       content.substring(0, insertAt) +
       '\n    // Call CustomerIO SDK handler\n' +
       `    ${backgroundPushGuard(application, userInfo, completionHandler)}` +
+      lineBreak +
       content.substring(insertAt)
     );
   }
 
-  const classEndRegex = /^}(\s*$|\s*\/\/)/m;
-  const classEndMatch = content.match(classEndRegex);
-  if (!classEndMatch) {
-    logger.warn('Could not find end of AppDelegate class');
-    return content;
-  }
-
-  const position = classEndMatch.index ?? 0;
+  const position = body.close;
   return (
     content.substring(0, position) +
     '\n  // Hand Customer.io silent pushes to the Customer.io SDK and every other push to Expo\n' +
