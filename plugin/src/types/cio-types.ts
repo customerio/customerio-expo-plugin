@@ -233,15 +233,11 @@ export type CustomerIOPluginFirebaseInstallationIdOptions = {
  * app and hands the message's key/value data to the handler set with
  * `CustomerIO.pushMessaging.setBackgroundPushHandler`.
  *
- * When `enabled` is true, the plugin:
- * - iOS: adds `remote-notification` to `UIBackgroundModes` and passes
- *   `application(_:didReceiveRemoteNotification:fetchCompletionHandler:)` from the generated
- *   AppDelegate to the Customer.io SDK. Other pushes go on to Expo and other libraries unchanged.
- *   Needs `ios.pushNotification` and Expo SDK 53 or later.
- * - Android: registers the SDK's silent push callback in the generated initializer when the SDK
- *   initializes automatically (`config`), so a push that starts the app in the background still
- *   reaches the handler. An app that initializes from JavaScript gets silent pushes only while
- *   React Native is running.
+ * When `enabled` is true, the plugin adds `remote-notification` to `UIBackgroundModes` and passes
+ * `application(_:didReceiveRemoteNotification:fetchCompletionHandler:)` from the generated
+ * AppDelegate to the Customer.io SDK. Other pushes go on to Expo and other libraries unchanged.
+ * Needs `ios.pushNotification` and Expo SDK 53 or later. Android needs nothing from the plugin:
+ * the React Native SDK registers its silent push callback when the app's process starts.
  *
  * Turning it off again removes the generated code on the next prebuild but leaves
  * `remote-notification` in `UIBackgroundModes`, since other libraries also use it.

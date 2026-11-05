@@ -169,16 +169,14 @@ Silent push needs Expo SDK 53 or later and a `customerio-reactnative` release wi
 ```json
 {
   "backgroundPush": { "enabled": true },
-  "config": { "cdpApiKey": "..." },
   "android": { "setHighPriorityPushHandler": true },
   "ios": { "pushNotification": { "provider": "apn" } }
 }
 ```
 
-- `config` (native auto-initialization) is what lets a silent push start an Android app that isn't
-  running. Without it, Android apps get silent pushes only while React Native is running, and
-  prebuild warns about it. iOS doesn't depend on it.
-- iOS needs `ios.pushNotification`. Without it the option does nothing on iOS and prebuild warns.
+The option needs `ios.pushNotification`; without it the option does nothing and prebuild warns.
+Android needs nothing from the plugin, because the React Native SDK registers its silent push
+callback when the app's process starts.
 
 Then set the handler in your entry file, before the app mounts. When a silent push starts the app
 in the background, React Native runs the entry file without rendering anything, so a handler set
@@ -197,22 +195,27 @@ CustomerIO.pushMessaging.setBackgroundPushHandler(async ({ deliveryId, data }) =
 
 The SDK waits up to 25 seconds for the returned promise, so keep the work short. The same push can
 arrive more than once, so key your work on `deliveryId`. With `autoTrackPushEvents` on (the
-default), the SDK tracks Delivered for you. iOS doesn't wake an app the person force-quit.
+default), the SDK tracks Delivered for you. If you initialize the SDK from JavaScript and call it
+from the handler, initialize it in the entry file too: a push that starts the app doesn't mount
+the component that normally does it. With native auto-initialization (`config`) the SDK is already
+running.
 
-What the plugin generates:
+On Android, a push that starts an app that isn't running reaches your handler once JavaScript has
+set it at least once since the app was installed or updated. iOS doesn't wake an app the person
+force-quit.
 
-- **iOS:** adds `remote-notification` to `UIBackgroundModes`, and an
-  `application(_:didReceiveRemoteNotification:fetchCompletionHandler:)` override in `AppDelegate`
-  that hands the push to the Customer.io SDK first. For a Customer.io silent push the SDK runs your
-  handler and calls the completion handler once. Every other push goes to `super`, so
+What the plugin generates on iOS:
+
+- `remote-notification` in `UIBackgroundModes`.
+- An `application(_:didReceiveRemoteNotification:fetchCompletionHandler:)` override in
+  `AppDelegate` that hands the push to the Customer.io SDK first. For a Customer.io silent push the
+  SDK runs your handler and calls the completion handler once. Every other push goes to `super`, so
   expo-notifications and other libraries receive it as before. If your `AppDelegate` already
   implements the method, the plugin adds the Customer.io check as its first statement.
-- **Android:** registers the React Native SDK's silent push callback on the push module in the
-  generated `CustomerIOSDKInitializer.kt`. The handler runs in a WorkManager job, so there's no
-  service to declare in the manifest.
 
-Turning the option off removes the generated code on the next prebuild. `remote-notification` stays
-in `UIBackgroundModes`, because expo-notifications and React Native Firebase use it too.
+Turning the option off removes the generated code on the next prebuild. `remote-notification`
+stays in `UIBackgroundModes`, because expo-notifications and React Native Firebase use it too; run
+`npx expo prebuild --clean --platform ios` to drop it if nothing else needs it.
 
 ### Silent push with React Native Firebase
 
@@ -230,6 +233,9 @@ declares its service with the default priority (0). The Customer.io SDK declares
 | `true` | default (0), declared in your app's manifest | Customer.io |
 | `false` | -10 | React Native Firebase |
 | not set | -1, from the SDK | React Native Firebase |
+
+With `true` both services match at priority 0, and Android picks the one declared first. Your
+app's own declaration comes before every library's in the merged manifest.
 
 React Native Firebase also reads every FCM message in its own broadcast receiver and passes it to
 `messaging().onMessage` or `messaging().setBackgroundMessageHandler`, whichever service wins.
