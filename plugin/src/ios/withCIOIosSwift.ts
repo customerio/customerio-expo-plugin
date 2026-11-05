@@ -1112,6 +1112,28 @@ function declarationBodies(executableContents: string, pattern: RegExp): SourceB
 }
 
 /**
+ * The first match of `pattern` declared directly in `body`, outside any nested type or function.
+ * `end` is the offset just past the match in the full source.
+ */
+function directMember(
+  executableContents: string,
+  body: SourceBody,
+  pattern: RegExp
+): { groups: string[]; end: number } | undefined {
+  const source = executableContents.slice(body.open + 1, body.close);
+  const globalPattern = new RegExp(pattern.source, 'g');
+  for (const match of source.matchAll(globalPattern)) {
+    if (match.index === undefined) continue;
+    const before = source.slice(0, match.index);
+    const depth = (before.match(/\{/g)?.length ?? 0) - (before.match(/\}/g)?.length ?? 0);
+    if (depth === 0) {
+      return { groups: [...match], end: body.open + 1 + match.index + match[0].length };
+    }
+  }
+  return undefined;
+}
+
+/**
  * Pure string transform: routes `application(_:didReceiveRemoteNotification:fetchCompletionHandler:)`
  * through `CioSdkAppDelegateHandler` first.
  *
@@ -1138,21 +1160,27 @@ export function addBackgroundPushHandling(content: string): string {
     return content;
   }
 
-  // Only the AppDelegate's own method, in the class or an extension of it: another class in the file
-  // may implement the same callback, and it has no `cioSdkHandler`. A second implementation next to
-  // one in an extension would not compile.
+  // Only the AppDelegate's own method, declared directly in the class or in an extension of exactly
+  // `AppDelegate`: another type in the file, including one nested in AppDelegate
+  // (`extension AppDelegate.Helper`), may implement the same callback, and it has no `cioSdkHandler`.
+  // A second implementation next to one in an extension would not compile.
   const bodies = [
     classBody,
-    ...declarationBodies(executableContents, /\bextension\s+AppDelegate\b[^{]*\{/g),
+    ...declarationBodies(
+      executableContents,
+      /\bextension\s+AppDelegate(?=\s*[:{]|\s+where\b)[^{]*\{/g
+    ),
   ];
   for (const body of bodies) {
-    const match = executableContents
-      .slice(body.open + 1, body.close)
-      .match(DID_RECEIVE_REMOTE_NOTIFICATION_METHOD_REGEX);
-    if (!match || match.index === undefined) continue;
+    const match = directMember(
+      executableContents,
+      body,
+      DID_RECEIVE_REMOTE_NOTIFICATION_METHOD_REGEX
+    );
+    if (!match) continue;
     // Read the names from the masked text: it has the same offsets, and they are identifiers.
-    const [, application, userInfo, completionHandler] = match;
-    const insertAt = body.open + 1 + match.index + match[0].length;
+    const [, application, userInfo, completionHandler] = match.groups;
+    const insertAt = match.end;
     // A body on the signature's line (`{ done(.noData) }`) needs a line break after the guard.
     const lineBreak = /^[ \t]*(\r?\n|$)/.test(content.substring(insertAt)) ? '' : '\n';
     return (

@@ -316,6 +316,72 @@ extension AppDelegate {
     );
   });
 
+  describe('with a type nested in AppDelegate that implements the same callback', () => {
+    const callback = (indent: string) =>
+      `${indent}func application(_ application: UIApplication, didReceiveRemoteNotification userInfo: [AnyHashable: Any], fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void) {
+${indent}  completionHandler(.noData)
+${indent}}`;
+    const nestedExtension = `
+extension AppDelegate {
+  class Helper: NSObject {}
+}
+
+extension AppDelegate.Helper {
+${callback('  ')}
+}
+`;
+    const helperUntouched = (next: string) =>
+      expect(next.slice(next.indexOf('extension AppDelegate.Helper'))).toBe(
+        nestedExtension.slice(nestedExtension.indexOf('extension AppDelegate.Helper'))
+      );
+
+    it('puts the guard in the real AppDelegate extension, not the nested type', () => {
+      const realExtension = `
+extension AppDelegate {
+  override ${callback('  ').trimStart()}
+}
+`;
+      const existing = `${integrated}${nestedExtension.replace(
+        '\nextension AppDelegate.Helper',
+        `${realExtension}\nextension AppDelegate.Helper`
+      )}`;
+      const next = addBackgroundPushHandling(existing);
+      helperUntouched(next);
+      expect(next).not.toContain('Show remote notifications to the Customer.io SDK first');
+      expect(next).toContain(`fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void) {
+    // Call CustomerIO SDK handler
+    if cioSdkHandler.application(application, didReceiveRemoteNotification: userInfo, fetchCompletionHandler: completionHandler) { return }
+    completionHandler(.noData)
+  }
+}
+
+extension AppDelegate.Helper {`);
+      expect(removeBackgroundPushHandling(next)).toBe(existing);
+    });
+
+    it('adds the override to AppDelegate when only the nested type has the callback', () => {
+      const existing = `${integrated}${nestedExtension}`;
+      const next = addBackgroundPushHandling(existing);
+      helperUntouched(next);
+      expect(next).toContain('Show remote notifications to the Customer.io SDK first');
+      expect(next.indexOf('Show remote notifications')).toBeLessThan(
+        next.indexOf('class ReactNativeDelegate')
+      );
+      expect(removeBackgroundPushHandling(next)).toBe(existing);
+    });
+
+    it('adds the override to AppDelegate when the nested type is declared inside the class', () => {
+      const existing = integrated.replace(
+        '  let cioSdkHandler = CioSdkAppDelegateHandler()\n',
+        `  let cioSdkHandler = CioSdkAppDelegateHandler()\n\n  class Helper: NSObject {\n${callback('    ')}\n  }\n`
+      );
+      const next = addBackgroundPushHandling(existing);
+      expect(next).toContain(`  class Helper: NSObject {\n${callback('    ')}\n  }\n`);
+      expect(next).toContain('Show remote notifications to the Customer.io SDK first');
+      expect(removeBackgroundPushHandling(next)).toBe(existing);
+    });
+  });
+
   it('keeps the guard on its own line when the existing body is on the signature line', () => {
     const existing = sdk55.replace(
       /\n}\n\nclass ReactNativeDelegate/,
