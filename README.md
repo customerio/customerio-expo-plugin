@@ -216,6 +216,10 @@ in `UIBackgroundModes`, because expo-notifications and React Native Firebase use
 
 ### Silent push with React Native Firebase
 
+Apps that also use `@react-native-firebase/messaging` pick one of two setups. React Native Firebase
+receives Customer.io silent pushes like any other data message, so an app that handles them in both
+places runs each push twice.
+
 On Android, each FCM message goes to one `FirebaseMessagingService`: the one whose
 `com.google.firebase.MESSAGING_EVENT` intent filter has the highest priority. React Native Firebase
 declares its service with the default priority (0). The Customer.io SDK declares its own at -1, and
@@ -227,34 +231,36 @@ declares its service with the default priority (0). The Customer.io SDK declares
 | `false` | -10 | React Native Firebase |
 | not set | -1, from the SDK | React Native Firebase |
 
-Separately, React Native Firebase reads every FCM message in its own broadcast receiver and passes
-it to `messaging().onMessage` or `messaging().setBackgroundMessageHandler`, whichever service wins.
-That gives two setups:
+React Native Firebase also reads every FCM message in its own broadcast receiver and passes it to
+`messaging().onMessage` or `messaging().setBackgroundMessageHandler`, whichever service wins.
 
-- **Customer.io handler (recommended).** Set `setHighPriorityPushHandler` to `true`. Customer.io's
-  service receives the silent push, tracks Delivered and runs the handler you set with
-  `setBackgroundPushHandler`. React Native Firebase's handlers also receive the same message, with
-  its `CIO-Background-*` keys, so skip those messages there.
-- **React Native Firebase handler.** Leave `setHighPriorityPushHandler` unset or `false` and forward
-  messages to Customer.io from React Native Firebase's handlers:
+**Customer.io handler.** Turn on `backgroundPush`, set `setHighPriorityPushHandler` to `true` and
+set your handler with `setBackgroundPushHandler` as above. Customer.io's service receives the silent
+push, tracks Delivered and runs your handler. React Native Firebase's handlers still receive the
+same message with its `CIO-Background-*` keys (on Android always, on iOS with the `fcm` provider),
+so skip messages that have `CIO-Background-Version` there.
 
-  ```js
-  messaging().setBackgroundMessageHandler(async (message) => {
-    await CustomerIO.pushMessaging.onBackgroundMessageReceived(message);
-  });
-  ```
+**React Native Firebase handler.** Leave `backgroundPush` off and list `remote-notification` in
+`ios.infoPlist.UIBackgroundModes` yourself. Leave `setHighPriorityPushHandler` unset or `false`, keep
+forwarding messages to Customer.io, and read your keys from `remoteMessage.data`:
 
-  The Customer.io SDK recognizes a silent push, tracks Delivered and runs your
-  `setBackgroundPushHandler` handler. This setup misses silent pushes that arrive while the app is
-  in the background: React Native Firebase starts its background handler with a service, which
-  Android allows only for high-priority messages, and Customer.io sends silent pushes at normal
-  priority by default.
+```js
+messaging().setBackgroundMessageHandler(async (remoteMessage) => {
+  // Shows nothing for a silent push and tracks Delivered on Android.
+  await CustomerIO.pushMessaging.onBackgroundMessageReceived(remoteMessage);
+  if (remoteMessage.data?.['CIO-Background-Version']) {
+    await refreshInbox(remoteMessage.data);
+  }
+});
+```
 
-On iOS, React Native Firebase and the Firebase SDK see remote notifications through Firebase's app
-delegate proxy, which also calls the `AppDelegate` override the plugin generates and calls the
-completion handler once after all of them finish. A Customer.io silent push sent through FCM (the
-`fcm` provider) also reaches `setBackgroundMessageHandler`, so skip messages with
-`CIO-Background-*` keys there as well. With the `apn` provider, React Native Firebase ignores them.
+React Native Firebase starts `setBackgroundMessageHandler` with a service, which Android allows from
+the background only for high-priority messages. Customer.io sends Android silent pushes at normal
+priority unless you choose high on the message, so choose high if you rely on this handler.
+
+On iOS, Firebase's app delegate proxy hands each remote notification to React Native Firebase and
+to the `AppDelegate` override the plugin generates, then calls the completion handler once after
+all of them finish.
 
 # Local development
 
