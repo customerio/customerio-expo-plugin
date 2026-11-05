@@ -36,7 +36,8 @@ function expectXcodeSplit(rows) {
 }
 
 function expectLaunchWiring(workflow, launchActionPath) {
-  const job = Object.values(workflow.jobs)[0];
+  // The first job with steps; a runner-selector job calls a reusable workflow and has none.
+  const job = Object.values(workflow.jobs).find((candidate) => candidate.steps);
   const steps = job.steps;
   const names = steps.map((step) => step.name);
 
