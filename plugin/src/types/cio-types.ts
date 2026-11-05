@@ -32,8 +32,8 @@ export type CustomerIOPluginOptionsIOS = {
 
   /**
    * Routes Customer.io deep links to the handler registered with `CustomerIO.setDeepLinkHandler`
-   * instead of React Native `Linking`. Register the handler before calling `CustomerIO.initialize`,
-   * or when the app starts if the SDK uses native auto-initialization.
+   * instead of React Native `Linking`. Register the handler when your router is ready, before or
+   * after `CustomerIO.initialize`. Cold-start links wait up to ten seconds for it.
    *
    * Only applies to Expo SDK 58+ scene projects and requires React Native 0.88+. Defaults to false.
    */
