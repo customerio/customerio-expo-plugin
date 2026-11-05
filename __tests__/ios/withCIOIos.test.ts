@@ -61,6 +61,11 @@ jest.mock('../../plugin/src/ios/withCioLiveActivityWidgetXcodeProject', () => ({
   withCioLiveActivityDisableGuard: (config: ExpoConfig) =>
     mockWithCioLiveActivityDisableGuard(config),
 }));
+const mockWithBackgroundPushInfoPlist = jest.fn((config: ExpoConfig) => config);
+jest.mock('../../plugin/src/ios/withBackgroundPushInfoPlist', () => ({
+  withBackgroundPushInfoPlist: (config: ExpoConfig) =>
+    mockWithBackgroundPushInfoPlist(config),
+}));
 jest.mock('../../plugin/src/ios/withLiveActivityUrlRoutingWarning', () => ({
   withLiveActivityUrlRoutingWarning: (config: ExpoConfig) =>
     mockWithLiveActivityUrlRoutingWarning(config),
@@ -575,6 +580,57 @@ describe('NSE apiHost with JavaScript initialization', () => {
         apiHost: 'proxy.example.com/$&',
         env: { cdpApiKey: 'pk_eu_extension', region: 'EU' },
       }) })
+    );
+  });
+});
+
+describe('backgroundPush', () => {
+  const config: ExpoConfig = { name: 'Test App', slug: 'test-app', sdkVersion: '55.0.0' };
+  const withPush: CustomerIOPluginOptionsIOS = {
+    iosPath: '/test/ios',
+    pushNotification: { provider: 'apn' },
+  };
+  // withCIOIosSwift(config, sdkConfig, props, location, geofence, liveNotificationsEnabled,
+  // usesSceneLifecycle, backgroundPushEnabled)
+  const swiftBackgroundPushArg = () => mockWithCIOIosSwift.mock.calls[0][7];
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('adds the background mode and the AppDelegate routing when push is configured', () => {
+    withCIOIos(config, undefined, withPush, undefined, undefined, undefined, undefined, {
+      enabled: true,
+    });
+
+    expect(mockWithBackgroundPushInfoPlist).toHaveBeenCalledTimes(1);
+    expect(swiftBackgroundPushArg()).toBe(true);
+    expect(logger.warn).not.toHaveBeenCalled();
+  });
+
+  it.each([undefined, { enabled: false }])('changes nothing when the option is %p', (option) => {
+    withCIOIos(config, undefined, withPush, undefined, undefined, undefined, undefined, option);
+
+    expect(mockWithBackgroundPushInfoPlist).not.toHaveBeenCalled();
+    expect(swiftBackgroundPushArg()).toBe(false);
+  });
+
+  it('warns and does nothing without ios.pushNotification', () => {
+    withCIOIos(
+      config,
+      { cdpApiKey: 'pk_us_test' },
+      { iosPath: '/test/ios' },
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      { enabled: true }
+    );
+
+    expect(mockWithBackgroundPushInfoPlist).not.toHaveBeenCalled();
+    expect(swiftBackgroundPushArg()).toBeUndefined();
+    expect(logger.warn).toHaveBeenCalledWith(
+      'backgroundPush.enabled has no effect on iOS without ios.pushNotification, because the app has no Customer.io push handler to receive silent pushes.'
     );
   });
 });

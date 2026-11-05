@@ -24,6 +24,7 @@ import { withNotificationIconAndColor } from './withNotificationIconAndColor';
 import { withProjectBuildGradle } from './withProjectBuildGradle';
 import { withProjectGoogleServices } from './withProjectGoogleServices';
 import { withProjectStrings } from './withProjectStrings';
+import { logger } from '../utils/logger';
 
 export function withCIOAndroid(
   config: ExpoConfig,
@@ -36,6 +37,12 @@ export function withCIOAndroid(
   backgroundPush?: CustomerIOPluginBackgroundPushOptions,
 ): ExpoConfig {
   const backgroundPushEnabled = backgroundPush?.enabled === true;
+  if (backgroundPushEnabled && !sdkConfig) {
+    logger.warn(
+      'backgroundPush.enabled: on Android, silent pushes reach the JavaScript handler only while the app is running, ' +
+        'because the SDK initializes from JavaScript. Add `config` to initialize it natively so a silent push can start the app.'
+    );
+  }
 
   // Only run notification setup if props are provided
   if (props) {

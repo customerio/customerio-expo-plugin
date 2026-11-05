@@ -2,12 +2,13 @@ import { PLATFORM, type Platform } from '../constants/common';
 
 /**
  * The React Native SDK's native silent push callback. It hands the push to the JavaScript handler
- * registered with `CustomerIO.pushMessaging.onBackgroundPush`, starting JavaScript in the background
- * when the push started the app.
+ * set with `CustomerIO.pushMessaging.setBackgroundPushHandler`, starting React Native in the
+ * background when the push started the app.
  */
 export const ANDROID_BACKGROUND_PUSH_CALLBACK = {
-  importLine: 'import RN_BACKGROUND_PUSH_CALLBACK_IMPORT',
-  expression: 'RN_BACKGROUND_PUSH_CALLBACK_EXPRESSION',
+  importLine:
+    'import io.customer.reactnative.sdk.messagingpush.ReactBackgroundPushCallback',
+  expression: 'ReactBackgroundPushCallback.instance',
 };
 
 /**

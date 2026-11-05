@@ -267,14 +267,16 @@ const BACKGROUND_PUSH_HANDLER_PLACEHOLDER = /\{\{BACKGROUND_PUSH_HANDLER\}\}/;
 /**
  * The generated AppDelegate calls this first for every remote notification (see
  * {@link addBackgroundPushHandling}). The React Native SDK reads the push with the native SDK, which
- * records Delivered, hands the data to the JavaScript handler and calls `completionHandler` once. For
- * any other push it returns false without calling it, so the AppDelegate passes the push on.
+ * records Delivered, hands the data to the handler set with
+ * `CustomerIO.pushMessaging.setBackgroundPushHandler` and calls `completionHandler` once, when the
+ * handler settles or after 25 seconds. For any other push it returns false without calling it, so the
+ * AppDelegate passes the push on.
  */
 const BACKGROUND_PUSH_HANDLER_METHOD = `
   /// Hands a Customer.io silent push to the React Native SDK, which calls \`completionHandler\` once.
   /// Returns false, without calling \`completionHandler\`, for every other push.
   public func application(_ application: UIApplication, didReceiveRemoteNotification userInfo: [AnyHashable: Any], fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void) -> Bool {
-    return ${'RN_BACKGROUND_PUSH_ENTRY'}(userInfo: userInfo, completionHandler: completionHandler)
+    return NativeMessagingPush.handleBackgroundPush(userInfo: userInfo, completionHandler: completionHandler)
   }`;
 
 const copyAndConfigureNativeSDKInitializer = ({
