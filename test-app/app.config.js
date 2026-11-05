@@ -7,6 +7,10 @@ const { withAppBuildGradle, withFinalizedMod } = require('expo/config-plugins');
 
 const IS_FID = process.env.APP_VARIANT === 'fid';
 
+// BACKGROUND_PUSH=true turns on Customer.io silent push. Needs a customerio-reactnative release with
+// silent push; helpers/BackgroundPushHandler.js sets the JavaScript handler.
+const BACKGROUND_PUSH = process.env.BACKGROUND_PUSH === 'true';
+
 // FID needs firebase-messaging 25.1.0+; the Customer.io Android SDK compiles against an older one
 const FID_FIREBASE_MESSAGING =
   'implementation "com.google.firebase:firebase-messaging:25.1.3"';
@@ -64,6 +68,9 @@ module.exports = ({ config }) => {
     (plugin) => Array.isArray(plugin) && plugin[0] === 'customerio-expo-plugin'
   );
   customerIO[1].firebaseInstallationId = { enabled: IS_FID };
+  if (BACKGROUND_PUSH) {
+    customerIO[1].backgroundPush = { enabled: true };
+  }
 
   return withSharedSwiftPod(withFidFirebaseMessaging(config));
 };

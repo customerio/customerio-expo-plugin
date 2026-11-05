@@ -66,6 +66,11 @@ npm run compatibility:configure-plugin -- --app-path=<path-to-app>
 | `--add-default-config` | Adds basic default configurations for Customer.io plugin to `app.json` | `false` | ❌ |
 | `--ios-use-frameworks` | Framework usage for iOS (`static` for `fcm`, `none` otherwise) | Auto determined based on `--ios-push-provider` | ❌ |
 
+Any other plugin option can be set with the `--cio-plugin.` prefix and its path, for example
+`--cio-plugin.backgroundPush.enabled` to turn on silent push. Pass a boolean option without a value:
+`=true` stores the string `"true"`, which the plugin doesn't treat as enabled. Silent push also needs
+a `customerio-reactnative` release with `setBackgroundPushHandler`.
+
 ### 4. `compatibility:validate-plugin`
 
 Validates Customer.io Expo plugin by running `expo prebuild`, building the app, and executing snapshot tests to verify compatibility, compilation, and code generation.

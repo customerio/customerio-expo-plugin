@@ -73,6 +73,18 @@ older firebase-messaging, which returns the cached FID instead of an FCM token. 
 FirebaseMessaging 12.19.0+; with an existing `Podfile.lock`, run `pod update FirebaseMessaging` in
 `test-app/ios`.
 
+### Silent push variant
+
+`BACKGROUND_PUSH=true` turns on the plugin's `backgroundPush` option (see `test-app/app.config.js`).
+`test-app/index.js` imports `helpers/BackgroundPushHandler.js`, which sets the JavaScript handler
+before Expo Router mounts and tracks a `Silent push received` event for each push. Silent push needs
+a `customerio-reactnative` release with `setBackgroundPushHandler`; with an older release the
+handler is skipped and the generated native code doesn't compile, so leave the variant off.
+
+```bash
+BACKGROUND_PUSH=true npm run setup-test-app
+```
+
 ## Testing pnpm and monorepo layouts locally
 
 Two additional dev apps live at the repo root for verifying the plugin under

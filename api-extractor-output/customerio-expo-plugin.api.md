@@ -5,6 +5,11 @@
 ```ts
 
 // @public
+export type CustomerIOPluginBackgroundPushOptions = {
+    enabled?: boolean;
+};
+
+// @public
 export type CustomerIOPluginFirebaseInstallationIdOptions = {
     enabled?: boolean;
 };
@@ -36,6 +41,7 @@ export type CustomerIOPluginOptions = {
     geofence?: CustomerIOPluginGeofenceOptions;
     liveNotifications?: CustomerIOPluginLiveNotificationsOptions;
     firebaseInstallationId?: CustomerIOPluginFirebaseInstallationIdOptions;
+    backgroundPush?: CustomerIOPluginBackgroundPushOptions;
 };
 
 // @public

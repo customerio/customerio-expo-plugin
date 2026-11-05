@@ -157,6 +157,105 @@ and URL-subscription pipeline. The plugin does not edit customer-owned routing f
 
 After disabling Live Notifications in a previously generated iOS project, run `npx expo prebuild --clean --platform ios`. An incremental prebuild stops with this instruction so it cannot leave the generated widget target or linked Live Activities code behind.
 
+## Silent push
+
+A Customer.io silent (background) push shows nothing. It wakes the app and hands your JavaScript
+handler the key/value data set on the message. Customer.io sends it to every iOS and Android
+device, and an app without a handler ignores it.
+
+Silent push needs Expo SDK 53 or later and a `customerio-reactnative` release with
+`setBackgroundPushHandler`. Turn it on in the plugin options:
+
+```json
+{
+  "backgroundPush": { "enabled": true },
+  "config": { "cdpApiKey": "..." },
+  "android": { "setHighPriorityPushHandler": true },
+  "ios": { "pushNotification": { "provider": "apn" } }
+}
+```
+
+- `config` (native auto-initialization) is what lets a silent push start an Android app that isn't
+  running. Without it, Android apps get silent pushes only while React Native is running, and
+  prebuild warns about it. iOS doesn't depend on it.
+- iOS needs `ios.pushNotification`. Without it the option does nothing on iOS and prebuild warns.
+
+Then set the handler in your entry file, before the app mounts. When a silent push starts the app
+in the background, React Native runs the entry file without rendering anything, so a handler set
+in a component never runs. With Expo Router, add an `index.js` and point `main` in `package.json`
+at it:
+
+```js
+// index.js
+import 'expo-router/entry';
+import { CustomerIO } from 'customerio-reactnative';
+
+CustomerIO.pushMessaging.setBackgroundPushHandler(async ({ deliveryId, data }) => {
+  await refreshInbox(data);
+});
+```
+
+The SDK waits up to 25 seconds for the returned promise, so keep the work short. The same push can
+arrive more than once, so key your work on `deliveryId`. With `autoTrackPushEvents` on (the
+default), the SDK tracks Delivered for you. iOS doesn't wake an app the person force-quit.
+
+What the plugin generates:
+
+- **iOS:** adds `remote-notification` to `UIBackgroundModes`, and an
+  `application(_:didReceiveRemoteNotification:fetchCompletionHandler:)` override in `AppDelegate`
+  that hands the push to the Customer.io SDK first. For a Customer.io silent push the SDK runs your
+  handler and calls the completion handler once. Every other push goes to `super`, so
+  expo-notifications and other libraries receive it as before. If your `AppDelegate` already
+  implements the method, the plugin adds the Customer.io check as its first statement.
+- **Android:** registers the React Native SDK's silent push callback on the push module in the
+  generated `CustomerIOSDKInitializer.kt`. The handler runs in a WorkManager job, so there's no
+  service to declare in the manifest.
+
+Turning the option off removes the generated code on the next prebuild. `remote-notification` stays
+in `UIBackgroundModes`, because expo-notifications and React Native Firebase use it too.
+
+### Silent push with React Native Firebase
+
+On Android, each FCM message goes to one `FirebaseMessagingService`: the one whose
+`com.google.firebase.MESSAGING_EVENT` intent filter has the highest priority. React Native Firebase
+declares its service with the default priority (0). The Customer.io SDK declares its own at -1, and
+`android.setHighPriorityPushHandler` overrides that:
+
+| `setHighPriorityPushHandler` | Customer.io service priority | Gets FCM messages |
+| --- | --- | --- |
+| `true` | default (0), declared in your app's manifest | Customer.io |
+| `false` | -10 | React Native Firebase |
+| not set | -1, from the SDK | React Native Firebase |
+
+Separately, React Native Firebase reads every FCM message in its own broadcast receiver and passes
+it to `messaging().onMessage` or `messaging().setBackgroundMessageHandler`, whichever service wins.
+That gives two setups:
+
+- **Customer.io handler (recommended).** Set `setHighPriorityPushHandler` to `true`. Customer.io's
+  service receives the silent push, tracks Delivered and runs the handler you set with
+  `setBackgroundPushHandler`. React Native Firebase's handlers also receive the same message, with
+  its `CIO-Background-*` keys, so skip those messages there.
+- **React Native Firebase handler.** Leave `setHighPriorityPushHandler` unset or `false` and forward
+  messages to Customer.io from React Native Firebase's handlers:
+
+  ```js
+  messaging().setBackgroundMessageHandler(async (message) => {
+    await CustomerIO.pushMessaging.onBackgroundMessageReceived(message);
+  });
+  ```
+
+  The Customer.io SDK recognizes a silent push, tracks Delivered and runs your
+  `setBackgroundPushHandler` handler. This setup misses silent pushes that arrive while the app is
+  in the background: React Native Firebase starts its background handler with a service, which
+  Android allows only for high-priority messages, and Customer.io sends silent pushes at normal
+  priority by default.
+
+On iOS, React Native Firebase and the Firebase SDK see remote notifications through Firebase's app
+delegate proxy, which also calls the `AppDelegate` override the plugin generates and calls the
+completion handler once after all of them finish. A Customer.io silent push sent through FCM (the
+`fcm` provider) also reaches `setBackgroundMessageHandler`, so skip messages with
+`CIO-Background-*` keys there as well. With the `apn` provider, React Native Firebase ignores them.
+
 # Local development
 
 [Here is a quick start guide to start with local development.](/local-development-readme.md)
