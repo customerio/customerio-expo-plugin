@@ -89,6 +89,9 @@ BACKGROUND_PUSH=true npm run setup-test-app
 React Native Firebase: the plugin uses `backgroundPush.handler: 'app'`, so iOS only tracks
 Delivered, and the test app sets no Customer.io handler.
 
+The JavaScript side reads the variant from the app config, so set the same `BACKGROUND_PUSH` value
+when you run `npx expo start` or `npx expo run:ios` / `npx expo run:android`.
+
 ## Testing pnpm and monorepo layouts locally
 
 Two additional dev apps live at the repo root for verifying the plugin under
