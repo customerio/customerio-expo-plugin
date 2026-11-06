@@ -54,4 +54,34 @@ function mergeConfigWithEnvValues(
   return undefined;
 }
 
-export { mergeConfigWithEnvValues };
+/**
+ * Host the Notification Service Extension sends delivery metrics to. Falls back to `config.apiHost`
+ * so apps on native auto-init only set the proxy once.
+ */
+function resolveNseApiHost(
+  props: CustomerIOPluginOptionsIOS,
+  nativeConfig?: NativeSDKConfig
+): string | undefined {
+  const nseApiHost = props.pushNotification?.apiHost;
+  const nativeApiHost = nativeConfig?.apiHost;
+  const nse = typeof nseApiHost === 'string' ? nseApiHost.trim() : '';
+  const native = typeof nativeApiHost === 'string' ? nativeApiHost.trim() : '';
+
+  if (!native) return nseApiHost;
+  if (!nse) return native;
+
+  if (nse === native) {
+    logger.warn(
+      `Both 'config.apiHost' and 'ios.pushNotification.apiHost' are set to the same value. ` +
+        `Consider removing 'ios.pushNotification.apiHost' since 'config.apiHost' already applies to the notification extension.`
+    );
+  } else {
+    logger.warn(
+      `'config.apiHost' ("${native}") and 'ios.pushNotification.apiHost' ("${nse}") differ. ` +
+        `The notification extension uses 'ios.pushNotification.apiHost'.`
+    );
+  }
+  return nseApiHost;
+}
+
+export { mergeConfigWithEnvValues, resolveNseApiHost };

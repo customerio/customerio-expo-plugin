@@ -154,8 +154,8 @@ export type NativeSDKConfig = {
   migrationSiteId?: string; // Optional, if only migrationSiteId defined, siteId should be null
   /**
    * Overrides the CDP API host, to route SDK traffic through your own proxy. Use a host and optional
-   * path without a scheme, like `proxy.example.com/v1`. Defaults to the host for `region`. To send
-   * iOS push metrics through the proxy too, also set `ios.pushNotification.apiHost`.
+   * path without a scheme, like `proxy.example.com/v1`. Defaults to the host for `region`. Also
+   * applies to iOS push metrics unless `ios.pushNotification.apiHost` is set.
    */
   apiHost?: string;
   /**
@@ -558,8 +558,10 @@ export type CustomerIOPluginPushNotificationOptions = {
 
   /**
    * Host the Notification Service Extension sends delivery metrics to, for routing them through your
-   * own proxy. Use the same value as `apiHost` in the app's SDK config. When set, `.apiHost(...)` is
-   * injected into the MessagingPushConfigBuilder; when omitted, metrics go to the host for `region`.
+   * own proxy. Use the same value as `apiHost` in the app's SDK config. With native auto-initialization,
+   * defaults to `config.apiHost`, so you only need this when initializing from JavaScript. When set,
+   * `.apiHost(...)` is injected into the MessagingPushConfigBuilder; when omitted, metrics go to the
+   * host for `region`.
    */
   apiHost?: string;
 };
