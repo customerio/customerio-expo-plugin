@@ -98,6 +98,8 @@ function validateNativeSDKConfig(config: NativeSDKConfig): boolean {
   isValid = validateBoolean(config.trackApplicationLifecycleEvents, 'trackApplicationLifecycleEvents', context) && isValid;
   isValid = validateString(config.siteId, 'siteId', context) && isValid;
   isValid = validateString(config.migrationSiteId, 'migrationSiteId', context) && isValid;
+  isValid = validateString(config.apiHost, 'apiHost', context) && isValid;
+  isValid = validateString(config.cdnHost, 'cdnHost', context) && isValid;
 
   return isValid;
 }

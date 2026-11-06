@@ -29,6 +29,8 @@ object CustomerIOSDKInitializer {
         setIfDefined(true, CustomerIOBuilder::trackApplicationLifecycleEvents)
         setIfDefined("all", CustomerIOBuilder::screenViewUse) { ScreenView.getScreenView(it) }
         setIfDefined(migrationSiteId, CustomerIOBuilder::migrationSiteId)
+        setIfDefined("proxy.example.com/cdp", CustomerIOBuilder::apiHost)
+        setIfDefined("cdn.example.com", CustomerIOBuilder::cdnHost)
 
         // In-app needs a site ID, or a public (pk_) key that identifies the workspace without one
         if (inAppEnabled) {
@@ -103,6 +105,8 @@ object CustomerIOSDKInitializer {
         setIfDefined(null, CustomerIOBuilder::trackApplicationLifecycleEvents)
         setIfDefined(null, CustomerIOBuilder::screenViewUse) { ScreenView.getScreenView(it) }
         setIfDefined(migrationSiteId, CustomerIOBuilder::migrationSiteId)
+        setIfDefined(null, CustomerIOBuilder::apiHost)
+        setIfDefined(null, CustomerIOBuilder::cdnHost)
 
         // In-app needs a site ID, or a public (pk_) key that identifies the workspace without one
         if (inAppEnabled) {
@@ -174,6 +178,8 @@ class CustomerIOSDKInitializer {
         setIfDefined(value: false, thenPassItTo: builder.trackApplicationLifecycleEvents)
         setIfDefined(value: "inapp", thenPassItTo: builder.screenViewUse) { ScreenView.getScreenView($0) }
         setIfDefined(value: "test-site-123", thenPassItTo: builder.migrationSiteId)
+        setIfDefined(value: "proxy.example.com/cdp", thenPassItTo: builder.apiHost)
+        setIfDefined(value: "cdn.example.com", thenPassItTo: builder.cdnHost)
 
         CustomerIO.initialize(withConfig: builder.build())
 
@@ -240,6 +246,8 @@ class CustomerIOSDKInitializer {
         setIfDefined(value: nil, thenPassItTo: builder.trackApplicationLifecycleEvents)
         setIfDefined(value: nil, thenPassItTo: builder.screenViewUse) { ScreenView.getScreenView($0) }
         setIfDefined(value: nil, thenPassItTo: builder.migrationSiteId)
+        setIfDefined(value: nil, thenPassItTo: builder.apiHost)
+        setIfDefined(value: nil, thenPassItTo: builder.cdnHost)
 
         CustomerIO.initialize(withConfig: builder.build())
 

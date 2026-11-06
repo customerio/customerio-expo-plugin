@@ -578,3 +578,19 @@ describe('NSE apiHost with JavaScript initialization', () => {
     );
   });
 });
+
+describe('NSE apiHost falls back to config.apiHost', () => {
+  it('passes config.apiHost to NSE generation when pushNotification.apiHost is not set', () => {
+    withCIOIos(
+      { name: 'Test App', slug: 'test-app', sdkVersion: '54.0.0' },
+      { cdpApiKey: 'pk_us_test', apiHost: 'proxy.example.com/v1' },
+      { iosPath: 'ios', pushNotification: {} }
+    );
+    expect(mockWithCioNotificationsXcodeProject).toHaveBeenLastCalledWith(
+      expect.anything(),
+      expect.objectContaining({ pushNotification: expect.objectContaining({
+        apiHost: 'proxy.example.com/v1',
+      }) })
+    );
+  });
+});
