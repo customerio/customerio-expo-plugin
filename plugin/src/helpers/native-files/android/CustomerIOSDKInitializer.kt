@@ -29,6 +29,8 @@ object CustomerIOSDKInitializer {
         setIfDefined({{TRACK_APPLICATION_LIFECYCLE_EVENTS}}, CustomerIOBuilder::trackApplicationLifecycleEvents)
         setIfDefined({{SCREEN_VIEW_USE}}, CustomerIOBuilder::screenViewUse) { ScreenView.getScreenView(it) }
         setIfDefined(migrationSiteId, CustomerIOBuilder::migrationSiteId)
+        setIfDefined({{API_HOST}}, CustomerIOBuilder::apiHost)
+        setIfDefined({{CDN_HOST}}, CustomerIOBuilder::cdnHost)
 
         // In-app needs a site ID, or a public (pk_) key that identifies the workspace without one
         if (inAppEnabled) {

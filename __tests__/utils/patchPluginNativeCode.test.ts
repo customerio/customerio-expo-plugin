@@ -441,6 +441,54 @@ describe('Native SDK Configuration Patching', () => {
       });
     });
 
+    describe('apiHost and cdnHost', () => {
+      test('passes hosts to the iOS builder', () => {
+        const result = patchNativeSDKInitializer(swiftTemplateContent, PLATFORM.IOS, {
+          ...baseSdkConfig,
+          apiHost: 'proxy.example.com/cdp',
+          cdnHost: ' cdn.example.com ',
+        });
+
+        expect(result).toContain('setIfDefined(value: "proxy.example.com/cdp", thenPassItTo: builder.apiHost)');
+        expect(result).toContain('setIfDefined(value: "cdn.example.com", thenPassItTo: builder.cdnHost)');
+      });
+
+      test('passes hosts to the Android builder', () => {
+        const result = patchNativeSDKInitializer(kotlinTemplateContent, PLATFORM.ANDROID, {
+          ...baseSdkConfig,
+          apiHost: 'proxy.example.com/cdp',
+          cdnHost: 'cdn.example.com',
+        });
+
+        expect(result).toContain('setIfDefined("proxy.example.com/cdp", CustomerIOBuilder::apiHost)');
+        expect(result).toContain('setIfDefined("cdn.example.com", CustomerIOBuilder::cdnHost)');
+      });
+
+      test('uses nil/null when hosts are missing', () => {
+        const ios = patchNativeSDKInitializer(swiftTemplateContent, PLATFORM.IOS, baseSdkConfig);
+        const android = patchNativeSDKInitializer(kotlinTemplateContent, PLATFORM.ANDROID, baseSdkConfig);
+
+        expect(ios).toContain('setIfDefined(value: nil, thenPassItTo: builder.apiHost)');
+        expect(ios).toContain('setIfDefined(value: nil, thenPassItTo: builder.cdnHost)');
+        expect(android).toContain('setIfDefined(null, CustomerIOBuilder::apiHost)');
+        expect(android).toContain('setIfDefined(null, CustomerIOBuilder::cdnHost)');
+      });
+
+      test('escapes hosts and keeps $& as is', () => {
+        const ios = patchNativeSDKInitializer(swiftTemplateContent, PLATFORM.IOS, {
+          ...baseSdkConfig,
+          apiHost: 'proxy.example.com/$&"x',
+        });
+        const android = patchNativeSDKInitializer(kotlinTemplateContent, PLATFORM.ANDROID, {
+          ...baseSdkConfig,
+          apiHost: 'proxy.example.com/$&"x',
+        });
+
+        expect(ios).toContain('value: "proxy.example.com/$&\\"x"');
+        expect(android).toContain('setIfDefined("proxy.example.com/\\$&\\"x", CustomerIOBuilder::apiHost)');
+      });
+    });
+
     describe('snapshots', () => {
       test('iOS complete', () => {
         const config = {
@@ -451,6 +499,8 @@ describe('Native SDK Configuration Patching', () => {
           autoTrackDeviceAttributes: true,
           trackApplicationLifecycleEvents: false,
           screenViewUse: 'inapp' as const,
+          apiHost: 'proxy.example.com/cdp',
+          cdnHost: 'cdn.example.com',
         };
 
         const result = patchNativeSDKInitializer(swiftTemplateContent, PLATFORM.IOS, config);
@@ -471,6 +521,8 @@ describe('Native SDK Configuration Patching', () => {
           autoTrackDeviceAttributes: false,
           trackApplicationLifecycleEvents: true,
           screenViewUse: 'all' as const,
+          apiHost: 'proxy.example.com/cdp',
+          cdnHost: 'cdn.example.com',
         };
 
         const result = patchNativeSDKInitializer(kotlinTemplateContent, PLATFORM.ANDROID, config);

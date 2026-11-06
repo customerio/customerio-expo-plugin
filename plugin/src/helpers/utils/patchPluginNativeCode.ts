@@ -96,6 +96,17 @@ export function patchNativeSDKInitializer(
     (configValue) => configValue.toString()
   );
 
+  // Hosts can contain `$&` and similar, so escape them and use a function replacer.
+  const replaceHost = (placeholder: RegExp, host: string | undefined) => {
+    const trimmed = host?.trim();
+    const literal = trimmed
+      ? `"${escapeForStringLiteral(trimmed, platform)}"`
+      : platform === PLATFORM.ANDROID ? 'null' : 'nil';
+    content = content.replace(placeholder, () => literal);
+  };
+  replaceHost(/\{\{API_HOST\}\}/g, sdkConfig.apiHost);
+  replaceHost(/\{\{CDN_HOST\}\}/g, sdkConfig.cdnHost);
+
   // Handle screenViewUse - use nil/null as fallback
   replaceValue(
     /\{\{SCREEN_VIEW_USE\}\}/g,
