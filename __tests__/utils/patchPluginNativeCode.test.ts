@@ -464,6 +464,17 @@ describe('Native SDK Configuration Patching', () => {
         expect(result).toContain('setIfDefined("cdn.example.com", CustomerIOBuilder::cdnHost)');
       });
 
+      test('treats blank or non-string hosts as unset', () => {
+        const config = { ...baseSdkConfig, apiHost: '   ', cdnHost: 8080 as unknown as string };
+        const ios = patchNativeSDKInitializer(swiftTemplateContent, PLATFORM.IOS, config);
+        const android = patchNativeSDKInitializer(kotlinTemplateContent, PLATFORM.ANDROID, config);
+
+        expect(ios).toContain('setIfDefined(value: nil, thenPassItTo: builder.apiHost)');
+        expect(ios).toContain('setIfDefined(value: nil, thenPassItTo: builder.cdnHost)');
+        expect(android).toContain('setIfDefined(null, CustomerIOBuilder::apiHost)');
+        expect(android).toContain('setIfDefined(null, CustomerIOBuilder::cdnHost)');
+      });
+
       test('uses nil/null when hosts are missing', () => {
         const ios = patchNativeSDKInitializer(swiftTemplateContent, PLATFORM.IOS, baseSdkConfig);
         const android = patchNativeSDKInitializer(kotlinTemplateContent, PLATFORM.ANDROID, baseSdkConfig);

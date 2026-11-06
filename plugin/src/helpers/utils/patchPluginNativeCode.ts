@@ -96,9 +96,10 @@ export function patchNativeSDKInitializer(
     (configValue) => configValue.toString()
   );
 
-  // Hosts can contain `$&` and similar, so escape them and use a function replacer.
-  const replaceHost = (placeholder: RegExp, host: string | undefined) => {
-    const trimmed = host?.trim();
+  // Hosts can contain `$&` and similar, so escape them and use a function replacer. Validation only
+  // warns outside strict mode, so a non-string value from app.json is treated as unset.
+  const replaceHost = (placeholder: RegExp, host: unknown) => {
+    const trimmed = typeof host === 'string' ? host.trim() : undefined;
     const literal = trimmed
       ? `"${escapeForStringLiteral(trimmed, platform)}"`
       : platform === PLATFORM.ANDROID ? 'null' : 'nil';

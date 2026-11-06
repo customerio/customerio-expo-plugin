@@ -314,6 +314,20 @@ describe('validateNativeSDKConfig - Ensures SDK configuration meets requirements
           `NativeSDKConfig: ${field} must be a non-empty string, received: ""`
         );
       });
+
+      test.each(['apiHost', 'cdnHost'] as const)('should throw when %s is whitespace only', (field) => {
+        const config = { ...validConfig, [field]: '   ' };
+        expect(() => validateNativeSDKConfig(config)).toThrow(
+          `NativeSDKConfig: ${field} must be a non-empty string, received: "   "`
+        );
+      });
+
+      test.each(['apiHost', 'cdnHost'] as const)('should throw when %s is not a string', (field) => {
+        const config = { ...validConfig, [field]: 8080 } as unknown as NativeSDKConfig;
+        expect(() => validateNativeSDKConfig(config)).toThrow(
+          `NativeSDKConfig: ${field} must be a non-empty string, received: 8080`
+        );
+      });
     });
 
     describe('complex configuration validation', () => {
