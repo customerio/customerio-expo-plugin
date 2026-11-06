@@ -153,14 +153,14 @@ export type NativeSDKConfig = {
   siteId?: string; // Optional, if only siteId defined, migrationSiteId = siteId
   migrationSiteId?: string; // Optional, if only migrationSiteId defined, siteId should be null
   /**
-   * Overrides the CDP API host, to route SDK traffic through your own proxy. Use a host and optional
-   * path without a scheme, like `proxy.example.com/v1`. Defaults to the host for `region`. Also
-   * applies to iOS push metrics unless `ios.pushNotification.apiHost` is set.
+   * Overrides the CDP API host, to route SDK traffic through your own proxy. Use a host without a
+   * scheme, like `proxy.example.com`. Defaults to the host for `region`. Also applies to iOS push
+   * metrics unless `ios.pushNotification.apiHost` is set.
    */
   apiHost?: string;
   /**
-   * Overrides the CDN host, to route SDK traffic through your own proxy. Use a host and optional
-   * path without a scheme. Defaults to the host for `region`.
+   * Overrides the CDN host, to route SDK traffic through your own proxy. Use a host without a
+   * scheme, like `proxy.example.com`. Defaults to the host for `region`.
    */
   cdnHost?: string;
   /**
