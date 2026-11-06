@@ -249,7 +249,7 @@ React Native Firebase also reads every FCM message in its own broadcast receiver
 set your handler with `setBackgroundPushHandler` as above. Customer.io's service receives the silent
 push, tracks Delivered and runs your handler. React Native Firebase's handlers still receive the
 same message with its `CIO-Background-*` keys (on Android always, on iOS with the `fcm` provider),
-so skip messages that have `CIO-Background-Version` there.
+so skip messages that have `CIO-Background-Delivery-ID` there.
 
 **React Native Firebase handler.** Set `backgroundPush.handler` to `'app'` and leave
 `setHighPriorityPushHandler` unset or `false`:
@@ -269,7 +269,7 @@ Customer.io, which tracks Delivered on Android, and read your keys from `remoteM
 messaging().setBackgroundMessageHandler(async (remoteMessage) => {
   // Shows nothing for a silent push and tracks Delivered on Android.
   await CustomerIO.pushMessaging.onBackgroundMessageReceived(remoteMessage);
-  if (remoteMessage.data?.['CIO-Background-Version']) {
+  if (remoteMessage.data?.['CIO-Background-Delivery-ID']) {
     await refreshInbox(remoteMessage.data);
   }
 });
