@@ -11,7 +11,7 @@ import type {
   NativeSDKConfig,
 } from '../types/cio-types';
 import { isLiveNotificationsEnabled } from '../helpers/utils/liveNotificationsEnabled';
-import { mergeConfigWithEnvValues } from '../utils/config';
+import { mergeConfigWithEnvValues, resolveNseApiHost } from '../utils/config';
 import { logger } from '../utils/logger';
 import {
   validateIosOptions,
@@ -123,6 +123,7 @@ export function withCIOIos(
     platformConfig.pushNotification.env =
       platformConfig.pushNotification.env ||
       mergeConfigWithEnvValues(platformConfig, sdkConfig);
+    platformConfig.pushNotification.apiHost = resolveNseApiHost(platformConfig, sdkConfig);
     config = withCioNotificationsXcodeProject(config, platformConfig);
     config = withCioXcodeProject(config, {
       ...platformConfig,

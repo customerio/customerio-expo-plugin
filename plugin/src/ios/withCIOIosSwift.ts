@@ -469,7 +469,7 @@ function logSceneDeepLinkRoutingReadiness(
     logger.info(
       sdkConfig
         ? 'Expo scene projects using acknowledged deep-link routing with native auto-initialization must register CustomerIO.setDeepLinkHandler when the app starts'
-        : 'Expo scene projects using acknowledged deep-link routing must register CustomerIO.setDeepLinkHandler before calling CustomerIO.initialize'
+        : 'Expo scene projects using acknowledged deep-link routing must register CustomerIO.setDeepLinkHandler within ten seconds of launch, before or after calling CustomerIO.initialize'
     );
     return;
   }

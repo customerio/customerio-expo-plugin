@@ -154,6 +154,8 @@ export type NativeSDKConfig = {
     logLevel?: 'none' | 'error' | 'info' | 'debug';
     siteId?: string;
     migrationSiteId?: string;
+    apiHost?: string;
+    cdnHost?: string;
     inApp?: {
         enabled?: boolean;
     };

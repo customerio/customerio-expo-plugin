@@ -115,8 +115,8 @@ By default, Expo scene apps receive Customer.io deep links through React Native 
 }
 ```
 
-Then register the handler before calling `CustomerIO.initialize`. With native auto-initialization,
-register it when the app starts instead:
+Then register the handler when your navigator is ready. You can register it before or after
+`CustomerIO.initialize`, and cold-start links wait up to ten seconds for it:
 
 ```ts
 CustomerIO.setDeepLinkHandler(async (url) => {

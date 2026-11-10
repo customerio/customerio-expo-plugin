@@ -1,5 +1,5 @@
 import type { CustomerIOPluginOptionsIOS, NativeSDKConfig } from '../../plugin/src/types/cio-types';
-import { mergeConfigWithEnvValues } from '../../plugin/src/utils/config';
+import { mergeConfigWithEnvValues, resolveNseApiHost } from '../../plugin/src/utils/config';
 
 describe('mergeConfigWithEnvValues - Resolves conflicts between legacy env config and new native config', () => {
   const mockIosProps: CustomerIOPluginOptionsIOS = {
@@ -265,5 +265,49 @@ describe('mergeConfigWithEnvValues - Resolves conflicts between legacy env confi
 
       expect(result).toBeUndefined();
     });
+  });
+});
+
+describe('resolveNseApiHost - NSE host falls back to config.apiHost', () => {
+  const nse = (apiHost?: string): CustomerIOPluginOptionsIOS => ({
+    iosPath: 'ios',
+    pushNotification: apiHost === undefined ? {} : { apiHost },
+  });
+  const native = (apiHost?: string): NativeSDKConfig => ({ cdpApiKey: 'key', apiHost });
+
+  let warnSpy: jest.SpyInstance;
+  beforeEach(() => {
+    warnSpy = jest.spyOn(console, 'warn').mockImplementation();
+  });
+  afterEach(() => warnSpy.mockRestore());
+
+  test('keeps pushNotification.apiHost without auto-init', () => {
+    expect(resolveNseApiHost(nse('proxy.example.com'), undefined)).toBe('proxy.example.com');
+    expect(warnSpy).not.toHaveBeenCalled();
+  });
+
+  test('returns undefined when neither is set', () => {
+    expect(resolveNseApiHost(nse(), native())).toBeUndefined();
+    expect(warnSpy).not.toHaveBeenCalled();
+  });
+
+  test('uses config.apiHost when pushNotification.apiHost is not set', () => {
+    expect(resolveNseApiHost(nse(), native(' proxy.example.com/v1 '))).toBe('proxy.example.com/v1');
+    expect(warnSpy).not.toHaveBeenCalled();
+  });
+
+  test('warns about redundant config when both match', () => {
+    expect(resolveNseApiHost(nse('proxy.example.com'), native('proxy.example.com'))).toBe('proxy.example.com');
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('Consider removing'));
+  });
+
+  test('keeps pushNotification.apiHost and warns when they differ', () => {
+    expect(resolveNseApiHost(nse('nse.example.com'), native('app.example.com'))).toBe('nse.example.com');
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('differ'));
+  });
+
+  test('ignores a non-string config.apiHost', () => {
+    const config = { cdpApiKey: 'key', apiHost: 8080 } as unknown as NativeSDKConfig;
+    expect(resolveNseApiHost(nse(), config)).toBeUndefined();
   });
 });

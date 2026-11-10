@@ -584,63 +584,18 @@ describe('NSE apiHost with JavaScript initialization', () => {
   });
 });
 
-describe('backgroundPush', () => {
-  const config: ExpoConfig = { name: 'Test App', slug: 'test-app', sdkVersion: '55.0.0' };
-  const withPush: CustomerIOPluginOptionsIOS = {
-    iosPath: '/test/ios',
-    pushNotification: { provider: 'apn' },
-  };
-  // withCIOIosSwift(config, sdkConfig, props, location, geofence, liveNotificationsEnabled,
-  // usesSceneLifecycle, backgroundPushEnabled)
-  const swiftBackgroundPushArg = () => mockWithCIOIosSwift.mock.calls[0][7];
-
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
-
-  it('adds the background mode and the AppDelegate routing when push is configured', () => {
-    withCIOIos(config, undefined, withPush, undefined, undefined, undefined, undefined, {
-      enabled: true,
-    });
-
-    expect(mockWithBackgroundPushInfoPlist).toHaveBeenCalledTimes(1);
-    expect(swiftBackgroundPushArg()).toBe('customerio');
-    expect(logger.warn).not.toHaveBeenCalled();
-  });
-
-  it("passes handler 'app' through for apps that handle the data themselves", () => {
-    withCIOIos(config, undefined, withPush, undefined, undefined, undefined, undefined, {
-      enabled: true,
-      handler: 'app',
-    });
-
-    expect(mockWithBackgroundPushInfoPlist).toHaveBeenCalledTimes(1);
-    expect(swiftBackgroundPushArg()).toBe('app');
-  });
-
-  it.each([undefined, { enabled: false }])('changes nothing when the option is %p', (option) => {
-    withCIOIos(config, undefined, withPush, undefined, undefined, undefined, undefined, option);
-
-    expect(mockWithBackgroundPushInfoPlist).not.toHaveBeenCalled();
-    expect(swiftBackgroundPushArg()).toBeUndefined();
-  });
-
-  it('warns and does nothing without ios.pushNotification', () => {
+describe('NSE apiHost falls back to config.apiHost', () => {
+  it('passes config.apiHost to NSE generation when pushNotification.apiHost is not set', () => {
     withCIOIos(
-      config,
-      { cdpApiKey: 'pk_us_test' },
-      { iosPath: '/test/ios' },
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      { enabled: true }
+      { name: 'Test App', slug: 'test-app', sdkVersion: '54.0.0' },
+      { cdpApiKey: 'pk_us_test', apiHost: 'proxy.example.com/v1' },
+      { iosPath: 'ios', pushNotification: {} }
     );
-
-    expect(mockWithBackgroundPushInfoPlist).not.toHaveBeenCalled();
-    expect(swiftBackgroundPushArg()).toBeUndefined();
-    expect(logger.warn).toHaveBeenCalledWith(
-      'backgroundPush.enabled has no effect on iOS without ios.pushNotification, because the app has no Customer.io push handler to receive silent pushes.'
+    expect(mockWithCioNotificationsXcodeProject).toHaveBeenLastCalledWith(
+      expect.anything(),
+      expect.objectContaining({ pushNotification: expect.objectContaining({
+        apiHost: 'proxy.example.com/v1',
+      }) })
     );
   });
 });

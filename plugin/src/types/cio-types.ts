@@ -32,8 +32,8 @@ export type CustomerIOPluginOptionsIOS = {
 
   /**
    * Routes Customer.io deep links to the handler registered with `CustomerIO.setDeepLinkHandler`
-   * instead of React Native `Linking`. Register the handler before calling `CustomerIO.initialize`,
-   * or when the app starts if the SDK uses native auto-initialization.
+   * instead of React Native `Linking`. Register the handler when your router is ready, before or
+   * after `CustomerIO.initialize`. Cold-start links wait up to ten seconds for it.
    *
    * Only applies to Expo SDK 58+ scene projects and requires React Native 0.88+. Defaults to false.
    */
@@ -152,6 +152,17 @@ export type NativeSDKConfig = {
   logLevel?: 'none' | 'error' | 'info' | 'debug'; // Default: 'debug'. Controls SDK logging verbosity
   siteId?: string; // Optional, if only siteId defined, migrationSiteId = siteId
   migrationSiteId?: string; // Optional, if only migrationSiteId defined, siteId should be null
+  /**
+   * Overrides the CDP API host, to route SDK traffic through your own proxy. Use a host without a
+   * scheme, like `proxy.example.com`. Defaults to the host for `region`. Also applies to iOS push
+   * metrics unless `ios.pushNotification.apiHost` is set.
+   */
+  apiHost?: string;
+  /**
+   * Overrides the CDN host, to route SDK traffic through your own proxy. Use a host without a
+   * scheme, like `proxy.example.com`. Defaults to the host for `region`.
+   */
+  cdnHost?: string;
   /**
    * In-app messaging config. A `siteId` turns in-app on as before. Without one, set
    * `inApp.enabled` to true to turn it on with a `pk_` key, which needs no site ID.
@@ -580,8 +591,10 @@ export type CustomerIOPluginPushNotificationOptions = {
 
   /**
    * Host the Notification Service Extension sends delivery metrics to, for routing them through your
-   * own proxy. Use the same value as `apiHost` in the app's SDK config. When set, `.apiHost(...)` is
-   * injected into the MessagingPushConfigBuilder; when omitted, metrics go to the host for `region`.
+   * own proxy. Use the same value as `apiHost` in the app's SDK config. With native auto-initialization,
+   * defaults to `config.apiHost`, so you only need this when initializing from JavaScript. When set,
+   * `.apiHost(...)` is injected into the MessagingPushConfigBuilder; when omitted, metrics go to the
+   * host for `region`.
    */
   apiHost?: string;
 };

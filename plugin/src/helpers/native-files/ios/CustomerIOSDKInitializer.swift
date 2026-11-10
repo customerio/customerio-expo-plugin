@@ -26,6 +26,8 @@ class CustomerIOSDKInitializer {
         setIfDefined(value: {{TRACK_APPLICATION_LIFECYCLE_EVENTS}}, thenPassItTo: builder.trackApplicationLifecycleEvents)
         setIfDefined(value: {{SCREEN_VIEW_USE}}, thenPassItTo: builder.screenViewUse) { ScreenView.getScreenView($0) }
         setIfDefined(value: {{MIGRATION_SITE_ID}}, thenPassItTo: builder.migrationSiteId)
+        setIfDefined(value: {{API_HOST}}, thenPassItTo: builder.apiHost)
+        setIfDefined(value: {{CDN_HOST}}, thenPassItTo: builder.cdnHost)
 
         {{LOCATION_MODULE_INIT}}
         {{GEOFENCE_MODULE_INIT}}

@@ -1,3 +1,9 @@
+## [4.4.0](https://github.com/customerio/customerio-expo-plugin/compare/4.3.0...4.4.0) (2026-11-06)
+
+### Features
+
+* support apiHost and cdnHost in native auto-init config ([#449](https://github.com/customerio/customerio-expo-plugin/issues/449)) ([1ee4132](https://github.com/customerio/customerio-expo-plugin/commit/1ee413299b745919c40b1f501533a600984d6cd3))
+
 ## [4.3.0](https://github.com/customerio/customerio-expo-plugin/compare/4.2.1...4.3.0) (2026-11-03)
 
 ### Features
