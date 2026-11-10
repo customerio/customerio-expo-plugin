@@ -90,6 +90,16 @@ public class CioSdkAppDelegateHandler: NSObject {
     cioAppDelegate.application(application, didFailToRegisterForRemoteNotificationsWithError: error)
   }
 
+  /// Does what \`CioAppDelegateWrapper\` does with a remote notification: tracks Delivered for a Customer.io silent push
+  /// and offers it to the React Native SDK, which takes it when JavaScript has set a silent push handler. Returns false,
+  /// without calling \`completionHandler\`, for every push it doesn't take.
+  public func application(_ application: UIApplication, didReceiveRemoteNotification userInfo: [AnyHashable: Any], fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void) -> Bool {
+    guard case .received(let push) = MessagingPush.shared.handleBackgroundPush(userInfo: userInfo),
+          let reactNativeHandler = MessagingPush.wrapperBackgroundPushHandler
+    else { return false }
+    return reactNativeHandler(push, completionHandler)
+  }
+
   /// Reports an \`opened\` metric when the app is launched from a tapped Live Activity, and returns
   /// the URL that should actually be routed.
   ///

@@ -1,7 +1,6 @@
 import type { ExpoConfig } from '@expo/config-types';
 import { withEntitlementsPlist } from '@expo/config-plugins';
 import type {
-  CustomerIOPluginBackgroundPushOptions,
   CustomerIOPluginFirebaseInstallationIdOptions,
   CustomerIOPluginOptionsIOS,
   CustomerIOPluginPushNotificationOptions,
@@ -23,7 +22,6 @@ import {
   isFcmPushProvider,
 } from './utils';
 import { withAppDelegateModifications } from './withAppDelegateModifications';
-import { withBackgroundPushInfoPlist } from './withBackgroundPushInfoPlist';
 import { withCIOIosSwift } from './withCIOIosSwift';
 import { withLiveActivityUrlRoutingWarning } from './withLiveActivityUrlRoutingWarning';
 import {
@@ -47,8 +45,7 @@ export function withCIOIos(
   location?: CustomerIOPluginLocationOptions,
   geofence?: CustomerIOPluginGeofenceOptions,
   liveNotifications?: CustomerIOPluginLiveNotificationsOptions,
-  firebaseInstallationId?: CustomerIOPluginFirebaseInstallationIdOptions,
-  backgroundPush?: CustomerIOPluginBackgroundPushOptions
+  firebaseInstallationId?: CustomerIOPluginFirebaseInstallationIdOptions
 ) {
   const isSwiftProject = isExpoVersion53OrHigher(config);
   const usesSceneLifecycle = isExpoVersion58OrHigher(config);
@@ -63,17 +60,6 @@ export function withCIOIos(
   // the single push subspec to the explicit :subspecs array as soon as any of them is on.
   const optionalModulesEnabled =
     locationEnabled || geofenceEnabled || liveNotificationsEnabled;
-  // Silent pushes reach the app through the push handler the plugin generates, so they need push.
-  const backgroundPushEnabled =
-    backgroundPush?.enabled === true && Boolean(platformConfig?.pushNotification);
-  const backgroundPushHandler = backgroundPushEnabled
-    ? backgroundPush?.handler ?? 'customerio'
-    : undefined;
-  if (backgroundPush?.enabled === true && !backgroundPushEnabled) {
-    logger.warn(
-      'backgroundPush.enabled has no effect on iOS without ios.pushNotification, because the app has no Customer.io push handler to receive silent pushes.'
-    );
-  }
 
   if (platformConfig) {
     validateIosOptions(platformConfig);
@@ -111,8 +97,7 @@ export function withCIOIos(
         location,
         geofence,
         liveNotificationsEnabled,
-        usesSceneLifecycle,
-        backgroundPushHandler
+        usesSceneLifecycle
       );
     } else {
       // Auto initialization is only supported in Swift projects (Expo SDK 53+)
@@ -137,10 +122,6 @@ export function withCIOIos(
       },
     });
     config = withGoogleServicesJsonFile(config, platformConfig);
-
-    if (backgroundPushEnabled) {
-      config = withBackgroundPushInfoPlist(config);
-    }
 
     // Merge App Group entitlements on host only when appGroupId is explicitly set
     const appGroupId = platformConfig.pushNotification?.appGroupId;

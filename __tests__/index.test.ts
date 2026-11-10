@@ -53,7 +53,6 @@ describe('withCustomerIOPlugin geofence gating', () => {
       undefined,
       geofence,
       undefined,
-      undefined,
       undefined
     );
     expect(mockWithCIOAndroid).toHaveBeenCalledWith(
@@ -122,7 +121,6 @@ describe('withCustomerIOPlugin Live Notifications gating', () => {
       undefined,
       undefined,
       liveNotifications,
-      undefined,
       undefined
     );
     expect(mockWithCIOAndroid).toHaveBeenCalledWith(
@@ -233,8 +231,7 @@ describe('withCustomerIOPlugin firebaseInstallationId', () => {
       undefined,
       undefined,
       undefined,
-      firebaseInstallationId,
-      undefined
+      firebaseInstallationId
     );
     expect(mockWithCIOAndroid).toHaveBeenCalledWith(
       expect.anything(),
@@ -245,52 +242,6 @@ describe('withCustomerIOPlugin firebaseInstallationId', () => {
       undefined,
       firebaseInstallationId
     );
-  });
-});
-
-describe('withCustomerIOPlugin backgroundPush', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-    mockWithExpoVersion.mockImplementation((c) => c);
-    mockWithCIOIos.mockImplementation((c) => c);
-    mockWithCIOAndroid.mockImplementation((c) => c as ExpoConfig);
-  });
-
-  it('throws when backgroundPush.enabled on Expo < 53', () => {
-    mockIsExpo53.mockReturnValue(false);
-
-    expect(() =>
-      withCustomerIOPlugin(baseConfig, { ...baseProps, backgroundPush: { enabled: true } })
-    ).toThrow(/backgroundPush requires Expo SDK 53/);
-  });
-
-  it('does not throw when backgroundPush is disabled on Expo < 53', () => {
-    mockIsExpo53.mockReturnValue(false);
-
-    expect(() =>
-      withCustomerIOPlugin(baseConfig, { ...baseProps, backgroundPush: { enabled: false } })
-    ).not.toThrow();
-  });
-
-  it('rejects an unknown handler', () => {
-    mockIsExpo53.mockReturnValue(true);
-
-    expect(() =>
-      withCustomerIOPlugin(baseConfig, {
-        ...baseProps,
-        backgroundPush: { enabled: true, handler: 'firebase' as never },
-      })
-    ).toThrow(/backgroundPush.handler must be 'customerio' or 'app', got "firebase"/);
-  });
-
-  it('forwards backgroundPush to the iOS mods only', () => {
-    mockIsExpo53.mockReturnValue(true);
-    const backgroundPush = { enabled: true };
-    withCustomerIOPlugin(baseConfig, { ...baseProps, backgroundPush });
-
-    expect(mockWithCIOIos.mock.calls[0][7]).toBe(backgroundPush);
-    // The React Native SDK registers its own Android callback at process start.
-    expect(mockWithCIOAndroid.mock.calls[0]).toHaveLength(7);
   });
 });
 

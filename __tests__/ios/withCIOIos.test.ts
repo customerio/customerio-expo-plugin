@@ -61,11 +61,6 @@ jest.mock('../../plugin/src/ios/withCioLiveActivityWidgetXcodeProject', () => ({
   withCioLiveActivityDisableGuard: (config: ExpoConfig) =>
     mockWithCioLiveActivityDisableGuard(config),
 }));
-const mockWithBackgroundPushInfoPlist = jest.fn((config: ExpoConfig) => config);
-jest.mock('../../plugin/src/ios/withBackgroundPushInfoPlist', () => ({
-  withBackgroundPushInfoPlist: (config: ExpoConfig) =>
-    mockWithBackgroundPushInfoPlist(config),
-}));
 jest.mock('../../plugin/src/ios/withLiveActivityUrlRoutingWarning', () => ({
   withLiveActivityUrlRoutingWarning: (config: ExpoConfig) =>
     mockWithLiveActivityUrlRoutingWarning(config),

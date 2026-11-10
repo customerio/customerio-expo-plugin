@@ -60,6 +60,13 @@ describe('ios scenarios — modifyAppDelegateForPushHandler', () => {
           guard let url = cioSdkHandler.application(app, open: url, options: options) else { return true }
           return super.application(app, open: url, options: options)
         }
+
+        // Show remote notifications to the Customer.io SDK first; it passes on every push it doesn't take
+        public override func application(_ application: UIApplication, didReceiveRemoteNotification userInfo: [AnyHashable: Any], fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void) {
+          // Call CustomerIO SDK handler
+          if cioSdkHandler.application(application, didReceiveRemoteNotification: userInfo, fetchCompletionHandler: completionHandler) { return }
+          super.application(application, didReceiveRemoteNotification: userInfo, fetchCompletionHandler: completionHandler)
+        }
       }
       "
     `);
@@ -124,6 +131,13 @@ describe('ios scenarios — modifyAppDelegateForPushHandler', () => {
           // Call CustomerIO SDK handler
           guard let url = cioSdkHandler.application(app, open: url, options: options) else { return true }
           return super.application(app, open: url, options: options)
+        }
+
+        // Show remote notifications to the Customer.io SDK first; it passes on every push it doesn't take
+        public override func application(_ application: UIApplication, didReceiveRemoteNotification userInfo: [AnyHashable: Any], fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void) {
+          // Call CustomerIO SDK handler
+          if cioSdkHandler.application(application, didReceiveRemoteNotification: userInfo, fetchCompletionHandler: completionHandler) { return }
+          super.application(application, didReceiveRemoteNotification: userInfo, fetchCompletionHandler: completionHandler)
         }
       }
       "
