@@ -964,6 +964,10 @@ const addOpenURLHandling = (content: string): string => {
 const DID_RECEIVE_REMOTE_NOTIFICATION_METHOD_REGEX =
   /func\s+application\s*\(\s*_\s+([A-Za-z_][A-Za-z0-9_]*)\s*:\s*UIApplication\s*,\s*didReceiveRemoteNotification\s+([A-Za-z_][A-Za-z0-9_]*)\s*:\s*\[\s*AnyHashable\s*:\s*Any\s*\]\s*,\s*fetchCompletionHandler\s+([A-Za-z_][A-Za-z0-9_]*)\s*:[^{]*\{/;
 
+/** The same callback with any parameter names, including unnamed ones the guard can't refer to. */
+const DID_RECEIVE_REMOTE_NOTIFICATION_ANY_NAMES_REGEX =
+  /func\s+application\s*\([^)]*\bdidReceiveRemoteNotification\b[^)]*\bfetchCompletionHandler\b[^{]*\{/;
+
 const DID_RECEIVE_REMOTE_NOTIFICATION_CALL_REGEX =
   /cioSdkHandler\.application\([A-Za-z_][A-Za-z0-9_]*,\s*didReceiveRemoteNotification:/;
 
@@ -1080,6 +1084,18 @@ export function addDidReceiveRemoteNotification(content: string): string {
       lineBreak +
       content.substring(insertAt)
     );
+  }
+
+  // A second implementation next to this one would not compile.
+  if (
+    bodies.some((body) =>
+      directMember(executableContents, body, DID_RECEIVE_REMOTE_NOTIFICATION_ANY_NAMES_REGEX)
+    )
+  ) {
+    logger.warn(
+      'AppDelegate implements application(_:didReceiveRemoteNotification:fetchCompletionHandler:) with unnamed parameters, so Customer.io silent pushes are not routed. Name its parameters, or call cioSdkHandler.application(_:didReceiveRemoteNotification:fetchCompletionHandler:) first in it and return when it returns true.'
+    );
+    return content;
   }
 
   const position = classBody.close;

@@ -104,6 +104,22 @@ class ReactNativeDelegate`
     );
   });
 
+  it('adds no second implementation next to one with unnamed parameters', () => {
+    const existing = sdk55.replace(
+      /\n}\n\nclass ReactNativeDelegate/,
+      `
+  override func application(_: UIApplication, didReceiveRemoteNotification userInfo: [AnyHashable: Any], fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void) {
+    completionHandler(.noData)
+  }
+}
+
+class ReactNativeDelegate`
+    );
+    const next = modifyAppDelegateForPushHandler(existing, apn);
+    expect(next.match(/didReceiveRemoteNotification userInfo/g)).toHaveLength(1);
+    expect(next).not.toContain('cioSdkHandler.application(application, didReceiveRemoteNotification');
+  });
+
   it('puts the guard in an implementation in an AppDelegate extension', () => {
     const existing = `${withoutHook}
 extension AppDelegate {
