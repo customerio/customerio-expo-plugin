@@ -398,17 +398,6 @@ export function modifyAppDelegateForPushHandler(
   props: CustomerIOPluginOptionsIOS,
   usesSceneLifecycle = false
 ): string {
-  // Also over an AppDelegate an earlier plugin version integrated, which lacks this hook.
-  return addDidReceiveRemoteNotification(
-    integrateAppDelegate(contents, props, usesSceneLifecycle)
-  );
-}
-
-function integrateAppDelegate(
-  contents: string,
-  props: CustomerIOPluginOptionsIOS,
-  usesSceneLifecycle: boolean
-): string {
   let next = contents;
   const acknowledgedRouting = props.acknowledgedDeepLinkRouting === true;
 
@@ -420,11 +409,13 @@ function integrateAppDelegate(
     // the handler but not the Live Activity tap route, and skipping outright leaves every upgraded
     // app without it. `addOpenURLHandling` is idempotent, so re-running it is safe.
     if (!usesSceneLifecycle) {
-      return addOpenURLHandling(next);
+      return addDidReceiveRemoteNotification(addOpenURLHandling(next));
     }
 
-    return removeLegacyAppDelegateDeepLinkHandling(
-      addSceneRoutingBeforeNativeInitialization(next, acknowledgedRouting)
+    return addDidReceiveRemoteNotification(
+      removeLegacyAppDelegateDeepLinkHandling(
+        addSceneRoutingBeforeNativeInitialization(next, acknowledgedRouting)
+      )
     );
   }
 
@@ -435,6 +426,7 @@ function integrateAppDelegate(
   );
   next = addDidRegisterForRemoteNotificationsWithDeviceToken(next);
   next = addDidFailToRegisterForRemoteNotificationsWithError(next);
+  next = addDidReceiveRemoteNotification(next);
   if (usesSceneLifecycle) {
     next = addSceneRoutingBeforeNativeInitialization(
       next,
@@ -956,161 +948,6 @@ const addOpenURLHandling = (content: string): string => {
   );
 };
 
-/**
- * `application(_:didReceiveRemoteNotification:fetchCompletionHandler:)` in executable code, with any
- * parameter names and line breaks. Group 1 is the application parameter, 2 the user info and 3 the
- * completion handler.
- */
-const DID_RECEIVE_REMOTE_NOTIFICATION_METHOD_REGEX =
-  /func\s+application\s*\(\s*_\s+([A-Za-z_][A-Za-z0-9_]*)\s*:\s*UIApplication\s*,\s*didReceiveRemoteNotification\s+([A-Za-z_][A-Za-z0-9_]*)\s*:\s*\[\s*AnyHashable\s*:\s*Any\s*\]\s*,\s*fetchCompletionHandler\s+([A-Za-z_][A-Za-z0-9_]*)\s*:[^{]*\{/;
-
-/** The same callback with any parameter names, including unnamed ones the guard can't refer to. */
-const DID_RECEIVE_REMOTE_NOTIFICATION_ANY_NAMES_REGEX =
-  /func\s+application\s*\([^)]*\bdidReceiveRemoteNotification\b[^)]*\bfetchCompletionHandler\b[^{]*\{/;
-
-const DID_RECEIVE_REMOTE_NOTIFICATION_CALL_REGEX =
-  /cioSdkHandler\.application\([A-Za-z_][A-Za-z0-9_]*,\s*didReceiveRemoteNotification:/;
-
-const didReceiveRemoteNotificationGuard = (
-  application: string,
-  userInfo: string,
-  completionHandler: string
-) =>
-  `if cioSdkHandler.application(${application}, didReceiveRemoteNotification: ${userInfo}, fetchCompletionHandler: ${completionHandler}) { return }`;
-
-type SourceBody = { open: number; close: number };
-
-/**
- * Offsets of the `{` and matching `}` of each declaration `pattern` matches in masked source, where
- * comments and strings are blanked so their braces don't count.
- */
-function declarationBodies(executableContents: string, pattern: RegExp): SourceBody[] {
-  const bodies: SourceBody[] = [];
-  for (const declaration of executableContents.matchAll(pattern)) {
-    if (declaration.index === undefined) continue;
-    const open = declaration.index + declaration[0].length - 1;
-    let depth = 0;
-    for (let index = open; index < executableContents.length; index += 1) {
-      if (executableContents[index] === '{') {
-        depth += 1;
-      } else if (executableContents[index] === '}') {
-        depth -= 1;
-        if (depth === 0) {
-          bodies.push({ open, close: index });
-          break;
-        }
-      }
-    }
-  }
-  return bodies;
-}
-
-/**
- * The first match of `pattern` declared directly in `body`, outside any nested type or function.
- * `end` is the offset just past the match in the full source.
- */
-function directMember(
-  executableContents: string,
-  body: SourceBody,
-  pattern: RegExp
-): { groups: string[]; end: number } | undefined {
-  const source = executableContents.slice(body.open + 1, body.close);
-  const globalPattern = new RegExp(pattern.source, 'g');
-  for (const match of source.matchAll(globalPattern)) {
-    if (match.index === undefined) continue;
-    const before = source.slice(0, match.index);
-    const depth = (before.match(/\{/g)?.length ?? 0) - (before.match(/\}/g)?.length ?? 0);
-    if (depth === 0) {
-      return { groups: [...match], end: body.open + 1 + match.index + match[0].length };
-    }
-  }
-  return undefined;
-}
-
-/**
- * Pure string transform: routes `application(_:didReceiveRemoteNotification:fetchCompletionHandler:)`
- * through `CioSdkAppDelegateHandler` first.
- *
- * Expo's `ExpoAppDelegate` is the app delegate, not the SDK's `CioAppDelegateWrapper`, so without
- * this no silent push reaches the SDK. The handler returns true when the React Native SDK took a
- * Customer.io silent push, and the push's completion handler is then the SDK's. Any other push goes
- * to `super`, which runs Expo's app delegate subscribers (expo-notifications and others).
- *
- * Idempotent. An existing implementation gets the guard as its first statement and otherwise runs
- * unchanged.
- */
-export function addDidReceiveRemoteNotification(content: string): string {
-  const executableContents = maskSwiftNonCode(content);
-  if (DID_RECEIVE_REMOTE_NOTIFICATION_CALL_REGEX.test(executableContents)) {
-    return content;
-  }
-
-  const [classBody] = declarationBodies(
-    executableContents,
-    /\bclass\s+AppDelegate\b[^{]*\{/g
-  );
-  if (!classBody) {
-    logger.warn('Could not find the AppDelegate class, so Customer.io silent pushes are not routed');
-    return content;
-  }
-
-  // Only the AppDelegate's own method, declared directly in the class or in an extension of exactly
-  // `AppDelegate`: another type in the file, including one nested in AppDelegate
-  // (`extension AppDelegate.Helper`), may implement the same callback, and it has no `cioSdkHandler`.
-  // A second implementation next to one in an extension would not compile.
-  const bodies = [
-    classBody,
-    ...declarationBodies(
-      executableContents,
-      /\bextension\s+AppDelegate(?=\s*[:{]|\s+where\b)[^{]*\{/g
-    ),
-  ];
-  for (const body of bodies) {
-    const match = directMember(
-      executableContents,
-      body,
-      DID_RECEIVE_REMOTE_NOTIFICATION_METHOD_REGEX
-    );
-    if (!match) continue;
-    // Read the names from the masked text: it has the same offsets, and they are identifiers.
-    const [, application, userInfo, completionHandler] = match.groups;
-    const insertAt = match.end;
-    // A body on the signature's line (`{ done(.noData) }`) needs a line break after the guard.
-    const lineBreak = /^[ \t]*(\r?\n|$)/.test(content.substring(insertAt)) ? '' : '\n';
-    return (
-      content.substring(0, insertAt) +
-      '\n    // Call CustomerIO SDK handler\n' +
-      `    ${didReceiveRemoteNotificationGuard(application, userInfo, completionHandler)}` +
-      lineBreak +
-      content.substring(insertAt)
-    );
-  }
-
-  // A second implementation next to this one would not compile.
-  if (
-    bodies.some((body) =>
-      directMember(executableContents, body, DID_RECEIVE_REMOTE_NOTIFICATION_ANY_NAMES_REGEX)
-    )
-  ) {
-    logger.warn(
-      'AppDelegate implements application(_:didReceiveRemoteNotification:fetchCompletionHandler:) with unnamed parameters, so Customer.io silent pushes are not routed. Name its parameters, or call cioSdkHandler.application(_:didReceiveRemoteNotification:fetchCompletionHandler:) first in it and return when it returns true.'
-    );
-    return content;
-  }
-
-  const position = classBody.close;
-  return (
-    content.substring(0, position) +
-    "\n  // Show remote notifications to the Customer.io SDK first; it passes on every push it doesn't take\n" +
-    '  public override func application(_ application: UIApplication, didReceiveRemoteNotification userInfo: [AnyHashable: Any], fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void) {\n' +
-    '    // Call CustomerIO SDK handler\n' +
-    `    ${didReceiveRemoteNotificationGuard('application', 'userInfo', 'completionHandler')}\n` +
-    '    super.application(application, didReceiveRemoteNotification: userInfo, fetchCompletionHandler: completionHandler)\n' +
-    '  }\n' +
-    content.substring(position)
-  );
-}
-
 const addDidRegisterForRemoteNotificationsWithDeviceToken = (
   content: string
 ): string => {
@@ -1220,6 +1057,57 @@ const addDidFailToRegisterForRemoteNotificationsWithError = (
       content.substring(position)
     );
   }
+};
+
+/**
+ * Route `application(_:didReceiveRemoteNotification:fetchCompletionHandler:)` through the Customer.io
+ * SDK handler first, so it can take a Customer.io silent push; any other push goes on as before.
+ * Expo's `ExpoAppDelegate` isn't `CioAppDelegateWrapper`, so nothing else hands it silent pushes.
+ */
+const addDidReceiveRemoteNotification = (content: string): string => {
+  // Already wired, by this run or an earlier prebuild.
+  if (
+    /cioSdkHandler\.application\(\w+, didReceiveRemoteNotification:/.test(
+      maskSwiftNonCode(content)
+    )
+  ) {
+    return content;
+  }
+
+  // Method exists: call our handler first, with the method's own parameter names.
+  const methodRegex =
+    /func\s+application\s*\(\s*_\s+(\w+)\s*:\s*UIApplication\s*,\s*didReceiveRemoteNotification\s+(\w+)\s*:\s*\[\s*AnyHashable\s*:\s*Any\s*\]\s*,\s*fetchCompletionHandler\s+(\w+)\s*:[^{]*\{/;
+  const match = content.match(methodRegex);
+  if (match) {
+    const [, application, userInfo, completionHandler] = match;
+    const insertAt = (match.index ?? 0) + match[0].length;
+    return (
+      content.substring(0, insertAt) +
+      '\n    // Call CustomerIO SDK handler\n' +
+      `    if cioSdkHandler.application(${application}, didReceiveRemoteNotification: ${userInfo}, fetchCompletionHandler: ${completionHandler}) { return }` +
+      content.substring(insertAt)
+    );
+  }
+
+  // Method doesn't exist, add it inside the AppDelegate class
+  const classEndRegex = /^}(\s*$|\s*\/\/)/m;
+  const classEndMatch = content.match(classEndRegex);
+  if (!classEndMatch) {
+    logger.warn('Could not find end of AppDelegate class');
+    return content;
+  }
+
+  const position = classEndMatch.index ?? 0;
+  return (
+    content.substring(0, position) +
+    '\n  // Handle remote notifications, including Customer.io silent pushes\n' +
+    '  public override func application(_ application: UIApplication, didReceiveRemoteNotification userInfo: [AnyHashable: Any], fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void) {\n' +
+    '    // Call CustomerIO SDK handler\n' +
+    '    if cioSdkHandler.application(application, didReceiveRemoteNotification: userInfo, fetchCompletionHandler: completionHandler) { return }\n' +
+    '    super.application(application, didReceiveRemoteNotification: userInfo, fetchCompletionHandler: completionHandler)\n' +
+    '  }\n' +
+    content.substring(position)
+  );
 };
 
 /**

@@ -111,7 +111,7 @@ describe('AppDelegate.swift — Expo SDK 54 vanilla baseline', () => {
           super.application(application, didFailToRegisterForRemoteNotificationsWithError: error)
         }
 
-        // Show remote notifications to the Customer.io SDK first; it passes on every push it doesn't take
+        // Handle remote notifications, including Customer.io silent pushes
         public override func application(_ application: UIApplication, didReceiveRemoteNotification userInfo: [AnyHashable: Any], fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void) {
           // Call CustomerIO SDK handler
           if cioSdkHandler.application(application, didReceiveRemoteNotification: userInfo, fetchCompletionHandler: completionHandler) { return }
@@ -237,7 +237,7 @@ describe('AppDelegate.swift — Expo SDK 55 vanilla baseline', () => {
           super.application(application, didFailToRegisterForRemoteNotificationsWithError: error)
         }
 
-        // Show remote notifications to the Customer.io SDK first; it passes on every push it doesn't take
+        // Handle remote notifications, including Customer.io silent pushes
         public override func application(_ application: UIApplication, didReceiveRemoteNotification userInfo: [AnyHashable: Any], fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void) {
           // Call CustomerIO SDK handler
           if cioSdkHandler.application(application, didReceiveRemoteNotification: userInfo, fetchCompletionHandler: completionHandler) { return }
