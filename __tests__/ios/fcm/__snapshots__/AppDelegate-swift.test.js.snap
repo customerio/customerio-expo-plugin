@@ -47,6 +47,13 @@ class AppDelegate: ExpoAppDelegate, ExpoReactNativeFactoryProvider {
     cioSdkHandler.application(application, didFailToRegisterForRemoteNotificationsWithError: error)
     super.application(application, didFailToRegisterForRemoteNotificationsWithError: error)
   }
+
+  // Show remote notifications to the Customer.io SDK first; it passes on every push it doesn't take
+  public override func application(_ application: UIApplication, didReceiveRemoteNotification userInfo: [AnyHashable: Any], fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void) {
+    // Call CustomerIO SDK handler
+    if cioSdkHandler.application(application, didReceiveRemoteNotification: userInfo, fetchCompletionHandler: completionHandler) { return }
+    super.application(application, didReceiveRemoteNotification: userInfo, fetchCompletionHandler: completionHandler)
+  }
 }
 
 class ReactNativeDelegate: ExpoReactNativeFactoryDelegate {
