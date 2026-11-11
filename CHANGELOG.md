@@ -1,3 +1,9 @@
+## [4.5.0](https://github.com/customerio/customerio-expo-plugin/compare/4.4.0...4.5.0) (2026-11-11)
+
+### Features
+
+* hand Customer.io silent pushes to the React Native SDK (MBL-2666) ([#450](https://github.com/customerio/customerio-expo-plugin/issues/450)) ([e5ffbc7](https://github.com/customerio/customerio-expo-plugin/commit/e5ffbc7700a18af9dbbbfbd88c5d6b9edbaf0c10))
+
 ## [4.4.0](https://github.com/customerio/customerio-expo-plugin/compare/4.3.0...4.4.0) (2026-11-06)
 
 ### Features
