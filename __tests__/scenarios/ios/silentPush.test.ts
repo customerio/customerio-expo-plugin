@@ -2,6 +2,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { modifyAppDelegateForPushHandler } from '../../../plugin/src/ios/withCIOIosSwift';
 import type { CustomerIOPluginOptionsIOS } from '../../../plugin/src/types/cio-types';
+import { logger } from '../../../plugin/src/utils/logger';
 import { getIosNativeFilesPath } from '../../../plugin/src/utils/plugin';
 import { getFixturePath } from '../../utils';
 
@@ -76,8 +77,52 @@ class ReactNativeDelegate`
   ) {
     // Call CustomerIO SDK handler
     if cioSdkHandler.application(app, didReceiveRemoteNotification: payload, fetchCompletionHandler: done) { return }
+
     super.application(app, didReceiveRemoteNotification: payload, fetchCompletionHandler: done)
   }`);
     expect(next).not.toContain(override);
+  });
+
+  const withExisting = (implementation: string) =>
+    sdk55.replace(
+      /\n}\n\nclass ReactNativeDelegate/,
+      `\n  ${implementation}\n}\n\nclass ReactNativeDelegate`
+    );
+
+  it('ends the call with a line break when the body is on the signature line', () => {
+    const next = modifyAppDelegateForPushHandler(
+      withExisting(
+        'override func application(_ app: UIApplication, didReceiveRemoteNotification payload: [AnyHashable: Any], fetchCompletionHandler done: @escaping (UIBackgroundFetchResult) -> Void) { done(.noData) }'
+      ),
+      apn
+    );
+    expect(next).toContain(
+      '-> Void) {\n    // Call CustomerIO SDK handler\n    if cioSdkHandler.application(app, didReceiveRemoteNotification: payload, fetchCompletionHandler: done) { return }\n done(.noData) }'
+    );
+  });
+
+  it.each([
+    [
+      'an unnamed application parameter',
+      'override func application(_: UIApplication, didReceiveRemoteNotification userInfo: [AnyHashable: Any], fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void) {\n    completionHandler(.noData)\n  }',
+    ],
+    [
+      'no internal name on fetchCompletionHandler',
+      'override func application(_ application: UIApplication, didReceiveRemoteNotification userInfo: [AnyHashable: Any], fetchCompletionHandler: @escaping (UIBackgroundFetchResult) -> Void) {\n    fetchCompletionHandler(.noData)\n  }',
+    ],
+    [
+      'the async form',
+      'override func application(_ application: UIApplication, didReceiveRemoteNotification userInfo: [AnyHashable: Any]) async -> UIBackgroundFetchResult {\n    .noData\n  }',
+    ],
+  ])('warns and adds nothing next to an implementation with %s', (_, implementation) => {
+    const warn = jest.spyOn(logger, 'warn').mockImplementation(() => undefined);
+    const existing = withExisting(implementation);
+    const next = modifyAppDelegateForPushHandler(existing, apn);
+    expect(next.match(/didReceiveRemoteNotification/g)).toHaveLength(1);
+    expect(next).toContain(implementation);
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining('in a form the plugin cannot add to')
+    );
+    warn.mockRestore();
   });
 });

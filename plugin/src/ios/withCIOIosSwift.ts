@@ -1084,9 +1084,22 @@ const addDidReceiveRemoteNotification = (content: string): string => {
     return (
       content.substring(0, insertAt) +
       '\n    // Call CustomerIO SDK handler\n' +
-      `    if cioSdkHandler.application(${application}, didReceiveRemoteNotification: ${userInfo}, fetchCompletionHandler: ${completionHandler}) { return }` +
+      `    if cioSdkHandler.application(${application}, didReceiveRemoteNotification: ${userInfo}, fetchCompletionHandler: ${completionHandler}) { return }\n` +
       content.substring(insertAt)
     );
+  }
+
+  // An implementation the regex can't add to, such as one with an unnamed parameter or the async
+  // form, would conflict with a second one.
+  if (
+    /func\s+application\s*\([^)]*\bdidReceiveRemoteNotification\b(?:[^)]*\bfetchCompletionHandler\b|[^)]*\)\s*async\b)/.test(
+      content
+    )
+  ) {
+    logger.warn(
+      'AppDelegate already implements application(_:didReceiveRemoteNotification:) in a form the plugin cannot add to, so Customer.io silent pushes are not routed. Call cioSdkHandler.application(_:didReceiveRemoteNotification:fetchCompletionHandler:) first in it and return when it returns true.'
+    );
+    return content;
   }
 
   // Method doesn't exist, add it inside the AppDelegate class
