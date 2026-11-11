@@ -18,7 +18,8 @@
         "NSLocationWhenInUseUsageDescription": "This app uses location to test Customer.io location features.",
         "NSLocationAlwaysAndWhenInUseUsageDescription": "This app uses location in the background to test Customer.io geofence features.",
         "UIBackgroundModes": [
-          "location"
+          "location",
+          "remote-notification"
         ],
         "CFBundleURLTypes": [
           {

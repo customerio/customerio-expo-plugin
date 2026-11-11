@@ -409,11 +409,13 @@ export function modifyAppDelegateForPushHandler(
     // the handler but not the Live Activity tap route, and skipping outright leaves every upgraded
     // app without it. `addOpenURLHandling` is idempotent, so re-running it is safe.
     if (!usesSceneLifecycle) {
-      return addOpenURLHandling(next);
+      return addDidReceiveRemoteNotification(addOpenURLHandling(next));
     }
 
-    return removeLegacyAppDelegateDeepLinkHandling(
-      addSceneRoutingBeforeNativeInitialization(next, acknowledgedRouting)
+    return addDidReceiveRemoteNotification(
+      removeLegacyAppDelegateDeepLinkHandling(
+        addSceneRoutingBeforeNativeInitialization(next, acknowledgedRouting)
+      )
     );
   }
 
@@ -424,6 +426,7 @@ export function modifyAppDelegateForPushHandler(
   );
   next = addDidRegisterForRemoteNotificationsWithDeviceToken(next);
   next = addDidFailToRegisterForRemoteNotificationsWithError(next);
+  next = addDidReceiveRemoteNotification(next);
   if (usesSceneLifecycle) {
     next = addSceneRoutingBeforeNativeInitialization(
       next,
@@ -1054,6 +1057,70 @@ const addDidFailToRegisterForRemoteNotificationsWithError = (
       content.substring(position)
     );
   }
+};
+
+/**
+ * Route `application(_:didReceiveRemoteNotification:fetchCompletionHandler:)` through the Customer.io
+ * SDK handler first, so it can take a Customer.io silent push; any other push goes on as before.
+ * Expo's `ExpoAppDelegate` isn't `CioAppDelegateWrapper`, so nothing else hands it silent pushes.
+ */
+const addDidReceiveRemoteNotification = (content: string): string => {
+  // Already wired, by this run or an earlier prebuild.
+  if (
+    /cioSdkHandler\.application\(\w+, didReceiveRemoteNotification:/.test(
+      maskSwiftNonCode(content)
+    )
+  ) {
+    return content;
+  }
+
+  // Method exists: call our handler first, with the method's own parameter names.
+  const methodRegex =
+    /func\s+application\s*\(\s*_\s+(\w+)\s*:\s*UIApplication\s*,\s*didReceiveRemoteNotification\s+(\w+)\s*:\s*\[\s*AnyHashable\s*:\s*Any\s*\]\s*,\s*fetchCompletionHandler\s+(\w+)\s*:[^{]*\{/;
+  const match = content.match(methodRegex);
+  if (match) {
+    const [, application, userInfo, completionHandler] = match;
+    const insertAt = (match.index ?? 0) + match[0].length;
+    return (
+      content.substring(0, insertAt) +
+      '\n    // Call CustomerIO SDK handler\n' +
+      `    if cioSdkHandler.application(${application}, didReceiveRemoteNotification: ${userInfo}, fetchCompletionHandler: ${completionHandler}) { return }\n` +
+      content.substring(insertAt)
+    );
+  }
+
+  // An implementation the regex can't add to, such as one with an unnamed parameter or the async
+  // form, would conflict with a second one.
+  if (
+    /func\s+application\s*\([^)]*\bdidReceiveRemoteNotification\b(?:[^)]*\bfetchCompletionHandler\b|[^)]*\)\s*async\b)/.test(
+      content
+    )
+  ) {
+    logger.warn(
+      'AppDelegate already implements application(_:didReceiveRemoteNotification:) in a form the plugin cannot add to, so Customer.io silent pushes are not routed. Call cioSdkHandler.application(_:didReceiveRemoteNotification:fetchCompletionHandler:) first in it and return when it returns true.'
+    );
+    return content;
+  }
+
+  // Method doesn't exist, add it inside the AppDelegate class
+  const classEndRegex = /^}(\s*$|\s*\/\/)/m;
+  const classEndMatch = content.match(classEndRegex);
+  if (!classEndMatch) {
+    logger.warn('Could not find end of AppDelegate class');
+    return content;
+  }
+
+  const position = classEndMatch.index ?? 0;
+  return (
+    content.substring(0, position) +
+    '\n  // Handle remote notifications, including Customer.io silent pushes\n' +
+    '  public override func application(_ application: UIApplication, didReceiveRemoteNotification userInfo: [AnyHashable: Any], fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void) {\n' +
+    '    // Call CustomerIO SDK handler\n' +
+    '    if cioSdkHandler.application(application, didReceiveRemoteNotification: userInfo, fetchCompletionHandler: completionHandler) { return }\n' +
+    '    super.application(application, didReceiveRemoteNotification: userInfo, fetchCompletionHandler: completionHandler)\n' +
+    '  }\n' +
+    content.substring(position)
+  );
 };
 
 /**

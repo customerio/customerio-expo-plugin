@@ -157,6 +157,49 @@ and URL-subscription pipeline. The plugin does not edit customer-owned routing f
 
 After disabling Live Notifications in a previously generated iOS project, run `npx expo prebuild --clean --platform ios`. An incremental prebuild stops with this instruction so it cannot leave the generated widget target or linked Live Activities code behind.
 
+## Silent push
+
+A Customer.io silent push shows nothing. It wakes the app and hands your handler the key/value data
+set on the message. It needs customerio-reactnative 7.3.0 or later and, on iOS, Expo SDK 53 or later.
+
+Add the Remote notifications background mode to your app config:
+
+```json
+{
+  "ios": {
+    "infoPlist": {
+      "UIBackgroundModes": ["remote-notification"]
+    }
+  }
+}
+```
+
+Then set the handler in your entry file, so it's set when a silent push starts the app without
+mounting it. With Expo Router, add an `index.js` and point `main` in `package.json` at it:
+
+```js
+// index.js
+import 'expo-router/entry';
+import { CustomerIO } from 'customerio-reactnative';
+
+CustomerIO.pushMessaging.setBackgroundPushHandler(async ({ deliveryId, data }) => {
+  await refreshInbox(data);
+});
+```
+
+On iOS, the plugin passes `application(_:didReceiveRemoteNotification:fetchCompletionHandler:)` from
+the generated `AppDelegate` to the Customer.io SDK, as `CioAppDelegateWrapper` does in a React Native
+app: the SDK tracks Delivered for each silent push and hands it to your handler once JavaScript has
+set one. Every other push goes on to Expo and other libraries as before. Android needs nothing from
+the plugin.
+
+With React Native Firebase in the app, handle silent pushes in one place. To use
+`setBackgroundPushHandler`, set `android.setHighPriorityPushHandler` to `true` so Customer.io's Firebase
+service gets each FCM message. To handle them in React Native Firebase, leave it unset and don't set
+`setBackgroundPushHandler`. React Native Firebase's handlers see silent pushes either way. The React
+Native SDK's [silent push guide](https://github.com/customerio/customerio-reactnative/blob/main/docs/silent-push.md)
+covers both routes.
+
 # Local development
 
 [Here is a quick start guide to start with local development.](/local-development-readme.md)

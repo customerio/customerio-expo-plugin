@@ -110,6 +110,13 @@ describe('AppDelegate.swift — Expo SDK 54 vanilla baseline', () => {
           cioSdkHandler.application(application, didFailToRegisterForRemoteNotificationsWithError: error)
           super.application(application, didFailToRegisterForRemoteNotificationsWithError: error)
         }
+
+        // Handle remote notifications, including Customer.io silent pushes
+        public override func application(_ application: UIApplication, didReceiveRemoteNotification userInfo: [AnyHashable: Any], fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void) {
+          // Call CustomerIO SDK handler
+          if cioSdkHandler.application(application, didReceiveRemoteNotification: userInfo, fetchCompletionHandler: completionHandler) { return }
+          super.application(application, didReceiveRemoteNotification: userInfo, fetchCompletionHandler: completionHandler)
+        }
       }
 
       class ReactNativeDelegate: ExpoReactNativeFactoryDelegate {
@@ -228,6 +235,13 @@ describe('AppDelegate.swift — Expo SDK 55 vanilla baseline', () => {
           // Call CustomerIO SDK handler
           cioSdkHandler.application(application, didFailToRegisterForRemoteNotificationsWithError: error)
           super.application(application, didFailToRegisterForRemoteNotificationsWithError: error)
+        }
+
+        // Handle remote notifications, including Customer.io silent pushes
+        public override func application(_ application: UIApplication, didReceiveRemoteNotification userInfo: [AnyHashable: Any], fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void) {
+          // Call CustomerIO SDK handler
+          if cioSdkHandler.application(application, didReceiveRemoteNotification: userInfo, fetchCompletionHandler: completionHandler) { return }
+          super.application(application, didReceiveRemoteNotification: userInfo, fetchCompletionHandler: completionHandler)
         }
       }
 
