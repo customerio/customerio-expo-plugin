@@ -14,6 +14,7 @@ Run from the repo root.
 - Lint: `npm run lint`
 - Type-check: `npm run typescript`
 - Test: `npm run setup-test-app && npm test`. The suites under `__tests__/ios/` and `__tests__/android/` snapshot against generated test-app files and need `npm run setup-test-app` first (`TESTING.md`). Scenario tests only: `npm run test:scenarios`, which needs no setup.
+- iOS tests by push provider: the test app is generated for one provider, set by `pushProvider` in `test-app/local.env`, and `__tests__/ios/` has an `fcm/` and an `apn/` folder. Plain `npm test` runs both, so match CI (`.github/workflows/test.yml`): set `pushProvider=<fcm|apn>` in `test-app/local.env`, then `npm run setup-test-app && npm test -- __tests__/ios/common __tests__/ios/<provider>`. Android: `npm test -- __tests__/android`.
 - Build: `npm run build`
 - Regenerate the API report: `npm run generate-api-docs` (runs `npm install` first)
 
