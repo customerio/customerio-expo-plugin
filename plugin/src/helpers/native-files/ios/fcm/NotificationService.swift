@@ -15,7 +15,19 @@ public class NotificationServiceCioManager : NSObject {
 {{API_HOST_BUILDER_LINE}}{{APP_GROUP_ID_BUILDER_LINE}}        .build()
     )
     
-    MessagingPush.shared.didReceive(request, withContentHandler: contentHandler)
+    // `didReceive` returns false for pushes Customer.io didn't send (e.g. from another
+    // push provider) and then never calls the handler, so deliver those unchanged
+    // instead of leaving iOS to show them when the extension times out. It also returns
+    // false after calling the handler itself when the SDK isn't initialized, hence the guard.
+    var delivered = false
+    let deliver: (UNNotificationContent) -> Void = { content in
+      guard !delivered else { return }
+      delivered = true
+      contentHandler(content)
+    }
+    if !MessagingPush.shared.didReceive(request, withContentHandler: deliver) {
+      deliver(request.content)
+    }
   }
   
   @objc(serviceExtensionTimeWillExpire)
