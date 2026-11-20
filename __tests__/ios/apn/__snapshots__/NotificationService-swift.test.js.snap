@@ -32,6 +32,7 @@ public class NotificationServiceCioManager : NSObject {
     if !MessagingPush.shared.didReceive(request, withContentHandler: deliver) {
       deliver(request.content)
     }
+  }
   
   @objc(serviceExtensionTimeWillExpire)
   public func serviceExtensionTimeWillExpire() {
