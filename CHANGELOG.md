@@ -1,3 +1,9 @@
+## [4.5.1](https://github.com/customerio/customerio-expo-plugin/compare/4.5.0...4.5.1) (2026-11-24)
+
+### Bug Fixes
+
+* show pushes from other providers right away in the iOS notification extension ([#454](https://github.com/customerio/customerio-expo-plugin/issues/454)) ([c28c5c1](https://github.com/customerio/customerio-expo-plugin/commit/c28c5c1c37ea14effae905ba54eba3eecd8f7932))
+
 ## [4.5.0](https://github.com/customerio/customerio-expo-plugin/compare/4.4.0...4.5.0) (2026-11-11)
 
 ### Features
