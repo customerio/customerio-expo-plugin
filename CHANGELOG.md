@@ -1,3 +1,9 @@
+## [4.6.0](https://github.com/customerio/customerio-expo-plugin/compare/4.5.2...4.6.0) (2026-11-27)
+
+### Features
+
+* add Android in-app modal presentation option ([#456](https://github.com/customerio/customerio-expo-plugin/issues/456)) ([618daf4](https://github.com/customerio/customerio-expo-plugin/commit/618daf47a6e53be6e750eb4d66cb7f746868a694))
+
 ## [4.5.2](https://github.com/customerio/customerio-expo-plugin/compare/4.5.1...4.5.2) (2026-11-24)
 
 ### Bug Fixes
