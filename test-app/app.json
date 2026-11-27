@@ -74,9 +74,7 @@
       "branchName": "@BRANCH_NAME@",
       "commitHash": "@COMMIT_HASH@",
       "commitsAheadCount": "@COMMITS_AHEAD_COUNT@",
-      "wisdom": "cache invalidation is hard",
-      "pluginVersion": "4.5.2",
-      "pluginInstallSource": "tarball"
+      "wisdom": "cache invalidation is hard"
     },
     "plugins": [
       "expo-router",
