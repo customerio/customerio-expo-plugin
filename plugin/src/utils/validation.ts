@@ -100,6 +100,12 @@ function validateNativeSDKConfig(config: NativeSDKConfig): boolean {
   isValid = validateString(config.migrationSiteId, 'migrationSiteId', context) && isValid;
   isValid = validateString(config.apiHost, 'apiHost', context) && isValid;
   isValid = validateString(config.cdnHost, 'cdnHost', context) && isValid;
+  isValid = validateEnum(
+    config.inApp?.android?.modalPresentation,
+    'inApp.android.modalPresentation',
+    ['ACTIVITY', 'HOST_WINDOW'],
+    context
+  ) && isValid;
 
   return isValid;
 }

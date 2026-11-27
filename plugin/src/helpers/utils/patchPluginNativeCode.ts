@@ -22,6 +22,22 @@ import {
 export type { GeofenceInitOptions, LocationInitOptions };
 
 /**
+ * Replaces `{{IN_APP_MODAL_PRESENTATION}}` in the Android initializer. Only 'HOST_WINDOW' emits a
+ * setter: 'ACTIVITY' is the native default, so leaving it out keeps the generated file unchanged
+ * for every other app. Validation only warns outside strict mode, so any other value is unset.
+ */
+function patchModalPresentationPlaceholder(content: string, modalPresentation: unknown): string {
+  const hostWindow = typeof modalPresentation === 'string' && modalPresentation.trim().toUpperCase() === 'HOST_WINDOW';
+  if (hostWindow) {
+    return content.replace(
+      /\{\{IN_APP_MODAL_PRESENTATION\}\}/g,
+      '.setModalPresentation(io.customer.messaginginapp.type.ModalPresentation.HOST_WINDOW)'
+    );
+  }
+  return content.replace(/\n[ \t]*\{\{IN_APP_MODAL_PRESENTATION\}\}\n/g, '\n');
+}
+
+/**
  * Shared utility function to perform common SDK config replacements
  * for both iOS and Android template files
  *
@@ -143,6 +159,7 @@ export function patchNativeSDKInitializer(
   const inAppEnabled =
     Boolean(siteId?.trim()) || (sdkConfig.inApp?.enabled === true && isPublicCdpApiKey(sdkConfig.cdpApiKey));
   content = content.replace(/\{\{IN_APP_ENABLED\}\}/g, String(inAppEnabled));
+  content = patchModalPresentationPlaceholder(content, sdkConfig.inApp?.android?.modalPresentation);
 
   content = patchLocationPlaceholders(content, platform, locationOptions);
   content = patchGeofencePlaceholders(content, platform, geofenceOptions);

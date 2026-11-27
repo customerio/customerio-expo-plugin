@@ -415,6 +415,40 @@ describe('Native SDK Configuration Patching', () => {
       });
     });
 
+    describe('modal presentation', () => {
+      const setter = '.setModalPresentation(io.customer.messaginginapp.type.ModalPresentation.HOST_WINDOW)';
+      const withPresentation = (modalPresentation: unknown) =>
+        ({ cdpApiKey: 'test-key', siteId: 'site', inApp: { android: { modalPresentation } } }) as any;
+
+      test.each(['HOST_WINDOW', 'host_window'])('sets host window on Android for %s', (value) => {
+        const result = patchNativeSDKInitializer(kotlinTemplateContent, PLATFORM.ANDROID, withPresentation(value));
+
+        expect(result).toContain(
+          `.setEventListener(ReactInAppEventListener.instance)\n                        ${setter}\n                        .build()`
+        );
+        expect(result).not.toMatch(/\{\{\w+\}\}/);
+      });
+
+      test.each([undefined, 'ACTIVITY', 'unknown', 1])('leaves the Android initializer unchanged for %p', (value) => {
+        const result = patchNativeSDKInitializer(kotlinTemplateContent, PLATFORM.ANDROID, withPresentation(value));
+        const unset = patchNativeSDKInitializer(kotlinTemplateContent, PLATFORM.ANDROID, {
+          cdpApiKey: 'test-key',
+          siteId: 'site',
+        });
+
+        expect(result).toBe(unset);
+        expect(result).not.toContain('setModalPresentation');
+        expect(result).toContain('.setEventListener(ReactInAppEventListener.instance)\n                        .build()');
+      });
+
+      test('ignores the option on iOS', () => {
+        const result = patchNativeSDKInitializer(swiftTemplateContent, PLATFORM.IOS, withPresentation('HOST_WINDOW'));
+
+        expect(result).not.toContain('ModalPresentation');
+        expect(result).not.toMatch(/\{\{\w+\}\}/);
+      });
+    });
+
     describe('cdpApiKey escaping', () => {
       test('escapes quotes and backslashes on iOS', () => {
         const result = patchNativeSDKInitializer(mockContent, PLATFORM.IOS, {

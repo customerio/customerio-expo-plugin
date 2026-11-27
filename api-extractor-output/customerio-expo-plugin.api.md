@@ -138,6 +138,9 @@ export type LiveNotificationsSDKConfig = {
 export type LocationTrackingMode = 'OFF' | 'MANUAL' | 'ON_APP_START';
 
 // @public
+export type ModalPresentationAndroid = 'ACTIVITY' | 'HOST_WINDOW';
+
+// @public
 export type NativeSDKConfig = {
     cdpApiKey: string;
     region?: 'US' | 'EU';
@@ -151,6 +154,9 @@ export type NativeSDKConfig = {
     cdnHost?: string;
     inApp?: {
         enabled?: boolean;
+        android?: {
+            modalPresentation?: ModalPresentationAndroid;
+        };
     };
     location?: {
         trackingMode?: LocationTrackingMode;
