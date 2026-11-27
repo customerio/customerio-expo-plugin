@@ -74,7 +74,9 @@
       "branchName": "@BRANCH_NAME@",
       "commitHash": "@COMMIT_HASH@",
       "commitsAheadCount": "@COMMITS_AHEAD_COUNT@",
-      "wisdom": "cache invalidation is hard"
+      "wisdom": "cache invalidation is hard",
+      "pluginVersion": "4.5.2",
+      "pluginInstallSource": "tarball"
     },
     "plugins": [
       "expo-router",
@@ -110,6 +112,11 @@
             },
             "geofence": {
               "locationMode": "AUTOMATIC"
+            },
+            "inApp": {
+              "android": {
+                "modalPresentation": "HOST_WINDOW"
+              }
             }
           },
           "android": {
