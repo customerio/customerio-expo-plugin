@@ -43,6 +43,7 @@ object CustomerIOSDKInitializer {
                 ModuleMessagingInApp(
                     inAppConfigBuilder
                         .setEventListener(ReactInAppEventListener.instance)
+                        {{IN_APP_MODAL_PRESENTATION}}
                         .build()
                 )
             )

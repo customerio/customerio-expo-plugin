@@ -110,6 +110,11 @@
             },
             "geofence": {
               "locationMode": "AUTOMATIC"
+            },
+            "inApp": {
+              "android": {
+                "modalPresentation": "HOST_WINDOW"
+              }
             }
           },
           "android": {

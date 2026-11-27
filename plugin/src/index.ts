@@ -8,12 +8,13 @@ import { withCIOIos } from './ios/withCIOIos';
 import type {
   CustomerIOPluginOptions,
   LocationTrackingMode,
+  ModalPresentationAndroid,
   NativeSDKConfig,
 } from './types/cio-types';
 import { logger } from './utils/logger';
 import { withExpoVersion } from './utils/writeExpoVersion';
 
-export type { LocationTrackingMode, NativeSDKConfig };
+export type { LocationTrackingMode, ModalPresentationAndroid, NativeSDKConfig };
 
 // Entry point for config plugin
 function withCustomerIOPlugin(

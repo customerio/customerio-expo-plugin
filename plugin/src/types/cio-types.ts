@@ -140,6 +140,13 @@ export type LocationTrackingMode = 'OFF' | 'MANUAL' | 'ON_APP_START';
 export type GeofenceLocationMode = 'AUTOMATIC' | 'MANUAL';
 
 /**
+ * How modal in-app messages are shown on Android, set through `inApp.android.modalPresentation`.
+ * 'ACTIVITY' (default) or 'HOST_WINDOW'.
+ * @public
+ */
+export type ModalPresentationAndroid = 'ACTIVITY' | 'HOST_WINDOW';
+
+/**
  * SDK configuration options for auto initialization
  * @public
  */
@@ -169,6 +176,18 @@ export type NativeSDKConfig = {
    */
   inApp?: {
     enabled?: boolean;
+    /**
+     * Android-only in-app config. iOS ignores it.
+     */
+    android?: {
+      /**
+       * How modal in-app messages are shown on Android. 'ACTIVITY' (default) or 'HOST_WINDOW'.
+       * Use 'HOST_WINDOW' if your main activity uses `launchMode="singleInstance"`, a custom or
+       * empty `taskAffinity`, or a document launch mode, where modal messages can behave
+       * incorrectly. It shows modal messages in your activity's window instead.
+       */
+      modalPresentation?: ModalPresentationAndroid;
+    };
   };
   /**
    * Location module config. Location is off by default. Applied whenever the location module is
