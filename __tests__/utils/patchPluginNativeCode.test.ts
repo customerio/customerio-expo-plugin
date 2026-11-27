@@ -429,7 +429,7 @@ describe('Native SDK Configuration Patching', () => {
         expect(result).not.toMatch(/\{\{\w+\}\}/);
       });
 
-      test.each([undefined, 'ACTIVITY', 'unknown', 1])('leaves the Android initializer unchanged for %p', (value) => {
+      test.each([undefined, 'ACTIVITY', 'unknown', ' HOST_WINDOW ', 1])('leaves the Android initializer unchanged for %p', (value) => {
         const result = patchNativeSDKInitializer(kotlinTemplateContent, PLATFORM.ANDROID, withPresentation(value));
         const unset = patchNativeSDKInitializer(kotlinTemplateContent, PLATFORM.ANDROID, {
           cdpApiKey: 'test-key',

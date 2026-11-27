@@ -24,10 +24,11 @@ export type { GeofenceInitOptions, LocationInitOptions };
 /**
  * Replaces `{{IN_APP_MODAL_PRESENTATION}}` in the Android initializer. Only 'HOST_WINDOW' emits a
  * setter: 'ACTIVITY' is the native default, so leaving it out keeps the generated file unchanged
- * for every other app. Validation only warns outside strict mode, so any other value is unset.
+ * for every other app. Validation only warns outside strict mode, so any value it rejects is unset here.
+ * Matches validation: case-insensitive, untrimmed.
  */
 function patchModalPresentationPlaceholder(content: string, modalPresentation: unknown): string {
-  const hostWindow = typeof modalPresentation === 'string' && modalPresentation.trim().toUpperCase() === 'HOST_WINDOW';
+  const hostWindow = typeof modalPresentation === 'string' && modalPresentation.toUpperCase() === 'HOST_WINDOW';
   if (hostWindow) {
     return content.replace(
       /\{\{IN_APP_MODAL_PRESENTATION\}\}/g,

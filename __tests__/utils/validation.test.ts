@@ -66,6 +66,15 @@ describe('validateNativeSDKConfig - Ensures SDK configuration meets requirements
           testValidation({ ...validConfig, inApp: { android: { modalPresentation: 'ACTIVITY' } } }, false);
         });
 
+        test('should handle a padded inApp.android.modalPresentation', () => {
+          const config = { ...validConfig, inApp: { android: { modalPresentation: ' HOST_WINDOW ' } } };
+          testValidation(
+            config,
+            true,
+            'NativeSDKConfig: inApp.android.modalPresentation must be one of "ACTIVITY", "HOST_WINDOW", received:  HOST_WINDOW '
+          );
+        });
+
         test('should handle an unknown inApp.android.modalPresentation', () => {
           const config = { ...validConfig, inApp: { android: { modalPresentation: 'DIALOG' } } };
           testValidation(
